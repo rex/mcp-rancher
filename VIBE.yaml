@@ -1,0 +1,72 @@
+schema_version: 1
+
+project:
+  name: rancher-mcp
+  description: Capability-aware Rancher MCP server with comprehensive Rancher 2.6.5 coverage
+  primary_target:
+    product: rancher-manager
+    version: "2.6.5"
+  support_policy:
+    primary_version: "2.6.5"
+    secondary_versions: "later versions via capability detection and validation"
+
+stack:
+  language: python
+  python: "3.12"
+  package_manager: uv
+  framework: fastmcp
+  validation: pydantic-v2
+  settings: pydantic-settings
+  http_client: httpx
+  websocket_client: websockets
+  logging: structlog
+  retries: tenacity
+  catalog_format: yaml
+
+architecture:
+  mode: capability-aware
+  multi_instance: required
+  compatibility_strategy: adapters-and-detection
+  tool_layers:
+    - discovery-and-schema
+    - generic-resource-and-action
+    - curated-operator-workflows
+
+quality_gates:
+  lint: required
+  typecheck: required
+  tests: required
+  minimum_coverage_percent: 80
+  commit_style: conventional
+  signed_commits: required
+  push_after_commit: required
+
+testing:
+  mode: enabled
+  frameworks:
+    - pytest
+    - pytest-asyncio
+    - pytest-cov
+    - respx
+  contract_fixtures: required
+
+security:
+  audit_logging: required
+  secret_masking: required
+  destructive_confirmation: required
+  rate_limiting: required
+  read_only_instance_mode: supported
+  ssl_verification_default: true
+  ssl_verification_override_env: RANCHER_VERIFY_SSL
+
+distribution:
+  transports:
+    - stdio
+  package_formats:
+    - python-package
+    - docker
+
+repo:
+  canonical_plan: PERFECT_RANCHER_MCP_IMPLEMENTATION_PLAN.md
+  capability_catalog: catalog/capabilities.yaml
+  machine_policy: VIBE.yaml

@@ -1,0 +1,280 @@
+schema_version: 1
+primary_target:
+  product: rancher-manager
+  version: "2.6.5"
+
+domains:
+  - id: discovery
+    name: Discovery and Schema
+    priority: critical
+    planes: [norman, steve]
+    resources:
+      - schemas
+      - types
+      - actions
+      - links
+      - openapi
+      - resource-search
+      - watches
+  - id: server
+    name: Server, Settings, and Feature Flags
+    priority: high
+    planes: [norman]
+    resources:
+      - health
+      - version
+      - settings
+      - feature-flags
+      - notification-center
+  - id: auth
+    name: Authentication and Identity Providers
+    priority: high
+    planes: [norman]
+    resources:
+      - local-auth
+      - active-directory
+      - openldap
+      - freeipa
+      - azuread
+      - google-oauth
+      - oidc
+      - keycloak
+      - okta
+      - pingidentity
+      - adfs
+      - shibboleth
+      - github
+      - github-app
+  - id: users
+    name: Users, Groups, API Keys, and Principals
+    priority: high
+    planes: [norman]
+    resources:
+      - users
+      - groups
+      - api-keys
+      - principals
+  - id: global-rbac
+    name: Global Authorization and Role Templates
+    priority: high
+    planes: [norman]
+    resources:
+      - global-roles
+      - global-role-bindings
+      - role-templates
+  - id: clusters
+    name: Cluster Lifecycle and Access
+    priority: critical
+    planes: [norman, steve]
+    resources:
+      - clusters
+      - cluster-registration
+      - cluster-upgrades
+      - kubeconfig
+      - cluster-diagnostics
+      - cluster-metrics
+  - id: provisioning
+    name: Provisioning and Infrastructure
+    priority: medium
+    planes: [norman]
+    resources:
+      - cluster-drivers
+      - node-drivers
+      - cloud-credentials
+      - node-templates
+      - machine-configs
+      - machine-pools
+  - id: nodes
+    name: Nodes
+    priority: critical
+    planes: [norman, steve]
+    resources:
+      - nodes
+      - cordon
+      - uncordon
+      - drain
+      - taints
+      - labels
+  - id: projects-namespaces
+    name: Projects, Namespaces, Quotas, and Limits
+    priority: high
+    planes: [norman, steve]
+    resources:
+      - projects
+      - namespaces
+      - resource-quotas
+      - limit-ranges
+  - id: scoped-rbac
+    name: Cluster and Project RBAC
+    priority: high
+    planes: [norman]
+    resources:
+      - cluster-role-template-bindings
+      - project-role-template-bindings
+      - membership-workflows
+  - id: workloads
+    name: Workloads
+    priority: critical
+    planes: [steve]
+    resources:
+      - workloads
+      - deployments
+      - daemonsets
+      - statefulsets
+      - replicasets
+      - jobs
+      - cronjobs
+      - pod-disruption-budgets
+  - id: pods
+    name: Pods
+    priority: critical
+    planes: [steve, websocket]
+    resources:
+      - pods
+      - logs
+      - log-streaming
+      - exec
+      - events
+      - metrics
+  - id: networking
+    name: Services and Networking
+    priority: medium
+    planes: [steve]
+    resources:
+      - services
+      - ingresses
+      - network-policies
+      - endpoint-slices
+  - id: storage
+    name: Storage
+    priority: high
+    planes: [steve]
+    resources:
+      - persistent-volumes
+      - persistent-volume-claims
+      - storage-classes
+      - volume-snapshots
+      - snapshot-classes
+  - id: longhorn
+    name: Longhorn
+    priority: medium
+    planes: [subsystem]
+    resources:
+      - volumes
+      - nodes
+      - backups
+      - snapshots
+      - settings
+  - id: config-and-secrets
+    name: Config, Secrets, and Service Accounts
+    priority: high
+    planes: [steve]
+    resources:
+      - configmaps
+      - secrets
+      - tls-secrets
+      - docker-registry-secrets
+      - serviceaccounts
+  - id: apps
+    name: Catalogs, Apps, Helm, and Extensions
+    priority: high
+    planes: [norman, steve]
+    resources:
+      - catalogs
+      - templates
+      - apps
+      - helm-repos
+      - helm-releases
+      - extensions
+  - id: fleet
+    name: Fleet and GitOps
+    priority: high
+    planes: [steve]
+    resources:
+      - workspaces
+      - gitrepos
+      - bundles
+      - bundledeployments
+      - cluster-groups
+      - fleet-clusters
+  - id: monitoring
+    name: Monitoring, Alerting, and Notifications
+    priority: medium
+    planes: [norman, steve]
+    resources:
+      - monitoring-status
+      - alert-rules
+      - notifiers
+      - routes
+      - silences
+  - id: logging
+    name: Logging
+    priority: medium
+    planes: [steve]
+    resources:
+      - logging-status
+      - outputs
+      - clusteroutputs
+      - flows
+      - clusterflows
+  - id: compliance
+    name: Compliance and Policy
+    priority: medium
+    planes: [norman, steve]
+    resources:
+      - scan-profiles
+      - scans
+      - reports
+      - policies
+  - id: certificates
+    name: Certificates and TLS
+    priority: medium
+    planes: [norman, steve]
+    resources:
+      - cluster-certificates
+      - tls-secret-expiry
+      - certificate-rotation
+      - rancher-certificates
+  - id: backup-restore
+    name: Backup, Restore, and Disaster Recovery
+    priority: high
+    planes: [norman, steve]
+    resources:
+      - etcd-backups
+      - etcd-restore
+      - backup-operator
+      - restore-operator
+  - id: diagnostics
+    name: Diagnostics and Observability
+    priority: critical
+    planes: [norman, steve]
+    resources:
+      - conditions
+      - component-status
+      - events
+      - metrics
+      - supportability
+  - id: generic
+    name: Generic Rancher and Kubernetes Escape Hatches
+    priority: critical
+    planes: [norman, steve]
+    resources:
+      - generic-list
+      - generic-get
+      - generic-create
+      - generic-apply
+      - generic-patch
+      - generic-delete
+      - generic-action
+      - generic-link
+      - generic-watch
+
+risk_tiers:
+  tier_0:
+    description: Discovery and read-only
+  tier_1:
+    description: Safe and reversible writes
+  tier_2:
+    description: Impactful writes
+  tier_3:
+    description: Destructive or cluster-wide writes
