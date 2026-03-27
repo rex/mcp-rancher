@@ -110,6 +110,16 @@ operator-convenience tools that answer questions people actually ask during inci
 | `idea` | `find_only_one_venue_failing` | Narrow outage blast radius quickly | Cross-cluster comparison |
 | `idea` | `summarize_rollout_health_across_clusters` | Answer “did this rollout break some venues?” | Needs workload revision and readiness data |
 
+## Project / Namespace Helpers
+
+| Status | Candidate Tool | Problem It Solves | Notes |
+| --- | --- | --- | --- |
+| `strong` | `find_orphan_namespaces` | Surface namespaces not assigned to a Rancher project cleanly | Useful for governance drift and cleanup |
+| `strong` | `summarize_project_health` | One-call project overview | Project state, namespace membership, failing workloads, and service issues |
+| `strong` | `find_namespaces_for_project` | Collapse project-to-namespace lookup into one call | Very common when navigating Rancher ownership |
+| `idea` | `find_namespaces_with_project_drift` | Catch label/annotation ownership mismatch | Real Rancher namespaces carry both short and full project ids |
+| `idea` | `find_unassigned_namespaces` | Fast governance and security check | Especially useful after imports and migrations |
+
 ## Investigative Bundles
 
 | Status | Candidate Tool | Problem It Solves | Notes |

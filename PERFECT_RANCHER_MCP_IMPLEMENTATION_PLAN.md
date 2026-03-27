@@ -45,13 +45,14 @@ As of `2026-03-27`, the repo has already moved beyond pure planning:
   first curated read-only pack for Rancher settings and features is implemented and live-validated
   second curated read-only pack for Rancher clusters and nodes is implemented and live-validated
   third curated read-only pack for Rancher pods and services is implemented and live-validated
+  fourth curated read-only pack for Rancher projects and namespaces is implemented and live-validated
 - repo-local devlab and fixture tooling remain outside the shipped `src/rancher_mcp` package boundary
 - tool modules are being kept logically split instead of allowing a single discovery or resource file to grow unbounded
 
 The next high-value gaps are:
 
-- curated projects and namespaces reads
-- curated storage reads after that
+- curated storage reads
+- curated workload and maintenance helper reads after that
 - additional generic watch coverage where the live Rancher surface proves stable
 
 ---

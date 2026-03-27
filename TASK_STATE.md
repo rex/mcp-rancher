@@ -98,17 +98,25 @@ Implement the clean-slate Rancher MCP project phase-by-phase against the live Ra
 - live Rancher `2.6.5` validation completed for curated pod and service reads against the downstream
   cluster proxy surface
 - `make lint`, `make typecheck`, and `make test` passing for the current curated pods/services slice
+- fourth curated read-only pack implemented:
+  `rancher_projects_list`
+  `rancher_project_get`
+  `rancher_namespaces_list`
+  `rancher_namespace_get`
+- live Rancher `2.6.5` validation completed for curated project reads against Norman and curated
+  namespace reads against the downstream Steve proxy surface
+- `make lint`, `make typecheck`, and `make test` passing for the current curated projects/namespaces
+  slice
 
 ## In Progress
 
 - Phase 4 from the clean-slate plan:
-  expanding curated read-only packs on top of the validated generic layer with projects, namespaces,
-  and storage next
+  expanding curated read-only packs on top of the validated generic layer with storage-oriented reads next
 
 ## Next Steps
 
-1. Add the next curated read-only pack for projects and namespaces
-2. Continue outward from there into storage-oriented reads
+1. Add the next curated read-only pack for storage-oriented resources
+2. Continue outward from there into workload and maintenance helper packs
 3. Revisit the convenience-tool brainstorm once Tier 1 read coverage is in place
 
 ## Notes
@@ -129,5 +137,7 @@ Implement the clean-slate Rancher MCP project phase-by-phase against the live Ra
   `/api` group/version/resource layout per resource type
 - Curated pod and service reads are intentionally namespaced and typed rather than trying to hide Kubernetes
   scoping rules behind lossy global shortcuts
+- Curated project reads and curated namespace reads intentionally span Norman and Steve rather than forcing
+  those concepts into a single API plane that Rancher itself does not use
 - The convenience-tool brainstorm document is intentionally separate from the canonical implementation plan so
   rough ideas can accumulate without causing scope drift in the build sequence

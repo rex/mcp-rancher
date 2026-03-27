@@ -61,6 +61,11 @@
   `rancher_pod_get`
   `rancher_services_list`
   `rancher_service_get`
+- Fourth curated read-only tools:
+  `rancher_projects_list`
+  `rancher_project_get`
+  `rancher_namespaces_list`
+  `rancher_namespace_get`
 - Collaborative brainstorming document for future aggregate and convenience tools:
   `CONVENIENCE_TOOLS_BRAINSTORM.md`
 - Generic resource models and service helpers for schema-driven path resolution, query-param parsing, and normalized collection/detail output
@@ -96,6 +101,8 @@
   Steve `/v1/...` watch behavior is the correct contract
 - Added a dedicated curated pod/service tool module and model set instead of folding more typed resource logic
   into the existing cluster/node pack
+- Added a dedicated curated project/namespace tool module and model set to reflect the real Rancher split
+  between Norman project resources and Steve namespace resources
 
 ### Verified
 - `https://127.0.0.1:8443/ping` responds from the repo-managed lab
@@ -134,6 +141,9 @@
 - The curated pod/service tools execute successfully against the live Rancher `2.6.5` devlab for:
   pod list/get via `/k8s/clusters/venue-local/v1/pods/cattle-system`
   service list/get via `/k8s/clusters/venue-local/v1/services/cattle-system`
+- The curated project/namespace tools execute successfully against the live Rancher `2.6.5` devlab for:
+  project list/get via `/v3/projects`
+  namespace list/get via `/k8s/clusters/venue-local/v1/namespaces`
 - `make lint` passes
 - `make typecheck` passes
 - `make test` passes
