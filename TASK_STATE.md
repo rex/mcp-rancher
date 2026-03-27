@@ -34,7 +34,13 @@ Implement the clean-slate Rancher MCP project phase-by-phase against the live Ra
   Steve generic list/get
   schema-driven path resolution and normalized resource models
 - live Rancher `2.6.5` validation completed for generic Norman cluster and Steve pod list/get flows
-- `make lint`, `make typecheck`, and `make test` passing for the current discovery slice
+- generic action/link coverage implemented:
+  Norman generic action invoke and link follow
+  Steve generic action invoke and link follow
+  management-plane follow-up for Steve `view`-style links outside the Steve root
+- discovery and generic resource tools split into logically scoped modules with thin facades instead of growing monoliths
+- live Rancher `2.6.5` validation completed for Norman cluster action/link flows and Steve pod link-follow flows
+- `make lint`, `make typecheck`, and `make test` passing for the current generic action/link slice
 
 ## In Progress
 
@@ -45,11 +51,11 @@ Implement the clean-slate Rancher MCP project phase-by-phase against the live Ra
 
 ## Next Steps
 
-1. Extend generic fallback coverage with action invocation and link following
-2. Add generic query controls for selectors, sort, and pagination passthrough where Rancher supports them cleanly
-3. Capture and sanitize real Rancher `2.6.5` Norman and Steve schema/resource fixtures from the devlab
-4. Implement the remaining Phase 2 streaming client work for WebSocket-backed exec/log/watch flows
-5. Keep validating each new slice against the live devlab before moving deeper into curated packs
+1. Add generic query controls for selectors, sort, and pagination passthrough where Rancher supports them cleanly
+2. Capture and sanitize real Rancher `2.6.5` Norman and Steve schema/resource fixtures from the devlab
+3. Implement the remaining Phase 2 streaming client work for WebSocket-backed exec/log/watch flows
+4. Add generic watch/subscribe support where Rancher proxy behavior is stable enough to expose safely
+5. Begin the first curated read-only packs once the generic layer and fixture capture are strong enough
 
 ## Notes
 

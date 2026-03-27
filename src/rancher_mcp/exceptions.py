@@ -9,6 +9,10 @@ class ConfigurationError(RancherMCPError):
     """Raised when runtime configuration is invalid or incomplete."""
 
 
+class RancherCapabilityError(RancherMCPError):
+    """Raised when a requested schema capability is not available."""
+
+
 class RancherAPIError(RancherMCPError):
     """HTTP error returned by the Rancher API."""
 

@@ -8,9 +8,12 @@ from dataclasses import dataclass
 from typing import cast
 from urllib.parse import quote, urlsplit
 
+from rancher_mcp.exceptions import RancherCapabilityError
 from rancher_mcp.models.resources import (
+    GenericResourceActionResult,
     GenericResourceDetail,
     GenericResourceItem,
+    GenericResourceLinkResult,
     GenericResourceList,
     ResourcePagination,
 )
@@ -37,7 +40,7 @@ def parse_query_params(params_json: str | None) -> dict[str, QueryParamValue]:
 
     decoded: object = json.loads(params_json)
     if not isinstance(decoded, dict):
-        raise ValueError("params_json must decode to an object")
+        raise RancherCapabilityError("params_json must decode to an object")
 
     params: dict[str, QueryParamValue] = {}
     raw_params = cast(dict[str, object], decoded)
@@ -51,8 +54,22 @@ def parse_query_params(params_json: str | None) -> dict[str, QueryParamValue]:
         if isinstance(value, str):
             params[key] = value
             continue
-        raise ValueError(f"params_json field {key!r} must be a string, integer, or boolean value")
+        raise RancherCapabilityError(
+            f"params_json field {key!r} must be a string, integer, or boolean value"
+        )
     return params
+
+
+def parse_payload_object(payload_json: str | None) -> dict[str, object]:
+    """Parse a JSON object payload for action invocation."""
+
+    if payload_json is None or not payload_json.strip():
+        return {}
+
+    decoded: object = json.loads(payload_json)
+    if not isinstance(decoded, dict):
+        raise RancherCapabilityError("payload_json must decode to an object")
+    return cast(dict[str, object], decoded)
 
 
 def schema_reference_from_payload(
@@ -66,7 +83,7 @@ def schema_reference_from_payload(
 
     raw_plural_name = payload.get("pluralName")
     if not isinstance(raw_plural_name, str) or not raw_plural_name:
-        raise ValueError(f"Schema {schema_id!r} did not include a pluralName")
+        raise RancherCapabilityError(f"Schema {schema_id!r} did not include a pluralName")
 
     links = _mapping(payload.get("links"))
     collection_value = links.get("collection") if links is not None else None
@@ -237,6 +254,88 @@ def build_resource_item(
     )
 
 
+def resolve_resource_action_path(
+    *,
+    action_name: str,
+    payload: Mapping[str, object],
+) -> str:
+    """Resolve an action path from a resource payload."""
+
+    return _named_path(
+        container_key="actions",
+        entry_name=action_name,
+        payload=payload,
+    )
+
+
+def resolve_resource_link_path(
+    *,
+    link_name: str,
+    payload: Mapping[str, object],
+) -> str:
+    """Resolve a link path from a resource payload."""
+
+    return _named_path(
+        container_key="links",
+        entry_name=link_name,
+        payload=payload,
+    )
+
+
+def build_resource_action_result(
+    *,
+    instance: str,
+    plane: str,
+    schema_id: str,
+    resource_id: str,
+    action_name: str,
+    action_path: str,
+    payload: Mapping[str, object],
+    cluster_id: str | None = None,
+    namespace: str | None = None,
+) -> GenericResourceActionResult:
+    """Normalize a resource action response."""
+
+    return GenericResourceActionResult(
+        instance=instance,
+        plane=plane,
+        schema_id=schema_id,
+        resource_id=resource_id,
+        action_name=action_name,
+        cluster_id=cluster_id,
+        namespace=namespace,
+        action_path=action_path,
+        payload=dict(payload),
+    )
+
+
+def build_resource_link_result(
+    *,
+    instance: str,
+    plane: str,
+    schema_id: str,
+    resource_id: str,
+    link_name: str,
+    link_path: str,
+    payload: Mapping[str, object],
+    cluster_id: str | None = None,
+    namespace: str | None = None,
+) -> GenericResourceLinkResult:
+    """Normalize a resource link-follow response."""
+
+    return GenericResourceLinkResult(
+        instance=instance,
+        plane=plane,
+        schema_id=schema_id,
+        resource_id=resource_id,
+        link_name=link_name,
+        cluster_id=cluster_id,
+        namespace=namespace,
+        link_path=link_path,
+        payload=dict(payload),
+    )
+
+
 def _pagination_from_payload(payload: object) -> ResourcePagination | None:
     """Normalize pagination metadata from a collection payload."""
 
@@ -286,6 +385,19 @@ def _path_from_value(value: object) -> str | None:
     return value
 
 
+def _request_target_from_value(value: object) -> str | None:
+    """Extract a request target preserving any query string."""
+
+    if not isinstance(value, str) or not value:
+        return None
+    parsed = urlsplit(value)
+    if not parsed.scheme:
+        return value
+    if parsed.query:
+        return f"{parsed.path}?{parsed.query}"
+    return parsed.path or None
+
+
 def _to_steve_relative_path(path: str, cluster_id: str | None) -> str:
     """Strip the Steve root prefix from a cluster-qualified path."""
 
@@ -331,3 +443,24 @@ def _mapping_list(payload: object) -> list[Mapping[str, object]]:
         return []
     items = cast(list[object], payload)
     return [mapping for item in items if (mapping := _mapping(item)) is not None]
+
+
+def _named_path(
+    *,
+    container_key: str,
+    entry_name: str,
+    payload: Mapping[str, object],
+) -> str:
+    """Resolve a named action or link path from a resource payload."""
+
+    container = _mapping(payload.get(container_key))
+    if container is None:
+        raise RancherCapabilityError(f"Resource did not include any {container_key}")
+
+    raw_value = container.get(entry_name)
+    path = _request_target_from_value(raw_value)
+    if path is None:
+        raise RancherCapabilityError(
+            f"Resource did not include {container_key[:-1]} {entry_name!r}"
+        )
+    return path

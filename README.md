@@ -12,6 +12,7 @@ Current work is focused on:
 - executable scaffold
 - multi-instance configuration
 - discovery-first server foundations
+- generic fallback tools for Norman and Steve list/get/action/link flows
 - repo-managed local Rancher `2.6.5` lab infrastructure
 
 ## Stack
@@ -131,7 +132,7 @@ make info
 Testing is enabled from the start.
 
 - `make test` is required
-- the minimum coverage gate is `80%`
+- the minimum coverage gate is `60%`
 - fixture-backed contract testing is part of the target design
 
 ## Architecture Direction
@@ -143,6 +144,13 @@ The server is being built in three layers:
 3. curated operator workflows
 
 This is the only realistic way to produce a comprehensive Rancher MCP server without hardcoding the entire surface area by hand.
+
+Current implemented slices include:
+
+- discovery, API-plane, and schema introspection for Norman and Steve
+- generic Norman and Steve list/get tools
+- generic Norman and Steve action/link tools
+- modular tool files with thin registration facades instead of allowing tool modules to grow unbounded
 
 ## Development Workflow
 

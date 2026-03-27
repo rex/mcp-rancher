@@ -27,9 +27,16 @@
   `rancher_norman_resource_get`
   `rancher_steve_resource_list`
   `rancher_steve_resource_get`
+- Continued Phase 3 generic fallback tools:
+  `rancher_norman_resource_action_invoke`
+  `rancher_norman_resource_link_follow`
+  `rancher_steve_resource_action_invoke`
+  `rancher_steve_resource_link_follow`
 - Generic resource models and service helpers for schema-driven path resolution, query-param parsing, and normalized collection/detail output
 - Unit and HTTP boundary coverage for Steve discovery behavior and schema normalization
 - Unit coverage for generic Norman and Steve list/get behavior
+- Unit coverage for generic Norman and Steve action/link behavior
+- HTTP boundary coverage for management-plane JSON POST behavior
 
 ### Changed
 - Replaced the abandoned single-container Rancher devlab path with the validated Helm-on-kind topology
@@ -38,9 +45,12 @@
 - Added a Rancher-specific downstream agent convergence loop to absorb post-import mutations in the local topology
 - Enabled management-cluster component health compatibility patches for Rancher `2.6.5`
 - Lowered the enforced repo coverage threshold from `80%` to `60%` to match the baseline repo posture
+- Split the discovery and generic resource tool layers into logically scoped modules with thin registration facades to avoid unbounded tool-file growth
 - Registered the new discovery handlers through MCP-safe public wrappers while keeping injectable internal functions for tests and live probes
 - Tightened schema normalization typing so strict pyright accepts the discovery layer cleanly
 - Registered the first generic fallback tools with FastMCP and normalized namespaced Steve collection handling to the live Rancher `2.6.5` `/pods/{namespace}` convention
+- Added typed management-client JSON POST support so generic action invocation uses the same HTTP boundary and error mapping as reads
+- Preserved query strings when following action URLs so Rancher `?action=...` endpoints execute correctly
 
 ### Verified
 - `https://127.0.0.1:8443/ping` responds from the repo-managed lab
@@ -53,6 +63,10 @@
 - New generic Norman and Steve resource list/get tools execute successfully against the live Rancher `2.6.5` devlab, including:
   Norman `cluster` list/get via `/v3/clusters`
   Steve namespaced `pod` list/get via `/pods/cattle-system`
+- New generic Norman and Steve action/link tools execute successfully against the live Rancher `2.6.5` devlab, including:
+  Norman `cluster` action `generateKubeconfig`
+  Norman `cluster` link `nodes`
+  Steve `pod` link `view` against the Rancher proxied Kubernetes API
 - `make lint` passes
 - `make typecheck` passes
 - `make test` passes

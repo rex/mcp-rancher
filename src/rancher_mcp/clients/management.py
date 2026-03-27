@@ -36,6 +36,15 @@ class ManagementDiscoveryClient(Protocol):
         """Perform a text GET request."""
         ...
 
+    async def post_json(
+        self,
+        path: str,
+        payload: Mapping[str, object] | None = None,
+        params: Mapping[str, str | int | bool] | None = None,
+    ) -> dict[str, object]:
+        """Perform a JSON POST request."""
+        ...
+
 
 class RancherManagementClient:
     """Async HTTP client for Rancher management-plane endpoints."""
@@ -83,6 +92,21 @@ class RancherManagementClient:
         if not isinstance(payload, dict):
             raise RancherAPIError(response.status_code, "Expected a JSON object response")
         return cast(dict[str, object], payload)
+
+    async def post_json(
+        self,
+        path: str,
+        payload: Mapping[str, object] | None = None,
+        params: Mapping[str, str | int | bool] | None = None,
+    ) -> dict[str, object]:
+        """Perform a POST request expecting a JSON object."""
+
+        response = await self._client.post(path, params=params, json=dict(payload or {}))
+        self._raise_for_status(response)
+        decoded: object = response.json()
+        if not isinstance(decoded, dict):
+            raise RancherAPIError(response.status_code, "Expected a JSON object response")
+        return cast(dict[str, object], decoded)
 
     async def get_text(
         self,

@@ -49,3 +49,24 @@ async def test_get_json_maps_not_found_error() -> None:
     async with RancherManagementClient("work", build_config()) as client:
         with pytest.raises(RancherNotFoundError):
             await client.get_json("/v3/settings/server-version")
+
+
+@pytest.mark.asyncio
+@respx.mock
+async def test_post_json_sends_payload_and_auth_header() -> None:
+    """JSON POST requests should include bearer auth and return decoded payloads."""
+
+    route = respx.post(
+        "https://rancher.example.com/v3/clusters/local",
+        params={"action": "generateKubeconfig"},
+    ).mock(return_value=httpx.Response(200, json={"config": "apiVersion: v1"}))
+
+    async with RancherManagementClient("work", build_config()) as client:
+        result = await client.post_json(
+            "/v3/clusters/local",
+            params={"action": "generateKubeconfig"},
+        )
+
+    assert result == {"config": "apiVersion: v1"}
+    assert route.called
+    assert route.calls.last.request.headers["Authorization"].startswith("Bearer ")

@@ -61,3 +61,31 @@ class GenericResourceDetail(BaseModel):
     action_keys: list[str] = Field(default_factory=list)
     link_keys: list[str] = Field(default_factory=list)
     payload: dict[str, object] = Field(default_factory=dict)
+
+
+class GenericResourceActionResult(BaseModel):
+    """Normalized result from invoking a resource action."""
+
+    instance: str
+    plane: str
+    schema_id: str
+    resource_id: str
+    action_name: str
+    cluster_id: str | None = None
+    namespace: str | None = None
+    action_path: str
+    payload: dict[str, object] = Field(default_factory=dict)
+
+
+class GenericResourceLinkResult(BaseModel):
+    """Normalized result from following a resource link."""
+
+    instance: str
+    plane: str
+    schema_id: str
+    resource_id: str
+    link_name: str
+    cluster_id: str | None = None
+    namespace: str | None = None
+    link_path: str
+    payload: dict[str, object] = Field(default_factory=dict)
