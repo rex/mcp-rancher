@@ -16,8 +16,10 @@ Current work is focused on:
 - live-validated streaming substrate for log tail, exec, and watch-style flows
 - first generic Steve watch tool over the Rancher Kubernetes proxy
 - first curated read-only pack for Rancher settings and features
+- second curated read-only pack for Rancher clusters and nodes
 - committed sanitized Rancher `2.6.5` contract fixtures with a repo-local regeneration path
 - repo-managed local Rancher `2.6.5` lab infrastructure
+- collaborative brainstorming document for future aggregate/convenience tools
 
 ## Stack
 
@@ -49,6 +51,7 @@ scripts/                 repo-local helper entrypoints
 src/rancher_mcp/         application package
 tests/                   unit and HTTP-boundary tests
 VIBE.yaml                machine-readable repo policy
+CONVENIENCE_TOOLS_BRAINSTORM.md collaborative brainstorm for higher-level helper tools
 ```
 
 ## Setup
@@ -166,6 +169,7 @@ Current implemented slices include:
 - async streaming primitives for HTTP line streams, JSON watch streams, and Kubernetes-channel WebSocket capture
 - generic Steve watch tools that derive raw Kubernetes proxy paths from Steve schema metadata
 - curated typed read tools for Rancher settings and features
+- curated typed read tools for Rancher clusters and nodes
 - normalized generic list results that report the applied query params sent to Rancher
 - repo-local capture tooling and committed sanitized Norman/Steve contract fixtures for Rancher `2.6.5`
 - modular tool files with thin registration facades instead of allowing tool modules to grow unbounded

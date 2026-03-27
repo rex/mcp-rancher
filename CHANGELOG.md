@@ -51,6 +51,13 @@
   `rancher_setting_get`
   `rancher_features_list`
   `rancher_feature_get`
+- Second curated read-only tools:
+  `rancher_clusters_list`
+  `rancher_cluster_get`
+  `rancher_nodes_list`
+  `rancher_node_get`
+- Collaborative brainstorming document for future aggregate and convenience tools:
+  `CONVENIENCE_TOOLS_BRAINSTORM.md`
 - Generic resource models and service helpers for schema-driven path resolution, query-param parsing, and normalized collection/detail output
 - Unit and HTTP boundary coverage for Steve discovery behavior and schema normalization
 - Unit coverage for generic Norman and Steve list/get behavior
@@ -114,6 +121,9 @@
 - The curated settings/features tools execute successfully against the live Rancher `2.6.5` devlab for:
   settings list/get via `/v3/settings`
   features list/get via `/v3/features`
+- The curated cluster/node tools execute successfully against the live Rancher `2.6.5` devlab for:
+  cluster list/get via `/v3/clusters`
+  node list/get via `/v3/nodes`
 - `make lint` passes
 - `make typecheck` passes
 - `make test` passes

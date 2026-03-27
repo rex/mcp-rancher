@@ -81,17 +81,26 @@ Implement the clean-slate Rancher MCP project phase-by-phase against the live Ra
   `rancher_feature_get`
 - live Rancher `2.6.5` validation completed for curated settings and feature reads against the management plane
 - `make lint`, `make typecheck`, and `make test` passing for the current curated settings/features slice
+- collaborative brainstorming document created at repo root:
+  `CONVENIENCE_TOOLS_BRAINSTORM.md`
+- second curated read-only pack implemented:
+  `rancher_clusters_list`
+  `rancher_cluster_get`
+  `rancher_nodes_list`
+  `rancher_node_get`
+- live Rancher `2.6.5` validation completed for curated cluster and node reads against the management plane
+- `make lint`, `make typecheck`, and `make test` passing for the current curated clusters/nodes slice
 
 ## In Progress
 
 - Phase 4 from the clean-slate plan:
-  expanding curated read-only packs on top of the validated generic layer
+  expanding curated read-only packs on top of the validated generic layer with pods and services next
 
 ## Next Steps
 
-1. Add the next curated read-only pack, likely clusters/nodes/projects or pods/services/storage
-2. Add additional generic watch/subscribe coverage where Rancher proxy behavior is stable enough to expose safely
-3. Expand live fixture coverage for curated read packs once their contracts are stable
+1. Add the next curated read-only pack for pods and services
+2. Continue outward from there into projects/namespaces/storage as the next operational reads
+3. Revisit the convenience-tool brainstorm once Tier 1 read coverage is in place
 
 ## Notes
 
@@ -109,3 +118,5 @@ Implement the clean-slate Rancher MCP project phase-by-phase against the live Ra
   when opened on a fresh connection after the supervisor restabilizes the forwarder
 - Steve schema metadata is rich enough to derive raw Rancher Kubernetes-proxy watch paths without hardcoding
   `/api` group/version/resource layout per resource type
+- The convenience-tool brainstorm document is intentionally separate from the canonical implementation plan so
+  rough ideas can accumulate without causing scope drift in the build sequence

@@ -43,12 +43,14 @@ As of `2026-03-27`, the repo has already moved beyond pure planning:
   sanitized live Rancher `2.6.5` contract fixtures are committed and regenerable through repo-local tooling
 - Phase 4 is started:
   first curated read-only pack for Rancher settings and features is implemented and live-validated
+  second curated read-only pack for Rancher clusters and nodes is implemented and live-validated
 - repo-local devlab and fixture tooling remain outside the shipped `src/rancher_mcp` package boundary
 - tool modules are being kept logically split instead of allowing a single discovery or resource file to grow unbounded
 
 The next high-value gaps are:
 
-- additional curated read-only packs
+- curated pods and services reads
+- additional curated read-only packs after that
 - additional generic watch coverage where the live Rancher surface proves stable
 
 ---
