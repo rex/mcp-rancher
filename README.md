@@ -17,6 +17,7 @@ Current work is focused on:
 - first generic Steve watch tool over the Rancher Kubernetes proxy
 - first curated read-only pack for Rancher settings and features
 - second curated read-only pack for Rancher clusters and nodes
+- third curated read-only pack for Rancher pods and services
 - committed sanitized Rancher `2.6.5` contract fixtures with a repo-local regeneration path
 - repo-managed local Rancher `2.6.5` lab infrastructure
 - collaborative brainstorming document for future aggregate/convenience tools
@@ -170,6 +171,7 @@ Current implemented slices include:
 - generic Steve watch tools that derive raw Kubernetes proxy paths from Steve schema metadata
 - curated typed read tools for Rancher settings and features
 - curated typed read tools for Rancher clusters and nodes
+- curated typed read tools for Rancher pods and services
 - normalized generic list results that report the applied query params sent to Rancher
 - repo-local capture tooling and committed sanitized Norman/Steve contract fixtures for Rancher `2.6.5`
 - modular tool files with thin registration facades instead of allowing tool modules to grow unbounded

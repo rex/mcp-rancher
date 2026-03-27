@@ -56,6 +56,11 @@
   `rancher_cluster_get`
   `rancher_nodes_list`
   `rancher_node_get`
+- Third curated read-only tools:
+  `rancher_pods_list`
+  `rancher_pod_get`
+  `rancher_services_list`
+  `rancher_service_get`
 - Collaborative brainstorming document for future aggregate and convenience tools:
   `CONVENIENCE_TOOLS_BRAINSTORM.md`
 - Generic resource models and service helpers for schema-driven path resolution, query-param parsing, and normalized collection/detail output
@@ -89,6 +94,8 @@
 - Moved the repo-local devlab CLI out of `src/rancher_mcp` into `devtools/` so lab workflows are not shipped with the MCP package
 - Generic Steve watch tools now derive raw Kubernetes proxy paths from Steve schema metadata instead of assuming
   Steve `/v1/...` watch behavior is the correct contract
+- Added a dedicated curated pod/service tool module and model set instead of folding more typed resource logic
+  into the existing cluster/node pack
 
 ### Verified
 - `https://127.0.0.1:8443/ping` responds from the repo-managed lab
@@ -124,6 +131,9 @@
 - The curated cluster/node tools execute successfully against the live Rancher `2.6.5` devlab for:
   cluster list/get via `/v3/clusters`
   node list/get via `/v3/nodes`
+- The curated pod/service tools execute successfully against the live Rancher `2.6.5` devlab for:
+  pod list/get via `/k8s/clusters/venue-local/v1/pods/cattle-system`
+  service list/get via `/k8s/clusters/venue-local/v1/services/cattle-system`
 - `make lint` passes
 - `make typecheck` passes
 - `make test` passes

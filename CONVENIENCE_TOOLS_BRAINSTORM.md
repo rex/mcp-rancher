@@ -81,6 +81,8 @@ operator-convenience tools that answer questions people actually ask during inci
 | `strong` | `explain_pod_not_ready` | Translate pod/container state into cause | Events, container statuses, probes, scheduling |
 | `strong` | `find_restarting_pods` | Highlight instability | Include restart counts and likely impact |
 | `strong` | `find_system_namespace_failures` | Quickly catch failures in `cattle-*`, `kube-system`, ingress, storage namespaces | High operational value |
+| `strong` | `summarize_pod_health` | One-call pod diagnosis | Conditions, container states, restarts, owner, node, and likely next checks |
+| `idea` | `find_pods_on_node` | Fast blast-radius lookup for node incidents | Useful before cordon/drain and for readiness triage |
 | `idea` | `find_stuck_terminating_pods` | Surface cleanup/drain blockers | Good before node maintenance |
 | `idea` | `find_pending_pods_with_reasons` | Scheduling triage | Resources, affinity, taints, PVC, image pull |
 | `idea` | `summarize_workload_rollout_health` | One-call deployment/statefulset rollout summary | Useful during releases and incident rollback checks |
@@ -92,6 +94,8 @@ operator-convenience tools that answer questions people actually ask during inci
 | `strong` | `summarize_service_health` | Service + endpoints + backing pods in one call | Very common investigation path |
 | `strong` | `find_services_without_endpoints` | Fast outage signal | Useful across namespace or cluster |
 | `strong` | `explain_service_without_endpoints` | Diagnose selector, pod readiness, or endpoint object issues | Strong candidate convenience tool |
+| `strong` | `find_pods_for_service` | Collapse selector-to-backend lookup into one call | Extremely common during service outage checks |
+| `idea` | `summarize_service_backends` | Quick backend topology for one service | Service, endpoints, pods, owner workloads |
 | `idea` | `trace_service_to_workloads` | Map service -> endpoints -> pods -> owning workloads | Great convenience tool |
 | `idea` | `summarize_ingress_traffic_health` | Front-door health rollup | Later, once ingress reads are in |
 | `idea` | `find_broken_service_routes` | Detect obvious traffic breakage | Services, endpoints, ingresses, target pods |

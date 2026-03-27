@@ -90,16 +90,25 @@ Implement the clean-slate Rancher MCP project phase-by-phase against the live Ra
   `rancher_node_get`
 - live Rancher `2.6.5` validation completed for curated cluster and node reads against the management plane
 - `make lint`, `make typecheck`, and `make test` passing for the current curated clusters/nodes slice
+- third curated read-only pack implemented:
+  `rancher_pods_list`
+  `rancher_pod_get`
+  `rancher_services_list`
+  `rancher_service_get`
+- live Rancher `2.6.5` validation completed for curated pod and service reads against the downstream
+  cluster proxy surface
+- `make lint`, `make typecheck`, and `make test` passing for the current curated pods/services slice
 
 ## In Progress
 
 - Phase 4 from the clean-slate plan:
-  expanding curated read-only packs on top of the validated generic layer with pods and services next
+  expanding curated read-only packs on top of the validated generic layer with projects, namespaces,
+  and storage next
 
 ## Next Steps
 
-1. Add the next curated read-only pack for pods and services
-2. Continue outward from there into projects/namespaces/storage as the next operational reads
+1. Add the next curated read-only pack for projects and namespaces
+2. Continue outward from there into storage-oriented reads
 3. Revisit the convenience-tool brainstorm once Tier 1 read coverage is in place
 
 ## Notes
@@ -118,5 +127,7 @@ Implement the clean-slate Rancher MCP project phase-by-phase against the live Ra
   when opened on a fresh connection after the supervisor restabilizes the forwarder
 - Steve schema metadata is rich enough to derive raw Rancher Kubernetes-proxy watch paths without hardcoding
   `/api` group/version/resource layout per resource type
+- Curated pod and service reads are intentionally namespaced and typed rather than trying to hide Kubernetes
+  scoping rules behind lossy global shortcuts
 - The convenience-tool brainstorm document is intentionally separate from the canonical implementation plan so
   rough ideas can accumulate without causing scope drift in the build sequence
