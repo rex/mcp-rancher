@@ -46,6 +46,11 @@
   bounded WebSocket capture with Kubernetes channel decoding
 - First generic watch tool:
   `rancher_steve_resource_watch`
+- First curated read-only tools:
+  `rancher_settings_list`
+  `rancher_setting_get`
+  `rancher_features_list`
+  `rancher_feature_get`
 - Generic resource models and service helpers for schema-driven path resolution, query-param parsing, and normalized collection/detail output
 - Unit and HTTP boundary coverage for Steve discovery behavior and schema normalization
 - Unit coverage for generic Norman and Steve list/get behavior
@@ -106,6 +111,9 @@
   pod watch events over streamed JSON lines on a fresh post-restart connection
 - The public `rancher_steve_resource_watch` tool executes successfully against the live Rancher `2.6.5`
   devlab for downstream pod lifecycle events
+- The curated settings/features tools execute successfully against the live Rancher `2.6.5` devlab for:
+  settings list/get via `/v3/settings`
+  features list/get via `/v3/features`
 - `make lint` passes
 - `make typecheck` passes
 - `make test` passes

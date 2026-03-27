@@ -41,12 +41,14 @@ As of `2026-03-27`, the repo has already moved beyond pure planning:
   marker, selector, and pagination flows
   generic Steve watch support is implemented and live-validated through Rancher's raw Kubernetes proxy paths
   sanitized live Rancher `2.6.5` contract fixtures are committed and regenerable through repo-local tooling
+- Phase 4 is started:
+  first curated read-only pack for Rancher settings and features is implemented and live-validated
 - repo-local devlab and fixture tooling remain outside the shipped `src/rancher_mcp` package boundary
 - tool modules are being kept logically split instead of allowing a single discovery or resource file to grow unbounded
 
 The next high-value gaps are:
 
-- first curated read-only packs
+- additional curated read-only packs
 - additional generic watch coverage where the live Rancher surface proves stable
 
 ---

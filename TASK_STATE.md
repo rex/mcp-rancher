@@ -74,17 +74,24 @@ Implement the clean-slate Rancher MCP project phase-by-phase against the live Ra
   Rancher Kubernetes proxy instead of assuming Steve `/v1/...` watch semantics
 - live Rancher `2.6.5` validation completed for the public generic Steve watch tool against downstream pod events
 - `make lint`, `make typecheck`, and `make test` passing for the current generic watch slice
+- first curated read-only pack implemented:
+  `rancher_settings_list`
+  `rancher_setting_get`
+  `rancher_features_list`
+  `rancher_feature_get`
+- live Rancher `2.6.5` validation completed for curated settings and feature reads against the management plane
+- `make lint`, `make typecheck`, and `make test` passing for the current curated settings/features slice
 
 ## In Progress
 
 - Phase 4 from the clean-slate plan:
-  beginning the first curated read-only packs on top of the validated generic layer
+  expanding curated read-only packs on top of the validated generic layer
 
 ## Next Steps
 
-1. Begin the first curated read-only pack, likely server/settings/features or cluster/node/pod reads
+1. Add the next curated read-only pack, likely clusters/nodes/projects or pods/services/storage
 2. Add additional generic watch/subscribe coverage where Rancher proxy behavior is stable enough to expose safely
-3. Expand live fixture coverage for the first curated pack once its contracts are stable
+3. Expand live fixture coverage for curated read packs once their contracts are stable
 
 ## Notes
 
