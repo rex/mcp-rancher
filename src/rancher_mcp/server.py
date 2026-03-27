@@ -3,6 +3,7 @@
 from mcp.server.fastmcp import FastMCP
 
 from rancher_mcp.tools.discovery import register_discovery_tools
+from rancher_mcp.tools.resources import register_resource_tools
 
 
 def create_mcp_server() -> FastMCP:
@@ -13,6 +14,7 @@ def create_mcp_server() -> FastMCP:
         instructions="Capability-aware Rancher MCP server for Rancher 2.6.5",
     )
     register_discovery_tools(mcp)
+    register_resource_tools(mcp)
     return mcp
 
 

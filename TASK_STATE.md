@@ -29,21 +29,26 @@ Implement the clean-slate Rancher MCP project phase-by-phase against the live Ra
 - `make lint`, `make typecheck`, and `make test-unit` passing with the live devlab running
 - Norman and Steve discovery/schema tools implemented and registered safely with FastMCP
 - live Rancher `2.6.5` validation completed for API plane discovery plus Norman/Steve schema detail lookups
+- first Phase 3 generic fallback tools implemented:
+  Norman generic list/get
+  Steve generic list/get
+  schema-driven path resolution and normalized resource models
+- live Rancher `2.6.5` validation completed for generic Norman cluster and Steve pod list/get flows
 - `make lint`, `make typecheck`, and `make test` passing for the current discovery slice
 
 ## In Progress
 
-- Phase 2 from the clean-slate plan:
-  closing the remaining client/discovery-layer gaps after schema discovery
+- Phase 3 from the clean-slate plan:
+  expanding generic fallback coverage beyond list/get
   preparing sanitized Rancher `2.6.5` contract fixtures from the devlab
-  planning the handoff into the Phase 3 generic tool engine
+  closing the remaining Phase 2 streaming-client gap for WebSocket-backed operations
 
 ## Next Steps
 
-1. Capture and sanitize real Rancher `2.6.5` Norman and Steve schema fixtures from the devlab
-2. Implement the remaining Phase 2 streaming client work for WebSocket-backed exec/log/watch flows
-3. Begin Phase 3 generic fallback tools with schema-driven type listing and resource get/list operations
-4. Extend discovery output to expose action and link introspection for generic invocation
+1. Extend generic fallback coverage with action invocation and link following
+2. Add generic query controls for selectors, sort, and pagination passthrough where Rancher supports them cleanly
+3. Capture and sanitize real Rancher `2.6.5` Norman and Steve schema/resource fixtures from the devlab
+4. Implement the remaining Phase 2 streaming client work for WebSocket-backed exec/log/watch flows
 5. Keep validating each new slice against the live devlab before moving deeper into curated packs
 
 ## Notes
