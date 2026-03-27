@@ -44,6 +44,8 @@
   bounded HTTP text-line capture
   bounded HTTP JSON-event capture
   bounded WebSocket capture with Kubernetes channel decoding
+- First generic watch tool:
+  `rancher_steve_resource_watch`
 - Generic resource models and service helpers for schema-driven path resolution, query-param parsing, and normalized collection/detail output
 - Unit and HTTP boundary coverage for Steve discovery behavior and schema normalization
 - Unit coverage for generic Norman and Steve list/get behavior
@@ -73,6 +75,8 @@
 - Raw live fixture captures now land under `.lab/contract-fixtures/raw` while only sanitized fixtures are committed
 - Expanded `make typecheck` to include repo-local `devtools/` and `scripts/`, not just the shipped `src/` package
 - Moved the repo-local devlab CLI out of `src/rancher_mcp` into `devtools/` so lab workflows are not shipped with the MCP package
+- Generic Steve watch tools now derive raw Kubernetes proxy paths from Steve schema metadata instead of assuming
+  Steve `/v1/...` watch behavior is the correct contract
 
 ### Verified
 - `https://127.0.0.1:8443/ping` responds from the repo-managed lab
@@ -100,6 +104,8 @@
   pod log streaming through the Rancher Kubernetes proxy
   pod exec over WebSocket with negotiated `v4.channel.k8s.io`
   pod watch events over streamed JSON lines on a fresh post-restart connection
+- The public `rancher_steve_resource_watch` tool executes successfully against the live Rancher `2.6.5`
+  devlab for downstream pod lifecycle events
 - `make lint` passes
 - `make typecheck` passes
 - `make test` passes

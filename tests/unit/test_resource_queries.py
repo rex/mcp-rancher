@@ -8,6 +8,7 @@ from rancher_mcp.services.resource_queries import (
     build_steve_list_query_params,
     parse_query_params,
 )
+from rancher_mcp.services.resource_watch import build_steve_watch_query_params
 
 
 def test_parse_query_params_rejects_non_object_payload() -> None:
@@ -77,3 +78,32 @@ def test_build_steve_list_query_params_maps_selectors_and_continue_token() -> No
         "labelSelector": "app=test",
         "fieldSelector": "metadata.name=test-pod",
     }
+
+
+def test_build_steve_watch_query_params_sets_reserved_stream_controls() -> None:
+    """Watch query helpers should force Rancher's watch-specific query params."""
+
+    params = build_steve_watch_query_params(
+        label_selector="app=test",
+        field_selector="metadata.name=test-pod",
+        timeout_seconds=15,
+        params_json='{"resourceVersion": "12345"}',
+    )
+
+    assert params == {
+        "labelSelector": "app=test",
+        "fieldSelector": "metadata.name=test-pod",
+        "resourceVersion": "12345",
+        "watch": True,
+        "timeoutSeconds": 15,
+    }
+
+
+def test_build_steve_watch_query_params_rejects_reserved_passthrough_keys() -> None:
+    """Raw watch params must not shadow the reserved watch controls."""
+
+    with pytest.raises(
+        RancherCapabilityError,
+        match="reserved watch query params: watch, timeoutSeconds",
+    ):
+        build_steve_watch_query_params(params_json='{"watch": false}')

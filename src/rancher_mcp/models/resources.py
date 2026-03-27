@@ -9,6 +9,12 @@ def _empty_resource_items() -> list["GenericResourceItem"]:
     return []
 
 
+def _empty_watch_events() -> list["GenericResourceWatchEvent"]:
+    """Return a typed empty watch-event list for Pydantic default factories."""
+
+    return []
+
+
 class ResourcePagination(BaseModel):
     """Normalized pagination metadata for a resource collection."""
 
@@ -96,3 +102,31 @@ class GenericResourceLinkResult(BaseModel):
     namespace: str | None = None
     link_path: str
     payload: dict[str, object] = Field(default_factory=dict)
+
+
+class GenericResourceWatchEvent(BaseModel):
+    """Normalized watch event for one Rancher-proxied Kubernetes resource change."""
+
+    event_type: str
+    resource_id: str | None = None
+    resource_type: str | None = None
+    name: str | None = None
+    namespace: str | None = None
+    resource_path: str | None = None
+    payload: dict[str, object] = Field(default_factory=dict)
+
+
+class GenericResourceWatchResult(BaseModel):
+    """Normalized generic watch result for one Steve schema type."""
+
+    instance: str
+    plane: str
+    schema_id: str
+    plural_name: str
+    cluster_id: str | None = None
+    namespace: str | None = None
+    watch_path: str
+    event_count: int
+    truncated: bool = False
+    applied_query_params: dict[str, str | int | bool] = Field(default_factory=dict)
+    events: list[GenericResourceWatchEvent] = Field(default_factory=_empty_watch_events)

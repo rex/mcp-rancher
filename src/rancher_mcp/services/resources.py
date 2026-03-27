@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import cast
 from urllib.parse import parse_qs, quote, urlsplit
@@ -15,6 +15,8 @@ from rancher_mcp.models.resources import (
     GenericResourceItem,
     GenericResourceLinkResult,
     GenericResourceList,
+    GenericResourceWatchEvent,
+    GenericResourceWatchResult,
     ResourcePagination,
 )
 
@@ -28,6 +30,10 @@ class ResourceSchemaReference:
     plural_name: str
     collection_path: str
     namespaced: bool = False
+    api_group: str | None = None
+    api_version: str | None = None
+    api_resource: str | None = None
+    verbs: tuple[str, ...] = ()
 
 
 def parse_payload_object(payload_json: str | None) -> dict[str, object]:
@@ -40,6 +46,19 @@ def parse_payload_object(payload_json: str | None) -> dict[str, object]:
     if not isinstance(decoded, dict):
         raise RancherCapabilityError("payload_json must decode to an object")
     return cast(dict[str, object], decoded)
+
+
+def _string_tuple(value: object) -> tuple[str, ...]:
+    """Normalize an arbitrary JSON value into a tuple of strings."""
+
+    if not isinstance(value, list):
+        return ()
+    items: list[str] = []
+    typed_values = cast(list[object], value)
+    for item in typed_values:
+        if isinstance(item, str):
+            items.append(item)
+    return tuple(items)
 
 
 def schema_reference_from_payload(
@@ -68,6 +87,10 @@ def schema_reference_from_payload(
     attributes = _mapping(payload.get("attributes"))
     raw_namespaced = attributes.get("namespaced") if attributes is not None else None
     namespaced = raw_namespaced is True
+    raw_group = attributes.get("group") if attributes is not None else None
+    raw_version = attributes.get("version") if attributes is not None else None
+    raw_resource = attributes.get("resource") if attributes is not None else None
+    raw_verbs = attributes.get("verbs") if attributes is not None else None
 
     return ResourceSchemaReference(
         plane=plane,
@@ -75,6 +98,10 @@ def schema_reference_from_payload(
         plural_name=raw_plural_name,
         collection_path=collection_path,
         namespaced=namespaced,
+        api_group=raw_group if isinstance(raw_group, str) else None,
+        api_version=raw_version if isinstance(raw_version, str) else None,
+        api_resource=raw_resource if isinstance(raw_resource, str) else None,
+        verbs=_string_tuple(raw_verbs),
     )
 
 
@@ -102,6 +129,63 @@ def build_resource_path(
         collection_path = build_collection_path(reference, namespace=namespace)
         return _append_identifier(collection_path, resource_id)
     return _append_identifier(reference.collection_path, resource_id)
+
+
+def build_k8s_proxy_collection_path(
+    reference: ResourceSchemaReference,
+    *,
+    cluster_id: str,
+    namespace: str | None = None,
+) -> str:
+    """Build a Rancher Kubernetes-proxy collection path from a Steve schema reference."""
+
+    if reference.plane != "steve":
+        raise RancherCapabilityError(
+            "Kubernetes proxy watch paths are only available for Steve schemas"
+        )
+    if reference.api_version is None or reference.api_resource is None:
+        raise RancherCapabilityError(
+            "Schema "
+            f"{reference.schema_id!r} did not expose Kubernetes API "
+            "group/version/resource metadata"
+        )
+
+    if reference.api_group:
+        base_path = (
+            f"/k8s/clusters/{quote(cluster_id, safe='')}/apis/"
+            f"{quote(reference.api_group, safe='')}/{quote(reference.api_version, safe='')}"
+        )
+    else:
+        base_path = (
+            f"/k8s/clusters/{quote(cluster_id, safe='')}/api/"
+            f"{quote(reference.api_version, safe='')}"
+        )
+
+    if namespace and reference.namespaced:
+        return (
+            f"{base_path}/namespaces/{quote(namespace, safe='')}/"
+            f"{quote(reference.api_resource, safe='')}"
+        )
+    return f"{base_path}/{quote(reference.api_resource, safe='')}"
+
+
+def build_k8s_proxy_resource_path(
+    reference: ResourceSchemaReference,
+    *,
+    cluster_id: str,
+    resource_id: str,
+    namespace: str | None = None,
+) -> str:
+    """Build a Rancher Kubernetes-proxy resource path from a Steve schema reference."""
+
+    return _append_identifier(
+        build_k8s_proxy_collection_path(
+            reference,
+            cluster_id=cluster_id,
+            namespace=namespace,
+        ),
+        resource_id,
+    )
 
 
 def build_resource_list_model(
@@ -182,6 +266,93 @@ def build_resource_detail_model(
     )
 
 
+def build_resource_watch_result(
+    *,
+    instance: str,
+    schema: ResourceSchemaReference,
+    watch_path: str,
+    events: Sequence[Mapping[str, object]],
+    truncated: bool,
+    cluster_id: str,
+    namespace: str | None = None,
+    applied_query_params: Mapping[str, str | int | bool] | None = None,
+) -> GenericResourceWatchResult:
+    """Normalize Kubernetes watch events into a generic watch model."""
+
+    normalized_events = [
+        build_resource_watch_event(
+            schema=schema,
+            cluster_id=cluster_id,
+            payload=event_payload,
+            namespace=namespace,
+        )
+        for event_payload in events
+    ]
+    return GenericResourceWatchResult(
+        instance=instance,
+        plane=schema.plane,
+        schema_id=schema.schema_id,
+        plural_name=schema.plural_name,
+        cluster_id=cluster_id,
+        namespace=namespace,
+        watch_path=watch_path,
+        event_count=len(normalized_events),
+        truncated=truncated,
+        applied_query_params=dict(applied_query_params or {}),
+        events=normalized_events,
+    )
+
+
+def build_resource_watch_event(
+    *,
+    schema: ResourceSchemaReference,
+    cluster_id: str,
+    payload: Mapping[str, object],
+    namespace: str | None = None,
+) -> GenericResourceWatchEvent:
+    """Normalize one Kubernetes watch event."""
+
+    raw_event_type = payload.get("type")
+    if not isinstance(raw_event_type, str) or not raw_event_type:
+        raise RancherCapabilityError("Watch event payload did not include a string type")
+
+    resource_payload = _mapping(payload.get("object"))
+    if resource_payload is None:
+        raise RancherCapabilityError("Watch event payload did not include an object resource")
+
+    resource = build_resource_item(
+        plane=schema.plane,
+        cluster_id=cluster_id,
+        payload=resource_payload,
+    )
+    resource_namespace = resource.namespace or namespace
+    resource_id = resource.id
+    resource_path = resource.resource_path
+    if resource_path is None and resource.name is not None:
+        resource_path = build_k8s_proxy_resource_path(
+            schema,
+            cluster_id=cluster_id,
+            namespace=resource_namespace,
+            resource_id=resource.name,
+        )
+    if resource_id is None and resource.name is not None:
+        resource_id = (
+            f"{resource_namespace}/{resource.name}"
+            if resource_namespace is not None
+            else resource.name
+        )
+
+    return GenericResourceWatchEvent(
+        event_type=raw_event_type,
+        resource_id=resource_id,
+        resource_type=resource.type,
+        name=resource.name,
+        namespace=resource_namespace,
+        resource_path=resource_path,
+        payload=dict(resource_payload),
+    )
+
+
 def build_resource_item(
     *,
     plane: str,
@@ -193,6 +364,7 @@ def build_resource_item(
     metadata = _mapping(payload.get("metadata"))
     raw_id = payload.get("id")
     raw_type = payload.get("type")
+    raw_kind = payload.get("kind")
 
     if metadata is not None:
         metadata_name = metadata.get("name")
@@ -213,10 +385,24 @@ def build_resource_item(
             value=links.get("self"),
         )
 
+    if isinstance(raw_id, str):
+        resource_id = raw_id
+    elif name is not None:
+        resource_id = f"{namespace}/{name}" if namespace is not None else name
+    else:
+        resource_id = None
+
+    if isinstance(raw_type, str):
+        resource_type = raw_type
+    elif isinstance(raw_kind, str) and raw_kind:
+        resource_type = raw_kind.lower()
+    else:
+        resource_type = None
+
     typed_payload = dict(payload)
     return GenericResourceItem(
-        id=raw_id if isinstance(raw_id, str) else None,
-        type=raw_type if isinstance(raw_type, str) else None,
+        id=resource_id,
+        type=resource_type,
         name=name,
         namespace=namespace,
         resource_path=resource_path,

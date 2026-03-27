@@ -68,17 +68,23 @@ Implement the clean-slate Rancher MCP project phase-by-phase against the live Ra
   pod watch events through the Rancher Kubernetes proxy
 - repo-local devlab CLI moved out of `src/rancher_mcp` into `devtools/` so lab workflows do not ship in the MCP package
 - `make lint`, `make typecheck`, and `make test` passing for the current streaming-client slice
+- first generic watch tool implemented:
+  `rancher_steve_resource_watch`
+- Steve watch paths now derive from Steve schema `group`/`version`/`resource` metadata and execute through the
+  Rancher Kubernetes proxy instead of assuming Steve `/v1/...` watch semantics
+- live Rancher `2.6.5` validation completed for the public generic Steve watch tool against downstream pod events
+- `make lint`, `make typecheck`, and `make test` passing for the current generic watch slice
 
 ## In Progress
 
-- Phase 3 from the clean-slate plan:
-  adding generic watch/subscribe support on top of the validated streaming substrate
+- Phase 4 from the clean-slate plan:
+  beginning the first curated read-only packs on top of the validated generic layer
 
 ## Next Steps
 
-1. Add generic watch/subscribe support where Rancher proxy behavior is stable enough to expose safely
-2. Begin the first curated read-only packs now that the generic layer and streaming substrate are both live-validated
-3. Identify the first curated operational pack to land after watch support, likely cluster, node, and pod reads
+1. Begin the first curated read-only pack, likely server/settings/features or cluster/node/pod reads
+2. Add additional generic watch/subscribe coverage where Rancher proxy behavior is stable enough to expose safely
+3. Expand live fixture coverage for the first curated pack once its contracts are stable
 
 ## Notes
 
@@ -94,3 +100,5 @@ Implement the clean-slate Rancher MCP project phase-by-phase against the live Ra
   gain runtime entanglement from devlab capture workflows
 - The repo-local Rancher port-forward can restart after heavy stream activity; live watch validation is reliable
   when opened on a fresh connection after the supervisor restabilizes the forwarder
+- Steve schema metadata is rich enough to derive raw Rancher Kubernetes-proxy watch paths without hardcoding
+  `/api` group/version/resource layout per resource type

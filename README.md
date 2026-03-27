@@ -14,6 +14,7 @@ Current work is focused on:
 - discovery-first server foundations
 - generic fallback tools for Norman and Steve list/get/action/link/query flows
 - live-validated streaming substrate for log tail, exec, and watch-style flows
+- first generic Steve watch tool over the Rancher Kubernetes proxy
 - committed sanitized Rancher `2.6.5` contract fixtures with a repo-local regeneration path
 - repo-managed local Rancher `2.6.5` lab infrastructure
 
@@ -162,6 +163,7 @@ Current implemented slices include:
 - generic Norman and Steve action/link tools
 - typed generic Norman and Steve query controls for filters, selectors, and pagination passthrough
 - async streaming primitives for HTTP line streams, JSON watch streams, and Kubernetes-channel WebSocket capture
+- generic Steve watch tools that derive raw Kubernetes proxy paths from Steve schema metadata
 - normalized generic list results that report the applied query params sent to Rancher
 - repo-local capture tooling and committed sanitized Norman/Steve contract fixtures for Rancher `2.6.5`
 - modular tool files with thin registration facades instead of allowing tool modules to grow unbounded
