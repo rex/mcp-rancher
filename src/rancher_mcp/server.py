@@ -4,6 +4,7 @@ from mcp.server.fastmcp import FastMCP
 
 from rancher_mcp.tools.clusters_nodes import register_cluster_node_tools
 from rancher_mcp.tools.discovery import register_discovery_tools
+from rancher_mcp.tools.disruption import register_disruption_tools
 from rancher_mcp.tools.pods_services import register_pod_service_tools
 from rancher_mcp.tools.projects_namespaces import register_project_namespace_tools
 from rancher_mcp.tools.resources import register_resource_tools
@@ -19,6 +20,7 @@ def create_mcp_server() -> FastMCP:
         instructions="Capability-aware Rancher MCP server for Rancher 2.6.5",
     )
     register_discovery_tools(mcp)
+    register_disruption_tools(mcp)
     register_resource_tools(mcp)
     register_cluster_node_tools(mcp)
     register_pod_service_tools(mcp)

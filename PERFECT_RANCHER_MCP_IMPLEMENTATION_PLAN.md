@@ -48,12 +48,13 @@ As of `2026-03-27`, the repo has already moved beyond pure planning:
   fourth curated read-only pack for Rancher projects and namespaces is implemented and live-validated
   fifth curated read-only pack for storage classes, persistent volumes, and persistent volume claims is
   implemented and live-validated
+  sixth curated read-only pack for pod disruption budgets is implemented and live-validated
 - repo-local devlab and fixture tooling remain outside the shipped `src/rancher_mcp` package boundary
 - tool modules are being kept logically split instead of allowing a single discovery or resource file to grow unbounded
 
 The next high-value gaps are:
 
-- curated workload and maintenance helper reads
+- curated workload controller reads
 - higher-level operational aggregate helpers after that
 - additional generic watch coverage where the live Rancher surface proves stable
 

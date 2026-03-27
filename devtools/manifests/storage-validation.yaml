@@ -21,6 +21,8 @@ kind: Pod
 metadata:
   name: demo-consumer
   namespace: storage-validation
+  labels:
+    app: demo-consumer
 spec:
   containers:
     - name: busybox
@@ -36,3 +38,14 @@ spec:
     - name: data
       persistentVolumeClaim:
         claimName: demo-claim
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: demo-consumer-pdb
+  namespace: storage-validation
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: demo-consumer

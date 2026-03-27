@@ -119,16 +119,24 @@ Implement the clean-slate Rancher MCP project phase-by-phase against the live Ra
 - repo-local downstream storage validation fixture added under `devtools/manifests/` so the lab has a
   real bound PVC/PV pair for ongoing development
 - `make lint`, `make typecheck`, and `make test` passing for the current curated storage slice
+- sixth curated read-only pack implemented:
+  `rancher_pod_disruption_budgets_list`
+  `rancher_pod_disruption_budget_get`
+- live Rancher `2.6.5` validation completed for curated pod disruption budget reads against the downstream
+  raw Kubernetes proxy surface
+- repo-local downstream validation fixture now also seeds a real PDB for ongoing maintenance-tool
+  development
+- `make lint`, `make typecheck`, and `make test` passing for the current curated disruption slice
 
 ## In Progress
 
 - Phase 4 from the clean-slate plan:
-  expanding curated read-only packs on top of the validated generic layer with workload and maintenance
-  helper reads next
+  expanding curated read-only packs on top of the validated generic layer with higher-value workload
+  controller reads next
 
 ## Next Steps
 
-1. Add the next curated read-only pack for higher-value workload and maintenance reads
+1. Add the next curated read-only pack for higher-value workload controller reads
 2. Continue outward from there into operational aggregate helpers
 3. Revisit the convenience-tool brainstorm once Tier 1 read coverage is in place
 
@@ -155,5 +163,8 @@ Implement the clean-slate Rancher MCP project phase-by-phase against the live Ra
 - Curated storage reads intentionally use the raw Rancher Kubernetes proxy through the management client
   because Steve `storageclass` collection paths return `500` on the live Rancher `2.6.5` lab while the
   raw `/apis/storage.k8s.io/v1/...` paths succeed
+- Curated pod disruption budget reads intentionally use the raw Rancher Kubernetes proxy through the
+  management client because Steve `poddisruptionbudgets` collection paths return `500` on the live
+  Rancher `2.6.5` lab while the raw `/apis/policy/v1/...` paths succeed
 - The convenience-tool brainstorm document is intentionally separate from the canonical implementation plan so
   rough ideas can accumulate without causing scope drift in the build sequence

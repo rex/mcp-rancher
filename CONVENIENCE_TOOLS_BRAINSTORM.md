@@ -111,6 +111,14 @@ operator-convenience tools that answer questions people actually ask during inci
 | `idea` | `find_volumes_stuck_releasing` | Catch cleanup and reclaim problems | Useful after deletes and namespace teardown |
 | `idea` | `find_orphan_persistent_volumes` | Surface PVs without healthy claims | Good hygiene and cost signal |
 
+## Disruption / Maintenance Helpers
+
+| Status | Candidate Tool | Problem It Solves | Notes |
+| --- | --- | --- | --- |
+| `strong` | `find_pdbs_blocking_maintenance` | Surface PDBs that currently allow zero disruptions | Directly useful before drain and rollout operations |
+| `strong` | `explain_pdb_blocking_eviction` | Translate a zero-disruption PDB into its selector and health context | Good companion to node maintenance tools |
+| `idea` | `summarize_namespace_disruption_risk` | Roll up PDB coverage and fragility in one namespace | Good for release readiness |
+
 ## Cross-Cluster / Venue Helpers
 
 | Status | Candidate Tool | Problem It Solves | Notes |

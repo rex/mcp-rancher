@@ -73,6 +73,9 @@
   `rancher_persistent_volume_get`
   `rancher_persistent_volume_claims_list`
   `rancher_persistent_volume_claim_get`
+- Sixth curated read-only tools:
+  `rancher_pod_disruption_budgets_list`
+  `rancher_pod_disruption_budget_get`
 - Collaborative brainstorming document for future aggregate and convenience tools:
   `CONVENIENCE_TOOLS_BRAINSTORM.md`
 - Repo-local storage validation fixture:
@@ -114,6 +117,8 @@
   between Norman project resources and Steve namespace resources
 - Added a dedicated curated storage tool module and model set that reads through Rancher's raw Kubernetes
   proxy when Steve storage endpoints are unreliable on `2.6.5`
+- Added a dedicated curated disruption tool module and model set that reads through Rancher's raw
+  Kubernetes proxy when Steve disruption endpoints are unreliable on `2.6.5`
 
 ### Verified
 - `https://127.0.0.1:8443/ping` responds from the repo-managed lab
@@ -159,6 +164,8 @@
   storage class list/get via `/k8s/clusters/venue-local/apis/storage.k8s.io/v1/storageclasses`
   persistent volume list/get via `/k8s/clusters/venue-local/api/v1/persistentvolumes`
   persistent volume claim list/get via `/k8s/clusters/venue-local/api/v1/namespaces/storage-validation/persistentvolumeclaims`
+- The curated pod disruption budget tools execute successfully against the live Rancher `2.6.5` devlab for:
+  PDB list/get via `/k8s/clusters/venue-local/apis/policy/v1/namespaces/storage-validation/poddisruptionbudgets`
 - `make lint` passes
 - `make typecheck` passes
 - `make test` passes
