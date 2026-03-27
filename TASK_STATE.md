@@ -107,16 +107,29 @@ Implement the clean-slate Rancher MCP project phase-by-phase against the live Ra
   namespace reads against the downstream Steve proxy surface
 - `make lint`, `make typecheck`, and `make test` passing for the current curated projects/namespaces
   slice
+- fifth curated read-only pack implemented:
+  `rancher_storage_classes_list`
+  `rancher_storage_class_get`
+  `rancher_persistent_volumes_list`
+  `rancher_persistent_volume_get`
+  `rancher_persistent_volume_claims_list`
+  `rancher_persistent_volume_claim_get`
+- live Rancher `2.6.5` validation completed for curated storage reads against the downstream raw
+  Kubernetes proxy surface
+- repo-local downstream storage validation fixture added under `devtools/manifests/` so the lab has a
+  real bound PVC/PV pair for ongoing development
+- `make lint`, `make typecheck`, and `make test` passing for the current curated storage slice
 
 ## In Progress
 
 - Phase 4 from the clean-slate plan:
-  expanding curated read-only packs on top of the validated generic layer with storage-oriented reads next
+  expanding curated read-only packs on top of the validated generic layer with workload and maintenance
+  helper reads next
 
 ## Next Steps
 
-1. Add the next curated read-only pack for storage-oriented resources
-2. Continue outward from there into workload and maintenance helper packs
+1. Add the next curated read-only pack for higher-value workload and maintenance reads
+2. Continue outward from there into operational aggregate helpers
 3. Revisit the convenience-tool brainstorm once Tier 1 read coverage is in place
 
 ## Notes
@@ -139,5 +152,8 @@ Implement the clean-slate Rancher MCP project phase-by-phase against the live Ra
   scoping rules behind lossy global shortcuts
 - Curated project reads and curated namespace reads intentionally span Norman and Steve rather than forcing
   those concepts into a single API plane that Rancher itself does not use
+- Curated storage reads intentionally use the raw Rancher Kubernetes proxy through the management client
+  because Steve `storageclass` collection paths return `500` on the live Rancher `2.6.5` lab while the
+  raw `/apis/storage.k8s.io/v1/...` paths succeed
 - The convenience-tool brainstorm document is intentionally separate from the canonical implementation plan so
   rough ideas can accumulate without causing scope drift in the build sequence

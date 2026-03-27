@@ -66,8 +66,17 @@
   `rancher_project_get`
   `rancher_namespaces_list`
   `rancher_namespace_get`
+- Fifth curated read-only tools:
+  `rancher_storage_classes_list`
+  `rancher_storage_class_get`
+  `rancher_persistent_volumes_list`
+  `rancher_persistent_volume_get`
+  `rancher_persistent_volume_claims_list`
+  `rancher_persistent_volume_claim_get`
 - Collaborative brainstorming document for future aggregate and convenience tools:
   `CONVENIENCE_TOOLS_BRAINSTORM.md`
+- Repo-local storage validation fixture:
+  `devtools/manifests/storage-validation.yaml`
 - Generic resource models and service helpers for schema-driven path resolution, query-param parsing, and normalized collection/detail output
 - Unit and HTTP boundary coverage for Steve discovery behavior and schema normalization
 - Unit coverage for generic Norman and Steve list/get behavior
@@ -103,6 +112,8 @@
   into the existing cluster/node pack
 - Added a dedicated curated project/namespace tool module and model set to reflect the real Rancher split
   between Norman project resources and Steve namespace resources
+- Added a dedicated curated storage tool module and model set that reads through Rancher's raw Kubernetes
+  proxy when Steve storage endpoints are unreliable on `2.6.5`
 
 ### Verified
 - `https://127.0.0.1:8443/ping` responds from the repo-managed lab
@@ -144,6 +155,10 @@
 - The curated project/namespace tools execute successfully against the live Rancher `2.6.5` devlab for:
   project list/get via `/v3/projects`
   namespace list/get via `/k8s/clusters/venue-local/v1/namespaces`
+- The curated storage tools execute successfully against the live Rancher `2.6.5` devlab for:
+  storage class list/get via `/k8s/clusters/venue-local/apis/storage.k8s.io/v1/storageclasses`
+  persistent volume list/get via `/k8s/clusters/venue-local/api/v1/persistentvolumes`
+  persistent volume claim list/get via `/k8s/clusters/venue-local/api/v1/namespaces/storage-validation/persistentvolumeclaims`
 - `make lint` passes
 - `make typecheck` passes
 - `make test` passes

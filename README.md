@@ -19,6 +19,7 @@ Current work is focused on:
 - second curated read-only pack for Rancher clusters and nodes
 - third curated read-only pack for Rancher pods and services
 - fourth curated read-only pack for Rancher projects and namespaces
+- fifth curated read-only pack for Rancher storage classes, persistent volumes, and persistent volume claims
 - committed sanitized Rancher `2.6.5` contract fixtures with a repo-local regeneration path
 - repo-managed local Rancher `2.6.5` lab infrastructure
 - collaborative brainstorming document for future aggregate/convenience tools
@@ -174,6 +175,7 @@ Current implemented slices include:
 - curated typed read tools for Rancher clusters and nodes
 - curated typed read tools for Rancher pods and services
 - curated typed read tools for Rancher projects and namespaces
+- curated typed read tools for Rancher storage classes, persistent volumes, and persistent volume claims
 - normalized generic list results that report the applied query params sent to Rancher
 - repo-local capture tooling and committed sanitized Norman/Steve contract fixtures for Rancher `2.6.5`
 - modular tool files with thin registration facades instead of allowing tool modules to grow unbounded

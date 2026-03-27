@@ -101,6 +101,16 @@ operator-convenience tools that answer questions people actually ask during inci
 | `idea` | `find_broken_service_routes` | Detect obvious traffic breakage | Services, endpoints, ingresses, target pods |
 | `idea` | `find_services_with_mismatched_selectors` | Catch selector drift quickly | Common breakage pattern |
 
+## Storage Helpers
+
+| Status | Candidate Tool | Problem It Solves | Notes |
+| --- | --- | --- | --- |
+| `strong` | `find_unbound_volume_claims` | Surface PVCs that are still Pending or Lost | High-value signal before app outages |
+| `strong` | `explain_persistent_volume_claim_pending` | Translate why a PVC is not bound | StorageClass, node selection, provisioner, and capacity clues |
+| `strong` | `summarize_storage_health` | One-call storage overview for a cluster or namespace | StorageClasses, PVC phases, PV reclaim and binding state |
+| `idea` | `find_volumes_stuck_releasing` | Catch cleanup and reclaim problems | Useful after deletes and namespace teardown |
+| `idea` | `find_orphan_persistent_volumes` | Surface PVs without healthy claims | Good hygiene and cost signal |
+
 ## Cross-Cluster / Venue Helpers
 
 | Status | Candidate Tool | Problem It Solves | Notes |
