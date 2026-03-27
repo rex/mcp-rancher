@@ -52,6 +52,7 @@ def test_labconfig_defaults_match_validated_versions() -> None:
     downstream = config.downstream_cluster_spec(paths)
 
     assert config.rancher_url == "https://127.0.0.1.sslip.io:8443"
+    assert config.rancher_agent_url == "https://host.docker.internal:8443"
     assert config.cert_manager_chart_version == "1.7.1"
     assert management.node_image == "kindest/node:v1.20.15"
     assert downstream.node_image == "kindest/node:v1.23.17"
@@ -64,6 +65,15 @@ def test_render_kind_config_includes_worker_nodes() -> None:
 
     assert rendered.count("- role: worker") == 2
     assert rendered.startswith("kind: Cluster")
+
+
+def test_render_kind_config_management_enables_componentstatus_compat() -> None:
+    """The management-cluster kind config should patch kubeadm for Rancher 2.6.5 health checks."""
+
+    rendered = render_kind_config(1, role="management")
+
+    assert 'port: "10251"' in rendered
+    assert 'port: "10252"' in rendered
 
 
 def test_build_kind_create_command_uses_spec_paths() -> None:
@@ -399,6 +409,63 @@ def test_ensure_rancher_chart_up_runs_helm_install_flow(
     )
 
 
+def test_patch_import_manifest_rewrites_agent_url_and_checksum() -> None:
+    """The import manifest should be patched for the local downstream network path."""
+
+    config = LabConfig.from_env(STATIC_REPO_ROOT)
+    manifest = """
+apiVersion: v1
+kind: Secret
+data:
+  url: "aHR0cHM6Ly8xMjcuMC4wLjE6ODQ0Mw=="
+---
+apiVersion: apps/v1
+kind: Deployment
+spec:
+  template:
+    spec:
+      containers:
+      - name: cluster-register
+        env:
+        - name: CATTLE_SERVER
+          value: "https://127.0.0.1:8443"
+        - name: CATTLE_CA_CHECKSUM
+          value: "deadbeef"
+"""
+
+    patched = devlab.patch_import_manifest(
+        manifest,
+        config,
+        "4dc856d8f9ce92f052b1e53b87d8526c92e5f21b7a115e3811a1c1ed13eeecb2",
+    )
+
+    assert "aHR0cHM6Ly9ob3N0LmRvY2tlci5pbnRlcm5hbDo4NDQz" in patched
+    assert 'value: "https://host.docker.internal:8443"' in patched
+    assert 'value: "4dc856d8f9ce92f052b1e53b87d8526c92e5f21b7a115e3811a1c1ed13eeecb2"' in patched
+
+
+def test_downstream_agent_ca_checksum_matches_agent_runtime_behavior(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The downstream checksum helper should mirror the agent's Rancher API hashing behavior."""
+
+    config = LabConfig.from_env(STATIC_REPO_ROOT)
+    cacerts_value = "-----BEGIN CERTIFICATE-----\nabc\n-----END CERTIFICATE-----\n"
+
+    monkeypatch.setattr(
+        devlab,
+        "run_curl",
+        lambda config, *curl_args: _completed(
+            ["curl"],
+            stdout=json.dumps({"value": cacerts_value}),
+        ),
+    )
+
+    checksum = devlab.downstream_agent_ca_checksum(config)
+
+    assert checksum == hashlib.sha256(f"{cacerts_value}\n".encode()).hexdigest()
+
+
 def test_ensure_lab_up_brings_up_rancher_then_downstream(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
@@ -421,10 +488,15 @@ def test_ensure_lab_up_brings_up_rancher_then_downstream(
         "ensure_kind_cluster_up",
         lambda paths, config, spec: calls.append(spec.role),
     )
+    monkeypatch.setattr(
+        devlab,
+        "ensure_imported_downstream_cluster_up",
+        lambda paths, config: calls.append("imported"),
+    )
 
     devlab.ensure_lab_up(paths, config)
 
-    assert calls == ["rancher", "downstream"]
+    assert calls == ["rancher", "downstream", "imported"]
 
 
 def test_ensure_rancher_chart_down_uninstalls_release_when_management_cluster_exists(

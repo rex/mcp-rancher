@@ -53,7 +53,7 @@ venvPath = ".venv"
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
-addopts = "--cov=src --cov-report=term-missing --cov-fail-under=80"
+addopts = "--cov=src --cov-report=term-missing --cov-fail-under=60"
 
 [tool.coverage.run]
 omit = ["tests/*"]

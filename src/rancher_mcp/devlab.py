@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import argparse
+import base64
 import hashlib
 import json
 import os
 import platform
+import re
 import shutil
 import signal
 import subprocess
@@ -77,6 +79,7 @@ class LabConfig:
     rancher_version: str
     rancher_hostname: str
     rancher_https_port: int
+    rancher_agent_hostname: str
     rancher_bootstrap_password: str
     rancher_wait_seconds: int
     kind_version: str
@@ -88,6 +91,7 @@ class LabConfig:
     downstream_node_image: str
     downstream_worker_count: int
     downstream_wait_seconds: int
+    imported_cluster_name: str
     cert_manager_version: str
 
     @classmethod
@@ -102,6 +106,10 @@ class LabConfig:
                 "127.0.0.1.sslip.io",
             ),
             rancher_https_port=_parse_int_env("RANCHER_MCP_LAB_RANCHER_HTTPS_PORT", 8443),
+            rancher_agent_hostname=os.environ.get(
+                "RANCHER_MCP_LAB_RANCHER_AGENT_HOSTNAME",
+                "host.docker.internal",
+            ),
             rancher_bootstrap_password=os.environ.get(
                 "RANCHER_MCP_LAB_BOOTSTRAP_PASSWORD",
                 "rancher-admin-1234",
@@ -140,6 +148,10 @@ class LabConfig:
                 "RANCHER_MCP_LAB_DOWNSTREAM_WAIT_SECONDS",
                 300,
             ),
+            imported_cluster_name=os.environ.get(
+                "RANCHER_MCP_LAB_IMPORTED_CLUSTER_NAME",
+                "venue-local",
+            ),
             cert_manager_version=os.environ.get(
                 "RANCHER_MCP_LAB_CERT_MANAGER_VERSION",
                 "v1.7.1",
@@ -151,6 +163,18 @@ class LabConfig:
         """Return the Rancher lab URL exposed to the host."""
 
         return f"https://{self.rancher_hostname}:{self.rancher_https_port}"
+
+    @property
+    def rancher_loopback_url(self) -> str:
+        """Return the Rancher lab URL for host-local automation."""
+
+        return f"https://127.0.0.1:{self.rancher_https_port}"
+
+    @property
+    def rancher_agent_url(self) -> str:
+        """Return the Rancher URL used by the downstream agent."""
+
+        return f"https://{self.rancher_agent_hostname}:{self.rancher_https_port}"
 
     @property
     def cert_manager_chart_version(self) -> str:
@@ -294,16 +318,34 @@ def ensure_kind_binary(paths: LabPaths, config: LabConfig) -> Path:
     return paths.kind_binary
 
 
-def render_kind_config(worker_count: int) -> str:
+def render_kind_config(worker_count: int, *, role: str = "generic") -> str:
     """Render the kind cluster configuration for a given worker count."""
 
     worker_nodes = "\n".join("- role: worker" for _ in range(worker_count))
     lines = [
         "kind: Cluster",
         "apiVersion: kind.x-k8s.io/v1alpha4",
-        "nodes:",
-        "- role: control-plane",
     ]
+    if role == "management":
+        lines.extend(
+            [
+                "kubeadmConfigPatches:",
+                "- |",
+                "  kind: ClusterConfiguration",
+                "  scheduler:",
+                "    extraArgs:",
+                '      port: "10251"',
+                "  controllerManager:",
+                "    extraArgs:",
+                '      port: "10252"',
+            ]
+        )
+    lines.extend(
+        [
+            "nodes:",
+            "- role: control-plane",
+        ]
+    )
     if worker_nodes:
         lines.append(worker_nodes)
     return "\n".join(lines) + "\n"
@@ -335,6 +377,7 @@ def run_command(
     cwd: Path,
     capture_output: bool = True,
     check: bool = True,
+    input_text: str | None = None,
 ) -> subprocess.CompletedProcess[str]:
     """Run a subprocess command with text I/O."""
 
@@ -343,6 +386,7 @@ def run_command(
         cwd=cwd,
         check=check,
         capture_output=capture_output,
+        input=input_text,
         text=True,
     )
 
@@ -439,7 +483,10 @@ def ensure_kind_cluster_up(paths: LabPaths, config: LabConfig, spec: ClusterSpec
     kind_binary = ensure_kind_binary(paths, config)
 
     ensure_lab_directories(paths)
-    spec.kind_config_path.write_text(render_kind_config(spec.worker_count), encoding="utf-8")
+    spec.kind_config_path.write_text(
+        render_kind_config(spec.worker_count, role=spec.role),
+        encoding="utf-8",
+    )
 
     if not kind_cluster_exists(kind_binary, config.repo_root, spec.cluster_name):
         run_command(build_kind_create_command(kind_binary, spec), cwd=config.repo_root)
@@ -687,6 +734,590 @@ def wait_for_rancher_port_forward(paths: LabPaths, config: LabConfig) -> None:
     )
 
 
+def run_curl(config: LabConfig, *curl_args: str) -> subprocess.CompletedProcess[str]:
+    """Run curl with repository-local defaults."""
+
+    return run_command(
+        ["curl", "--silent", "--show-error", "--fail", *curl_args],
+        cwd=config.repo_root,
+    )
+
+
+def kubectl_json(
+    config: LabConfig,
+    kubeconfig_path: Path,
+    *args: str,
+    check: bool = True,
+) -> dict[str, Any]:
+    """Run kubectl and decode a JSON response."""
+
+    result = run_command(
+        kubectl_args(kubeconfig_path, *args, "-o", "json"),
+        cwd=config.repo_root,
+        check=check,
+    )
+    if not result.stdout.strip():
+        return {}
+    return json.loads(result.stdout)
+
+
+def rollout_status(
+    kubeconfig_path: Path,
+    repo_root: Path,
+    namespace: str,
+    resource: str,
+    timeout_seconds: int,
+    *,
+    check: bool = True,
+) -> subprocess.CompletedProcess[str]:
+    """Wait for a Kubernetes rollout to complete."""
+
+    return run_command(
+        kubectl_args(
+            kubeconfig_path,
+            "-n",
+            namespace,
+            "rollout",
+            "status",
+            resource,
+            f"--timeout={timeout_seconds}s",
+        ),
+        cwd=repo_root,
+        check=check,
+    )
+
+
+def get_cluster_condition(payload: dict[str, Any], condition_type: str) -> dict[str, Any] | None:
+    """Return a cluster condition by type when present."""
+
+    for condition in payload.get("status", {}).get("conditions", []):
+        if condition.get("type") == condition_type:
+            return condition
+    return None
+
+
+def imported_cluster_is_ready(paths: LabPaths, config: LabConfig) -> bool:
+    """Return whether the imported downstream cluster is connected and ready."""
+
+    result = run_command(
+        kubectl_args(
+            paths.management_kubeconfig_path,
+            "get",
+            "cluster.management.cattle.io",
+            config.imported_cluster_name,
+            "-o",
+            "json",
+        ),
+        cwd=config.repo_root,
+        capture_output=True,
+        check=False,
+    )
+    if result.returncode != 0:
+        return False
+
+    payload = json.loads(result.stdout)
+    connected = get_cluster_condition(payload, "Connected")
+    ready = get_cluster_condition(payload, "Ready")
+    return (
+        connected is not None
+        and connected.get("status") == "True"
+        and ready is not None
+        and ready.get("status") == "True"
+    )
+
+
+def patch_rancher_setting(paths: LabPaths, config: LabConfig, name: str, value: str) -> None:
+    """Patch a Rancher setting to an explicit value."""
+
+    run_command(
+        kubectl_args(
+            paths.management_kubeconfig_path,
+            "patch",
+            "settings.management.cattle.io",
+            name,
+            "--type=merge",
+            "-p",
+            json.dumps({"value": value}),
+        ),
+        cwd=config.repo_root,
+    )
+
+
+def get_rancher_setting(paths: LabPaths, config: LabConfig, name: str) -> str:
+    """Fetch the current Rancher setting value."""
+
+    result = run_command(
+        kubectl_args(
+            paths.management_kubeconfig_path,
+            "get",
+            "settings.management.cattle.io",
+            name,
+            "-o",
+            "jsonpath={.value}",
+        ),
+        cwd=config.repo_root,
+    )
+    return result.stdout
+
+
+def prewarm_agent_host_certificate(config: LabConfig) -> None:
+    """Ensure Rancher generates a serving certificate for the downstream agent hostname."""
+
+    container_name = f"{config.downstream_cluster_name}-control-plane"
+    run_command(
+        [
+            "docker",
+            "exec",
+            container_name,
+            "sh",
+            "-lc",
+            (
+                "curl --silent --show-error --fail --insecure "
+                f"{config.rancher_agent_url}/ping >/dev/null"
+            ),
+        ],
+        cwd=config.repo_root,
+    )
+
+
+def sync_rancher_cacerts(paths: LabPaths, config: LabConfig) -> None:
+    """Align Rancher's cacerts setting with the current internal CA secret."""
+
+    secret_result = run_command(
+        kubectl_args(
+            paths.management_kubeconfig_path,
+            "-n",
+            "cattle-system",
+            "get",
+            "secret",
+            "tls-rancher-internal-ca",
+            "-o",
+            "jsonpath={.data.tls\\.crt}",
+        ),
+        cwd=config.repo_root,
+    )
+    desired_value = base64.b64decode(secret_result.stdout.strip()).decode("utf-8")
+    current_value = get_rancher_setting(paths, config, "cacerts")
+    if current_value != desired_value:
+        patch_rancher_setting(paths, config, "cacerts", desired_value)
+
+
+def downstream_agent_ca_checksum(config: LabConfig) -> str:
+    """Return the checksum format the downstream agent validates at runtime."""
+
+    payload = json.loads(
+        run_curl(config, "--insecure", f"{config.rancher_loopback_url}/v3/settings/cacerts").stdout
+    )
+    value = payload.get("value", "")
+    if not value:
+        raise RuntimeError("Rancher cacerts setting is empty; cannot build downstream agent trust")
+    return hashlib.sha256(f"{value}\n".encode()).hexdigest()
+
+
+def ensure_imported_cluster_resource(paths: LabPaths, config: LabConfig) -> None:
+    """Ensure the Rancher imported-cluster resource exists."""
+
+    result = run_command(
+        kubectl_args(
+            paths.management_kubeconfig_path,
+            "get",
+            "cluster.management.cattle.io",
+            config.imported_cluster_name,
+        ),
+        cwd=config.repo_root,
+        capture_output=True,
+        check=False,
+    )
+    if result.returncode == 0:
+        return
+
+    manifest = "\n".join(
+        [
+            "apiVersion: management.cattle.io/v3",
+            "kind: Cluster",
+            "metadata:",
+            f"  name: {config.imported_cluster_name}",
+            "spec:",
+            f"  displayName: {config.imported_cluster_name}",
+            "",
+        ]
+    )
+    run_command(
+        kubectl_args(paths.management_kubeconfig_path, "apply", "-f", "-"),
+        cwd=config.repo_root,
+        input_text=manifest,
+    )
+
+
+def refresh_cluster_registration_token(paths: LabPaths, config: LabConfig) -> str:
+    """Recreate the default cluster registration token and return its token value."""
+
+    run_command(
+        kubectl_args(
+            paths.management_kubeconfig_path,
+            "delete",
+            "clusterregistrationtokens.management.cattle.io",
+            "-n",
+            config.imported_cluster_name,
+            "default-token",
+        ),
+        cwd=config.repo_root,
+        capture_output=True,
+        check=False,
+    )
+
+    manifest = "\n".join(
+        [
+            "apiVersion: management.cattle.io/v3",
+            "kind: ClusterRegistrationToken",
+            "metadata:",
+            "  name: default-token",
+            f"  namespace: {config.imported_cluster_name}",
+            "spec:",
+            f"  clusterName: {config.imported_cluster_name}",
+            "",
+        ]
+    )
+    run_command(
+        kubectl_args(paths.management_kubeconfig_path, "apply", "-f", "-"),
+        cwd=config.repo_root,
+        input_text=manifest,
+    )
+
+    deadline = time.monotonic() + config.rancher_wait_seconds
+    while time.monotonic() < deadline:
+        result = run_command(
+            kubectl_args(
+                paths.management_kubeconfig_path,
+                "get",
+                "clusterregistrationtokens.management.cattle.io",
+                "-n",
+                config.imported_cluster_name,
+                "default-token",
+                "-o",
+                "json",
+            ),
+            cwd=config.repo_root,
+            capture_output=True,
+            check=False,
+        )
+        if result.returncode == 0:
+            payload = json.loads(result.stdout)
+            token = payload.get("status", {}).get("token", "").strip()
+            if token:
+                return token
+        time.sleep(2)
+
+    raise RuntimeError("Timed out waiting for Rancher to generate a cluster registration token")
+
+
+def fetch_import_manifest(config: LabConfig, token: str, cluster_name: str) -> str:
+    """Fetch the Rancher import manifest for an imported cluster."""
+
+    return run_curl(
+        config,
+        "--insecure",
+        f"{config.rancher_loopback_url}/v3/import/{token}_{cluster_name}.yaml",
+    ).stdout
+
+
+def patch_import_manifest(manifest: str, config: LabConfig, ca_checksum: str) -> str:
+    """Patch Rancher's generated import manifest for the local lab network shape."""
+
+    agent_url = config.rancher_agent_url
+    encoded_agent_url = base64.b64encode(agent_url.encode("utf-8")).decode("utf-8")
+    lines = manifest.splitlines()
+
+    for index, line in enumerate(lines):
+        stripped = line.strip()
+        if stripped.startswith("url: "):
+            lines[index] = re.sub(r'"[^"]+"', f'"{encoded_agent_url}"', line)
+        elif stripped == "- name: CATTLE_SERVER" and index + 1 < len(lines):
+            lines[index + 1] = re.sub(r'"[^"]+"', f'"{agent_url}"', lines[index + 1])
+        elif stripped == "- name: CATTLE_CA_CHECKSUM" and index + 1 < len(lines):
+            lines[index + 1] = re.sub(r'"[^"]+"', f'"{ca_checksum}"', lines[index + 1])
+
+    return "\n".join(lines) + "\n"
+
+
+def wait_for_downstream_agent_deployment(paths: LabPaths, config: LabConfig) -> None:
+    """Wait for the downstream cluster-agent deployment to exist."""
+
+    deadline = time.monotonic() + config.rancher_wait_seconds
+    while time.monotonic() < deadline:
+        result = run_command(
+            kubectl_args(
+                paths.downstream_kubeconfig_path,
+                "-n",
+                "cattle-system",
+                "get",
+                "deployment",
+                "cattle-cluster-agent",
+            ),
+            cwd=config.repo_root,
+            capture_output=True,
+            check=False,
+        )
+        if result.returncode == 0:
+            return
+        time.sleep(2)
+
+    raise RuntimeError("Timed out waiting for the downstream cluster-agent deployment")
+
+
+def downstream_agent_env_value(deployment: dict[str, Any], name: str) -> str | None:
+    """Return a named environment value from the cluster-register container."""
+
+    containers = (
+        deployment.get("spec", {}).get("template", {}).get("spec", {}).get("containers", [])
+    )
+    for container in containers:
+        if container.get("name") != "cluster-register":
+            continue
+        for env_var in container.get("env", []):
+            if env_var.get("name") == name:
+                return env_var.get("value")
+    return None
+
+
+def reconcile_downstream_agent_resources(
+    paths: LabPaths,
+    config: LabConfig,
+    ca_checksum: str,
+) -> None:
+    """Force the downstream agent resources onto the lab-safe server URL and checksum."""
+
+    deployment = kubectl_json(
+        config,
+        paths.downstream_kubeconfig_path,
+        "-n",
+        "cattle-system",
+        "get",
+        "deployment",
+        "cattle-cluster-agent",
+    )
+    secret_name = (
+        deployment.get("spec", {})
+        .get("template", {})
+        .get("spec", {})
+        .get("volumes", [{}])[0]
+        .get("secret", {})
+        .get("secretName")
+    )
+    if not secret_name:
+        raise RuntimeError(
+            "Downstream cluster-agent deployment does not reference a credentials secret"
+        )
+
+    encoded_agent_url = base64.b64encode(config.rancher_agent_url.encode("utf-8")).decode("utf-8")
+    run_command(
+        kubectl_args(
+            paths.downstream_kubeconfig_path,
+            "-n",
+            "cattle-system",
+            "patch",
+            "secret",
+            secret_name,
+            "-p",
+            json.dumps({"data": {"url": encoded_agent_url}}),
+        ),
+        cwd=config.repo_root,
+    )
+
+    run_command(
+        kubectl_args(
+            paths.downstream_kubeconfig_path,
+            "-n",
+            "cattle-system",
+            "patch",
+            "deployment",
+            "cattle-cluster-agent",
+            "-p",
+            json.dumps(
+                {
+                    "spec": {
+                        "template": {
+                            "spec": {
+                                "containers": [
+                                    {
+                                        "name": "cluster-register",
+                                        "env": [
+                                            {
+                                                "name": "CATTLE_SERVER",
+                                                "value": config.rancher_agent_url,
+                                            },
+                                            {
+                                                "name": "CATTLE_CA_CHECKSUM",
+                                                "value": ca_checksum,
+                                            },
+                                        ],
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            ),
+        ),
+        cwd=config.repo_root,
+    )
+
+
+def cleanup_stale_downstream_credentials(paths: LabPaths, config: LabConfig) -> None:
+    """Delete old downstream credential secrets that are no longer referenced."""
+
+    deployment = kubectl_json(
+        config,
+        paths.downstream_kubeconfig_path,
+        "-n",
+        "cattle-system",
+        "get",
+        "deployment",
+        "cattle-cluster-agent",
+    )
+    active_secret_name = (
+        deployment.get("spec", {})
+        .get("template", {})
+        .get("spec", {})
+        .get("volumes", [{}])[0]
+        .get("secret", {})
+        .get("secretName")
+    )
+    if not active_secret_name:
+        return
+
+    secrets = kubectl_json(
+        config,
+        paths.downstream_kubeconfig_path,
+        "-n",
+        "cattle-system",
+        "get",
+        "secrets",
+    )
+    for item in secrets.get("items", []):
+        name = item.get("metadata", {}).get("name", "")
+        if not name.startswith("cattle-credentials-") or name == active_secret_name:
+            continue
+        run_command(
+            kubectl_args(
+                paths.downstream_kubeconfig_path,
+                "-n",
+                "cattle-system",
+                "delete",
+                "secret",
+                name,
+            ),
+            cwd=config.repo_root,
+            capture_output=True,
+            check=False,
+        )
+
+
+def wait_for_imported_cluster_ready(paths: LabPaths, config: LabConfig) -> None:
+    """Wait for the imported downstream cluster to connect and become ready."""
+
+    deadline = time.monotonic() + config.rancher_wait_seconds
+    while time.monotonic() < deadline:
+        result = run_command(
+            kubectl_args(
+                paths.management_kubeconfig_path,
+                "get",
+                "cluster.management.cattle.io",
+                config.imported_cluster_name,
+                "-o",
+                "json",
+            ),
+            cwd=config.repo_root,
+            capture_output=True,
+            check=False,
+        )
+        if result.returncode == 0:
+            payload = json.loads(result.stdout)
+            connected = get_cluster_condition(payload, "Connected")
+            ready = get_cluster_condition(payload, "Ready")
+            if (
+                connected is not None
+                and connected.get("status") == "True"
+                and ready is not None
+                and ready.get("status") == "True"
+            ):
+                return
+        time.sleep(5)
+
+    raise RuntimeError(
+        f"Timed out waiting for imported cluster {config.imported_cluster_name} to become ready"
+    )
+
+
+def converge_downstream_agent_registration(paths: LabPaths, config: LabConfig) -> None:
+    """Reconcile the downstream agent until Rancher's post-import rollouts settle."""
+
+    deadline = time.monotonic() + config.rancher_wait_seconds
+    while time.monotonic() < deadline:
+        wait_for_downstream_agent_deployment(paths, config)
+        desired_checksum = downstream_agent_ca_checksum(config)
+        deployment = kubectl_json(
+            config,
+            paths.downstream_kubeconfig_path,
+            "-n",
+            "cattle-system",
+            "get",
+            "deployment",
+            "cattle-cluster-agent",
+        )
+        current_server = downstream_agent_env_value(deployment, "CATTLE_SERVER")
+        current_checksum = downstream_agent_env_value(deployment, "CATTLE_CA_CHECKSUM")
+        if current_server != config.rancher_agent_url or current_checksum != desired_checksum:
+            reconcile_downstream_agent_resources(paths, config, desired_checksum)
+
+        remaining_seconds = max(1, int(deadline - time.monotonic()))
+        rollout_status(
+            paths.downstream_kubeconfig_path,
+            config.repo_root,
+            "cattle-system",
+            "deployment/cattle-cluster-agent",
+            min(120, remaining_seconds),
+            check=False,
+        )
+        if imported_cluster_is_ready(paths, config):
+            cleanup_stale_downstream_credentials(paths, config)
+            return
+        time.sleep(5)
+
+    raise RuntimeError(
+        f"Timed out waiting for imported cluster {config.imported_cluster_name} to become ready"
+    )
+
+
+def ensure_imported_downstream_cluster_up(paths: LabPaths, config: LabConfig) -> None:
+    """Register the downstream kind cluster in Rancher and wait for it to connect."""
+
+    if imported_cluster_is_ready(paths, config):
+        cleanup_stale_downstream_credentials(paths, config)
+        return
+
+    patch_rancher_setting(paths, config, "server-url", config.rancher_agent_url)
+    prewarm_agent_host_certificate(config)
+    sync_rancher_cacerts(paths, config)
+    ensure_imported_cluster_resource(paths, config)
+    token = refresh_cluster_registration_token(paths, config)
+    manifest = fetch_import_manifest(config, token, config.imported_cluster_name)
+    desired_ca_checksum = downstream_agent_ca_checksum(config)
+    patched_manifest = patch_import_manifest(
+        manifest,
+        config,
+        desired_ca_checksum,
+    )
+    run_command(
+        kubectl_args(paths.downstream_kubeconfig_path, "apply", "-f", "-"),
+        cwd=config.repo_root,
+        input_text=patched_manifest,
+    )
+    wait_for_downstream_agent_deployment(paths, config)
+    reconcile_downstream_agent_resources(paths, config, desired_ca_checksum)
+    converge_downstream_agent_registration(paths, config)
+
+
 def ensure_rancher_chart_up(paths: LabPaths, config: LabConfig) -> None:
     """Install or upgrade Rancher on the management cluster."""
 
@@ -730,6 +1361,7 @@ def ensure_lab_up(paths: LabPaths, config: LabConfig) -> None:
 
     ensure_rancher_chart_up(paths, config)
     ensure_kind_cluster_up(paths, config, config.downstream_cluster_spec(paths))
+    ensure_imported_downstream_cluster_up(paths, config)
 
 
 def ensure_rancher_chart_down(paths: LabPaths, config: LabConfig) -> None:
