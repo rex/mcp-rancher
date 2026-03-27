@@ -49,19 +49,26 @@ Implement the clean-slate Rancher MCP project phase-by-phase against the live Ra
   `pagination.continue`
 - live Rancher `2.6.5` validation completed for Norman filter/sort/marker flows and Steve selector/continue flows
 - `make lint`, `make typecheck`, and `make test` passing for the current generic query-controls slice
+- repo-local fixture capture tooling implemented outside the shipped MCP package:
+  `devtools/contract_fixtures.py`
+  `scripts/capture_contract_fixtures.py`
+  `make capture-fixtures`
+- sanitized live Rancher `2.6.5` contract fixtures committed under `tests/fixtures/rancher_2_6_5`
+- raw live capture output written under `.lab/contract-fixtures/raw` and kept out of git
+- unit coverage added for fixture sanitization, fixture capture writing, and committed-fixture hygiene checks
+- `make typecheck` expanded to cover `src/`, `devtools/`, and `scripts/`
+- `make lint`, `make typecheck`, and `make test` passing for the current contract-fixture slice
 
 ## In Progress
 
 - Phase 3 from the clean-slate plan:
-  preparing sanitized Rancher `2.6.5` contract fixtures from the devlab
   closing the remaining Phase 2 streaming-client gap for WebSocket-backed operations
 
 ## Next Steps
 
-1. Capture and sanitize real Rancher `2.6.5` Norman and Steve schema/resource fixtures from the devlab
-2. Implement the remaining Phase 2 streaming client work for WebSocket-backed exec/log/watch flows
-3. Add generic watch/subscribe support where Rancher proxy behavior is stable enough to expose safely
-4. Begin the first curated read-only packs once the generic layer and fixture capture are strong enough
+1. Implement the remaining Phase 2 streaming client work for WebSocket-backed exec/log/watch flows
+2. Add generic watch/subscribe support where Rancher proxy behavior is stable enough to expose safely
+3. Begin the first curated read-only packs once the generic layer and fixture capture are strong enough
 
 ## Notes
 
@@ -73,3 +80,5 @@ Implement the clean-slate Rancher MCP project phase-by-phase against the live Ra
   re-mutates the downstream agent after initial import
 - Steve list pagination in Rancher `2.6.5` may surface continuation only through `pagination.next` URLs, so
   the generic layer normalizes both URL-derived and explicit `continue` tokens
+- Lab-only and test-only fixture tooling lives outside `src/rancher_mcp` so the shipped MCP package does not
+  gain runtime entanglement from devlab capture workflows

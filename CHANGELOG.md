@@ -35,12 +35,18 @@
 - Continued Phase 3 generic fallback query controls:
   typed Norman list query controls for `limit`, `marker`, `sort_by`, `reverse`, and `filters_json`
   typed Steve list query controls for `limit`, `continue_token`, `label_selector`, and `field_selector`
+- Repo-local contract-fixture capture tooling:
+  `make capture-fixtures`
+  `scripts/capture_contract_fixtures.py`
+  `devtools/contract_fixtures.py`
+- Sanitized live Rancher `2.6.5` Norman and Steve contract fixtures committed under `tests/fixtures/rancher_2_6_5`
 - Generic resource models and service helpers for schema-driven path resolution, query-param parsing, and normalized collection/detail output
 - Unit and HTTP boundary coverage for Steve discovery behavior and schema normalization
 - Unit coverage for generic Norman and Steve list/get behavior
 - Unit coverage for generic Norman and Steve action/link behavior
 - HTTP boundary coverage for management-plane JSON POST behavior
 - Unit coverage for generic query builder behavior and typed list-tool query normalization
+- Unit coverage for contract-fixture sanitization, write flow, and committed-fixture hygiene
 
 ### Changed
 - Replaced the abandoned single-container Rancher devlab path with the validated Helm-on-kind topology
@@ -58,6 +64,9 @@
 - Split generic list-query construction into a dedicated helper module instead of growing the list tool handlers
 - Generic list results now report the exact query params applied to the Rancher request
 - Normalized Rancher `2.6.5` Steve pagination by deriving `continue_token` from `pagination.next` URLs when the API omits `pagination.continue`
+- Kept lab-only and test-only fixture tooling out of `src/rancher_mcp` so the shipped MCP package stays clean
+- Raw live fixture captures now land under `.lab/contract-fixtures/raw` while only sanitized fixtures are committed
+- Expanded `make typecheck` to include repo-local `devtools/` and `scripts/`, not just the shipped `src/` package
 
 ### Verified
 - `https://127.0.0.1:8443/ping` responds from the repo-managed lab
@@ -78,6 +87,9 @@
   Norman `setting` list filter/sort/marker pagination flows
   Steve cluster-wide `pod` list continuation via normalized `continue_token`
   Steve namespaced `pod` list selectors via `label_selector` and `field_selector`
+- Sanitized contract fixtures were regenerated successfully from the live Rancher `2.6.5` devlab for:
+  Norman cluster schema, collection, resource, and filtered settings collection
+  Steve namespace and service schemas plus collection/resource fixtures
 - `make lint` passes
 - `make typecheck` passes
 - `make test` passes

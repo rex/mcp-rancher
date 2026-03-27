@@ -1,0 +1,675 @@
+{
+  "name": "norman_collection_clusters",
+  "request_params": {
+    "limit": 2
+  },
+  "request_path": "/v3/clusters",
+  "response": {
+    "actions": {
+      "createFromTemplate": "https://rancher.example.test/v3/clusters?action=createFromTemplate"
+    },
+    "createTypes": {
+      "cluster": "https://rancher.example.test/v3/clusters"
+    },
+    "data": [
+      {
+        "actions": {
+          "enableMonitoring": "https://rancher.example.test/v3/clusters/local?action=enableMonitoring",
+          "generateKubeconfig": "https://rancher.example.test/v3/clusters/local?action=generateKubeconfig",
+          "importYaml": "https://rancher.example.test/v3/clusters/local?action=importYaml"
+        },
+        "agentImage": "",
+        "agentImageOverride": "",
+        "aksStatus": {
+          "privateRequiresTunnel": null,
+          "rbacEnabled": null,
+          "type": "/v3/schemas/aksStatus",
+          "upstreamSpec": null
+        },
+        "allocatable": {
+          "cpu": "4",
+          "memory": "5294864Ki",
+          "pods": "110"
+        },
+        "annotations": {
+          "authz.management.cattle.io/creator-role-bindings": "{\"created\":[],\"required\":[\"cluster-owner\"]}",
+          "lifecycle.cattle.io/create.cluster-agent-controller-cleanup": "true",
+          "lifecycle.cattle.io/create.cluster-provisioner-controller": "true",
+          "lifecycle.cattle.io/create.cluster-scoped-gc": "true",
+          "lifecycle.cattle.io/create.mgmt-cluster-rbac-remove": "true",
+          "provisioner.cattle.io/ke-driver-update": "updated"
+        },
+        "answers": {
+          "clusterId": null,
+          "projectId": null,
+          "type": "/v3/schemas/answer"
+        },
+        "appliedEnableNetworkPolicy": false,
+        "appliedPodSecurityPolicyTemplateId": "",
+        "appliedSpec": {
+          "agentImageOverride": "",
+          "answers": {
+            "clusterId": null,
+            "projectId": null,
+            "type": "/v3/schemas/answer"
+          },
+          "clusterTemplateId": null,
+          "clusterTemplateRevisionId": null,
+          "defaultClusterRoleForProjectMembers": null,
+          "defaultPodSecurityPolicyTemplateId": null,
+          "description": "",
+          "desiredAgentImage": "",
+          "desiredAuthImage": "",
+          "displayName": "",
+          "dockerRootDir": "/var/lib/docker",
+          "enableClusterAlerting": false,
+          "enableClusterMonitoring": false,
+          "enableNetworkPolicy": null,
+          "internal": false,
+          "localClusterAuthEndpoint": {
+            "enabled": false,
+            "type": "/v3/schemas/localClusterAuthEndpoint"
+          },
+          "type": "/v3/schemas/clusterSpec",
+          "windowsPreferedCluster": false
+        },
+        "authImage": "",
+        "baseType": "cluster",
+        "capabilities": {
+          "loadBalancerCapabilities": {
+            "healthCheckSupported": false,
+            "type": "/v3/schemas/loadBalancerCapabilities"
+          },
+          "nodePoolScalingSupported": false,
+          "pspEnabled": false,
+          "type": "/v3/schemas/capabilities"
+        },
+        "capacity": {
+          "cpu": "4",
+          "memory": "5294864Ki",
+          "pods": "110"
+        },
+        "clusterTemplateId": null,
+        "clusterTemplateRevisionId": null,
+        "componentStatuses": [
+          {
+            "conditions": [
+              {
+                "message": "ok",
+                "status": "True",
+                "type": "Healthy"
+              }
+            ],
+            "name": "controller-manager",
+            "type": "/v3/schemas/clusterComponentStatus"
+          },
+          {
+            "conditions": [
+              {
+                "message": "{\"health\":\"true\"}",
+                "status": "True",
+                "type": "Healthy"
+              }
+            ],
+            "name": "etcd-0",
+            "type": "/v3/schemas/clusterComponentStatus"
+          },
+          {
+            "conditions": [
+              {
+                "message": "ok",
+                "status": "True",
+                "type": "Healthy"
+              }
+            ],
+            "name": "scheduler",
+            "type": "/v3/schemas/clusterComponentStatus"
+          }
+        ],
+        "conditions": [
+          {
+            "status": "True",
+            "type": "Ready"
+          },
+          {
+            "lastUpdateTime": "<sanitized:timestamp>",
+            "status": "True",
+            "type": "BackingNamespaceCreated"
+          },
+          {
+            "lastUpdateTime": "<sanitized:timestamp>",
+            "status": "True",
+            "type": "DefaultProjectCreated"
+          },
+          {
+            "lastUpdateTime": "<sanitized:timestamp>",
+            "status": "True",
+            "type": "SystemProjectCreated"
+          },
+          {
+            "lastUpdateTime": "<sanitized:timestamp>",
+            "status": "True",
+            "type": "CreatorMadeOwner"
+          },
+          {
+            "lastUpdateTime": "<sanitized:timestamp>",
+            "status": "True",
+            "type": "Pending"
+          },
+          {
+            "lastUpdateTime": "<sanitized:timestamp>",
+            "status": "True",
+            "type": "Provisioned"
+          },
+          {
+            "lastUpdateTime": "<sanitized:timestamp>",
+            "status": "True",
+            "type": "Waiting"
+          },
+          {
+            "lastUpdateTime": "<sanitized:timestamp>",
+            "status": "True",
+            "type": "NoDiskPressure"
+          },
+          {
+            "lastUpdateTime": "<sanitized:timestamp>",
+            "status": "True",
+            "type": "NoMemoryPressure"
+          },
+          {
+            "lastUpdateTime": "<sanitized:timestamp>",
+            "status": "True",
+            "type": "SecretsMigrated"
+          },
+          {
+            "lastUpdateTime": "<sanitized:timestamp>",
+            "status": "True",
+            "type": "GlobalAdminsSynced"
+          },
+          {
+            "lastUpdateTime": "<sanitized:timestamp>",
+            "status": "True",
+            "type": "SystemAccountCreated"
+          },
+          {
+            "lastUpdateTime": "<sanitized:timestamp>",
+            "status": "True",
+            "type": "Updated"
+          }
+        ],
+        "created": "<sanitized:created>",
+        "createdTS": "<sanitized:createdTS>",
+        "creatorId": null,
+        "defaultClusterRoleForProjectMembers": null,
+        "defaultPodSecurityPolicyTemplateId": null,
+        "description": "",
+        "desiredAgentImage": "",
+        "desiredAuthImage": "",
+        "dockerRootDir": "/var/lib/docker",
+        "driver": "imported",
+        "eksStatus": {
+          "managedLaunchTemplateID": "",
+          "managedLaunchTemplateVersions": null,
+          "privateRequiresTunnel": null,
+          "securityGroups": null,
+          "subnets": null,
+          "type": "/v3/schemas/eksStatus",
+          "upstreamSpec": null,
+          "virtualNetwork": ""
+        },
+        "enableClusterAlerting": false,
+        "enableClusterMonitoring": false,
+        "enableNetworkPolicy": null,
+        "fleetWorkspaceName": "fleet-local",
+        "gkeStatus": {
+          "privateRequiresTunnel": null,
+          "type": "/v3/schemas/gkeStatus",
+          "upstreamSpec": null
+        },
+        "id": "local",
+        "internal": true,
+        "istioEnabled": false,
+        "limits": {
+          "cpu": "100m",
+          "memory": "50Mi",
+          "pods": "0"
+        },
+        "links": {
+          "apiServices": "https://rancher.example.test/v3/clusters/local/apiservices",
+          "clusterAlertGroups": "https://rancher.example.test/v3/clusters/local/clusteralertgroups",
+          "clusterAlertRules": "https://rancher.example.test/v3/clusters/local/clusteralertrules",
+          "clusterAlerts": "https://rancher.example.test/v3/clusters/local/clusteralerts",
+          "clusterCatalogs": "https://rancher.example.test/v3/clusters/local/clustercatalogs",
+          "clusterLoggings": "https://rancher.example.test/v3/clusters/local/clusterloggings",
+          "clusterMonitorGraphs": "https://rancher.example.test/v3/clusters/local/clustermonitorgraphs",
+          "clusterRegistrationTokens": "https://rancher.example.test/v3/clusters/local/clusterregistrationtokens",
+          "clusterRoleTemplateBindings": "https://rancher.example.test/v3/clusters/local/clusterroletemplatebindings",
+          "clusterScans": "https://rancher.example.test/v3/clusters/local/clusterscans",
+          "etcdBackups": "https://rancher.example.test/v3/clusters/local/etcdbackups",
+          "namespaces": "https://rancher.example.test/v3/clusters/local/namespaces",
+          "nodePools": "https://rancher.example.test/v3/clusters/local/nodepools",
+          "nodes": "https://rancher.example.test/v3/clusters/local/nodes",
+          "notifiers": "https://rancher.example.test/v3/clusters/local/notifiers",
+          "persistentVolumes": "https://rancher.example.test/v3/clusters/local/persistentvolumes",
+          "projects": "https://rancher.example.test/v3/clusters/local/projects",
+          "self": "https://rancher.example.test/v3/clusters/local",
+          "shell": "wss://rancher.example.test/v3/clusters/local?shell=true",
+          "storageClasses": "https://rancher.example.test/v3/clusters/local/storageclasses",
+          "subscribe": "https://rancher.example.test/v3/clusters/local/subscribe",
+          "templates": "https://rancher.example.test/v3/clusters/local/templates",
+          "tokens": "https://rancher.example.test/v3/clusters/local/tokens",
+          "update": "https://rancher.example.test/v3/clusters/local"
+        },
+        "linuxWorkerCount": 1,
+        "localClusterAuthEndpoint": {
+          "enabled": false,
+          "type": "/v3/schemas/localClusterAuthEndpoint"
+        },
+        "name": "local",
+        "nodeCount": 2,
+        "nodeVersion": 0,
+        "provider": "",
+        "requested": {
+          "cpu": "100m",
+          "memory": "50Mi",
+          "pods": "10"
+        },
+        "state": "active",
+        "transitioning": "no",
+        "transitioningMessage": "",
+        "type": "cluster",
+        "uuid": "<sanitized:uuid>",
+        "version": {
+          "buildDate": "<sanitized:timestamp>",
+          "compiler": "gc",
+          "gitCommit": "8f1e5bf0b9729a899b8df86249b56e2c74aebc55",
+          "gitTreeState": "clean",
+          "gitVersion": "v1.20.15",
+          "goVersion": "go1.15.15",
+          "major": "1",
+          "minor": "20",
+          "platform": "linux/arm64",
+          "type": "/v3/schemas/info"
+        },
+        "windowsPreferedCluster": false,
+        "windowsWorkerCount": 0
+      },
+      {
+        "actions": {
+          "enableMonitoring": "https://rancher.example.test/v3/clusters/venue-local?action=enableMonitoring",
+          "generateKubeconfig": "https://rancher.example.test/v3/clusters/venue-local?action=generateKubeconfig",
+          "importYaml": "https://rancher.example.test/v3/clusters/venue-local?action=importYaml"
+        },
+        "agentFeatures": {
+          "embedded-cluster-api": false,
+          "fleet": false,
+          "monitoringv1": false,
+          "multi-cluster-management": false,
+          "multi-cluster-management-agent": true,
+          "provisioningv2": false,
+          "rke2": false
+        },
+        "agentImage": "rancher/rancher-agent:v2.6.5",
+        "agentImageOverride": "",
+        "aksStatus": {
+          "privateRequiresTunnel": null,
+          "rbacEnabled": null,
+          "type": "/v3/schemas/aksStatus",
+          "upstreamSpec": null
+        },
+        "allocatable": {
+          "cpu": "4",
+          "memory": "5294864Ki",
+          "pods": "110"
+        },
+        "annotations": {
+          "authz.management.cattle.io/creator-role-bindings": "{\"created\":[],\"required\":[\"cluster-owner\"]}",
+          "lifecycle.cattle.io/create.cluster-agent-controller-cleanup": "true",
+          "lifecycle.cattle.io/create.cluster-provisioner-controller": "true",
+          "lifecycle.cattle.io/create.cluster-scoped-gc": "true",
+          "lifecycle.cattle.io/create.mgmt-cluster-rbac-remove": "true",
+          "provisioner.cattle.io/ke-driver-update": "updated"
+        },
+        "answers": {
+          "clusterId": null,
+          "projectId": null,
+          "type": "/v3/schemas/answer"
+        },
+        "apiEndpoint": "https://rancher.example.test",
+        "appliedAgentEnvVars": [
+          {
+            "name": "CATTLE_SERVER_VERSION",
+            "type": "/v3/schemas/envVar",
+            "value": "v2.6.5"
+          },
+          {
+            "name": "CATTLE_INSTALL_UUID",
+            "type": "/v3/schemas/envVar",
+            "value": "<sanitized:uuid>"
+          },
+          {
+            "name": "CATTLE_INGRESS_IP_DOMAIN",
+            "type": "/v3/schemas/envVar",
+            "value": "example.test"
+          }
+        ],
+        "appliedEnableNetworkPolicy": false,
+        "appliedPodSecurityPolicyTemplateId": "",
+        "appliedSpec": {
+          "agentImageOverride": "",
+          "answers": {
+            "clusterId": null,
+            "projectId": null,
+            "type": "/v3/schemas/answer"
+          },
+          "clusterTemplateId": null,
+          "clusterTemplateRevisionId": null,
+          "defaultClusterRoleForProjectMembers": null,
+          "defaultPodSecurityPolicyTemplateId": null,
+          "description": "",
+          "desiredAgentImage": "",
+          "desiredAuthImage": "",
+          "displayName": "",
+          "dockerRootDir": "/var/lib/docker",
+          "enableClusterAlerting": false,
+          "enableClusterMonitoring": false,
+          "enableNetworkPolicy": null,
+          "internal": false,
+          "localClusterAuthEndpoint": {
+            "enabled": false,
+            "type": "/v3/schemas/localClusterAuthEndpoint"
+          },
+          "type": "/v3/schemas/clusterSpec",
+          "windowsPreferedCluster": false
+        },
+        "authImage": "",
+        "baseType": "cluster",
+        "caCert": "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUMvakNDQWVhZ0F3SUJBZ0lCQURBTkJna3Foa2lHOXcwQkFRc0ZBREFWTVJNd0VRWURWUVFERXdwcmRXSmwKY201bGRHVnpNQjRYRFRJMk1ETXlOekU0TVRRek5Gb1hEVE0yTURNeU5ERTRNVFF6TkZvd0ZURVRNQkVHQTFVRQpBeE1LYTNWaVpYSnVaWFJsY3pDQ0FTSXdEUVlKS29aSWh2Y05BUUVCQlFBRGdnRVBBRENDQVFvQ2dnRUJBS1AzCmhzQXVTSTZpRkdkYXB1SS9xUGMrcFBHeEZVVXZZaDVxbXZSUThoUWRscWRxYXJLZzY0WHI1ejA1Nk9aWUhlcTAKdzRpbVY2OWNjeGlXbkVJd3ViVitRcGsvdk9mVzd5Wnk5ZlREUWQ5TUlrSUkvNklneDFkdlB0ZXI5QmIzOWt5NgpkOU5rZ0tjblN0STIvVld0SW5aaU1RL0l3VElycitMUTJFTFNMQVFwUVM1alpFNE94REp2QThpREx3cGJEWDZICnAvK2kyYUVlem92bUREK2ZkOEtlalcrNjVqU2Z6bkVyaVR4VitDZWthT2x4dE05MHBHK0dPZ08yUTFxWUpZbWQKL2JGNmZRNXdZTE5YTVpwK0w0Z01TdWlJejZJd3BPd3BvQXZWTm1mbUFKVHpKN3NjOCtQekVFVXVLdzN0QW8rYwprcXAyRkUray9ONERXMlJWSEhzQ0F3RUFBYU5aTUZjd0RnWURWUjBQQVFIL0JBUURBZ0trTUE4R0ExVWRFd0VCCi93UUZNQU1CQWY4d0hRWURWUjBPQkJZRUZNOXNNN1FoUHFVZCtJbWloR1lNRGFIbm03WEVNQlVHQTFVZEVRUU8KTUF5Q0NtdDFZbVZ5Ym1WMFpYTXdEUVlKS29aSWh2Y05BUUVMQlFBRGdnRUJBREJXeTFGREcyNHVvQ0QreCtragpzOEN1a2poNVVZLzAyMEVDc2FZQlM2VnZCWFR6eFo4MXRLR2lxaHIzVDN1SGJONG1IZWN0OHUrdHE4ZnRqRGlyCjJudUJ5aDIzcS9ZdWRUQWxER2FSVmxhQWRpT2tjZ3JZeko0ZG5ET3hXZlFFNVRub2NKdmxHNHVNbWdHdXF2VDYKYVdEWkVWUnpkZzVibzRQQ0VyR3VmMWRXSDB6dmxkZGNKVjhwWnF5ZVJVeGppT3JrUzI2VktKQ2dFRGZXTXJqMgp5YkE5Nzhsb3k2c3N0TXpVeTN6K1NyWUFiV3Vsdjh6OTBnbmd6NTFUVHVTNDN4SWtmU1VETXpwaFY1YlFHUndhCnFjSkZlVFBXc1gvNFR1WWdrV1J2TkUva1BFcTdTK2E2Q3JtY2lTazd2M0dBUit6RnQ1MG9XajdwazloK2syS3kKR0tJPQotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg==",
+        "capabilities": {
+          "loadBalancerCapabilities": {
+            "healthCheckSupported": false,
+            "type": "/v3/schemas/loadBalancerCapabilities"
+          },
+          "nodePoolScalingSupported": false,
+          "pspEnabled": false,
+          "type": "/v3/schemas/capabilities"
+        },
+        "capacity": {
+          "cpu": "4",
+          "memory": "5294864Ki",
+          "pods": "110"
+        },
+        "clusterTemplateId": null,
+        "clusterTemplateRevisionId": null,
+        "conditions": [
+          {
+            "lastUpdateTime": "<sanitized:timestamp>",
+            "status": "True",
+            "type": "BackingNamespaceCreated"
+          },
+          {
+            "lastUpdateTime": "<sanitized:timestamp>",
+            "status": "True",
+            "type": "DefaultProjectCreated"
+          },
+          {
+            "lastUpdateTime": "<sanitized:timestamp>",
+            "status": "True",
+            "type": "SystemProjectCreated"
+          },
+          {
+            "lastUpdateTime": "<sanitized:timestamp>",
+            "status": "True",
+            "type": "CreatorMadeOwner"
+          },
+          {
+            "lastUpdateTime": "<sanitized:timestamp>",
+            "status": "True",
+            "type": "Pending"
+          },
+          {
+            "lastUpdateTime": "<sanitized:timestamp>",
+            "status": "True",
+            "type": "Provisioned"
+          },
+          {
+            "lastUpdateTime": "<sanitized:timestamp>",
+            "status": "True",
+            "type": "Waiting"
+          },
+          {
+            "lastUpdateTime": "<sanitized:timestamp>",
+            "status": "True",
+            "type": "NoDiskPressure"
+          },
+          {
+            "lastUpdateTime": "<sanitized:timestamp>",
+            "status": "True",
+            "type": "NoMemoryPressure"
+          },
+          {
+            "lastUpdateTime": "<sanitized:timestamp>",
+            "status": "True",
+            "type": "SecretsMigrated"
+          },
+          {
+            "lastUpdateTime": "<sanitized:timestamp>",
+            "status": "True",
+            "type": "Connected"
+          },
+          {
+            "lastUpdateTime": "<sanitized:timestamp>",
+            "status": "True",
+            "type": "GlobalAdminsSynced"
+          },
+          {
+            "lastUpdateTime": "<sanitized:timestamp>",
+            "status": "True",
+            "type": "SystemAccountCreated"
+          },
+          {
+            "lastUpdateTime": "<sanitized:timestamp>",
+            "status": "True",
+            "type": "AgentDeployed"
+          },
+          {
+            "lastUpdateTime": "<sanitized:timestamp>",
+            "status": "True",
+            "type": "Updated"
+          },
+          {
+            "lastUpdateTime": "<sanitized:timestamp>",
+            "status": "True",
+            "type": "Ready"
+          }
+        ],
+        "created": "<sanitized:created>",
+        "createdTS": "<sanitized:createdTS>",
+        "creatorId": null,
+        "defaultClusterRoleForProjectMembers": null,
+        "defaultPodSecurityPolicyTemplateId": null,
+        "description": "",
+        "desiredAgentImage": "",
+        "desiredAuthImage": "",
+        "dockerRootDir": "/var/lib/docker",
+        "driver": "imported",
+        "eksStatus": {
+          "managedLaunchTemplateID": "",
+          "managedLaunchTemplateVersions": null,
+          "privateRequiresTunnel": null,
+          "securityGroups": null,
+          "subnets": null,
+          "type": "/v3/schemas/eksStatus",
+          "upstreamSpec": null,
+          "virtualNetwork": ""
+        },
+        "enableClusterAlerting": false,
+        "enableClusterMonitoring": false,
+        "enableNetworkPolicy": null,
+        "fleetWorkspaceName": "fleet-default",
+        "gkeStatus": {
+          "privateRequiresTunnel": null,
+          "type": "/v3/schemas/gkeStatus",
+          "upstreamSpec": null
+        },
+        "id": "venue-local",
+        "internal": false,
+        "istioEnabled": false,
+        "limits": {
+          "cpu": "100m",
+          "memory": "50Mi",
+          "pods": "0"
+        },
+        "links": {
+          "apiServices": "https://rancher.example.test/v3/clusters/venue-local/apiservices",
+          "clusterAlertGroups": "https://rancher.example.test/v3/clusters/venue-local/clusteralertgroups",
+          "clusterAlertRules": "https://rancher.example.test/v3/clusters/venue-local/clusteralertrules",
+          "clusterAlerts": "https://rancher.example.test/v3/clusters/venue-local/clusteralerts",
+          "clusterCatalogs": "https://rancher.example.test/v3/clusters/venue-local/clustercatalogs",
+          "clusterLoggings": "https://rancher.example.test/v3/clusters/venue-local/clusterloggings",
+          "clusterMonitorGraphs": "https://rancher.example.test/v3/clusters/venue-local/clustermonitorgraphs",
+          "clusterRegistrationTokens": "https://rancher.example.test/v3/clusters/venue-local/clusterregistrationtokens",
+          "clusterRoleTemplateBindings": "https://rancher.example.test/v3/clusters/venue-local/clusterroletemplatebindings",
+          "clusterScans": "https://rancher.example.test/v3/clusters/venue-local/clusterscans",
+          "etcdBackups": "https://rancher.example.test/v3/clusters/venue-local/etcdbackups",
+          "namespaces": "https://rancher.example.test/v3/clusters/venue-local/namespaces",
+          "nodePools": "https://rancher.example.test/v3/clusters/venue-local/nodepools",
+          "nodes": "https://rancher.example.test/v3/clusters/venue-local/nodes",
+          "notifiers": "https://rancher.example.test/v3/clusters/venue-local/notifiers",
+          "persistentVolumes": "https://rancher.example.test/v3/clusters/venue-local/persistentvolumes",
+          "projects": "https://rancher.example.test/v3/clusters/venue-local/projects",
+          "remove": "https://rancher.example.test/v3/clusters/venue-local",
+          "self": "https://rancher.example.test/v3/clusters/venue-local",
+          "shell": "wss://rancher.example.test/v3/clusters/venue-local?shell=true",
+          "storageClasses": "https://rancher.example.test/v3/clusters/venue-local/storageclasses",
+          "subscribe": "https://rancher.example.test/v3/clusters/venue-local/subscribe",
+          "templates": "https://rancher.example.test/v3/clusters/venue-local/templates",
+          "tokens": "https://rancher.example.test/v3/clusters/venue-local/tokens",
+          "update": "https://rancher.example.test/v3/clusters/venue-local"
+        },
+        "linuxWorkerCount": 1,
+        "localClusterAuthEndpoint": {
+          "enabled": false,
+          "type": "/v3/schemas/localClusterAuthEndpoint"
+        },
+        "name": "venue-local",
+        "nodeCount": 2,
+        "nodeVersion": 0,
+        "provider": "",
+        "requested": {
+          "cpu": "100m",
+          "memory": "50Mi",
+          "pods": "3"
+        },
+        "state": "active",
+        "transitioning": "no",
+        "transitioningMessage": "",
+        "type": "cluster",
+        "uuid": "<sanitized:uuid>",
+        "version": {
+          "buildDate": "<sanitized:timestamp>",
+          "compiler": "gc",
+          "gitCommit": "953be8927218ec8067e1af2641e540238ffd7576",
+          "gitTreeState": "clean",
+          "gitVersion": "v1.23.17",
+          "goVersion": "go1.19.6",
+          "major": "1",
+          "minor": "23",
+          "platform": "linux/arm64",
+          "type": "/v3/schemas/info"
+        },
+        "windowsPreferedCluster": false,
+        "windowsWorkerCount": 0
+      }
+    ],
+    "filters": {
+      "aadClientCertSecret": null,
+      "aadClientSecret": null,
+      "agentImage": null,
+      "agentImageOverride": null,
+      "apiEndpoint": null,
+      "appliedEnableNetworkPolicy": null,
+      "appliedPodSecurityPolicyTemplateId": null,
+      "authImage": null,
+      "caCert": null,
+      "clusterTemplateId": null,
+      "clusterTemplateRevisionId": null,
+      "created": "<sanitized:created>",
+      "creatorId": null,
+      "currentCisRunName": null,
+      "defaultClusterRoleForProjectMembers": null,
+      "defaultPodSecurityPolicyTemplateId": null,
+      "description": null,
+      "desiredAgentImage": null,
+      "desiredAuthImage": null,
+      "dockerRootDir": null,
+      "driver": null,
+      "enableClusterAlerting": null,
+      "enableClusterMonitoring": null,
+      "enableNetworkPolicy": null,
+      "fleetWorkspaceName": null,
+      "id": null,
+      "internal": null,
+      "istioEnabled": null,
+      "linuxWorkerCount": null,
+      "name": null,
+      "nodeCount": null,
+      "nodeVersion": null,
+      "openStackSecret": null,
+      "privateRegistrySecret": null,
+      "provider": null,
+      "removed": null,
+      "s3CredentialSecret": null,
+      "state": null,
+      "transitioning": null,
+      "transitioningMessage": null,
+      "uuid": "<sanitized:uuid>",
+      "virtualCenterSecret": null,
+      "vsphereSecret": null,
+      "weavePasswordSecret": null,
+      "windowsPreferedCluster": null,
+      "windowsWorkerCount": null
+    },
+    "links": {
+      "self": "https://rancher.example.test/v3/clusters"
+    },
+    "pagination": {
+      "limit": 2,
+      "total": 2
+    },
+    "resourceType": "cluster",
+    "sort": {
+      "links": {
+        "aadClientCertSecret": "https://rancher.example.test/v3/clusters?limit=2&sort=aadClientCertSecret",
+        "aadClientSecret": "https://rancher.example.test/v3/clusters?limit=2&sort=aadClientSecret",
+        "agentImage": "https://rancher.example.test/v3/clusters?limit=2&sort=agentImage",
+        "agentImageOverride": "https://rancher.example.test/v3/clusters?limit=2&sort=agentImageOverride",
+        "apiEndpoint": "https://rancher.example.test/v3/clusters?limit=2&sort=apiEndpoint",
+        "appliedPodSecurityPolicyTemplateId": "https://rancher.example.test/v3/clusters?limit=2&sort=appliedPodSecurityPolicyTemplateId",
+        "authImage": "https://rancher.example.test/v3/clusters?limit=2&sort=authImage",
+        "caCert": "https://rancher.example.test/v3/clusters?limit=2&sort=caCert",
+        "currentCisRunName": "https://rancher.example.test/v3/clusters?limit=2&sort=currentCisRunName",
+        "description": "https://rancher.example.test/v3/clusters?limit=2&sort=description",
+        "desiredAgentImage": "https://rancher.example.test/v3/clusters?limit=2&sort=desiredAgentImage",
+        "desiredAuthImage": "https://rancher.example.test/v3/clusters?limit=2&sort=desiredAuthImage",
+        "dockerRootDir": "https://rancher.example.test/v3/clusters?limit=2&sort=dockerRootDir",
+        "driver": "https://rancher.example.test/v3/clusters?limit=2&sort=driver",
+        "fleetWorkspaceName": "https://rancher.example.test/v3/clusters?limit=2&sort=fleetWorkspaceName",
+        "openStackSecret": "https://rancher.example.test/v3/clusters?limit=2&sort=openStackSecret",
+        "privateRegistrySecret": "https://rancher.example.test/v3/clusters?limit=2&sort=privateRegistrySecret",
+        "provider": "https://rancher.example.test/v3/clusters?limit=2&sort=provider",
+        "s3CredentialSecret": "https://rancher.example.test/v3/clusters?limit=2&sort=s3CredentialSecret",
+        "state": "https://rancher.example.test/v3/clusters?limit=2&sort=state",
+        "transitioning": "https://rancher.example.test/v3/clusters?limit=2&sort=transitioning",
+        "transitioningMessage": "https://rancher.example.test/v3/clusters?limit=2&sort=transitioningMessage",
+        "uuid": "<sanitized:uuid>",
+        "virtualCenterSecret": "https://rancher.example.test/v3/clusters?limit=2&sort=virtualCenterSecret",
+        "vsphereSecret": "https://rancher.example.test/v3/clusters?limit=2&sort=vsphereSecret",
+        "weavePasswordSecret": "https://rancher.example.test/v3/clusters?limit=2&sort=weavePasswordSecret"
+      },
+      "order": "asc",
+      "reverse": "https://rancher.example.test/v3/clusters?limit=2&order=desc"
+    },
+    "type": "collection"
+  }
+}

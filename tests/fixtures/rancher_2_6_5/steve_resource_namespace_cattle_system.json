@@ -1,0 +1,46 @@
+{
+  "name": "steve_resource_namespace_cattle_system",
+  "request_params": {},
+  "request_path": "/k8s/clusters/venue-local/v1/namespaces/cattle-system",
+  "response": {
+    "apiVersion": "v1",
+    "id": "cattle-system",
+    "kind": "Namespace",
+    "links": {
+      "remove": "https://rancher.example.test/k8s/clusters/venue-local/v1/namespaces/cattle-system",
+      "self": "https://rancher.example.test/k8s/clusters/venue-local/v1/namespaces/cattle-system",
+      "update": "https://rancher.example.test/k8s/clusters/venue-local/v1/namespaces/cattle-system",
+      "view": "https://rancher.example.test/k8s/clusters/venue-local/api/v1/namespaces/cattle-system"
+    },
+    "metadata": {
+      "annotations": {
+        "field.cattle.io/projectId": "venue-local:p-sanitized",
+        "lifecycle.cattle.io/create.namespace-auth": "true",
+        "management.cattle.io/no-default-sa-token": "true"
+      },
+      "finalizers": [
+        "controller.cattle.io/namespace-auth"
+      ],
+      "labels": {
+        "field.cattle.io/projectId": "p-sanitized",
+        "kubernetes.io/metadata.name": "cattle-system"
+      },
+      "name": "cattle-system",
+      "state": {
+        "error": false,
+        "message": "",
+        "name": "active",
+        "transitioning": false
+      }
+    },
+    "spec": {
+      "finalizers": [
+        "kubernetes"
+      ]
+    },
+    "status": {
+      "phase": "Active"
+    },
+    "type": "namespace"
+  }
+}

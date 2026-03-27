@@ -38,11 +38,11 @@ As of `2026-03-27`, the repo has already moved beyond pure planning:
   generic Norman/Steve action/link tools are implemented and live-validated where the lab exposes real behaviors
   generic Norman/Steve query controls are implemented and live-validated for Rancher-supported filter/sort,
   marker, selector, and pagination flows
+  sanitized live Rancher `2.6.5` contract fixtures are committed and regenerable through repo-local tooling
 - tool modules are being kept logically split instead of allowing a single discovery or resource file to grow unbounded
 
 The next high-value gaps are:
 
-- fixture capture and sanitization
 - WebSocket-backed streaming behavior
 - first curated read-only packs
 

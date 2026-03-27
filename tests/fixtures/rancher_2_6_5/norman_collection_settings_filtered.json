@@ -1,0 +1,95 @@
+{
+  "name": "norman_collection_settings_filtered",
+  "request_params": {
+    "limit": 2,
+    "sort": "name",
+    "source": "default"
+  },
+  "request_path": "/v3/settings",
+  "response": {
+    "actions": {},
+    "createTypes": {
+      "setting": "https://rancher.example.test/v3/settings"
+    },
+    "data": [
+      {
+        "baseType": "setting",
+        "created": "<sanitized:created>",
+        "createdTS": "<sanitized:createdTS>",
+        "creatorId": null,
+        "customized": false,
+        "default": "300s",
+        "id": "agent-rollout-timeout",
+        "links": {
+          "remove": "https://rancher.example.test/v3/settings/agent-rollout-timeout",
+          "self": "https://rancher.example.test/v3/settings/agent-rollout-timeout",
+          "update": "https://rancher.example.test/v3/settings/agent-rollout-timeout"
+        },
+        "name": "agent-rollout-timeout",
+        "source": "default",
+        "type": "setting",
+        "uuid": "<sanitized:uuid>",
+        "value": "300s"
+      },
+      {
+        "baseType": "setting",
+        "created": "<sanitized:created>",
+        "createdTS": "<sanitized:createdTS>",
+        "creatorId": null,
+        "customized": false,
+        "default": "true",
+        "id": "agent-rollout-wait",
+        "links": {
+          "remove": "https://rancher.example.test/v3/settings/agent-rollout-wait",
+          "self": "https://rancher.example.test/v3/settings/agent-rollout-wait",
+          "update": "https://rancher.example.test/v3/settings/agent-rollout-wait"
+        },
+        "name": "agent-rollout-wait",
+        "source": "default",
+        "type": "setting",
+        "uuid": "<sanitized:uuid>",
+        "value": "true"
+      }
+    ],
+    "filters": {
+      "created": "<sanitized:created>",
+      "creatorId": null,
+      "customized": null,
+      "default": null,
+      "name": null,
+      "removed": null,
+      "source": [
+        {
+          "modifier": "eq",
+          "value": "default"
+        }
+      ],
+      "uuid": "<sanitized:uuid>",
+      "value": null
+    },
+    "links": {
+      "self": "https://rancher.example.test/v3/settings"
+    },
+    "pagination": {
+      "first": "https://rancher.example.test/v3/settings?limit=2&marker=agent-rollout-timeout&sort=name&source=default",
+      "last": "https://rancher.example.test/v3/settings?limit=2&marker=whitelist-domain&sort=name&source=default",
+      "limit": 2,
+      "next": "https://rancher.example.test/v3/settings?limit=2&marker=aks-refresh&sort=name&source=default",
+      "partial": true,
+      "total": 63
+    },
+    "resourceType": "setting",
+    "sort": {
+      "links": {
+        "default": "https://rancher.example.test/v3/settings?limit=2&sort=default&source=default",
+        "source": "https://rancher.example.test/v3/settings?limit=2&sort=source&source=default",
+        "uuid": "<sanitized:uuid>",
+        "value": "https://rancher.example.test/v3/settings?limit=2&sort=value&source=default"
+      },
+      "name": "name",
+      "order": "asc",
+      "reverse": "https://rancher.example.test/v3/settings?limit=2&order=desc&sort=name&source=default"
+    },
+    "type": "collection"
+  }
+}

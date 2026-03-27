@@ -1,0 +1,55 @@
+{
+  "name": "steve_resource_service_default_kubernetes",
+  "request_params": {},
+  "request_path": "/k8s/clusters/venue-local/v1/services/default/kubernetes",
+  "response": {
+    "apiVersion": "v1",
+    "id": "default/kubernetes",
+    "kind": "Service",
+    "links": {
+      "remove": "https://rancher.example.test/k8s/clusters/venue-local/v1/services/default/kubernetes",
+      "self": "https://rancher.example.test/k8s/clusters/venue-local/v1/services/default/kubernetes",
+      "update": "https://rancher.example.test/k8s/clusters/venue-local/v1/services/default/kubernetes",
+      "view": "https://rancher.example.test/k8s/clusters/venue-local/api/v1/namespaces/default/services/kubernetes"
+    },
+    "metadata": {
+      "labels": {
+        "component": "apiserver",
+        "provider": "kubernetes"
+      },
+      "name": "kubernetes",
+      "namespace": "default",
+      "state": {
+        "error": false,
+        "message": "Service is ready",
+        "name": "active",
+        "transitioning": false
+      }
+    },
+    "spec": {
+      "clusterIP": "10.96.0.1",
+      "clusterIPs": [
+        "10.96.0.1"
+      ],
+      "internalTrafficPolicy": "Cluster",
+      "ipFamilies": [
+        "IPv4"
+      ],
+      "ipFamilyPolicy": "SingleStack",
+      "ports": [
+        {
+          "name": "https",
+          "port": 443,
+          "protocol": "TCP",
+          "targetPort": 6443
+        }
+      ],
+      "sessionAffinity": "None",
+      "type": "ClusterIP"
+    },
+    "status": {
+      "loadBalancer": {}
+    },
+    "type": "service"
+  }
+}

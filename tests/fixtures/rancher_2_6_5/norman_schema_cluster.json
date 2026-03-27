@@ -1,0 +1,901 @@
+{
+  "name": "norman_schema_cluster",
+  "request_params": {},
+  "request_path": "/v3/schemas/cluster",
+  "response": {
+    "baseType": "schema",
+    "collectionFilters": {
+      "aadClientCertSecret": {
+        "modifiers": [
+          "eq",
+          "ne",
+          "in",
+          "notin"
+        ]
+      },
+      "aadClientSecret": {
+        "modifiers": [
+          "eq",
+          "ne",
+          "in",
+          "notin"
+        ]
+      },
+      "agentImage": {
+        "modifiers": [
+          "eq",
+          "ne",
+          "in",
+          "notin"
+        ]
+      },
+      "agentImageOverride": {
+        "modifiers": [
+          "eq",
+          "ne",
+          "in",
+          "notin"
+        ]
+      },
+      "apiEndpoint": {
+        "modifiers": [
+          "eq",
+          "ne",
+          "in",
+          "notin"
+        ]
+      },
+      "appliedEnableNetworkPolicy": {
+        "modifiers": [
+          "eq",
+          "ne"
+        ]
+      },
+      "appliedPodSecurityPolicyTemplateId": {
+        "modifiers": [
+          "eq",
+          "ne",
+          "in",
+          "notin"
+        ]
+      },
+      "authImage": {
+        "modifiers": [
+          "eq",
+          "ne",
+          "in",
+          "notin"
+        ]
+      },
+      "caCert": {
+        "modifiers": [
+          "eq",
+          "ne",
+          "in",
+          "notin"
+        ]
+      },
+      "clusterTemplateId": {
+        "modifiers": [
+          "eq",
+          "ne",
+          "in",
+          "notin"
+        ]
+      },
+      "clusterTemplateRevisionId": {
+        "modifiers": [
+          "eq",
+          "ne",
+          "in",
+          "notin"
+        ]
+      },
+      "created": "<sanitized:created>",
+      "creatorId": {
+        "modifiers": [
+          "eq",
+          "ne",
+          "in",
+          "notin"
+        ]
+      },
+      "currentCisRunName": {
+        "modifiers": [
+          "eq",
+          "ne",
+          "in",
+          "notin"
+        ]
+      },
+      "defaultClusterRoleForProjectMembers": {
+        "modifiers": [
+          "eq",
+          "ne",
+          "in",
+          "notin"
+        ]
+      },
+      "defaultPodSecurityPolicyTemplateId": {
+        "modifiers": [
+          "eq",
+          "ne",
+          "in",
+          "notin"
+        ]
+      },
+      "description": {
+        "modifiers": [
+          "eq",
+          "ne",
+          "in",
+          "notin"
+        ]
+      },
+      "desiredAgentImage": {
+        "modifiers": [
+          "eq",
+          "ne",
+          "in",
+          "notin"
+        ]
+      },
+      "desiredAuthImage": {
+        "modifiers": [
+          "eq",
+          "ne",
+          "in",
+          "notin"
+        ]
+      },
+      "dockerRootDir": {
+        "modifiers": [
+          "eq",
+          "ne",
+          "in",
+          "notin"
+        ]
+      },
+      "driver": {
+        "modifiers": [
+          "eq",
+          "ne",
+          "in",
+          "notin"
+        ]
+      },
+      "enableClusterAlerting": {
+        "modifiers": [
+          "eq",
+          "ne"
+        ]
+      },
+      "enableClusterMonitoring": {
+        "modifiers": [
+          "eq",
+          "ne"
+        ]
+      },
+      "enableNetworkPolicy": {
+        "modifiers": [
+          "eq",
+          "ne"
+        ]
+      },
+      "fleetWorkspaceName": {
+        "modifiers": [
+          "eq",
+          "ne",
+          "in",
+          "notin"
+        ]
+      },
+      "id": {
+        "modifiers": [
+          "eq",
+          "ne",
+          "in",
+          "notin"
+        ]
+      },
+      "internal": {
+        "modifiers": [
+          "eq",
+          "ne"
+        ]
+      },
+      "istioEnabled": {
+        "modifiers": [
+          "eq",
+          "ne"
+        ]
+      },
+      "linuxWorkerCount": {
+        "modifiers": [
+          "eq",
+          "ne",
+          "in",
+          "notin"
+        ]
+      },
+      "name": {
+        "modifiers": [
+          "eq",
+          "ne",
+          "in",
+          "notin"
+        ]
+      },
+      "nodeCount": {
+        "modifiers": [
+          "eq",
+          "ne",
+          "in",
+          "notin"
+        ]
+      },
+      "nodeVersion": {
+        "modifiers": [
+          "eq",
+          "ne",
+          "in",
+          "notin"
+        ]
+      },
+      "openStackSecret": {
+        "modifiers": [
+          "eq",
+          "ne",
+          "in",
+          "notin"
+        ]
+      },
+      "privateRegistrySecret": {
+        "modifiers": [
+          "eq",
+          "ne",
+          "in",
+          "notin"
+        ]
+      },
+      "provider": {
+        "modifiers": [
+          "eq",
+          "ne",
+          "in",
+          "notin"
+        ]
+      },
+      "removed": {
+        "modifiers": [
+          "eq",
+          "ne",
+          "in",
+          "notin"
+        ]
+      },
+      "s3CredentialSecret": {
+        "modifiers": [
+          "eq",
+          "ne",
+          "in",
+          "notin"
+        ]
+      },
+      "state": {
+        "modifiers": [
+          "eq",
+          "ne",
+          "in",
+          "notin"
+        ]
+      },
+      "transitioning": {
+        "modifiers": [
+          "eq",
+          "ne",
+          "in",
+          "notin"
+        ]
+      },
+      "transitioningMessage": {
+        "modifiers": [
+          "eq",
+          "ne",
+          "in",
+          "notin"
+        ]
+      },
+      "uuid": "<sanitized:uuid>",
+      "virtualCenterSecret": {
+        "modifiers": [
+          "eq",
+          "ne",
+          "in",
+          "notin"
+        ]
+      },
+      "vsphereSecret": {
+        "modifiers": [
+          "eq",
+          "ne",
+          "in",
+          "notin"
+        ]
+      },
+      "weavePasswordSecret": {
+        "modifiers": [
+          "eq",
+          "ne",
+          "in",
+          "notin"
+        ]
+      },
+      "windowsPreferedCluster": {
+        "modifiers": [
+          "eq",
+          "ne"
+        ]
+      },
+      "windowsWorkerCount": {
+        "modifiers": [
+          "eq",
+          "ne",
+          "in",
+          "notin"
+        ]
+      }
+    },
+    "collectionMethods": [
+      "POST",
+      "GET"
+    ],
+    "id": "cluster",
+    "links": {
+      "collection": "https://rancher.example.test/v3/clusters",
+      "self": "https://rancher.example.test/v3/schemas/cluster"
+    },
+    "pluralName": "clusters",
+    "resourceActions": {
+      "backupEtcd": {},
+      "disableMonitoring": {},
+      "editMonitoring": {
+        "input": "monitoringInput"
+      },
+      "enableMonitoring": {
+        "input": "monitoringInput"
+      },
+      "exportYaml": {
+        "output": "exportOutput"
+      },
+      "generateKubeconfig": {
+        "output": "generateKubeConfigOutput"
+      },
+      "importYaml": {
+        "input": "importClusterYamlInput",
+        "output": "importYamlOutput"
+      },
+      "restoreFromEtcdBackup": {
+        "input": "restoreFromEtcdBackupInput"
+      },
+      "rotateCertificates": {
+        "input": "rotateCertificateInput",
+        "output": "rotateCertificateOutput"
+      },
+      "rotateEncryptionKey": {
+        "output": "rotateEncryptionKeyOutput"
+      },
+      "runSecurityScan": {
+        "input": "cisScanConfig"
+      },
+      "saveAsTemplate": {
+        "input": "saveAsTemplateInput",
+        "output": "saveAsTemplateOutput"
+      },
+      "viewMonitoring": {
+        "output": "monitoringOutput"
+      }
+    },
+    "resourceFields": {
+      "aadClientCertSecret": {
+        "create": false,
+        "nullable": true,
+        "type": "string",
+        "update": false
+      },
+      "aadClientSecret": {
+        "create": false,
+        "nullable": true,
+        "type": "string",
+        "update": false
+      },
+      "agentEnvVars": {
+        "create": true,
+        "nullable": true,
+        "type": "array[envVar]",
+        "update": true
+      },
+      "agentFeatures": {
+        "create": false,
+        "nullable": true,
+        "type": "map[boolean]",
+        "update": false
+      },
+      "agentImage": {
+        "create": false,
+        "nullable": true,
+        "type": "string",
+        "update": false
+      },
+      "agentImageOverride": {
+        "create": true,
+        "nullable": true,
+        "type": "string",
+        "update": true
+      },
+      "aksConfig": {
+        "create": true,
+        "nullable": true,
+        "type": "aksClusterConfigSpec",
+        "update": true
+      },
+      "aksStatus": {
+        "create": false,
+        "nullable": true,
+        "type": "aksStatus",
+        "update": false
+      },
+      "allocatable": {
+        "create": false,
+        "nullable": true,
+        "type": "map[string]",
+        "update": false
+      },
+      "amazonElasticContainerServiceConfig": {
+        "create": true,
+        "dynamicField": true,
+        "nullable": true,
+        "type": "amazonElasticContainerServiceConfig",
+        "update": true
+      },
+      "annotations": {
+        "create": true,
+        "nullable": true,
+        "type": "map[string]",
+        "update": true
+      },
+      "answers": {
+        "create": true,
+        "nullable": true,
+        "type": "answer",
+        "update": true
+      },
+      "apiEndpoint": {
+        "create": false,
+        "nullable": true,
+        "type": "string",
+        "update": false
+      },
+      "appliedAgentEnvVars": {
+        "create": false,
+        "nullable": true,
+        "type": "array[envVar]",
+        "update": false
+      },
+      "appliedEnableNetworkPolicy": {
+        "create": false,
+        "default": false,
+        "type": "boolean",
+        "update": false
+      },
+      "appliedPodSecurityPolicyTemplateId": {
+        "create": false,
+        "nullable": true,
+        "type": "string",
+        "update": false
+      },
+      "appliedSpec": {
+        "create": false,
+        "nullable": true,
+        "type": "clusterSpec",
+        "update": false
+      },
+      "authImage": {
+        "create": false,
+        "nullable": true,
+        "type": "string",
+        "update": false
+      },
+      "azureKubernetesServiceConfig": {
+        "create": true,
+        "dynamicField": true,
+        "nullable": true,
+        "type": "azureKubernetesServiceConfig",
+        "update": true
+      },
+      "caCert": {
+        "create": false,
+        "nullable": true,
+        "type": "string",
+        "update": false
+      },
+      "capabilities": {
+        "create": false,
+        "nullable": true,
+        "type": "capabilities",
+        "update": false
+      },
+      "capacity": {
+        "create": false,
+        "nullable": true,
+        "type": "map[string]",
+        "update": false
+      },
+      "certificatesExpiration": {
+        "create": false,
+        "nullable": true,
+        "type": "map[certExpiration]",
+        "update": false
+      },
+      "clusterTemplateId": {
+        "create": false,
+        "nullable": true,
+        "type": "reference[clusterTemplate]",
+        "update": false
+      },
+      "clusterTemplateRevisionId": {
+        "create": true,
+        "nullable": true,
+        "type": "reference[clusterTemplateRevision]",
+        "update": true
+      },
+      "componentStatuses": {
+        "create": false,
+        "nullable": true,
+        "type": "array[clusterComponentStatus]",
+        "update": false
+      },
+      "conditions": {
+        "create": false,
+        "nullable": true,
+        "type": "array[clusterCondition]",
+        "update": false
+      },
+      "created": "<sanitized:created>",
+      "creatorId": {
+        "create": false,
+        "type": "reference[/v3/schemas/user]",
+        "update": false
+      },
+      "currentCisRunName": {
+        "create": false,
+        "nullable": true,
+        "type": "string",
+        "update": false
+      },
+      "defaultClusterRoleForProjectMembers": {
+        "create": true,
+        "nullable": true,
+        "type": "reference[roleTemplate]",
+        "update": true
+      },
+      "defaultPodSecurityPolicyTemplateId": {
+        "create": true,
+        "nullable": true,
+        "type": "reference[podSecurityPolicyTemplate]",
+        "update": true
+      },
+      "description": {
+        "create": true,
+        "nullable": true,
+        "type": "string",
+        "update": true
+      },
+      "desiredAgentImage": {
+        "create": true,
+        "nullable": true,
+        "type": "string",
+        "update": true
+      },
+      "desiredAuthImage": {
+        "create": true,
+        "nullable": true,
+        "type": "string",
+        "update": true
+      },
+      "dockerRootDir": {
+        "create": true,
+        "default": "/var/lib/docker",
+        "nullable": true,
+        "type": "string",
+        "update": true
+      },
+      "driver": {
+        "create": false,
+        "nullable": true,
+        "type": "string",
+        "update": false
+      },
+      "eksConfig": {
+        "create": true,
+        "nullable": true,
+        "type": "eksClusterConfigSpec",
+        "update": true
+      },
+      "eksStatus": {
+        "create": false,
+        "nullable": true,
+        "type": "eksStatus",
+        "update": false
+      },
+      "enableClusterAlerting": {
+        "create": true,
+        "default": false,
+        "type": "boolean",
+        "update": true
+      },
+      "enableClusterMonitoring": {
+        "create": true,
+        "default": false,
+        "type": "boolean",
+        "update": true
+      },
+      "enableNetworkPolicy": {
+        "create": true,
+        "default": false,
+        "nullable": true,
+        "type": "boolean",
+        "update": true
+      },
+      "failedSpec": {
+        "create": false,
+        "nullable": true,
+        "type": "clusterSpec",
+        "update": false
+      },
+      "fleetWorkspaceName": {
+        "create": true,
+        "nullable": true,
+        "type": "string",
+        "update": true
+      },
+      "gkeConfig": {
+        "create": true,
+        "nullable": true,
+        "type": "gkeClusterConfigSpec",
+        "update": true
+      },
+      "gkeStatus": {
+        "create": false,
+        "nullable": true,
+        "type": "gkeStatus",
+        "update": false
+      },
+      "googleKubernetesEngineConfig": {
+        "create": true,
+        "dynamicField": true,
+        "nullable": true,
+        "type": "googleKubernetesEngineConfig",
+        "update": true
+      },
+      "id": {
+        "create": false,
+        "nullable": true,
+        "type": "dnsLabel",
+        "update": false
+      },
+      "importedConfig": {
+        "create": false,
+        "nullable": true,
+        "type": "importedConfig",
+        "update": false
+      },
+      "internal": {
+        "create": false,
+        "default": false,
+        "type": "boolean",
+        "update": false
+      },
+      "istioEnabled": {
+        "create": false,
+        "default": false,
+        "type": "boolean",
+        "update": false
+      },
+      "k3sConfig": {
+        "create": true,
+        "nullable": true,
+        "type": "k3sConfig",
+        "update": true
+      },
+      "labels": {
+        "create": true,
+        "nullable": true,
+        "type": "map[string]",
+        "update": true
+      },
+      "limits": {
+        "create": false,
+        "nullable": true,
+        "type": "map[string]",
+        "update": false
+      },
+      "linuxWorkerCount": {
+        "create": false,
+        "default": 0,
+        "type": "int",
+        "update": false
+      },
+      "localClusterAuthEndpoint": {
+        "create": true,
+        "nullable": true,
+        "type": "localClusterAuthEndpoint",
+        "update": true
+      },
+      "monitoringStatus": {
+        "create": false,
+        "nullable": true,
+        "type": "monitoringStatus",
+        "update": false
+      },
+      "name": {
+        "create": true,
+        "nullable": true,
+        "type": "dnsLabel",
+        "update": true
+      },
+      "nodeCount": {
+        "create": false,
+        "default": 0,
+        "type": "int",
+        "update": false
+      },
+      "nodeVersion": {
+        "create": false,
+        "default": 0,
+        "type": "int",
+        "update": false
+      },
+      "openStackSecret": {
+        "create": false,
+        "nullable": true,
+        "type": "string",
+        "update": false
+      },
+      "ownerReferences": {
+        "create": false,
+        "nullable": true,
+        "type": "array[ownerReference]",
+        "update": false
+      },
+      "privateRegistrySecret": {
+        "create": false,
+        "nullable": true,
+        "type": "string",
+        "update": false
+      },
+      "provider": {
+        "create": false,
+        "nullable": true,
+        "type": "string",
+        "update": false
+      },
+      "questions": {
+        "create": false,
+        "nullable": true,
+        "type": "array[question]",
+        "update": false
+      },
+      "rancherKubernetesEngineConfig": {
+        "create": true,
+        "nullable": true,
+        "type": "rancherKubernetesEngineConfig",
+        "update": true
+      },
+      "removed": {
+        "create": false,
+        "nullable": true,
+        "type": "date",
+        "update": false
+      },
+      "requested": {
+        "create": false,
+        "nullable": true,
+        "type": "map[string]",
+        "update": false
+      },
+      "rke2Config": {
+        "create": true,
+        "nullable": true,
+        "type": "rke2Config",
+        "update": true
+      },
+      "s3CredentialSecret": {
+        "create": false,
+        "nullable": true,
+        "type": "string",
+        "update": false
+      },
+      "scheduledClusterScan": {
+        "create": true,
+        "nullable": true,
+        "type": "scheduledClusterScan",
+        "update": true
+      },
+      "scheduledClusterScanStatus": {
+        "create": false,
+        "nullable": true,
+        "type": "scheduledClusterScanStatus",
+        "update": false
+      },
+      "state": {
+        "create": false,
+        "type": "string",
+        "update": false
+      },
+      "transitioning": {
+        "create": false,
+        "options": [
+          "yes",
+          "no",
+          "error"
+        ],
+        "type": "enum",
+        "update": false
+      },
+      "transitioningMessage": {
+        "create": false,
+        "type": "string",
+        "update": false
+      },
+      "uuid": "<sanitized:uuid>",
+      "version": {
+        "create": false,
+        "nullable": true,
+        "type": "info",
+        "update": false
+      },
+      "virtualCenterSecret": {
+        "create": false,
+        "nullable": true,
+        "type": "string",
+        "update": false
+      },
+      "vsphereSecret": {
+        "create": false,
+        "nullable": true,
+        "type": "string",
+        "update": false
+      },
+      "weavePasswordSecret": {
+        "create": false,
+        "nullable": true,
+        "type": "string",
+        "update": false
+      },
+      "windowsPreferedCluster": {
+        "create": true,
+        "default": false,
+        "type": "boolean",
+        "update": false
+      },
+      "windowsWorkerCount": {
+        "create": false,
+        "default": 0,
+        "type": "int",
+        "update": false
+      }
+    },
+    "resourceMethods": [
+      "PUT",
+      "DELETE",
+      "GET"
+    ],
+    "type": "schema",
+    "version": {
+      "group": "management.cattle.io",
+      "path": "/v3",
+      "version": "v3"
+    }
+  }
+}

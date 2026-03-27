@@ -13,6 +13,7 @@ Current work is focused on:
 - multi-instance configuration
 - discovery-first server foundations
 - generic fallback tools for Norman and Steve list/get/action/link/query flows
+- committed sanitized Rancher `2.6.5` contract fixtures with a repo-local regeneration path
 - repo-managed local Rancher `2.6.5` lab infrastructure
 
 ## Stack
@@ -78,6 +79,7 @@ This is the validated shape for the real environment split:
 The downstream local simulation matches the Kubernetes version exactly. It is still `kind`, not true RKE2, so the runtime is intentionally swappable later if exact RKE2 behavior becomes necessary.
 
 Both `.lab/` and `.tools/` are ignored by git, so generated state and downloaded binaries are never committed.
+Raw fixture captures are also written under `.lab/contract-fixtures/raw`, so only sanitized fixture artifacts are committed.
 
 Bring the full lab up:
 
@@ -120,6 +122,7 @@ make setup
 make dev
 make lab-up
 make lab-status
+make capture-fixtures
 make lint
 make typecheck
 make test
@@ -134,6 +137,9 @@ Testing is enabled from the start.
 - `make test` is required
 - the minimum coverage gate is `60%`
 - fixture-backed contract testing is part of the target design
+- the committed live fixture set lives under [tests/fixtures/rancher_2_6_5](/Users/pierce/Code/mcp-servers/mcp-rancher/tests/fixtures/rancher_2_6_5)
+- regenerate fixtures from the running devlab with `make capture-fixtures`
+- `make typecheck` now covers `src/`, `devtools/`, and `scripts/`
 
 ## Architecture Direction
 
@@ -152,6 +158,7 @@ Current implemented slices include:
 - generic Norman and Steve action/link tools
 - typed generic Norman and Steve query controls for filters, selectors, and pagination passthrough
 - normalized generic list results that report the applied query params sent to Rancher
+- repo-local capture tooling and committed sanitized Norman/Steve contract fixtures for Rancher `2.6.5`
 - modular tool files with thin registration facades instead of allowing tool modules to grow unbounded
 
 ## Development Workflow

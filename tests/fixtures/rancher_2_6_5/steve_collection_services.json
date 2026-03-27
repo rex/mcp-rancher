@@ -1,0 +1,133 @@
+{
+  "name": "steve_collection_services",
+  "request_params": {
+    "limit": 2
+  },
+  "request_path": "/k8s/clusters/venue-local/v1/services",
+  "response": {
+    "actions": {},
+    "continue": "<continue-token>",
+    "createTypes": {
+      "service": "https://rancher.example.test/k8s/clusters/venue-local/v1/services"
+    },
+    "data": [
+      {
+        "apiVersion": "v1",
+        "id": "cattle-system/cattle-cluster-agent",
+        "kind": "Service",
+        "links": {
+          "remove": "https://rancher.example.test/k8s/clusters/venue-local/v1/services/cattle-system/cattle-cluster-agent",
+          "self": "https://rancher.example.test/k8s/clusters/venue-local/v1/services/cattle-system/cattle-cluster-agent",
+          "update": "https://rancher.example.test/k8s/clusters/venue-local/v1/services/cattle-system/cattle-cluster-agent",
+          "view": "https://rancher.example.test/k8s/clusters/venue-local/api/v1/namespaces/cattle-system/services/cattle-cluster-agent"
+        },
+        "metadata": {
+          "annotations": {},
+          "name": "cattle-cluster-agent",
+          "namespace": "cattle-system",
+          "state": {
+            "error": false,
+            "message": "Service is ready",
+            "name": "active",
+            "transitioning": false
+          }
+        },
+        "spec": {
+          "clusterIP": "10.96.215.129",
+          "clusterIPs": [
+            "10.96.215.129"
+          ],
+          "internalTrafficPolicy": "Cluster",
+          "ipFamilies": [
+            "IPv4"
+          ],
+          "ipFamilyPolicy": "SingleStack",
+          "ports": [
+            {
+              "name": "http",
+              "port": 80,
+              "protocol": "TCP",
+              "targetPort": 80
+            },
+            {
+              "name": "https-internal",
+              "port": 443,
+              "protocol": "TCP",
+              "targetPort": 444
+            }
+          ],
+          "selector": {
+            "app": "cattle-cluster-agent"
+          },
+          "sessionAffinity": "None",
+          "type": "ClusterIP"
+        },
+        "status": {
+          "loadBalancer": {}
+        },
+        "type": "service"
+      },
+      {
+        "apiVersion": "v1",
+        "id": "default/kubernetes",
+        "kind": "Service",
+        "links": {
+          "remove": "https://rancher.example.test/k8s/clusters/venue-local/v1/services/default/kubernetes",
+          "self": "https://rancher.example.test/k8s/clusters/venue-local/v1/services/default/kubernetes",
+          "update": "https://rancher.example.test/k8s/clusters/venue-local/v1/services/default/kubernetes",
+          "view": "https://rancher.example.test/k8s/clusters/venue-local/api/v1/namespaces/default/services/kubernetes"
+        },
+        "metadata": {
+          "labels": {
+            "component": "apiserver",
+            "provider": "kubernetes"
+          },
+          "name": "kubernetes",
+          "namespace": "default",
+          "state": {
+            "error": false,
+            "message": "Service is ready",
+            "name": "active",
+            "transitioning": false
+          }
+        },
+        "spec": {
+          "clusterIP": "10.96.0.1",
+          "clusterIPs": [
+            "10.96.0.1"
+          ],
+          "internalTrafficPolicy": "Cluster",
+          "ipFamilies": [
+            "IPv4"
+          ],
+          "ipFamilyPolicy": "SingleStack",
+          "ports": [
+            {
+              "name": "https",
+              "port": 443,
+              "protocol": "TCP",
+              "targetPort": 6443
+            }
+          ],
+          "sessionAffinity": "None",
+          "type": "ClusterIP"
+        },
+        "status": {
+          "loadBalancer": {}
+        },
+        "type": "service"
+      }
+    ],
+    "links": {
+      "self": "https://rancher.example.test/k8s/clusters/venue-local/v1/services"
+    },
+    "pagination": {
+      "first": "https://rancher.example.test/k8s/clusters/venue-local/v1/services",
+      "next": "https://rancher.example.test/k8s/clusters/venue-local/v1/services?continue=%3Ccontinue-token%3E&limit=2",
+      "partial": true
+    },
+    "resourceType": "service",
+    "revision": "19100",
+    "type": "collection"
+  }
+}

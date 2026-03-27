@@ -1,0 +1,100 @@
+{
+  "name": "steve_schema_namespace",
+  "request_params": {},
+  "request_path": "/k8s/clusters/venue-local/v1/schemas/namespace",
+  "response": {
+    "attributes": {
+      "columns": [
+        {
+          "description": "Name must be unique within a namespace. Is required when creating resources, although some resources may allow a client to request the generation of an appropriate name automatically. Name is primarily intended for creation idempotence and configuration definition. Cannot be updated. More info: http://kubernetes.io/docs/user-guide/identifiers#names",
+          "field": "$.metadata.fields[0]",
+          "format": "name",
+          "name": "Name",
+          "priority": 0,
+          "type": "string"
+        },
+        {
+          "description": "The status of the namespace",
+          "field": "$.metadata.fields[1]",
+          "format": "",
+          "name": "Status",
+          "priority": 0,
+          "type": "string"
+        },
+        {
+          "description": "CreationTimestamp is a timestamp representing the server time when this object was created. It is not guaranteed to be set in happens-before order across separate operations. Clients may not set this value. It is represented in RFC3339 form and is in UTC.\n\nPopulated by the system. Read-only. Null for lists. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata",
+          "field": "$.metadata.fields[2]",
+          "format": "",
+          "name": "Age",
+          "priority": 0,
+          "type": "string"
+        }
+      ],
+      "group": "",
+      "kind": "Namespace",
+      "namespaced": false,
+      "resource": "namespaces",
+      "verbs": [
+        "create",
+        "delete",
+        "get",
+        "list",
+        "patch",
+        "update",
+        "watch"
+      ],
+      "version": "v1"
+    },
+    "collectionMethods": [
+      "GET",
+      "GET",
+      "POST"
+    ],
+    "description": "Namespace provides a scope for Names. Use of multiple namespaces is optional.",
+    "id": "namespace",
+    "links": {
+      "collection": "https://rancher.example.test/k8s/clusters/venue-local/v1/namespaces",
+      "self": "https://rancher.example.test/k8s/clusters/venue-local/v1/schemas/namespace"
+    },
+    "pluralName": "namespaces",
+    "resourceFields": {
+      "apiVersion": {
+        "create": true,
+        "description": "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
+        "type": "string",
+        "update": true
+      },
+      "kind": {
+        "create": true,
+        "description": "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
+        "type": "string",
+        "update": true
+      },
+      "metadata": {
+        "create": true,
+        "description": "Standard object's metadata. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata",
+        "type": "io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta",
+        "update": true
+      },
+      "spec": {
+        "create": true,
+        "description": "Spec defines the behavior of the Namespace. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status",
+        "type": "io.k8s.api.core.v1.NamespaceSpec",
+        "update": true
+      },
+      "status": {
+        "create": true,
+        "description": "Status describes the current status of a Namespace. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status",
+        "type": "io.k8s.api.core.v1.NamespaceStatus",
+        "update": true
+      }
+    },
+    "resourceMethods": [
+      "GET",
+      "DELETE",
+      "PUT",
+      "PATCH"
+    ],
+    "type": "schema"
+  }
+}

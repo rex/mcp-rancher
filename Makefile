@@ -2,7 +2,7 @@ SHELL := /opt/homebrew/bin/zsh
 .DEFAULT_GOAL := help
 
 .PHONY: help setup install env hooks dev start lint typecheck fix test test-unit \
-        build clean clean-all info update lab-up lab-down lab-reset lab-status \
+        build clean clean-all info update capture-fixtures lab-up lab-down lab-reset lab-status \
         lab-logs lab-tools lab-rancher-up lab-rancher-down lab-kind-up lab-kind-down
 
 # ─── Configuration ────────────────────────────────────────────────────────────
@@ -40,6 +40,7 @@ help:
 	@echo "  \033[32mlab-rancher-down\033[0m Uninstall Rancher from the management cluster"
 	@echo "  \033[32mlab-kind-up\033[0m   Start the managed and downstream kind clusters"
 	@echo "  \033[32mlab-kind-down\033[0m Stop both managed kind clusters"
+	@echo "  \033[32mcapture-fixtures\033[0m Capture sanitized Rancher contract fixtures from the live devlab"
 	@echo ""
 	@echo "\033[1;36mQuality\033[0m"
 	@echo "  \033[32mlint\033[0m           Run ruff check"
@@ -126,6 +127,10 @@ lab-kind-up:
 lab-kind-down:
 	$(PYTHON) -m rancher_mcp.devlab kind-down
 
+## Capture sanitized Rancher contract fixtures from the live devlab
+capture-fixtures:
+	$(PYTHON) scripts/capture_contract_fixtures.py
+
 # ─── Quality ──────────────────────────────────────────────────────────────────
 ## Run ruff linter
 lint:
@@ -134,7 +139,7 @@ lint:
 
 ## Run pyright in strict mode
 typecheck:
-	$(PYRIGHT) src/
+	$(PYRIGHT) src/ devtools/ scripts/
 
 ## Auto-fix style issues
 fix:
