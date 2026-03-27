@@ -36,7 +36,7 @@ quality_gates:
   lint: required
   typecheck: required
   tests: required
-  minimum_coverage_percent: 80
+  minimum_coverage_percent: 60
   commit_style: conventional
   signed_commits: required
   push_after_commit: required

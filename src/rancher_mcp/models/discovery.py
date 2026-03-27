@@ -89,3 +89,58 @@ class ServerProfile(BaseModel):
     primary_target_version: str
     catalog_path: str
     multi_instance_enabled: bool
+
+
+class APIPlaneSummary(BaseModel):
+    """Discovered Rancher API plane metadata."""
+
+    id: str
+    name: str
+    root_path: str
+    api_version: str | None = None
+    cluster_id: str | None = None
+    link_count: int = 0
+
+
+class APIPlaneList(BaseModel):
+    """Available API planes for a Rancher instance."""
+
+    instance: str
+    cluster_id: str | None = None
+    planes: list[APIPlaneSummary] = []
+
+
+class SchemaSummary(BaseModel):
+    """Compact schema summary for a Norman or Steve type."""
+
+    id: str
+    plural_name: str | None = None
+    collection_methods: list[str] = Field(default_factory=list)
+    resource_methods: list[str] = Field(default_factory=list)
+    link_keys: list[str] = Field(default_factory=list)
+    field_count: int = 0
+
+
+class SchemaList(BaseModel):
+    """Schema inventory for one Rancher API plane."""
+
+    instance: str
+    plane: str
+    cluster_id: str | None = None
+    schema_count: int
+    schemas: list[SchemaSummary] = []
+
+
+class SchemaDetail(BaseModel):
+    """Schema detail normalized across Norman and Steve."""
+
+    instance: str
+    plane: str
+    id: str
+    cluster_id: str | None = None
+    plural_name: str | None = None
+    collection_methods: list[str] = Field(default_factory=list)
+    resource_methods: list[str] = Field(default_factory=list)
+    link_keys: list[str] = Field(default_factory=list)
+    field_keys: list[str] = Field(default_factory=list)
+    collection_filter_keys: list[str] = Field(default_factory=list)

@@ -2,7 +2,7 @@
 
 ## Current Objective
 
-Bootstrap the new clean-slate Rancher MCP project around the perfect-server architecture.
+Implement the clean-slate Rancher MCP project phase-by-phase against the live Rancher `2.6.5` devlab.
 
 ## Completed
 
@@ -23,20 +23,28 @@ Bootstrap the new clean-slate Rancher MCP project around the perfect-server arch
   management cluster on Kubernetes `v1.20.15`
   Rancher `2.6.5` installed via Helm
   downstream simulated cluster on Kubernetes `v1.23.17`
+- downstream simulated cluster import fully automated and validated live
+- Rancher local management cluster component health warnings resolved
 - local lab docs, CLI, and tests updated to the validated topology
-- `make lint`, `make typecheck`, and `make test` passing with the live devlab running
+- `make lint`, `make typecheck`, and `make test-unit` passing with the live devlab running
+- Norman and Steve discovery/schema tools implemented and registered safely with FastMCP
+- live Rancher `2.6.5` validation completed for API plane discovery plus Norman/Steve schema detail lookups
+- `make lint`, `make typecheck`, and `make test` passing for the current discovery slice
 
 ## In Progress
 
-- preparing to import the downstream simulated cluster into Rancher and use the lab for fixture capture
+- Phase 2 from the clean-slate plan:
+  closing the remaining client/discovery-layer gaps after schema discovery
+  preparing sanitized Rancher `2.6.5` contract fixtures from the devlab
+  planning the handoff into the Phase 3 generic tool engine
 
 ## Next Steps
 
-1. Import the downstream simulated cluster into Rancher and validate registration flow
-2. Add Norman schema discovery and API surface introspection
-3. Implement Steve client with Rancher `2.6.5`-compatible behavior
-4. Capture and sanitize real Rancher `2.6.5` fixtures
-5. Expand discovery tools into generic resource/action tools
+1. Capture and sanitize real Rancher `2.6.5` Norman and Steve schema fixtures from the devlab
+2. Implement the remaining Phase 2 streaming client work for WebSocket-backed exec/log/watch flows
+3. Begin Phase 3 generic fallback tools with schema-driven type listing and resource get/list operations
+4. Extend discovery output to expose action and link introspection for generic invocation
+5. Keep validating each new slice against the live devlab before moving deeper into curated packs
 
 ## Notes
 
@@ -44,3 +52,5 @@ Bootstrap the new clean-slate Rancher MCP project around the perfect-server arch
 - RK-API/OpenAPI from later versions is reference material, not the primary contract
 - The local lab matches the real management-plane Kubernetes version exactly
 - The downstream local lab matches Kubernetes `v1.23.17` exactly but is still `kind`, not true RKE2
+- Rancher registration in this local topology needed a declarative convergence loop because Rancher `2.6.5`
+  re-mutates the downstream agent after initial import
