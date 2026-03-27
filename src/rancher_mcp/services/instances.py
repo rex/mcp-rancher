@@ -1,7 +1,26 @@
 """Instance summarization helpers."""
 
 from rancher_mcp.config import AppSettings
-from rancher_mcp.models.discovery import InstanceList, InstanceSummary, ServerProfile
+from rancher_mcp.exceptions import ConfigurationError
+from rancher_mcp.models.discovery import (
+    InstanceList,
+    InstanceSummary,
+    RancherInstanceConfig,
+    ServerProfile,
+)
+
+
+def resolve_instance(
+    settings: AppSettings,
+    instance_name: str | None = None,
+) -> tuple[str, RancherInstanceConfig]:
+    """Resolve a configured Rancher instance by name."""
+
+    resolved_name = instance_name or settings.default_instance
+    try:
+        return resolved_name, settings.instances[resolved_name]
+    except KeyError as exc:
+        raise ConfigurationError(f"Unknown Rancher instance {resolved_name!r}") from exc
 
 
 def build_instance_list(settings: AppSettings, primary_target_version: str) -> InstanceList:

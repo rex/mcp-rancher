@@ -16,15 +16,18 @@ Bootstrap the new clean-slate Rancher MCP project around the perfect-server arch
 - initial discovery tools implemented
 - `make lint`, `make typecheck`, and `make test` passing
 - `.env` generated and pre-commit hooks installed
+- management-plane Rancher HTTP client implemented
+- live-capable `rancher_server_health` and `rancher_server_version` tools implemented
+- HTTP boundary tests added for the management client
 
 ## In Progress
 
-- transitioning from scaffold to core client and discovery layer
+- expanding from management-plane discovery into schema and capability discovery
 
 ## Next Steps
 
-1. Implement instance-aware Rancher management and Steve clients
-2. Add schema and capability discovery against live Rancher surfaces
+1. Add Norman schema discovery and API surface introspection
+2. Implement Steve client with Rancher `2.6.5`-compatible behavior
 3. Capture and sanitize real Rancher `2.6.5` fixtures
 4. Expand discovery tools into generic resource/action tools
 5. Begin curated read-first operator packs
