@@ -32,11 +32,15 @@
   `rancher_norman_resource_link_follow`
   `rancher_steve_resource_action_invoke`
   `rancher_steve_resource_link_follow`
+- Continued Phase 3 generic fallback query controls:
+  typed Norman list query controls for `limit`, `marker`, `sort_by`, `reverse`, and `filters_json`
+  typed Steve list query controls for `limit`, `continue_token`, `label_selector`, and `field_selector`
 - Generic resource models and service helpers for schema-driven path resolution, query-param parsing, and normalized collection/detail output
 - Unit and HTTP boundary coverage for Steve discovery behavior and schema normalization
 - Unit coverage for generic Norman and Steve list/get behavior
 - Unit coverage for generic Norman and Steve action/link behavior
 - HTTP boundary coverage for management-plane JSON POST behavior
+- Unit coverage for generic query builder behavior and typed list-tool query normalization
 
 ### Changed
 - Replaced the abandoned single-container Rancher devlab path with the validated Helm-on-kind topology
@@ -51,6 +55,9 @@
 - Registered the first generic fallback tools with FastMCP and normalized namespaced Steve collection handling to the live Rancher `2.6.5` `/pods/{namespace}` convention
 - Added typed management-client JSON POST support so generic action invocation uses the same HTTP boundary and error mapping as reads
 - Preserved query strings when following action URLs so Rancher `?action=...` endpoints execute correctly
+- Split generic list-query construction into a dedicated helper module instead of growing the list tool handlers
+- Generic list results now report the exact query params applied to the Rancher request
+- Normalized Rancher `2.6.5` Steve pagination by deriving `continue_token` from `pagination.next` URLs when the API omits `pagination.continue`
 
 ### Verified
 - `https://127.0.0.1:8443/ping` responds from the repo-managed lab
@@ -67,6 +74,10 @@
   Norman `cluster` action `generateKubeconfig`
   Norman `cluster` link `nodes`
   Steve `pod` link `view` against the Rancher proxied Kubernetes API
+- New typed query controls execute successfully against the live Rancher `2.6.5` devlab, including:
+  Norman `setting` list filter/sort/marker pagination flows
+  Steve cluster-wide `pod` list continuation via normalized `continue_token`
+  Steve namespaced `pod` list selectors via `label_selector` and `field_selector`
 - `make lint` passes
 - `make typecheck` passes
 - `make test` passes

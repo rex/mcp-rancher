@@ -12,7 +12,7 @@ Current work is focused on:
 - executable scaffold
 - multi-instance configuration
 - discovery-first server foundations
-- generic fallback tools for Norman and Steve list/get/action/link flows
+- generic fallback tools for Norman and Steve list/get/action/link/query flows
 - repo-managed local Rancher `2.6.5` lab infrastructure
 
 ## Stack
@@ -150,6 +150,8 @@ Current implemented slices include:
 - discovery, API-plane, and schema introspection for Norman and Steve
 - generic Norman and Steve list/get tools
 - generic Norman and Steve action/link tools
+- typed generic Norman and Steve query controls for filters, selectors, and pagination passthrough
+- normalized generic list results that report the applied query params sent to Rancher
 - modular tool files with thin registration facades instead of allowing tool modules to grow unbounded
 
 ## Development Workflow

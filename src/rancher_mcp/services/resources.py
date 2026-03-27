@@ -6,7 +6,7 @@ import json
 from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import cast
-from urllib.parse import quote, urlsplit
+from urllib.parse import parse_qs, quote, urlsplit
 
 from rancher_mcp.exceptions import RancherCapabilityError
 from rancher_mcp.models.resources import (
@@ -18,8 +18,6 @@ from rancher_mcp.models.resources import (
     ResourcePagination,
 )
 
-QueryParamValue = str | int | bool
-
 
 @dataclass(frozen=True)
 class ResourceSchemaReference:
@@ -30,34 +28,6 @@ class ResourceSchemaReference:
     plural_name: str
     collection_path: str
     namespaced: bool = False
-
-
-def parse_query_params(params_json: str | None) -> dict[str, QueryParamValue]:
-    """Parse a JSON object into HTTP query params."""
-
-    if params_json is None or not params_json.strip():
-        return {}
-
-    decoded: object = json.loads(params_json)
-    if not isinstance(decoded, dict):
-        raise RancherCapabilityError("params_json must decode to an object")
-
-    params: dict[str, QueryParamValue] = {}
-    raw_params = cast(dict[str, object], decoded)
-    for key, value in raw_params.items():
-        if isinstance(value, bool):
-            params[key] = value
-            continue
-        if isinstance(value, int):
-            params[key] = value
-            continue
-        if isinstance(value, str):
-            params[key] = value
-            continue
-        raise RancherCapabilityError(
-            f"params_json field {key!r} must be a string, integer, or boolean value"
-        )
-    return params
 
 
 def parse_payload_object(payload_json: str | None) -> dict[str, object]:
@@ -142,6 +112,7 @@ def build_resource_list_model(
     payload: Mapping[str, object],
     cluster_id: str | None = None,
     namespace: str | None = None,
+    applied_query_params: Mapping[str, str | int | bool] | None = None,
 ) -> GenericResourceList:
     """Normalize a collection payload into a generic list model."""
 
@@ -171,6 +142,7 @@ def build_resource_list_model(
         collection_link_keys=_mapping_keys(payload.get("links")),
         available_filter_keys=_mapping_keys(payload.get("filters")),
         available_sort_keys=_mapping_keys(payload.get("sort")),
+        applied_query_params=dict(applied_query_params or {}),
         pagination=_pagination_from_payload(payload.get("pagination")),
         resources=resources,
     )
@@ -348,13 +320,18 @@ def _pagination_from_payload(payload: object) -> ResourcePagination | None:
     raw_next = mapping.get("next")
     raw_previous = mapping.get("previous")
     raw_continue = mapping.get("continue")
+    normalized_next = raw_next if isinstance(raw_next, str) else None
+    normalized_previous = raw_previous if isinstance(raw_previous, str) else None
+    continue_token = raw_continue if isinstance(raw_continue, str) else None
+    if continue_token is None:
+        continue_token = _continue_token_from_url(normalized_next)
 
     return ResourcePagination(
         limit=raw_limit if isinstance(raw_limit, int) else None,
         total=raw_total if isinstance(raw_total, int) else None,
-        next=raw_next if isinstance(raw_next, str) else None,
-        previous=raw_previous if isinstance(raw_previous, str) else None,
-        continue_token=raw_continue if isinstance(raw_continue, str) else None,
+        next=normalized_next,
+        previous=normalized_previous,
+        continue_token=continue_token,
     )
 
 
@@ -396,6 +373,19 @@ def _request_target_from_value(value: object) -> str | None:
     if parsed.query:
         return f"{parsed.path}?{parsed.query}"
     return parsed.path or None
+
+
+def _continue_token_from_url(value: str | None) -> str | None:
+    """Extract a Kubernetes continue token from a pagination URL."""
+
+    if value is None:
+        return None
+    parsed = urlsplit(value)
+    candidates = parse_qs(parsed.query).get("continue")
+    if not candidates:
+        return None
+    token = candidates[0].strip()
+    return token or None
 
 
 def _to_steve_relative_path(path: str, cluster_id: str | None) -> str:

@@ -36,11 +36,12 @@ As of `2026-03-27`, the repo has already moved beyond pure planning:
 - Phase 3 is in progress:
   generic Norman/Steve list/get tools are implemented and live-validated
   generic Norman/Steve action/link tools are implemented and live-validated where the lab exposes real behaviors
+  generic Norman/Steve query controls are implemented and live-validated for Rancher-supported filter/sort,
+  marker, selector, and pagination flows
 - tool modules are being kept logically split instead of allowing a single discovery or resource file to grow unbounded
 
 The next high-value gaps are:
 
-- generic query controls
 - fixture capture and sanitization
 - WebSocket-backed streaming behavior
 - first curated read-only packs

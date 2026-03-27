@@ -45,7 +45,12 @@ class StubNormanClient:
                 },
             }
         if path == "/v3/clusters":
-            assert params == {"limit": 1, "name": "local"}
+            assert params == {
+                "limit": 1,
+                "name": "local",
+                "sort": "name",
+                "reverse": True,
+            }
             return {
                 "actions": {"create": "https://rancher.work.example.com/v3/clusters"},
                 "filters": {"name": {}, "state": {}},
@@ -128,12 +133,21 @@ class StubSteveClient:
                 },
             }
         if path == "/pods/cattle-system":
-            assert params == {"limit": 1}
+            assert params == {
+                "limit": 1,
+                "labelSelector": "app=cattle-cluster-agent",
+                "fieldSelector": "metadata.name=test-pod",
+            }
             return {
                 "links": {
                     "self": "https://rancher.work.example.com/k8s/clusters/venue-local/v1/pods/cattle-system"
                 },
-                "pagination": {"continue": "cursor-123"},
+                "pagination": {
+                    "next": (
+                        "https://rancher.work.example.com/k8s/clusters/venue-local/v1/pods/"
+                        "cattle-system?continue=cursor-123&limit=1"
+                    )
+                },
                 "resourceType": "pod",
                 "data": [
                     {
@@ -207,7 +221,10 @@ async def test_rancher_norman_resource_list_normalizes_collection() -> None:
 
     result = await rancher_norman_resource_list(
         schema_id="cluster",
-        params_json='{"limit": 1, "name": "local"}',
+        limit=1,
+        sort_by="name",
+        reverse=True,
+        filters_json='{"name": "local"}',
         instance="work",
         settings=build_settings(),
         client=StubNormanClient(),
@@ -219,6 +236,12 @@ async def test_rancher_norman_resource_list_normalizes_collection() -> None:
     assert result.resource_count == 1
     assert result.collection_action_keys == ["create"]
     assert result.available_filter_keys == ["name", "state"]
+    assert result.applied_query_params == {
+        "limit": 1,
+        "name": "local",
+        "sort": "name",
+        "reverse": True,
+    }
     assert result.resources[0].id == "local"
     assert result.resources[0].resource_path == "/v3/clusters/local"
 
@@ -289,7 +312,9 @@ async def test_rancher_steve_resource_list_uses_namespace_scope_when_requested()
         schema_id="pod",
         cluster_id="venue-local",
         namespace="cattle-system",
-        params_json='{"limit": 1}',
+        limit=1,
+        label_selector="app=cattle-cluster-agent",
+        field_selector="metadata.name=test-pod",
         instance="work",
         settings=build_settings(),
         client=StubSteveClient(),
@@ -298,6 +323,11 @@ async def test_rancher_steve_resource_list_uses_namespace_scope_when_requested()
     assert result.plane == "steve"
     assert result.cluster_id == "venue-local"
     assert result.collection_path == "/pods/cattle-system"
+    assert result.applied_query_params == {
+        "limit": 1,
+        "labelSelector": "app=cattle-cluster-agent",
+        "fieldSelector": "metadata.name=test-pod",
+    }
     assert result.pagination is not None
     assert result.pagination.continue_token is not None
     assert result.pagination.continue_token.startswith("cursor-")

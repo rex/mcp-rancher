@@ -3,6 +3,12 @@
 from pydantic import BaseModel, Field
 
 
+def _empty_resource_items() -> list["GenericResourceItem"]:
+    """Return a typed empty resource list for Pydantic default factories."""
+
+    return []
+
+
 class ResourcePagination(BaseModel):
     """Normalized pagination metadata for a resource collection."""
 
@@ -42,8 +48,9 @@ class GenericResourceList(BaseModel):
     collection_link_keys: list[str] = Field(default_factory=list)
     available_filter_keys: list[str] = Field(default_factory=list)
     available_sort_keys: list[str] = Field(default_factory=list)
+    applied_query_params: dict[str, str | int | bool] = Field(default_factory=dict)
     pagination: ResourcePagination | None = None
-    resources: list[GenericResourceItem] = []
+    resources: list[GenericResourceItem] = Field(default_factory=_empty_resource_items)
 
 
 class GenericResourceDetail(BaseModel):

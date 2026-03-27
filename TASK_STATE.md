@@ -41,21 +41,27 @@ Implement the clean-slate Rancher MCP project phase-by-phase against the live Ra
 - discovery and generic resource tools split into logically scoped modules with thin facades instead of growing monoliths
 - live Rancher `2.6.5` validation completed for Norman cluster action/link flows and Steve pod link-follow flows
 - `make lint`, `make typecheck`, and `make test` passing for the current generic action/link slice
+- typed generic query controls implemented for Norman and Steve list tools:
+  Norman `limit`, `marker`, `sort_by`, `reverse`, and `filters_json`
+  Steve `limit`, `continue_token`, `label_selector`, and `field_selector`
+- generic list results now expose the applied query params sent to Rancher
+- Steve pagination normalization now derives `continue_token` from `pagination.next` URLs when Rancher omits
+  `pagination.continue`
+- live Rancher `2.6.5` validation completed for Norman filter/sort/marker flows and Steve selector/continue flows
+- `make lint`, `make typecheck`, and `make test` passing for the current generic query-controls slice
 
 ## In Progress
 
 - Phase 3 from the clean-slate plan:
-  expanding generic fallback coverage beyond list/get
   preparing sanitized Rancher `2.6.5` contract fixtures from the devlab
   closing the remaining Phase 2 streaming-client gap for WebSocket-backed operations
 
 ## Next Steps
 
-1. Add generic query controls for selectors, sort, and pagination passthrough where Rancher supports them cleanly
-2. Capture and sanitize real Rancher `2.6.5` Norman and Steve schema/resource fixtures from the devlab
-3. Implement the remaining Phase 2 streaming client work for WebSocket-backed exec/log/watch flows
-4. Add generic watch/subscribe support where Rancher proxy behavior is stable enough to expose safely
-5. Begin the first curated read-only packs once the generic layer and fixture capture are strong enough
+1. Capture and sanitize real Rancher `2.6.5` Norman and Steve schema/resource fixtures from the devlab
+2. Implement the remaining Phase 2 streaming client work for WebSocket-backed exec/log/watch flows
+3. Add generic watch/subscribe support where Rancher proxy behavior is stable enough to expose safely
+4. Begin the first curated read-only packs once the generic layer and fixture capture are strong enough
 
 ## Notes
 
@@ -65,3 +71,5 @@ Implement the clean-slate Rancher MCP project phase-by-phase against the live Ra
 - The downstream local lab matches Kubernetes `v1.23.17` exactly but is still `kind`, not true RKE2
 - Rancher registration in this local topology needed a declarative convergence loop because Rancher `2.6.5`
   re-mutates the downstream agent after initial import
+- Steve list pagination in Rancher `2.6.5` may surface continuation only through `pagination.next` URLs, so
+  the generic layer normalizes both URL-derived and explicit `continue` tokens
