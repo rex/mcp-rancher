@@ -575,6 +575,65 @@ def stop_port_forward(paths: LabPaths) -> None:
     paths.port_forward_pid_path.unlink(missing_ok=True)
 
 
+def build_port_forward_supervisor_command(paths: LabPaths, config: LabConfig) -> list[str]:
+    """Build a tiny supervisor command that keeps port-forward alive."""
+
+    kubectl_command = kubectl_args(
+        paths.management_kubeconfig_path,
+        "-n",
+        "cattle-system",
+        "port-forward",
+        "svc/rancher",
+        f"{config.rancher_https_port}:443",
+    )
+    supervisor_code = """
+import signal
+import subprocess
+import sys
+import time
+
+command = sys.argv[1:-1]
+log_path = sys.argv[-1]
+child = None
+running = True
+
+def handle_signal(signum, frame):
+    global running
+    running = False
+    if child and child.poll() is None:
+        child.terminate()
+
+signal.signal(signal.SIGTERM, handle_signal)
+signal.signal(signal.SIGINT, handle_signal)
+
+with open(log_path, "ab", buffering=0) as log_file:
+    while running:
+        child = subprocess.Popen(command, stdout=log_file, stderr=subprocess.STDOUT)
+        while running:
+            return_code = child.poll()
+            if return_code is not None:
+                break
+            time.sleep(1)
+        if running and return_code is not None:
+            message = f"[devlab] port-forward exited rc={return_code}; restarting\\n"
+            log_file.write(message.encode("utf-8"))
+            time.sleep(1)
+    if child and child.poll() is None:
+        child.terminate()
+        try:
+            child.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            child.kill()
+"""
+    return [
+        sys.executable,
+        "-c",
+        supervisor_code,
+        *kubectl_command,
+        str(paths.port_forward_log_path),
+    ]
+
+
 def ensure_port_forward(paths: LabPaths, config: LabConfig) -> None:
     """Start a background port-forward to the Rancher service if needed."""
 
@@ -582,21 +641,13 @@ def ensure_port_forward(paths: LabPaths, config: LabConfig) -> None:
     if port_forward_running(paths):
         return
 
-    with paths.port_forward_log_path.open("ab") as log_file:
-        process = subprocess.Popen(  # noqa: S603
-            kubectl_args(
-                paths.management_kubeconfig_path,
-                "-n",
-                "cattle-system",
-                "port-forward",
-                "svc/rancher",
-                f"{config.rancher_https_port}:443",
-            ),
-            cwd=config.repo_root,
-            stdout=log_file,
-            stderr=subprocess.STDOUT,
-            start_new_session=True,
-        )
+    process = subprocess.Popen(  # noqa: S603
+        build_port_forward_supervisor_command(paths, config),
+        cwd=config.repo_root,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        start_new_session=True,
+    )
     paths.port_forward_pid_path.write_text(str(process.pid), encoding="utf-8")
 
 
