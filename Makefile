@@ -2,7 +2,8 @@ SHELL := /opt/homebrew/bin/zsh
 .DEFAULT_GOAL := help
 
 .PHONY: help setup install env hooks dev start lint typecheck fix test test-unit \
-        build clean clean-all info update
+        build clean clean-all info update lab-up lab-down lab-reset lab-status \
+        lab-logs lab-tools lab-rancher-up lab-rancher-down lab-kind-up lab-kind-down
 
 # ─── Configuration ────────────────────────────────────────────────────────────
 PYTHON       := uv run python
@@ -27,6 +28,18 @@ help:
 	@echo "  \033[32mdev\033[0m            Run the MCP server"
 	@echo "  \033[32mstart\033[0m          Alias for dev"
 	@echo "  \033[32mbuild\033[0m          Build the Python package"
+	@echo ""
+	@echo "\033[1;36mLocal Lab\033[0m"
+	@echo "  \033[32mlab-up\033[0m         Start the 1.20.15 management cluster, Rancher 2.6.5, and the 1.23.17 downstream cluster"
+	@echo "  \033[32mlab-down\033[0m       Tear down the running local lab"
+	@echo "  \033[32mlab-reset\033[0m      Tear down the lab and remove repo-local runtime state"
+	@echo "  \033[32mlab-status\033[0m     Show local lab status and node details for both clusters"
+	@echo "  \033[32mlab-logs\033[0m       Show recent Rancher deployment logs"
+	@echo "  \033[32mlab-tools\033[0m      Download the repo-managed kind binary"
+	@echo "  \033[32mlab-rancher-up\033[0m Install or upgrade Rancher on the management cluster"
+	@echo "  \033[32mlab-rancher-down\033[0m Uninstall Rancher from the management cluster"
+	@echo "  \033[32mlab-kind-up\033[0m   Start the managed and downstream kind clusters"
+	@echo "  \033[32mlab-kind-down\033[0m Stop both managed kind clusters"
 	@echo ""
 	@echo "\033[1;36mQuality\033[0m"
 	@echo "  \033[32mlint\033[0m           Run ruff check"
@@ -71,6 +84,48 @@ start: dev
 build:
 	uv build
 
+# ─── Local Lab ────────────────────────────────────────────────────────────────
+## Start the full local Rancher lab on the management cluster plus the downstream simulated cluster
+lab-up:
+	$(PYTHON) -m rancher_mcp.devlab up
+
+## Stop the full local Rancher development lab
+lab-down:
+	$(PYTHON) -m rancher_mcp.devlab down
+
+## Destroy the full local Rancher development lab and repo-local runtime state
+lab-reset:
+	@read -r -p "This destroys the local lab clusters and repo-local runtime state. Continue? [y/N] " REPLY; \
+	if [[ "$$REPLY" =~ ^[Yy]$$ ]]; then $(PYTHON) -m rancher_mcp.devlab reset; fi
+
+## Show local lab status
+lab-status:
+	$(PYTHON) -m rancher_mcp.devlab status
+
+## Show recent Rancher lab logs
+lab-logs:
+	$(PYTHON) -m rancher_mcp.devlab logs
+
+## Download and verify the repo-managed kind binary
+lab-tools:
+	$(PYTHON) -m rancher_mcp.devlab ensure-tools
+
+## Install or upgrade Rancher on the management cluster
+lab-rancher-up:
+	$(PYTHON) -m rancher_mcp.devlab rancher-up
+
+## Uninstall Rancher from the management cluster
+lab-rancher-down:
+	$(PYTHON) -m rancher_mcp.devlab rancher-down
+
+## Start the managed and downstream kind clusters
+lab-kind-up:
+	$(PYTHON) -m rancher_mcp.devlab kind-up
+
+## Stop the managed and downstream kind clusters
+lab-kind-down:
+	$(PYTHON) -m rancher_mcp.devlab kind-down
+
 # ─── Quality ──────────────────────────────────────────────────────────────────
 ## Run ruff linter
 lint:
@@ -101,6 +156,7 @@ info:
 	@echo "\033[1mBranch:\033[0m  $$(git branch --show-current 2>/dev/null || echo 'not a git repo')"
 	@echo "\033[1mPython:\033[0m  $$(uv run python --version)"
 	@echo "\033[1mEnv:\033[0m     $$([ -f .env ] && echo '.env present' || echo '.env MISSING')"
+	@echo "\033[1mLab:\033[0m     make lab-status"
 
 ## Refresh lockfile and installed dependencies
 update:

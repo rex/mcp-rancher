@@ -12,6 +12,7 @@ Current work is focused on:
 - executable scaffold
 - multi-instance configuration
 - discovery-first server foundations
+- repo-managed local Rancher `2.6.5` lab infrastructure
 
 ## Stack
 
@@ -55,6 +56,52 @@ This will:
 - create `.env` from `.env.example` if missing
 - install pre-commit hooks
 
+## Local Lab
+
+The repo includes a self-contained local lab that does not depend on Docker Desktop's built-in Kubernetes and does not write to your global kubeconfig.
+
+It uses:
+
+- a repo-managed `kind` binary
+- a management cluster pinned to Kubernetes `v1.20.15`
+- Rancher `2.6.5` installed onto that management cluster via Helm
+- a separate downstream simulated cluster pinned to Kubernetes `v1.23.17`
+- repo-local kubeconfigs and runtime state under `.lab/`
+- repo-local downloaded tools under `.tools/`
+
+This is the validated shape for the real environment split:
+
+- the Rancher control plane runs on `v1.20.15`
+- venue clusters run on `v1.23.17+rke2r1`
+
+The downstream local simulation matches the Kubernetes version exactly. It is still `kind`, not true RKE2, so the runtime is intentionally swappable later if exact RKE2 behavior becomes necessary.
+
+Both `.lab/` and `.tools/` are ignored by git, so generated state and downloaded binaries are never committed.
+
+Bring the full lab up:
+
+```bash
+make lab-up
+```
+
+Inspect status:
+
+```bash
+make lab-status
+```
+
+Tear the running lab down:
+
+```bash
+make lab-down
+```
+
+Destroy repo-local runtime state as well:
+
+```bash
+make lab-reset
+```
+
 ## Environment Variables
 
 The server supports both:
@@ -70,6 +117,8 @@ See [.env.example](/Users/pierce/Code/mcp-servers/mcp-rancher/.env.example) for 
 make help
 make setup
 make dev
+make lab-up
+make lab-status
 make lint
 make typecheck
 make test

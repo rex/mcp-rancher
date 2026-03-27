@@ -14,3 +14,5 @@ build/
 .ruff_cache/
 .pyright/
 .DS_Store
+.lab/
+.tools/

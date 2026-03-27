@@ -16,6 +16,7 @@ dependencies = [
 
 [project.scripts]
 rancher-mcp = "rancher_mcp.__main__:main"
+rancher-mcp-lab = "rancher_mcp.devlab:main"
 
 [build-system]
 requires = ["uv_build>=0.9.26,<0.10.0"]
