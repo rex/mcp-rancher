@@ -49,13 +49,15 @@ As of `2026-03-27`, the repo has already moved beyond pure planning:
   fifth curated read-only pack for storage classes, persistent volumes, and persistent volume claims is
   implemented and live-validated
   sixth curated read-only pack for pod disruption budgets is implemented and live-validated
+  seventh curated read-only pack for deployments, daemonsets, and statefulsets is implemented and
+  live-validated
 - repo-local devlab and fixture tooling remain outside the shipped `src/rancher_mcp` package boundary
 - tool modules are being kept logically split instead of allowing a single discovery or resource file to grow unbounded
 
 The next high-value gaps are:
 
-- curated workload controller reads
-- higher-level operational aggregate helpers after that
+- higher-level operational aggregate helpers
+- apps/catalogs and other remaining curated read packs
 - additional generic watch coverage where the live Rancher surface proves stable
 
 ---
@@ -126,6 +128,14 @@ I would do this instead:
 7. Only then write implementation phases.
 
 This leads to a better design than a purely prescriptive, file-by-file build plan.
+
+The current live Rancher `2.6.5` lab has also made another version-specific behavior explicit:
+
+- curated workload-controller reads should use the raw Rancher Kubernetes proxy through the management client
+  because Steve `apps.*` collection paths return `500` while the raw `/apis/apps/v1/...` paths succeed
+- the current downstream devlab cluster exposes live deployments and daemonsets but no statefulsets, so
+  statefulset list behavior is live-validated against an empty collection while statefulset detail remains
+  covered primarily by unit tests until a stable validation fixture is added
 
 ---
 

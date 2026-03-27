@@ -127,18 +127,28 @@ Implement the clean-slate Rancher MCP project phase-by-phase against the live Ra
 - repo-local downstream validation fixture now also seeds a real PDB for ongoing maintenance-tool
   development
 - `make lint`, `make typecheck`, and `make test` passing for the current curated disruption slice
+- seventh curated read-only pack implemented:
+  `rancher_deployments_list`
+  `rancher_deployment_get`
+  `rancher_daemonsets_list`
+  `rancher_daemonset_get`
+  `rancher_statefulsets_list`
+  `rancher_statefulset_get`
+- live Rancher `2.6.5` validation completed for curated deployment and daemonset reads against the downstream
+  raw Kubernetes proxy surface, plus curated statefulset list validation against the currently empty live
+  downstream collection
+- `make lint`, `make typecheck`, and `make test` passing for the current curated workload-controller slice
 
 ## In Progress
 
 - Phase 4 from the clean-slate plan:
-  expanding curated read-only packs on top of the validated generic layer with higher-value workload
-  controller reads next
+  expanding curated read-only packs on top of the validated generic layer after the workload-controller slice
 
 ## Next Steps
 
-1. Add the next curated read-only pack for higher-value workload controller reads
-2. Continue outward from there into operational aggregate helpers
-3. Revisit the convenience-tool brainstorm once Tier 1 read coverage is in place
+1. Continue Phase 4 outward into the next high-value curated read packs, with apps/catalogs and adjacent operator-facing surfaces next
+2. Start shaping the first operational aggregate helpers on top of the now-live cluster/node/pod/service/workload substrate
+3. Revisit and prioritize the convenience-tool brainstorm once the next Tier 1 read surfaces are in place
 
 ## Notes
 
@@ -166,5 +176,8 @@ Implement the clean-slate Rancher MCP project phase-by-phase against the live Ra
 - Curated pod disruption budget reads intentionally use the raw Rancher Kubernetes proxy through the
   management client because Steve `poddisruptionbudgets` collection paths return `500` on the live
   Rancher `2.6.5` lab while the raw `/apis/policy/v1/...` paths succeed
+- Curated workload-controller reads intentionally use the raw Rancher Kubernetes proxy through the
+  management client because Steve `deployment`, `daemonset`, and `statefulset` collection paths return
+  `500` on the live Rancher `2.6.5` lab while the raw `/apis/apps/v1/...` paths succeed
 - The convenience-tool brainstorm document is intentionally separate from the canonical implementation plan so
   rough ideas can accumulate without causing scope drift in the build sequence

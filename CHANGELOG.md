@@ -76,6 +76,13 @@
 - Sixth curated read-only tools:
   `rancher_pod_disruption_budgets_list`
   `rancher_pod_disruption_budget_get`
+- Seventh curated read-only tools:
+  `rancher_deployments_list`
+  `rancher_deployment_get`
+  `rancher_daemonsets_list`
+  `rancher_daemonset_get`
+  `rancher_statefulsets_list`
+  `rancher_statefulset_get`
 - Collaborative brainstorming document for future aggregate and convenience tools:
   `CONVENIENCE_TOOLS_BRAINSTORM.md`
 - Repo-local storage validation fixture:
@@ -119,6 +126,8 @@
   proxy when Steve storage endpoints are unreliable on `2.6.5`
 - Added a dedicated curated disruption tool module and model set that reads through Rancher's raw
   Kubernetes proxy when Steve disruption endpoints are unreliable on `2.6.5`
+- Added a dedicated curated workload-controller tool module and model set that reads through Rancher's raw
+  Kubernetes proxy when Steve `apps.*` endpoints are unreliable on `2.6.5`
 
 ### Verified
 - `https://127.0.0.1:8443/ping` responds from the repo-managed lab
@@ -166,6 +175,10 @@
   persistent volume claim list/get via `/k8s/clusters/venue-local/api/v1/namespaces/storage-validation/persistentvolumeclaims`
 - The curated pod disruption budget tools execute successfully against the live Rancher `2.6.5` devlab for:
   PDB list/get via `/k8s/clusters/venue-local/apis/policy/v1/namespaces/storage-validation/poddisruptionbudgets`
+- The curated workload-controller tools execute successfully against the live Rancher `2.6.5` devlab for:
+  deployment list/get via `/k8s/clusters/venue-local/apis/apps/v1/namespaces/cattle-system/deployments`
+  daemonset list/get via `/k8s/clusters/venue-local/apis/apps/v1/namespaces/kube-system/daemonsets`
+  statefulset list via `/k8s/clusters/venue-local/apis/apps/v1/namespaces/cattle-system/statefulsets`
 - `make lint` passes
 - `make typecheck` passes
 - `make test` passes

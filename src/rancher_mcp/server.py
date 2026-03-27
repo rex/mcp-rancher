@@ -10,6 +10,7 @@ from rancher_mcp.tools.projects_namespaces import register_project_namespace_too
 from rancher_mcp.tools.resources import register_resource_tools
 from rancher_mcp.tools.settings_features import register_settings_feature_tools
 from rancher_mcp.tools.storage import register_storage_tools
+from rancher_mcp.tools.workloads import register_workload_tools
 
 
 def create_mcp_server() -> FastMCP:
@@ -27,6 +28,7 @@ def create_mcp_server() -> FastMCP:
     register_project_namespace_tools(mcp)
     register_settings_feature_tools(mcp)
     register_storage_tools(mcp)
+    register_workload_tools(mcp)
     return mcp
 
 

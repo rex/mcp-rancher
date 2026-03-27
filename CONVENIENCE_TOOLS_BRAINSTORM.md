@@ -82,10 +82,15 @@ operator-convenience tools that answer questions people actually ask during inci
 | `strong` | `find_restarting_pods` | Highlight instability | Include restart counts and likely impact |
 | `strong` | `find_system_namespace_failures` | Quickly catch failures in `cattle-*`, `kube-system`, ingress, storage namespaces | High operational value |
 | `strong` | `summarize_pod_health` | One-call pod diagnosis | Conditions, container states, restarts, owner, node, and likely next checks |
+| `strong` | `summarize_deployment_health` | One-call deployment diagnosis | Replica counts, rollout state, images, conditions, and likely blockers |
+| `strong` | `find_stalled_rollouts` | Surface deployments or statefulsets that are not converging | High-value release and outage signal |
+| `strong` | `find_daemonsets_missing_nodes` | Detect daemonsets not covering all desired nodes | Useful for CNI, logging, and agent health |
+| `strong` | `find_unhealthy_workload_controllers` | Collapse deployment/daemonset/statefulset readiness checks into one call | Good substrate for outage rollups |
 | `idea` | `find_pods_on_node` | Fast blast-radius lookup for node incidents | Useful before cordon/drain and for readiness triage |
 | `idea` | `find_stuck_terminating_pods` | Surface cleanup/drain blockers | Good before node maintenance |
 | `idea` | `find_pending_pods_with_reasons` | Scheduling triage | Resources, affinity, taints, PVC, image pull |
 | `idea` | `summarize_workload_rollout_health` | One-call deployment/statefulset rollout summary | Useful during releases and incident rollback checks |
+| `idea` | `explain_statefulset_not_ready` | Translate statefulset readiness failure into storage, scheduling, or rollout causes | Likely needs PVC and pod context |
 
 ## Service / Traffic Helpers
 
