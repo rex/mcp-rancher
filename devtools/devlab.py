@@ -20,7 +20,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-DEFAULT_REPO_ROOT = Path(__file__).resolve().parents[2]
+DEFAULT_REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
 @dataclass(frozen=True)

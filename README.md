@@ -13,6 +13,7 @@ Current work is focused on:
 - multi-instance configuration
 - discovery-first server foundations
 - generic fallback tools for Norman and Steve list/get/action/link/query flows
+- live-validated streaming substrate for log tail, exec, and watch-style flows
 - committed sanitized Rancher `2.6.5` contract fixtures with a repo-local regeneration path
 - repo-managed local Rancher `2.6.5` lab infrastructure
 
@@ -41,6 +42,8 @@ That means:
 ```text
 catalog/                 machine-readable capability inventory
 docs/                    human-readable architecture and capability docs
+devtools/                repo-local lab and fixture tooling, intentionally not shipped
+scripts/                 repo-local helper entrypoints
 src/rancher_mcp/         application package
 tests/                   unit and HTTP-boundary tests
 VIBE.yaml                machine-readable repo policy
@@ -80,6 +83,7 @@ The downstream local simulation matches the Kubernetes version exactly. It is st
 
 Both `.lab/` and `.tools/` are ignored by git, so generated state and downloaded binaries are never committed.
 Raw fixture captures are also written under `.lab/contract-fixtures/raw`, so only sanitized fixture artifacts are committed.
+The lab CLI itself is repo-local in `devtools/` and is not part of the shipped `rancher_mcp` package.
 
 Bring the full lab up:
 
@@ -157,6 +161,7 @@ Current implemented slices include:
 - generic Norman and Steve list/get tools
 - generic Norman and Steve action/link tools
 - typed generic Norman and Steve query controls for filters, selectors, and pagination passthrough
+- async streaming primitives for HTTP line streams, JSON watch streams, and Kubernetes-channel WebSocket capture
 - normalized generic list results that report the applied query params sent to Rancher
 - repo-local capture tooling and committed sanitized Norman/Steve contract fixtures for Rancher `2.6.5`
 - modular tool files with thin registration facades instead of allowing tool modules to grow unbounded

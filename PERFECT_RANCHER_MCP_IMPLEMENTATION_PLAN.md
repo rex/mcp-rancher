@@ -28,22 +28,24 @@ As of `2026-03-27`, the repo has already moved beyond pure planning:
 
 - the clean-slate scaffold, repo policy, and capability catalog are in place
 - the repo-managed Rancher `2.6.5` devlab is working and validated live
-- Phase 2 is substantially complete:
+- Phase 2 is complete:
   management client
   Steve client
   API-plane discovery
   Norman/Steve schema discovery
+  streaming client for log/exec/watch-style flows
 - Phase 3 is in progress:
   generic Norman/Steve list/get tools are implemented and live-validated
   generic Norman/Steve action/link tools are implemented and live-validated where the lab exposes real behaviors
   generic Norman/Steve query controls are implemented and live-validated for Rancher-supported filter/sort,
   marker, selector, and pagination flows
   sanitized live Rancher `2.6.5` contract fixtures are committed and regenerable through repo-local tooling
+- repo-local devlab and fixture tooling remain outside the shipped `src/rancher_mcp` package boundary
 - tool modules are being kept logically split instead of allowing a single discovery or resource file to grow unbounded
 
 The next high-value gaps are:
 
-- WebSocket-backed streaming behavior
+- generic watch/subscribe tools
 - first curated read-only packs
 
 ---

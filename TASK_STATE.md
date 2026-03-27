@@ -58,17 +58,27 @@ Implement the clean-slate Rancher MCP project phase-by-phase against the live Ra
 - unit coverage added for fixture sanitization, fixture capture writing, and committed-fixture hygiene checks
 - `make typecheck` expanded to cover `src/`, `devtools/`, and `scripts/`
 - `make lint`, `make typecheck`, and `make test` passing for the current contract-fixture slice
+- Phase 2 streaming substrate implemented:
+  async HTTP text-line capture
+  async HTTP JSON-event capture for watch flows
+  async WebSocket capture with Kubernetes channel decoding for exec-style endpoints
+- live Rancher `2.6.5` validation completed for:
+  pod log streaming
+  pod exec via WebSocket subprotocol negotiation
+  pod watch events through the Rancher Kubernetes proxy
+- repo-local devlab CLI moved out of `src/rancher_mcp` into `devtools/` so lab workflows do not ship in the MCP package
+- `make lint`, `make typecheck`, and `make test` passing for the current streaming-client slice
 
 ## In Progress
 
 - Phase 3 from the clean-slate plan:
-  closing the remaining Phase 2 streaming-client gap for WebSocket-backed operations
+  adding generic watch/subscribe support on top of the validated streaming substrate
 
 ## Next Steps
 
-1. Implement the remaining Phase 2 streaming client work for WebSocket-backed exec/log/watch flows
-2. Add generic watch/subscribe support where Rancher proxy behavior is stable enough to expose safely
-3. Begin the first curated read-only packs once the generic layer and fixture capture are strong enough
+1. Add generic watch/subscribe support where Rancher proxy behavior is stable enough to expose safely
+2. Begin the first curated read-only packs now that the generic layer and streaming substrate are both live-validated
+3. Identify the first curated operational pack to land after watch support, likely cluster, node, and pod reads
 
 ## Notes
 
@@ -82,3 +92,5 @@ Implement the clean-slate Rancher MCP project phase-by-phase against the live Ra
   the generic layer normalizes both URL-derived and explicit `continue` tokens
 - Lab-only and test-only fixture tooling lives outside `src/rancher_mcp` so the shipped MCP package does not
   gain runtime entanglement from devlab capture workflows
+- The repo-local Rancher port-forward can restart after heavy stream activity; live watch validation is reliable
+  when opened on a fresh connection after the supervisor restabilizes the forwarder

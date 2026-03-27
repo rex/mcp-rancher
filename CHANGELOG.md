@@ -40,6 +40,10 @@
   `scripts/capture_contract_fixtures.py`
   `devtools/contract_fixtures.py`
 - Sanitized live Rancher `2.6.5` Norman and Steve contract fixtures committed under `tests/fixtures/rancher_2_6_5`
+- Async streaming substrate for Rancher proxied operations:
+  bounded HTTP text-line capture
+  bounded HTTP JSON-event capture
+  bounded WebSocket capture with Kubernetes channel decoding
 - Generic resource models and service helpers for schema-driven path resolution, query-param parsing, and normalized collection/detail output
 - Unit and HTTP boundary coverage for Steve discovery behavior and schema normalization
 - Unit coverage for generic Norman and Steve list/get behavior
@@ -47,6 +51,7 @@
 - HTTP boundary coverage for management-plane JSON POST behavior
 - Unit coverage for generic query builder behavior and typed list-tool query normalization
 - Unit coverage for contract-fixture sanitization, write flow, and committed-fixture hygiene
+- HTTP and WebSocket boundary coverage for the streaming client
 
 ### Changed
 - Replaced the abandoned single-container Rancher devlab path with the validated Helm-on-kind topology
@@ -67,6 +72,7 @@
 - Kept lab-only and test-only fixture tooling out of `src/rancher_mcp` so the shipped MCP package stays clean
 - Raw live fixture captures now land under `.lab/contract-fixtures/raw` while only sanitized fixtures are committed
 - Expanded `make typecheck` to include repo-local `devtools/` and `scripts/`, not just the shipped `src/` package
+- Moved the repo-local devlab CLI out of `src/rancher_mcp` into `devtools/` so lab workflows are not shipped with the MCP package
 
 ### Verified
 - `https://127.0.0.1:8443/ping` responds from the repo-managed lab
@@ -90,6 +96,10 @@
 - Sanitized contract fixtures were regenerated successfully from the live Rancher `2.6.5` devlab for:
   Norman cluster schema, collection, resource, and filtered settings collection
   Steve namespace and service schemas plus collection/resource fixtures
+- The streaming substrate executes successfully against the live Rancher `2.6.5` devlab, including:
+  pod log streaming through the Rancher Kubernetes proxy
+  pod exec over WebSocket with negotiated `v4.channel.k8s.io`
+  pod watch events over streamed JSON lines on a fresh post-restart connection
 - `make lint` passes
 - `make typecheck` passes
 - `make test` passes

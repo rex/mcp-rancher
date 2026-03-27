@@ -88,44 +88,44 @@ build:
 # ─── Local Lab ────────────────────────────────────────────────────────────────
 ## Start the full local Rancher lab on the management cluster plus the downstream simulated cluster
 lab-up:
-	$(PYTHON) -m rancher_mcp.devlab up
+	$(PYTHON) -m devtools.devlab up
 
 ## Stop the full local Rancher development lab
 lab-down:
-	$(PYTHON) -m rancher_mcp.devlab down
+	$(PYTHON) -m devtools.devlab down
 
 ## Destroy the full local Rancher development lab and repo-local runtime state
 lab-reset:
 	@read -r -p "This destroys the local lab clusters and repo-local runtime state. Continue? [y/N] " REPLY; \
-	if [[ "$$REPLY" =~ ^[Yy]$$ ]]; then $(PYTHON) -m rancher_mcp.devlab reset; fi
+	if [[ "$$REPLY" =~ ^[Yy]$$ ]]; then $(PYTHON) -m devtools.devlab reset; fi
 
 ## Show local lab status
 lab-status:
-	$(PYTHON) -m rancher_mcp.devlab status
+	$(PYTHON) -m devtools.devlab status
 
 ## Show recent Rancher lab logs
 lab-logs:
-	$(PYTHON) -m rancher_mcp.devlab logs
+	$(PYTHON) -m devtools.devlab logs
 
 ## Download and verify the repo-managed kind binary
 lab-tools:
-	$(PYTHON) -m rancher_mcp.devlab ensure-tools
+	$(PYTHON) -m devtools.devlab ensure-tools
 
 ## Install or upgrade Rancher on the management cluster
 lab-rancher-up:
-	$(PYTHON) -m rancher_mcp.devlab rancher-up
+	$(PYTHON) -m devtools.devlab rancher-up
 
 ## Uninstall Rancher from the management cluster
 lab-rancher-down:
-	$(PYTHON) -m rancher_mcp.devlab rancher-down
+	$(PYTHON) -m devtools.devlab rancher-down
 
 ## Start the managed and downstream kind clusters
 lab-kind-up:
-	$(PYTHON) -m rancher_mcp.devlab kind-up
+	$(PYTHON) -m devtools.devlab kind-up
 
 ## Stop the managed and downstream kind clusters
 lab-kind-down:
-	$(PYTHON) -m rancher_mcp.devlab kind-down
+	$(PYTHON) -m devtools.devlab kind-down
 
 ## Capture sanitized Rancher contract fixtures from the live devlab
 capture-fixtures:

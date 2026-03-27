@@ -7,8 +7,8 @@ from pathlib import Path
 
 import pytest
 
-import rancher_mcp.devlab as devlab
-from rancher_mcp.devlab import (
+import devtools.devlab as devlab
+from devtools.devlab import (
     ClusterSpec,
     LabConfig,
     LabPaths,
