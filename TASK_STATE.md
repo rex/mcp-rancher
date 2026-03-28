@@ -138,17 +138,37 @@ Implement the clean-slate Rancher MCP project phase-by-phase against the live Ra
   raw Kubernetes proxy surface, plus curated statefulset list validation against the currently empty live
   downstream collection
 - `make lint`, `make typecheck`, and `make test` passing for the current curated workload-controller slice
+- repo policy hydrated from the current `vibe-code` defaults and promoted into executable repo validation
+- repo-local architecture gate implemented:
+  `make check-architecture`
+  `devtools/architecture_check.py`
+  `scripts/check_architecture.py`
+- oversized service and tool modules split into package directories with thin facades for:
+  `services/resources`
+  `tools/clusters_nodes`
+  `tools/pods_services`
+  `tools/projects_namespaces`
+  `tools/storage`
+  `tools/workloads`
+- existing `discovery_schema` and `settings_features` package splits normalized to the same package-internal
+  typing pattern used by the architecture-hardening slice
+- `make lint`, `make typecheck`, `make test`, and `make check-architecture` passing after the architecture-hardening slice
 
 ## In Progress
 
-- Phase 4 from the clean-slate plan:
-  expanding curated read-only packs on top of the validated generic layer after the workload-controller slice
+- architecture-hardening follow-up:
+  the hard architecture gate is clean and the remaining soft-limit warnings are now explicitly tracked
 
 ## Next Steps
 
-1. Continue Phase 4 outward into the next high-value curated read packs, with apps/catalogs and adjacent operator-facing surfaces next
-2. Start shaping the first operational aggregate helpers on top of the now-live cluster/node/pod/service/workload substrate
-3. Revisit and prioritize the convenience-tool brainstorm once the next Tier 1 read surfaces are in place
+1. Burn down the remaining soft-limit warnings in `clients/streaming.py`, `services/resources/builders.py`,
+   `tools/clusters_nodes/shared.py`, `tools/disruption.py`, `tools/pods_services/shared.py`,
+   `tools/projects_namespaces/shared.py`, `tools/resource_actions/steve.py`,
+   `tools/resource_list_get.py`, and `tools/workloads/shared.py`
+2. Resume Phase 4 outward into the next high-value curated read packs, with apps/catalogs and adjacent
+   operator-facing surfaces next
+3. Start shaping the first operational aggregate helpers on top of the now-live
+   cluster/node/pod/service/workload substrate
 
 ## Notes
 
@@ -181,3 +201,5 @@ Implement the clean-slate Rancher MCP project phase-by-phase against the live Ra
   `500` on the live Rancher `2.6.5` lab while the raw `/apis/apps/v1/...` paths succeed
 - The convenience-tool brainstorm document is intentionally separate from the canonical implementation plan so
   rough ideas can accumulate without causing scope drift in the build sequence
+- The architecture gate currently hard-fails only the configured hard limits; soft-limit warnings are treated
+  as tracked refactor pressure and should be burned down before more growth is allowed

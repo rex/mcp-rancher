@@ -2,8 +2,10 @@ SHELL := /opt/homebrew/bin/zsh
 .DEFAULT_GOAL := help
 
 .PHONY: help setup install env hooks dev start lint typecheck fix test test-unit \
-        build clean clean-all info update capture-fixtures lab-up lab-down lab-reset lab-status \
-        lab-logs lab-tools lab-rancher-up lab-rancher-down lab-kind-up lab-kind-down
+        build clean clean-all info update validate check-architecture \
+        check-if-the-agent-can-consider-this-task-completed capture-fixtures \
+        lab-up lab-down lab-reset lab-status lab-logs lab-tools lab-rancher-up \
+        lab-rancher-down lab-kind-up lab-kind-down
 
 # ─── Configuration ────────────────────────────────────────────────────────────
 PYTHON       := uv run python
@@ -44,10 +46,12 @@ help:
 	@echo ""
 	@echo "\033[1;36mQuality\033[0m"
 	@echo "  \033[32mlint\033[0m           Run ruff check"
+	@echo "  \033[32mcheck-architecture\033[0m Run VIBE-driven architecture checks"
 	@echo "  \033[32mtypecheck\033[0m      Run pyright strict"
 	@echo "  \033[32mfix\033[0m            Run ruff check --fix and format"
 	@echo "  \033[32mtest\033[0m           Run the full test suite"
 	@echo "  \033[32mtest-unit\033[0m      Run unit tests only"
+	@echo "  \033[32mvalidate\033[0m       Run architecture, lint, typecheck, and tests"
 	@echo ""
 	@echo "\033[1;36mMaintenance\033[0m"
 	@echo "  \033[32minfo\033[0m           Show project state"
@@ -137,6 +141,10 @@ lint:
 	$(RUFF) check .
 	$(RUFF) format --check .
 
+## Run VIBE-driven architecture checks
+check-architecture:
+	$(PYTHON) scripts/check_architecture.py
+
 ## Run pyright in strict mode
 typecheck:
 	$(PYRIGHT) src/ devtools/ scripts/
@@ -153,6 +161,16 @@ test:
 ## Run unit tests only
 test-unit:
 	$(PYTEST) tests/unit/ -q
+
+## Run all repo validation gates
+validate: check-architecture lint typecheck test
+
+## Run the full completion verification contract
+check-if-the-agent-can-consider-this-task-completed: validate
+	@git diff --quiet
+	@git diff --cached --quiet
+	@git rev-parse --verify HEAD >/dev/null
+	@git log -1 --show-signature >/dev/null
 
 # ─── Maintenance ──────────────────────────────────────────────────────────────
 ## Show project state

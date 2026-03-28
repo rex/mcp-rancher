@@ -1,0 +1,173 @@
+# pyright: reportPrivateUsage=false
+"""Curated Rancher persistent-volume tools."""
+
+from __future__ import annotations
+
+from rancher_mcp.clients.management import ManagementDiscoveryClient, RancherManagementClient
+from rancher_mcp.config import AppSettings, get_settings
+from rancher_mcp.models.storage import RancherPersistentVolumeDetail, RancherPersistentVolumeList
+from rancher_mcp.services.instances import resolve_instance
+from rancher_mcp.tools.storage.paths import (
+    _persistent_volume_collection_path,
+    _persistent_volume_resource_path,
+)
+from rancher_mcp.tools.storage.shared import (
+    _build_list_query_params,
+    _items,
+    _mapping_value,
+    _persistent_volume_node_hostnames,
+    _persistent_volume_summary_from_payload,
+    _string_list,
+    _string_value,
+)
+
+
+async def _fetch_persistent_volumes_list(
+    instance_name: str,
+    cluster_id: str,
+    phase: str | None,
+    storage_class_name: str | None,
+    limit: int | None,
+    client: ManagementDiscoveryClient,
+) -> RancherPersistentVolumeList:
+    """Fetch and normalize persistent volumes through Rancher's raw Kubernetes proxy."""
+
+    query_params = _build_list_query_params(limit=limit)
+    payload = await client.get_json(
+        _persistent_volume_collection_path(cluster_id),
+        params=query_params or None,
+    )
+    volumes = [_persistent_volume_summary_from_payload(item) for item in _items(payload)]
+    if phase is not None:
+        volumes = [volume for volume in volumes if volume.phase == phase]
+    if storage_class_name is not None:
+        volumes = [volume for volume in volumes if volume.storage_class_name == storage_class_name]
+    return RancherPersistentVolumeList(
+        instance=instance_name,
+        cluster_id=cluster_id,
+        volume_count=len(volumes),
+        applied_query_params=query_params,
+        persistent_volumes=volumes,
+    )
+
+
+async def rancher_persistent_volumes_list(
+    cluster_id: str = "local",
+    phase: str | None = None,
+    storage_class_name: str | None = None,
+    limit: int | None = None,
+    instance: str | None = None,
+    settings: AppSettings | None = None,
+    client: ManagementDiscoveryClient | None = None,
+) -> RancherPersistentVolumeList:
+    """List persistent volumes with typed summaries."""
+
+    resolved_settings = settings or get_settings()
+    instance_name, instance_config = resolve_instance(resolved_settings, instance)
+    if client is not None:
+        return await _fetch_persistent_volumes_list(
+            instance_name,
+            cluster_id,
+            phase,
+            storage_class_name,
+            limit,
+            client,
+        )
+    async with RancherManagementClient(instance_name, instance_config) as managed_client:
+        return await _fetch_persistent_volumes_list(
+            instance_name,
+            cluster_id,
+            phase,
+            storage_class_name,
+            limit,
+            managed_client,
+        )
+
+
+async def _fetch_persistent_volume_get(
+    instance_name: str,
+    cluster_id: str,
+    volume_name: str,
+    client: ManagementDiscoveryClient,
+) -> RancherPersistentVolumeDetail:
+    """Fetch and normalize one persistent volume."""
+
+    payload = await client.get_json(_persistent_volume_resource_path(cluster_id, volume_name))
+    summary = _persistent_volume_summary_from_payload(payload)
+    metadata = _mapping_value(payload, "metadata") or {}
+    annotations = _mapping_value(metadata, "annotations") or {}
+    return RancherPersistentVolumeDetail(
+        name=summary.name,
+        phase=summary.phase,
+        storage_class_name=summary.storage_class_name,
+        capacity_storage=summary.capacity_storage,
+        claim_namespace=summary.claim_namespace,
+        claim_name=summary.claim_name,
+        reclaim_policy=summary.reclaim_policy,
+        access_modes=summary.access_modes,
+        volume_mode=summary.volume_mode,
+        volume_source_type=summary.volume_source_type,
+        finalizers=_string_list(metadata.get("finalizers")),
+        node_hostnames=_persistent_volume_node_hostnames(payload),
+        provisioner=_string_value(annotations, "pv.kubernetes.io/provisioned-by"),
+        payload=dict(payload),
+    )
+
+
+async def rancher_persistent_volume_get(
+    volume_name: str,
+    cluster_id: str = "local",
+    instance: str | None = None,
+    settings: AppSettings | None = None,
+    client: ManagementDiscoveryClient | None = None,
+) -> RancherPersistentVolumeDetail:
+    """Fetch one persistent volume by name."""
+
+    resolved_settings = settings or get_settings()
+    instance_name, instance_config = resolve_instance(resolved_settings, instance)
+    if client is not None:
+        return await _fetch_persistent_volume_get(
+            instance_name,
+            cluster_id,
+            volume_name,
+            client,
+        )
+    async with RancherManagementClient(instance_name, instance_config) as managed_client:
+        return await _fetch_persistent_volume_get(
+            instance_name,
+            cluster_id,
+            volume_name,
+            managed_client,
+        )
+
+
+async def rancher_persistent_volumes_list_tool(
+    cluster_id: str = "local",
+    phase: str | None = None,
+    storage_class_name: str | None = None,
+    limit: int | None = None,
+    instance: str | None = None,
+) -> RancherPersistentVolumeList:
+    """Public MCP wrapper for curated persistent-volume list."""
+
+    return await rancher_persistent_volumes_list(
+        cluster_id=cluster_id,
+        phase=phase,
+        storage_class_name=storage_class_name,
+        limit=limit,
+        instance=instance,
+    )
+
+
+async def rancher_persistent_volume_get_tool(
+    volume_name: str,
+    cluster_id: str = "local",
+    instance: str | None = None,
+) -> RancherPersistentVolumeDetail:
+    """Public MCP wrapper for curated persistent-volume detail."""
+
+    return await rancher_persistent_volume_get(
+        volume_name=volume_name,
+        cluster_id=cluster_id,
+        instance=instance,
+    )

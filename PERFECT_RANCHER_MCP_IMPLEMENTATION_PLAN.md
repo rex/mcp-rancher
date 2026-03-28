@@ -51,11 +51,17 @@ As of `2026-03-27`, the repo has already moved beyond pure planning:
   sixth curated read-only pack for pod disruption budgets is implemented and live-validated
   seventh curated read-only pack for deployments, daemonsets, and statefulsets is implemented and
   live-validated
+- architecture-hardening is now also active work:
+  repo policy has been hydrated from the current `vibe-code` defaults
+  `make check-architecture` is wired as an executable repo gate
+  oversized tool and service modules have been split into package directories with thin facades
+  remaining soft-limit files are explicitly tracked as follow-up refactor pressure
 - repo-local devlab and fixture tooling remain outside the shipped `src/rancher_mcp` package boundary
 - tool modules are being kept logically split instead of allowing a single discovery or resource file to grow unbounded
 
 The next high-value gaps are:
 
+- burning down the remaining soft-limit architecture warnings before another round of file growth
 - higher-level operational aggregate helpers
 - apps/catalogs and other remaining curated read packs
 - additional generic watch coverage where the live Rancher surface proves stable

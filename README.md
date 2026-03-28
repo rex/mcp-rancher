@@ -9,6 +9,7 @@ This repo has been reset around the clean-slate plan in [PERFECT_RANCHER_MCP_IMP
 Current work is focused on:
 
 - repo policy and capability catalog
+- executable architecture policy and validation gates
 - executable scaffold
 - multi-instance configuration
 - discovery-first server foundations
@@ -137,6 +138,8 @@ make dev
 make lab-up
 make lab-status
 make capture-fixtures
+make check-architecture
+make validate
 make lint
 make typecheck
 make test
@@ -154,6 +157,7 @@ Testing is enabled from the start.
 - the committed live fixture set lives under [tests/fixtures/rancher_2_6_5](/Users/pierce/Code/mcp-servers/mcp-rancher/tests/fixtures/rancher_2_6_5)
 - regenerate fixtures from the running devlab with `make capture-fixtures`
 - `make typecheck` now covers `src/`, `devtools/`, and `scripts/`
+- `make check-architecture` enforces the machine-readable architecture policy in `VIBE.yaml`
 
 ## Architecture Direction
 
@@ -183,6 +187,7 @@ Current implemented slices include:
 - normalized generic list results that report the applied query params sent to Rancher
 - repo-local capture tooling and committed sanitized Norman/Steve contract fixtures for Rancher `2.6.5`
 - modular tool files with thin registration facades instead of allowing tool modules to grow unbounded
+- executable architecture enforcement with hard limits plus tracked soft-limit warnings
 
 For Rancher `2.6.5`, the curated storage, disruption, and workload-controller packs intentionally read
 through Rancher's raw Kubernetes proxy via the management client when Steve collection paths are unreliable.
@@ -192,7 +197,7 @@ through Rancher's raw Kubernetes proxy via the management client when Steve coll
 1. update the capability catalog when a durable scope decision changes
 2. implement the smallest coherent vertical slice
 3. add or update tests in the same change
-4. run `make lint`, `make typecheck`, and `make test`
+4. run `make check-architecture`, `make lint`, `make typecheck`, and `make test`
 5. commit with a signed conventional commit
 6. push immediately
 

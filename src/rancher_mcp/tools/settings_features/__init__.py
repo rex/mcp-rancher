@@ -1,0 +1,33 @@
+"""Curated settings/features tool facade."""
+
+from mcp.server.fastmcp import FastMCP
+
+from rancher_mcp.tools.settings_features.features import (
+    rancher_feature_get,
+    rancher_feature_get_tool,
+    rancher_features_list,
+    rancher_features_list_tool,
+)
+from rancher_mcp.tools.settings_features.settings import (
+    rancher_setting_get,
+    rancher_setting_get_tool,
+    rancher_settings_list,
+    rancher_settings_list_tool,
+)
+
+__all__ = [
+    "rancher_feature_get",
+    "rancher_features_list",
+    "rancher_setting_get",
+    "rancher_settings_list",
+    "register_settings_feature_tools",
+]
+
+
+def register_settings_feature_tools(mcp: FastMCP) -> None:
+    """Register curated settings/features tools with the FastMCP server."""
+
+    mcp.tool(name="rancher_settings_list")(rancher_settings_list_tool)
+    mcp.tool(name="rancher_setting_get")(rancher_setting_get_tool)
+    mcp.tool(name="rancher_features_list")(rancher_features_list_tool)
+    mcp.tool(name="rancher_feature_get")(rancher_feature_get_tool)

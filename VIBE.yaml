@@ -1,7 +1,10 @@
+kind: vibe-policy
 schema_version: 1
 
 project:
   name: rancher-mcp
+  lifecycle: brownfield
+  stack: python-fastmcp
   description: Capability-aware Rancher MCP server with comprehensive Rancher 2.6.5 coverage
   primary_target:
     product: rancher-manager
@@ -24,6 +27,22 @@ stack:
   catalog_format: yaml
 
 architecture:
+  check_command: make check-architecture
+  scope_globs:
+    - src/**/*.py
+    - src/**/*.ts
+    - src/**/*.tsx
+    - app/**/*.py
+  exclude_globs:
+    - "**/*.generated.*"
+    - "**/node_modules/**"
+    - "**/.next/**"
+  max_lines_per_file:
+    soft: 250
+    hard: 400
+  max_public_functions_per_module: 8
+  prefer_packages_over_domain_files: true
+  tool_module_rule: one-resource-or-one-operation-family-per-file
   mode: capability-aware
   multi_instance: required
   compatibility_strategy: adapters-and-detection
@@ -33,13 +52,25 @@ architecture:
     - curated-operator-workflows
 
 quality_gates:
-  lint: required
-  typecheck: required
-  tests: required
-  minimum_coverage_percent: 60
-  commit_style: conventional
-  signed_commits: required
-  push_after_commit: required
+  lint:
+    required: true
+    command: make lint
+  typecheck:
+    required: true
+    command: make typecheck
+  tests:
+    mode: enabled
+    command: make test
+    required_suites:
+      - tests
+    require_test_updates_for_all_code_changes: true
+    coverage:
+      enabled: true
+      command: make test
+      minimum_percentage: 60
+      measurement: line
+      enforcement_scope: overall
+  clean_worktree_required_on_completion: true
 
 testing:
   mode: enabled
@@ -66,6 +97,45 @@ distribution:
     - python-package
     - docker
 
+workflow:
+  changelog_required: true
+  commit_per_logical_step: true
+  signed_commits_required: true
+  push_after_each_commit_if_remote_exists: true
+  validation_command: make validate
+  final_verification_command: make check-if-the-agent-can-consider-this-task-completed
+  ask_before_dockerizing: true
+
+reporting:
+  completion_report:
+    required: true
+    heading: Completion Report
+    format: markdown-table
+    detail_level: compact
+    version_command: null
+    include_fields:
+      - commit
+      - git_status
+      - version
+      - final_verification
+      - architecture
+      - lint
+      - typecheck
+      - tests
+      - coverage
+      - waivers
+    parse_counts_when_available: true
+    include_not_applicable_fields: true
+    omit_empty_fields: true
+    include_raw_output_when: failures-or-dirty
+    prefer_normalized_fields_over_raw_output: true
+
+docs:
+  agents_md_required: true
+  claude_md_required: true
+  task_state_required: true
+  vibe_yaml_required: true
+
 development:
   local_lab:
     required: true
@@ -78,7 +148,27 @@ development:
     repo_local_kubeconfig: required
     repo_local_tool_cache: required
 
+deployment:
+  dockerized: false
+  autodeploy:
+    enabled: false
+    system: null
+    app_slug: null
+    stack_required: false
+    stack_repo_local_path: null
+    stack_path: null
+    runtime_changes_require_stack_update: false
+    require_commit_push_deploy_after_stack_change: false
+
 repo:
   canonical_plan: PERFECT_RANCHER_MCP_IMPLEMENTATION_PLAN.md
   capability_catalog: catalog/capabilities.yaml
   machine_policy: VIBE.yaml
+
+decisions:
+  package_manager:
+    value: uv
+    decided_by: Pierce
+  testing_policy:
+    value: enabled
+    decided_by: Pierce

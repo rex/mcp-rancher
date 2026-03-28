@@ -87,6 +87,10 @@
   `CONVENIENCE_TOOLS_BRAINSTORM.md`
 - Repo-local storage validation fixture:
   `devtools/manifests/storage-validation.yaml`
+- Repo-local architecture gate tooling:
+  `devtools/architecture_check.py`
+  `scripts/check_architecture.py`
+  `make check-architecture`
 - Generic resource models and service helpers for schema-driven path resolution, query-param parsing, and normalized collection/detail output
 - Unit and HTTP boundary coverage for Steve discovery behavior and schema normalization
 - Unit coverage for generic Norman and Steve list/get behavior
@@ -128,6 +132,17 @@
   Kubernetes proxy when Steve disruption endpoints are unreliable on `2.6.5`
 - Added a dedicated curated workload-controller tool module and model set that reads through Rancher's raw
   Kubernetes proxy when Steve `apps.*` endpoints are unreliable on `2.6.5`
+- Hydrated `VIBE.yaml` from the current `vibe-code` defaults so architecture limits and validation commands
+  are enforced by the repo instead of living only in prose
+- Replaced the latest oversized service and tool modules with package directories and stable facades for:
+  generic resource services
+  curated clusters/nodes
+  curated pods/services
+  curated projects/namespaces
+  curated storage
+  curated workload controllers
+- Normalized the existing `discovery_schema/` and `settings_features/` package splits to the same
+  package-internal typing pattern used by the architecture-hardening slice
 
 ### Verified
 - `https://127.0.0.1:8443/ping` responds from the repo-managed lab
@@ -182,3 +197,4 @@
 - `make lint` passes
 - `make typecheck` passes
 - `make test` passes
+- `make check-architecture` passes on hard limits and now reports only explicit soft-limit warnings
