@@ -181,14 +181,26 @@ Implement the clean-slate Rancher MCP project phase-by-phase against the live Ra
   computed post-parse filters now have direct coverage across nodes, pods, namespaces, and daemonsets
   workload readiness edge cases now have direct curated-tool tests instead of relying only on happy-path assertions
 - `make lint`, `make typecheck`, `make test`, and `make check-architecture` passing after the curated coverage-hardening slice
+- next Phase 4 apps/catalogs slice completed:
+  `rancher_catalogs_list`
+  `rancher_catalog_get`
+  `rancher_templates_list`
+  `rancher_template_get`
+  `rancher_template_versions_list`
+  `rancher_template_version_get`
+- live Rancher `2.6.5` validation completed for the apps/catalogs slice against Norman resources:
+  catalogs list/get via `/v3/catalogs`
+  templates list/get via `/v3/templates`
+  template versions list/get via `/v3/templateversions`
+- `make lint`, `make typecheck`, `make test`, and `make check-architecture` passing after the curated apps/catalogs slice
 
 ## In Progress
 
-- resume Phase 4 outward expansion now that the alias-expansion cleanup is complete
+- resume Phase 4 outward now that the apps/catalogs slice is complete
 
 ## Next Steps
 
-1. Resume Phase 4 outward into the next high-value curated read packs, with apps/catalogs and adjacent
+1. Resume Phase 4 outward into the next high-value curated read packs, with auth/users/RBAC and adjacent
    operator-facing surfaces next
 2. Keep opportunistically expanding curated-tool edge and error-path coverage as new packs land so the
    current "happy-path-heavy" test posture continues to improve instead of regressing
@@ -236,3 +248,12 @@ Implement the clean-slate Rancher MCP project phase-by-phase against the live Ra
   `164`, `92`, `193`, and `163` lines respectively, keeping the architecture gate clean after the alias cleanup
 - The curated-tool review feedback about thin happy-path-only coverage has been materially reduced, but new packs
   should continue landing with empty-collection and computed-filter coverage as a baseline instead of as a cleanup
+- Curated app catalog reads are intentionally built on Norman `catalog`, `template`, and `templateVersion`
+  resources because those are the live `2.6.5` management-plane resources with real data in the lab; there is no
+  simple `/v3/apps` root collection exposed on this instance
+- On the live Rancher `2.6.5` lab, `templates?catalogId=...` works but `templates?category=...` appears to return
+  zero results despite the schema advertising `category` as a collection filter, so category filtering should be
+  treated as schema-advertised but runtime-questionable until broader validation says otherwise
+- On the live Rancher `2.6.5` lab, template-version detail exposes `files` as a filename-to-content map while the
+  collection view exposes `files` as a filename list, so the curated tool surface normalizes that to stable
+  `file_names` plus `file_count`

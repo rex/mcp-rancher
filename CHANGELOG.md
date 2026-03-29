@@ -1,6 +1,34 @@
 # Changelog
 
 ## [2026-03-29] - Agent: OpenAI Codex
+### Added
+- Curated app catalog tools:
+  `rancher_catalogs_list`
+  `rancher_catalog_get`
+  `rancher_templates_list`
+  `rancher_template_get`
+  `rancher_template_versions_list`
+  `rancher_template_version_get`
+- Alias-heavy typed models and thin per-resource tool modules for Rancher `catalog`, `template`, and
+  `templateVersion` resources
+
+### Changed
+- Normalized template-version detail to expose stable `file_names` and `file_count` because the live Rancher
+  `2.6.5` API returns `files` as a list in collection payloads but as a filename-to-content map in detail payloads
+- Recorded the live `templates?category=...` filter quirk observed on the Rancher `2.6.5` lab so future slices do
+  not assume every schema-advertised filter behaves correctly at runtime
+
+### Verified
+- `make check-architecture` passes
+- `make lint` passes
+- `make typecheck` passes
+- `make test` passes with `139 passed` and `89.92%` coverage
+- Live Rancher `2.6.5` validation succeeded for:
+  catalogs list/get
+  templates list/get via stable `catalogId` and `state` filters
+  template versions list/get
+
+## [2026-03-29] - Agent: OpenAI Codex
 ### Changed
 - Expanded curated-tool coverage beyond the happy path for the current Phase 4 packs:
   empty collections for clusters, services, projects, deployments, and statefulsets

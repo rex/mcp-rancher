@@ -1,0 +1,161 @@
+"""Curated Rancher template tools."""
+
+from __future__ import annotations
+
+from rancher_mcp.clients.management import ManagementDiscoveryClient, RancherManagementClient
+from rancher_mcp.config import AppSettings, get_settings
+from rancher_mcp.models.apps_catalogs import RancherTemplateDetail, RancherTemplateList
+from rancher_mcp.services.instances import resolve_instance
+from rancher_mcp.tools.apps_catalogs.shared import (
+    build_template_query_params,
+    data_items,
+    template_summary_from_payload,
+)
+from rancher_mcp.tools.support.values import mapping_value
+
+
+async def _fetch_templates_list(
+    instance_name: str,
+    limit: int | None,
+    catalog_id: str | None,
+    category: str | None,
+    cluster_id: str | None,
+    project_id: str | None,
+    state: str | None,
+    sort_by: str | None,
+    reverse: bool | None,
+    client: ManagementDiscoveryClient,
+) -> RancherTemplateList:
+    """Fetch and normalize the Rancher templates collection."""
+
+    query_params = build_template_query_params(
+        limit=limit,
+        catalog_id=catalog_id,
+        category=category,
+        cluster_id=cluster_id,
+        project_id=project_id,
+        state=state,
+        sort_by=sort_by,
+        reverse=reverse,
+    )
+    payload = await client.get_json("/v3/templates", params=query_params or None)
+    templates = [template_summary_from_payload(item) for item in data_items(payload)]
+    return RancherTemplateList(
+        instance=instance_name,
+        template_count=len(templates),
+        applied_query_params=query_params,
+        templates=templates,
+    )
+
+
+async def rancher_templates_list(
+    limit: int | None = None,
+    catalog_id: str | None = None,
+    category: str | None = None,
+    cluster_id: str | None = None,
+    project_id: str | None = None,
+    state: str | None = None,
+    sort_by: str | None = None,
+    reverse: bool | None = None,
+    instance: str | None = None,
+    settings: AppSettings | None = None,
+    client: ManagementDiscoveryClient | None = None,
+) -> RancherTemplateList:
+    """List Rancher templates with typed summaries."""
+
+    resolved_settings = settings or get_settings()
+    instance_name, instance_config = resolve_instance(resolved_settings, instance)
+    if client is not None:
+        return await _fetch_templates_list(
+            instance_name,
+            limit,
+            catalog_id,
+            category,
+            cluster_id,
+            project_id,
+            state,
+            sort_by,
+            reverse,
+            client,
+        )
+    async with RancherManagementClient(instance_name, instance_config) as managed_client:
+        return await _fetch_templates_list(
+            instance_name,
+            limit,
+            catalog_id,
+            category,
+            cluster_id,
+            project_id,
+            state,
+            sort_by,
+            reverse,
+            managed_client,
+        )
+
+
+async def _fetch_template_get(
+    template_id: str,
+    client: ManagementDiscoveryClient,
+) -> RancherTemplateDetail:
+    """Fetch and normalize one Rancher template."""
+
+    payload = await client.get_json(f"/v3/templates/{template_id}")
+    version_links = mapping_value(payload, "versionLinks") or {}
+    return RancherTemplateDetail.model_validate(payload).model_copy(
+        update={
+            "version_link_count": len(version_links),
+            "link_keys": sorted(mapping_value(payload, "links") or {}),
+            "payload": dict(payload),
+        }
+    )
+
+
+async def rancher_template_get(
+    template_id: str,
+    instance: str | None = None,
+    settings: AppSettings | None = None,
+    client: ManagementDiscoveryClient | None = None,
+) -> RancherTemplateDetail:
+    """Fetch one Rancher template by id."""
+
+    resolved_settings = settings or get_settings()
+    instance_name, instance_config = resolve_instance(resolved_settings, instance)
+    if client is not None:
+        return await _fetch_template_get(template_id, client)
+    async with RancherManagementClient(instance_name, instance_config) as managed_client:
+        return await _fetch_template_get(template_id, managed_client)
+
+
+async def rancher_templates_list_tool(
+    limit: int | None = None,
+    catalog_id: str | None = None,
+    category: str | None = None,
+    cluster_id: str | None = None,
+    project_id: str | None = None,
+    state: str | None = None,
+    sort_by: str | None = None,
+    reverse: bool | None = None,
+    instance: str | None = None,
+) -> RancherTemplateList:
+    """Public MCP wrapper for curated templates list."""
+
+    return await rancher_templates_list(
+        limit=limit,
+        catalog_id=catalog_id,
+        category=category,
+        cluster_id=cluster_id,
+        project_id=project_id,
+        state=state,
+        sort_by=sort_by,
+        reverse=reverse,
+        instance=instance,
+    )
+
+
+async def rancher_template_get_tool(
+    template_id: str,
+    instance: str | None = None,
+) -> RancherTemplateDetail:
+    """Public MCP wrapper for curated template detail."""
+
+    return await rancher_template_get(template_id=template_id, instance=instance)
