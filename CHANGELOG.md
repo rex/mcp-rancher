@@ -2,6 +2,34 @@
 
 ## [2026-03-29] - Agent: OpenAI Codex
 ### Added
+- Curated logging and backup tools:
+  `rancher_cluster_loggings_list`
+  `rancher_cluster_logging_get`
+  `rancher_project_loggings_list`
+  `rancher_project_logging_get`
+  `rancher_etcd_backups_list`
+  `rancher_etcd_backup_get`
+- Alias-aware typed models and thin per-resource tool modules for Rancher `clusterLogging`, `projectLogging`,
+  and `etcdBackup` resources
+
+### Changed
+- Normalized logging and backup detail parsing around derived `target_types`, `status_keys`, and `backup_config`
+  summaries so callers do not need to inspect multiple optional config branches by hand
+- Recorded the live empty-collection behavior observed on the Rancher `2.6.5` lab for logging and etcd backup
+  collections so later slices do not over-assume local observability or backup configuration
+
+### Verified
+- `make check-architecture` passes
+- `make lint` passes
+- `make typecheck` passes
+- `make test` passes with `166 passed` and `89.95%` coverage
+- Live Rancher `2.6.5` validation succeeded for:
+  cluster loggings list on the currently empty lab collection
+  project loggings list on the currently empty lab collection
+  etcd backups list on the currently empty lab collection
+
+## [2026-03-29] - Agent: OpenAI Codex
+### Added
 - Curated Fleet and cluster-registration tools:
   `rancher_fleet_workspaces_list`
   `rancher_fleet_workspace_get`

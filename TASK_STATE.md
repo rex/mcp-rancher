@@ -248,15 +248,33 @@ Implement the clean-slate Rancher MCP project phase-by-phase against the live Ra
   so the curated detail surface keeps those onboarding commands directly available
 - `make lint`, `make typecheck`, `make test`, and `make check-architecture` passing after the curated
   Fleet/registration slice
+- next Phase 4 logging/backup slice completed:
+  `rancher_cluster_loggings_list`
+  `rancher_cluster_logging_get`
+  `rancher_project_loggings_list`
+  `rancher_project_logging_get`
+  `rancher_etcd_backups_list`
+  `rancher_etcd_backup_get`
+- live Rancher `2.6.5` validation completed for the logging/backup slice against Norman resources:
+  cluster loggings list via `/v3/clusterloggings`
+  project loggings list via `/v3/projectloggings`
+  etcd backups list via `/v3/etcdbackups`
+- live Rancher `2.6.5` logging/backup notes captured:
+  the local lab exposes the cluster logging, project logging, and etcd backup collections but they are currently
+  empty, so list paths are live-validated while detail behavior remains unit-validated
+  the curated logging detail surfaces expose derived `target_types` and `status_keys` so callers can quickly see
+  which logging backend is configured when data is present
+- `make lint`, `make typecheck`, `make test`, and `make check-architecture` passing after the curated
+  logging/backup slice
 
 ## In Progress
 
-- resume Phase 4 outward now that the Fleet/registration slice is complete
+- resume Phase 4 outward now that the logging/backup slice is complete
 
 ## Next Steps
 
-1. Resume Phase 4 outward into the next remaining high-value curated read packs, with monitoring/logging,
-   backup, and diagnostics surfaces next depending on what the live Rancher `2.6.5` lab actually exposes
+1. Resume Phase 4 outward into the next remaining high-value curated read packs, with monitoring,
+   alerts, and diagnostics surfaces next depending on what the live Rancher `2.6.5` lab actually exposes
 2. Keep opportunistically expanding curated-tool edge and error-path coverage as new packs land so the
    current "happy-path-heavy" test posture continues to improve instead of regressing
 3. Start shaping the first operational aggregate helpers on top of the now-live

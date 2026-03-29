@@ -59,6 +59,8 @@ As of `2026-03-29`, the repo has already moved beyond pure planning:
   live-validated where the local Rancher lab exposes populated resources
   eleventh curated read-only pack for Fleet workspaces and cluster registration tokens is implemented and
   live-validated where the local Rancher lab exposes populated resources
+  twelfth curated read-only pack for cluster loggings, project loggings, and etcd backups is implemented and
+  live-validated where the local Rancher lab exposes reachable collections
 - architecture-hardening is now also active work:
   repo policy has been hydrated from the current `vibe-code` defaults
   `make check-architecture` is wired as an executable repo gate
@@ -86,7 +88,7 @@ As of `2026-03-29`, the repo has already moved beyond pure planning:
 The next high-value gaps are:
 
 - higher-level operational aggregate helpers
-- monitoring/logging, backup, diagnostics, and other remaining curated read packs
+- monitoring, alerts, diagnostics, and other remaining curated read packs
 - additional generic watch coverage where the live Rancher surface proves stable
 - continued opportunistic reduction of manual normalization as new curated packs and detail models land,
   although the current curated read domains now use alias-first parsing for fields that do not require computation
