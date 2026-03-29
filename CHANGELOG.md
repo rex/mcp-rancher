@@ -2,6 +2,26 @@
 
 ## [2026-03-29] - Agent: OpenAI Codex
 ### Changed
+- Pushed the remaining curated read domains toward alias-first parsing:
+  clusters/nodes
+  pods/services
+  projects/namespaces
+  workloads
+- Reduced the corresponding shared normalizers and detail builders so direct and nested Rancher/Kubernetes payload
+  fields now flow through `model_validate(...)`, leaving only computed readiness, label, relationship, and summary
+  logic in the tool layer
+- Split workload models into a package directory with per-resource modules so the alias cleanup did not reintroduce
+  a monolithic model file
+- Added direct alias coverage for cluster, node, pod, service, namespace, and workload detail parsing
+
+### Verified
+- `make check-architecture` passes
+- `make lint` passes
+- `make typecheck` passes
+- `make test` passes with `125 passed` and `89.71%` coverage
+
+## [2026-03-29] - Agent: OpenAI Codex
+### Changed
 - Replaced the private `tools/_support` package with public `tools/support` helpers and removed the private-usage pyright suppressions that had been masking those imports
 - Added a shared alias-aware `RancherModel` base and moved more settings/features, storage, and disruption parsing to `model_validate(...)` plus nested alias paths instead of hand-copying every field
 - Reduced low-value manual normalization in the current curated-tool builders by letting detail models parse direct and nested Rancher/Kubernetes payload fields

@@ -11,9 +11,8 @@ from rancher_mcp.tools.pods_services.shared import (
     data_items,
     relationship_types,
     service_summary_from_payload,
-    string_list,
 )
-from rancher_mcp.tools.support.values import mapping_value, string_value
+from rancher_mcp.tools.support.values import mapping_value
 
 
 async def _fetch_services_list(
@@ -87,24 +86,14 @@ async def _fetch_service_get(
 
     payload = await client.get_json(f"/services/{namespace}/{service_name}")
     summary = service_summary_from_payload(payload)
-    spec = mapping_value(payload, "spec") or {}
     metadata = mapping_value(payload, "metadata") or {}
-    return RancherServiceDetail(
-        id=summary.id,
-        name=summary.name,
-        namespace=summary.namespace,
-        service_type=summary.service_type,
-        cluster_ip=summary.cluster_ip,
-        state_name=summary.state_name,
-        state_message=summary.state_message,
-        selector=summary.selector,
-        ports=summary.ports,
-        session_affinity=string_value(spec, "sessionAffinity"),
-        internal_traffic_policy=string_value(spec, "internalTrafficPolicy"),
-        external_ips=string_list(spec.get("externalIPs")),
-        relationship_types=relationship_types(metadata),
-        link_keys=sorted(mapping_value(payload, "links") or {}),
-        payload=dict(payload),
+    return RancherServiceDetail.model_validate(payload).model_copy(
+        update={
+            "id": summary.id,
+            "relationship_types": relationship_types(metadata),
+            "link_keys": sorted(mapping_value(payload, "links") or {}),
+            "payload": dict(payload),
+        }
     )
 
 

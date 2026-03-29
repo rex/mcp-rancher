@@ -9,8 +9,6 @@ from rancher_mcp.services.instances import resolve_instance
 from rancher_mcp.tools.clusters_nodes.shared import (
     build_cluster_query_params,
     cluster_summary_from_payload,
-    component_statuses_from_payload,
-    conditions_from_payload,
     data_items,
 )
 from rancher_mcp.tools.support.values import mapping_value, string_value
@@ -77,24 +75,16 @@ async def _fetch_cluster_get(
 
     payload = await client.get_json(f"/v3/clusters/{cluster_id}")
     summary = cluster_summary_from_payload(payload)
-    return RancherClusterDetail(
-        id=summary.id,
-        name=summary.name,
-        display_name=summary.display_name,
-        state=summary.state,
-        ready=summary.ready,
-        provider=summary.provider,
-        driver=summary.driver,
-        kubernetes_version=summary.kubernetes_version,
-        node_count=summary.node_count,
-        cpu_capacity=summary.cpu_capacity,
-        memory_capacity=summary.memory_capacity,
-        condition_types_true=summary.condition_types_true,
-        api_endpoint=string_value(payload, "apiEndpoint"),
-        action_keys=sorted(mapping_value(payload, "actions") or {}),
-        conditions=conditions_from_payload(payload),
-        component_statuses=component_statuses_from_payload(payload),
-        payload=dict(payload),
+    return RancherClusterDetail.model_validate(payload).model_copy(
+        update={
+            "id": summary.id,
+            "name": summary.name,
+            "ready": summary.ready,
+            "condition_types_true": summary.condition_types_true,
+            "api_endpoint": string_value(payload, "apiEndpoint"),
+            "action_keys": sorted(mapping_value(payload, "actions") or {}),
+            "payload": dict(payload),
+        }
     )
 
 

@@ -7,15 +7,11 @@ from rancher_mcp.config import AppSettings, get_settings
 from rancher_mcp.models.workloads import RancherStatefulSetDetail, RancherStatefulSetList
 from rancher_mcp.services.instances import resolve_instance
 from rancher_mcp.services.resource_queries import build_steve_list_query_params
-from rancher_mcp.tools.support.values import mapping_value, string_dict, string_value
+from rancher_mcp.tools.support.values import mapping_value, string_dict
 from rancher_mcp.tools.workloads.paths import workload_collection_path, workload_resource_path
 from rancher_mcp.tools.workloads.shared import (
-    conditions_from_status,
-    container_summaries,
-    int_value,
     items,
     statefulset_summary_from_payload,
-    template_spec,
 )
 
 
@@ -107,31 +103,14 @@ async def _fetch_statefulset_get(
     summary = statefulset_summary_from_payload(payload)
     metadata = mapping_value(payload, "metadata") or {}
     annotations = mapping_value(metadata, "annotations") or {}
-    status = mapping_value(payload, "status") or {}
-    template_spec_value = template_spec(payload)
-    return RancherStatefulSetDetail(
-        id=summary.id,
-        name=summary.name,
-        namespace=summary.namespace,
-        replicas=summary.replicas,
-        ready_replicas=summary.ready_replicas,
-        current_replicas=summary.current_replicas,
-        updated_replicas=summary.updated_replicas,
-        available_replicas=summary.available_replicas,
-        ready=summary.ready,
-        service_name=summary.service_name,
-        update_strategy_type=summary.update_strategy_type,
-        selector_match_labels=summary.selector_match_labels,
-        container_images=summary.container_images,
-        generation=int_value(metadata, "generation"),
-        observed_generation=int_value(status, "observedGeneration"),
-        current_revision=string_value(status, "currentRevision"),
-        update_revision=string_value(status, "updateRevision"),
-        service_account_name=string_value(template_spec_value, "serviceAccountName"),
-        annotation_keys=sorted(string_dict(annotations)),
-        conditions=conditions_from_status(status),
-        containers=container_summaries(template_spec_value),
-        payload=dict(payload),
+    return RancherStatefulSetDetail.model_validate(payload).model_copy(
+        update={
+            "id": summary.id,
+            "ready": summary.ready,
+            "container_images": summary.container_images,
+            "annotation_keys": sorted(string_dict(annotations)),
+            "payload": dict(payload),
+        }
     )
 
 

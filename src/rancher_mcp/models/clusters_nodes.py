@@ -1,6 +1,8 @@
 """Typed models for curated Rancher cluster and node reads."""
 
-from pydantic import Field
+from typing import cast
+
+from pydantic import AliasChoices, AliasPath, Field, model_validator
 
 from rancher_mcp.models.base import RancherModel
 
@@ -45,21 +47,63 @@ class RancherClusterComponentStatus(RancherModel):
     healthy: bool | None = None
     message: str | None = None
 
+    @model_validator(mode="before")
+    @classmethod
+    def _derive_health_from_conditions(cls, value: object) -> object:
+        """Derive component health from the embedded Healthy condition when present."""
+
+        if not isinstance(value, dict):
+            return value
+        payload = dict(cast(dict[str, object], value))
+        raw_conditions = payload.get("conditions")
+        if not isinstance(raw_conditions, list):
+            return payload
+        for raw_condition in cast(list[object], raw_conditions):
+            if not isinstance(raw_condition, dict):
+                continue
+            condition = cast(dict[str, object], raw_condition)
+            if condition.get("type") != "Healthy":
+                continue
+            status = condition.get("status")
+            if isinstance(status, str):
+                lowered = status.lower()
+                if lowered == "true":
+                    payload["healthy"] = True
+                elif lowered == "false":
+                    payload["healthy"] = False
+            message = condition.get("message")
+            if isinstance(message, str):
+                payload["message"] = message
+            break
+        return payload
+
 
 class RancherClusterSummary(RancherModel):
     """Typed summary for one Rancher cluster."""
 
-    id: str
-    name: str
+    id: str = Field(
+        default="<unknown-cluster>",
+        validation_alias=AliasChoices("id", "name"),
+    )
+    name: str = Field(
+        default="<unknown-cluster>",
+        validation_alias=AliasChoices("name", "id"),
+    )
     display_name: str | None = None
     state: str | None = None
     ready: bool | None = None
     provider: str | None = None
     driver: str | None = None
-    kubernetes_version: str | None = None
+    kubernetes_version: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("nodeVersion", AliasPath("version", "gitVersion")),
+    )
     node_count: int | None = None
-    cpu_capacity: str | None = None
-    memory_capacity: str | None = None
+    cpu_capacity: str | None = Field(default=None, validation_alias=AliasPath("capacity", "cpu"))
+    memory_capacity: str | None = Field(
+        default=None,
+        validation_alias=AliasPath("capacity", "memory"),
+    )
     condition_types_true: list[str] = Field(default_factory=list)
 
 
@@ -68,9 +112,13 @@ class RancherClusterDetail(RancherClusterSummary):
 
     api_endpoint: str | None = None
     action_keys: list[str] = Field(default_factory=list)
-    conditions: list[RancherCondition] = Field(default_factory=_empty_conditions)
+    conditions: list[RancherCondition] = Field(
+        default_factory=_empty_conditions,
+        validation_alias="conditions",
+    )
     component_statuses: list[RancherClusterComponentStatus] = Field(
-        default_factory=_empty_component_statuses
+        default_factory=_empty_component_statuses,
+        validation_alias="componentStatuses",
     )
     payload: dict[str, object] = Field(default_factory=dict)
 
@@ -87,33 +135,57 @@ class RancherClusterList(RancherModel):
 class RancherNodeSummary(RancherModel):
     """Typed summary for one Rancher-managed node."""
 
-    id: str
-    name: str
+    id: str = Field(
+        default="<unknown-node>",
+        validation_alias=AliasChoices("id", "name"),
+    )
+    name: str = Field(
+        default="<unknown-node>",
+        validation_alias=AliasChoices("name", "id"),
+    )
     cluster_id: str | None = None
     hostname: str | None = None
     state: str | None = None
     ready: bool | None = None
     roles: list[str] = Field(default_factory=list)
-    kubernetes_version: str | None = None
-    internal_ip: str | None = None
-    external_ip: str | None = None
+    kubernetes_version: str | None = Field(
+        default=None,
+        validation_alias=AliasPath("info", "kubernetes", "kubeletVersion"),
+    )
+    internal_ip: str | None = Field(default=None, validation_alias="ipAddress")
+    external_ip: str | None = Field(default=None, validation_alias="externalIpAddress")
     unschedulable: bool | None = None
 
 
 class RancherNodeDetail(RancherNodeSummary):
     """Typed detail for one Rancher-managed node."""
 
-    node_name: str | None = None
-    provider_id: str | None = None
-    pod_cidr: str | None = None
-    cpu_capacity: str | None = None
-    memory_capacity: str | None = None
-    pod_capacity: str | None = None
-    cpu_allocatable: str | None = None
-    memory_allocatable: str | None = None
-    pod_allocatable: str | None = None
+    node_name: str | None = Field(default=None, validation_alias="nodeName")
+    provider_id: str | None = Field(default=None, validation_alias="providerId")
+    pod_cidr: str | None = Field(default=None, validation_alias="podCidr")
+    cpu_capacity: str | None = Field(default=None, validation_alias=AliasPath("capacity", "cpu"))
+    memory_capacity: str | None = Field(
+        default=None,
+        validation_alias=AliasPath("capacity", "memory"),
+    )
+    pod_capacity: str | None = Field(default=None, validation_alias=AliasPath("capacity", "pods"))
+    cpu_allocatable: str | None = Field(
+        default=None,
+        validation_alias=AliasPath("allocatable", "cpu"),
+    )
+    memory_allocatable: str | None = Field(
+        default=None,
+        validation_alias=AliasPath("allocatable", "memory"),
+    )
+    pod_allocatable: str | None = Field(
+        default=None,
+        validation_alias=AliasPath("allocatable", "pods"),
+    )
     action_keys: list[str] = Field(default_factory=list)
-    conditions: list[RancherCondition] = Field(default_factory=_empty_conditions)
+    conditions: list[RancherCondition] = Field(
+        default_factory=_empty_conditions,
+        validation_alias="conditions",
+    )
     payload: dict[str, object] = Field(default_factory=dict)
 
 

@@ -12,7 +12,6 @@ from rancher_mcp.tools.projects_namespaces.shared import (
     namespace_cattle_conditions,
     namespace_summary_from_payload,
     string_dict,
-    string_list,
 )
 from rancher_mcp.tools.support.values import mapping_value
 
@@ -104,23 +103,17 @@ async def _fetch_namespace_get(
     metadata = mapping_value(payload, "metadata") or {}
     annotations = mapping_value(metadata, "annotations") or {}
     labels = mapping_value(metadata, "labels") or {}
-    return RancherNamespaceDetail(
-        id=summary.id,
-        name=summary.name,
-        cluster_id=summary.cluster_id,
-        phase=summary.phase,
-        state_name=summary.state_name,
-        state_message=summary.state_message,
-        state_error=summary.state_error,
-        project_id=summary.project_id,
-        project_id_short=summary.project_id_short,
-        finalizer_count=summary.finalizer_count,
-        label_keys=sorted(string_dict(labels)),
-        annotation_keys=sorted(string_dict(annotations)),
-        finalizers=string_list(metadata.get("finalizers")),
-        cattle_conditions=namespace_cattle_conditions(metadata),
-        link_keys=sorted(mapping_value(payload, "links") or {}),
-        payload=dict(payload),
+    return RancherNamespaceDetail.model_validate(payload).model_copy(
+        update={
+            "id": summary.id,
+            "cluster_id": summary.cluster_id,
+            "finalizer_count": summary.finalizer_count,
+            "label_keys": sorted(string_dict(labels)),
+            "annotation_keys": sorted(string_dict(annotations)),
+            "cattle_conditions": namespace_cattle_conditions(metadata),
+            "link_keys": sorted(mapping_value(payload, "links") or {}),
+            "payload": dict(payload),
+        }
     )
 
 

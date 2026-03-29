@@ -1,6 +1,8 @@
 """Typed models for curated Rancher pod and service reads."""
 
-from pydantic import Field
+from typing import cast
+
+from pydantic import AliasChoices, AliasPath, Field, field_validator, model_validator
 
 from rancher_mcp.models.base import RancherModel
 from rancher_mcp.models.clusters_nodes import RancherCondition
@@ -45,33 +47,75 @@ class RancherPodContainerSummary(RancherModel):
     restart_count: int | None = None
     state: str | None = None
 
+    @model_validator(mode="before")
+    @classmethod
+    def _derive_state_name(cls, value: object) -> object:
+        """Derive the active container state name from the raw Kubernetes payload."""
+
+        if not isinstance(value, dict):
+            return value
+        payload = dict(cast(dict[str, object], value))
+        raw_state = payload.get("state")
+        if not isinstance(raw_state, dict):
+            return payload
+        state = cast(dict[str, object], raw_state)
+        for candidate in ("running", "waiting", "terminated"):
+            if isinstance(state.get(candidate), dict):
+                payload["state"] = candidate
+                break
+        return payload
+
 
 class RancherPodSummary(RancherModel):
     """Typed summary for one pod."""
 
-    id: str
-    name: str
-    namespace: str
-    phase: str | None = None
+    id: str = Field(
+        default="<unknown-pod>",
+        validation_alias=AliasChoices("id", AliasPath("metadata", "name")),
+    )
+    name: str = Field(
+        default="<unknown-pod>",
+        validation_alias=AliasPath("metadata", "name"),
+    )
+    namespace: str = Field(
+        default="<unknown-namespace>",
+        validation_alias=AliasPath("metadata", "namespace"),
+    )
+    phase: str | None = Field(default=None, validation_alias=AliasPath("status", "phase"))
     ready: bool | None = None
     ready_containers: int | None = None
     total_containers: int | None = None
     restart_count: int | None = None
-    pod_ip: str | None = None
-    node_name: str | None = None
-    qos_class: str | None = None
-    owner_kind: str | None = None
-    owner_name: str | None = None
+    pod_ip: str | None = Field(default=None, validation_alias=AliasPath("status", "podIP"))
+    node_name: str | None = Field(default=None, validation_alias=AliasPath("spec", "nodeName"))
+    qos_class: str | None = Field(default=None, validation_alias=AliasPath("status", "qosClass"))
+    owner_kind: str | None = Field(
+        default=None,
+        validation_alias=AliasPath("metadata", "ownerReferences", 0, "kind"),
+    )
+    owner_name: str | None = Field(
+        default=None,
+        validation_alias=AliasPath("metadata", "ownerReferences", 0, "name"),
+    )
 
 
 class RancherPodDetail(RancherPodSummary):
     """Typed detail for one pod."""
 
-    host_ip: str | None = None
-    service_account_name: str | None = None
+    host_ip: str | None = Field(default=None, validation_alias=AliasPath("status", "hostIP"))
+    service_account_name: str | None = Field(
+        default=None,
+        validation_alias=AliasPath("spec", "serviceAccountName"),
+    )
     link_keys: list[str] = Field(default_factory=list)
-    conditions: list[RancherCondition] = Field(default_factory=_empty_conditions)
-    containers: list[RancherPodContainerSummary] = Field(default_factory=_empty_container_summaries)
+    conditions: list[RancherCondition] = Field(
+        default_factory=_empty_conditions,
+        validation_alias=AliasPath("status", "conditions"),
+    )
+    containers: list[RancherPodContainerSummary] = Field(
+        default_factory=_empty_container_summaries,
+        validation_alias=AliasPath("status", "containerStatuses"),
+    )
     payload: dict[str, object] = Field(default_factory=dict)
 
 
@@ -94,27 +138,69 @@ class RancherServicePortSummary(RancherModel):
     port: int | None = None
     target_port: str | None = None
 
+    @field_validator("target_port", mode="before")
+    @classmethod
+    def _coerce_target_port(cls, value: object) -> object:
+        """Accept integer or string targetPort values from Kubernetes service specs."""
+
+        if value is None:
+            return None
+        if isinstance(value, str):
+            return value
+        if isinstance(value, int) and not isinstance(value, bool):
+            return str(value)
+        return value
+
 
 class RancherServiceSummary(RancherModel):
     """Typed summary for one service."""
 
-    id: str
-    name: str
-    namespace: str
-    service_type: str | None = None
-    cluster_ip: str | None = None
-    state_name: str | None = None
-    state_message: str | None = None
-    selector: dict[str, str] = Field(default_factory=dict)
-    ports: list[RancherServicePortSummary] = Field(default_factory=_empty_service_ports)
+    id: str = Field(
+        default="<unknown-service>",
+        validation_alias=AliasChoices("id", AliasPath("metadata", "name")),
+    )
+    name: str = Field(
+        default="<unknown-service>",
+        validation_alias=AliasPath("metadata", "name"),
+    )
+    namespace: str = Field(
+        default="<unknown-namespace>",
+        validation_alias=AliasPath("metadata", "namespace"),
+    )
+    service_type: str | None = Field(default=None, validation_alias=AliasPath("spec", "type"))
+    cluster_ip: str | None = Field(default=None, validation_alias=AliasPath("spec", "clusterIP"))
+    state_name: str | None = Field(
+        default=None, validation_alias=AliasPath("metadata", "state", "name")
+    )
+    state_message: str | None = Field(
+        default=None,
+        validation_alias=AliasPath("metadata", "state", "message"),
+    )
+    selector: dict[str, str] = Field(
+        default_factory=dict,
+        validation_alias=AliasPath("spec", "selector"),
+    )
+    ports: list[RancherServicePortSummary] = Field(
+        default_factory=_empty_service_ports,
+        validation_alias=AliasPath("spec", "ports"),
+    )
 
 
 class RancherServiceDetail(RancherServiceSummary):
     """Typed detail for one service."""
 
-    session_affinity: str | None = None
-    internal_traffic_policy: str | None = None
-    external_ips: list[str] = Field(default_factory=list)
+    session_affinity: str | None = Field(
+        default=None,
+        validation_alias=AliasPath("spec", "sessionAffinity"),
+    )
+    internal_traffic_policy: str | None = Field(
+        default=None,
+        validation_alias=AliasPath("spec", "internalTrafficPolicy"),
+    )
+    external_ips: list[str] = Field(
+        default_factory=list,
+        validation_alias=AliasPath("spec", "externalIPs"),
+    )
     relationship_types: list[str] = Field(default_factory=list)
     link_keys: list[str] = Field(default_factory=list)
     payload: dict[str, object] = Field(default_factory=dict)

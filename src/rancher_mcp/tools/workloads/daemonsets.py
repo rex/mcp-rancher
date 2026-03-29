@@ -7,15 +7,11 @@ from rancher_mcp.config import AppSettings, get_settings
 from rancher_mcp.models.workloads import RancherDaemonSetDetail, RancherDaemonSetList
 from rancher_mcp.services.instances import resolve_instance
 from rancher_mcp.services.resource_queries import build_steve_list_query_params
-from rancher_mcp.tools.support.values import mapping_value, string_dict, string_value
+from rancher_mcp.tools.support.values import mapping_value, string_dict
 from rancher_mcp.tools.workloads.paths import workload_collection_path, workload_resource_path
 from rancher_mcp.tools.workloads.shared import (
-    conditions_from_status,
-    container_summaries,
     daemonset_summary_from_payload,
-    int_value,
     items,
-    template_spec,
 )
 
 
@@ -107,29 +103,14 @@ async def _fetch_daemonset_get(
     summary = daemonset_summary_from_payload(payload)
     metadata = mapping_value(payload, "metadata") or {}
     annotations = mapping_value(metadata, "annotations") or {}
-    status = mapping_value(payload, "status") or {}
-    template_spec_value = template_spec(payload)
-    return RancherDaemonSetDetail(
-        id=summary.id,
-        name=summary.name,
-        namespace=summary.namespace,
-        desired_number_scheduled=summary.desired_number_scheduled,
-        current_number_scheduled=summary.current_number_scheduled,
-        number_ready=summary.number_ready,
-        number_available=summary.number_available,
-        number_unavailable=summary.number_unavailable,
-        updated_number_scheduled=summary.updated_number_scheduled,
-        ready=summary.ready,
-        strategy_type=summary.strategy_type,
-        selector_match_labels=summary.selector_match_labels,
-        container_images=summary.container_images,
-        generation=int_value(metadata, "generation"),
-        observed_generation=int_value(status, "observedGeneration"),
-        service_account_name=string_value(template_spec_value, "serviceAccountName"),
-        annotation_keys=sorted(string_dict(annotations)),
-        conditions=conditions_from_status(status),
-        containers=container_summaries(template_spec_value),
-        payload=dict(payload),
+    return RancherDaemonSetDetail.model_validate(payload).model_copy(
+        update={
+            "id": summary.id,
+            "ready": summary.ready,
+            "container_images": summary.container_images,
+            "annotation_keys": sorted(string_dict(annotations)),
+            "payload": dict(payload),
+        }
     )
 
 

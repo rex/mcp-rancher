@@ -18,23 +18,8 @@ from rancher_mcp.tools.support.conditions import (
 from rancher_mcp.tools.support.conditions import (
     conditions_from_payload as support_conditions_from_payload,
 )
-from rancher_mcp.tools.support.conditions import (
-    conditions_from_value as _conditions_from_value,
-)
 from rancher_mcp.tools.support.values import (
     bool_value as _bool_value,
-)
-from rancher_mcp.tools.support.values import (
-    int_value as _int_value,
-)
-from rancher_mcp.tools.support.values import (
-    mapping_value as _mapping_value,
-)
-from rancher_mcp.tools.support.values import (
-    status_to_bool as _status_to_bool,
-)
-from rancher_mcp.tools.support.values import (
-    string_value as _string_value,
 )
 
 
@@ -114,56 +99,29 @@ def _build_node_query_params(
 def _cluster_summary_from_payload(payload: Mapping[str, object]) -> RancherClusterSummary:
     """Normalize one Rancher cluster payload."""
 
-    cluster_id = _string_value(payload, "id")
-    display_name = _string_value(payload, "displayName")
-    name = _string_value(payload, "name")
-    capacity = _mapping_value(payload, "capacity") or {}
-    return RancherClusterSummary(
-        id=cluster_id or name or "<unknown-cluster>",
-        name=name or cluster_id or "<unknown-cluster>",
-        display_name=display_name,
-        state=_string_value(payload, "state"),
-        ready=_condition_is_true(payload, "Ready"),
-        provider=_string_value(payload, "provider"),
-        driver=_string_value(payload, "driver"),
-        kubernetes_version=_cluster_kubernetes_version(payload),
-        node_count=_int_value(payload, "nodeCount"),
-        cpu_capacity=_string_value(capacity, "cpu"),
-        memory_capacity=_string_value(capacity, "memory"),
-        condition_types_true=_condition_types_true(payload),
+    summary = RancherClusterSummary.model_validate(payload)
+    return summary.model_copy(
+        update={
+            "id": summary.id or summary.name or "<unknown-cluster>",
+            "name": summary.name or summary.id or "<unknown-cluster>",
+            "ready": _condition_is_true(payload, "Ready"),
+            "condition_types_true": _condition_types_true(payload),
+        }
     )
 
 
 def _node_summary_from_payload(payload: Mapping[str, object]) -> RancherNodeSummary:
     """Normalize one Rancher node payload."""
 
-    node_id = _string_value(payload, "id")
-    name = _string_value(payload, "name")
-    info = _mapping_value(payload, "info") or {}
-    kubernetes = _mapping_value(info, "kubernetes") or {}
-    return RancherNodeSummary(
-        id=node_id or name or "<unknown-node>",
-        name=name or node_id or "<unknown-node>",
-        cluster_id=_string_value(payload, "clusterId"),
-        hostname=_string_value(payload, "hostname"),
-        state=_string_value(payload, "state"),
-        ready=_condition_is_true(payload, "Ready"),
-        roles=_node_roles(payload),
-        kubernetes_version=_string_value(kubernetes, "kubeletVersion"),
-        internal_ip=_string_value(payload, "ipAddress"),
-        external_ip=_string_value(payload, "externalIpAddress"),
-        unschedulable=_bool_value(payload, "unschedulable"),
+    summary = RancherNodeSummary.model_validate(payload)
+    return summary.model_copy(
+        update={
+            "id": summary.id or summary.name or "<unknown-node>",
+            "name": summary.name or summary.id or "<unknown-node>",
+            "ready": _condition_is_true(payload, "Ready"),
+            "roles": _node_roles(payload),
+        }
     )
-
-
-def _cluster_kubernetes_version(payload: Mapping[str, object]) -> str | None:
-    """Read the most trustworthy Kubernetes version field from a cluster payload."""
-
-    raw_node_version = payload.get("nodeVersion")
-    if isinstance(raw_node_version, str) and raw_node_version:
-        return raw_node_version
-    version = _mapping_value(payload, "version")
-    return _string_value(version, "gitVersion")
 
 
 def _component_statuses_from_payload(
@@ -171,18 +129,10 @@ def _component_statuses_from_payload(
 ) -> list[RancherClusterComponentStatus]:
     """Normalize cluster component statuses."""
 
-    statuses: list[RancherClusterComponentStatus] = []
-    for typed_status in object_items(payload, field="componentStatuses"):
-        conditions = _conditions_from_value(typed_status.get("conditions"))
-        healthy_condition = next((item for item in conditions if item.type == "Healthy"), None)
-        statuses.append(
-            RancherClusterComponentStatus(
-                name=_string_value(typed_status, "name") or "<unknown-component>",
-                healthy=_status_to_bool(healthy_condition.status) if healthy_condition else None,
-                message=healthy_condition.message if healthy_condition else None,
-            )
-        )
-    return statuses
+    return [
+        RancherClusterComponentStatus.model_validate(typed_status)
+        for typed_status in object_items(payload, field="componentStatuses")
+    ]
 
 
 def _node_roles(payload: Mapping[str, object]) -> list[str]:

@@ -8,11 +8,10 @@ from rancher_mcp.models.clusters_nodes import RancherNodeDetail, RancherNodeList
 from rancher_mcp.services.instances import resolve_instance
 from rancher_mcp.tools.clusters_nodes.shared import (
     build_node_query_params,
-    conditions_from_payload,
     data_items,
     node_summary_from_payload,
 )
-from rancher_mcp.tools.support.values import mapping_value, string_value
+from rancher_mcp.tools.support.values import mapping_value
 
 
 async def _fetch_nodes_list(
@@ -98,32 +97,15 @@ async def _fetch_node_get(
 
     payload = await client.get_json(f"/v3/nodes/{node_id}")
     summary = node_summary_from_payload(payload)
-    allocatable = mapping_value(payload, "allocatable") or {}
-    capacity = mapping_value(payload, "capacity") or {}
-    return RancherNodeDetail(
-        id=summary.id,
-        name=summary.name,
-        cluster_id=summary.cluster_id,
-        hostname=summary.hostname,
-        state=summary.state,
-        ready=summary.ready,
-        roles=summary.roles,
-        kubernetes_version=summary.kubernetes_version,
-        internal_ip=summary.internal_ip,
-        external_ip=summary.external_ip,
-        unschedulable=summary.unschedulable,
-        node_name=string_value(payload, "nodeName"),
-        provider_id=string_value(payload, "providerId"),
-        pod_cidr=string_value(payload, "podCidr"),
-        cpu_capacity=string_value(capacity, "cpu"),
-        memory_capacity=string_value(capacity, "memory"),
-        pod_capacity=string_value(capacity, "pods"),
-        cpu_allocatable=string_value(allocatable, "cpu"),
-        memory_allocatable=string_value(allocatable, "memory"),
-        pod_allocatable=string_value(allocatable, "pods"),
-        action_keys=sorted(mapping_value(payload, "actions") or {}),
-        conditions=conditions_from_payload(payload),
-        payload=dict(payload),
+    return RancherNodeDetail.model_validate(payload).model_copy(
+        update={
+            "id": summary.id,
+            "name": summary.name,
+            "ready": summary.ready,
+            "roles": summary.roles,
+            "action_keys": sorted(mapping_value(payload, "actions") or {}),
+            "payload": dict(payload),
+        }
     )
 
 

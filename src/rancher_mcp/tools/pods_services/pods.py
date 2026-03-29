@@ -8,12 +8,10 @@ from rancher_mcp.models.pods_services import RancherPodDetail, RancherPodList
 from rancher_mcp.services.instances import resolve_instance
 from rancher_mcp.services.resource_queries import build_steve_list_query_params
 from rancher_mcp.tools.pods_services.shared import (
-    conditions_from_status,
-    container_summaries,
     data_items,
     pod_summary_from_payload,
 )
-from rancher_mcp.tools.support.values import mapping_value, string_value
+from rancher_mcp.tools.support.values import mapping_value
 
 
 async def _fetch_pods_list(
@@ -101,30 +99,16 @@ async def _fetch_pod_get(
 
     payload = await client.get_json(f"/pods/{namespace}/{pod_name}")
     summary = pod_summary_from_payload(payload)
-    status = mapping_value(payload, "status") or {}
-    return RancherPodDetail(
-        id=summary.id,
-        name=summary.name,
-        namespace=summary.namespace,
-        phase=summary.phase,
-        ready=summary.ready,
-        ready_containers=summary.ready_containers,
-        total_containers=summary.total_containers,
-        restart_count=summary.restart_count,
-        pod_ip=summary.pod_ip,
-        node_name=summary.node_name,
-        qos_class=summary.qos_class,
-        owner_kind=summary.owner_kind,
-        owner_name=summary.owner_name,
-        host_ip=string_value(status, "hostIP"),
-        service_account_name=string_value(
-            mapping_value(payload, "spec"),
-            "serviceAccountName",
-        ),
-        link_keys=sorted(mapping_value(payload, "links") or {}),
-        conditions=conditions_from_status(status),
-        containers=container_summaries(status),
-        payload=dict(payload),
+    return RancherPodDetail.model_validate(payload).model_copy(
+        update={
+            "id": summary.id,
+            "ready": summary.ready,
+            "ready_containers": summary.ready_containers,
+            "total_containers": summary.total_containers,
+            "restart_count": summary.restart_count,
+            "link_keys": sorted(mapping_value(payload, "links") or {}),
+            "payload": dict(payload),
+        }
     )
 
 

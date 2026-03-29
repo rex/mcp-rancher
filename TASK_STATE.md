@@ -168,10 +168,18 @@ Implement the clean-slate Rancher MCP project phase-by-phase against the live Ra
   transient retry policy added for Rancher management and streaming transport failures
   curated-tool and boundary tests expanded for alias parsing, retry behavior, empty collections, and computed filter paths
 - `make lint`, `make typecheck`, `make test`, and `make check-architecture` passing after the review-fix hardening slice
+- alias-expansion follow-up completed across the remaining curated read domains:
+  clusters/nodes, pods/services, projects/namespaces, and workloads now map direct and nested Rancher/Kubernetes
+  payload fields through Pydantic aliases and alias paths at the model boundary
+  the remaining shared normalizers in those domains were reduced to computed fields only, with detail builders now
+  centered on `model_validate(...)` plus explicit derived updates
+  workload models were split from one file into a package so the alias cleanup preserved the architecture gate
+  focused alias tests were expanded for cluster, node, pod, service, namespace, and workload detail parsing
+- `make lint`, `make typecheck`, `make test`, and `make check-architecture` passing after the alias-expansion follow-up slice
 
 ## In Progress
 
-- resume Phase 4 outward expansion now that the review-fix hardening slice is complete
+- resume Phase 4 outward expansion now that the alias-expansion cleanup is complete
 
 ## Next Steps
 
@@ -182,6 +190,7 @@ Implement the clean-slate Rancher MCP project phase-by-phase against the live Ra
 3. Start shaping the first operational aggregate helpers on top of the now-live
    cluster/node/pod/service/workload substrate
 4. Expand additional generic watch coverage only where the live Rancher `2.6.5` surface proves stable
+5. Continue using aliases instead of helper extraction wherever a field does not require truly computed normalization
 
 ## Notes
 
@@ -216,5 +225,7 @@ Implement the clean-slate Rancher MCP project phase-by-phase against the live Ra
   rough ideas can accumulate without causing scope drift in the build sequence
 - The architecture gate is currently clean on both hard and soft limits; future slices should preserve that
   posture instead of allowing new refactor pressure to accumulate
-- The current review-fix slice moved more payload parsing into Pydantic aliases and added transient retries,
-  but there is still room to push more curated detail builders toward model-boundary parsing as new domains land
+- The current alias-expansion follow-up reduced the remaining helper-call-heavy curated domains to computed-only
+  normalization, cutting the broad helper-call count in `src/rancher_mcp` down to `93`
+- The shared curated normalizers for clusters/nodes, pods/services, projects/namespaces, and workloads now sit at
+  `164`, `92`, `193`, and `163` lines respectively, keeping the architecture gate clean after the alias cleanup

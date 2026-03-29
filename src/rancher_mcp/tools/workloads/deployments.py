@@ -7,16 +7,11 @@ from rancher_mcp.config import AppSettings, get_settings
 from rancher_mcp.models.workloads import RancherDeploymentDetail, RancherDeploymentList
 from rancher_mcp.services.instances import resolve_instance
 from rancher_mcp.services.resource_queries import build_steve_list_query_params
-from rancher_mcp.tools.support.values import mapping_value, string_value
+from rancher_mcp.tools.support.values import mapping_value, string_dict
 from rancher_mcp.tools.workloads.paths import workload_collection_path, workload_resource_path
 from rancher_mcp.tools.workloads.shared import (
-    conditions_from_status,
-    container_summaries,
     deployment_summary_from_payload,
-    int_value,
     items,
-    string_dict,
-    template_spec,
 )
 
 
@@ -108,33 +103,15 @@ async def _fetch_deployment_get(
     summary = deployment_summary_from_payload(payload)
     metadata = mapping_value(payload, "metadata") or {}
     annotations = mapping_value(metadata, "annotations") or {}
-    spec = mapping_value(payload, "spec") or {}
-    status = mapping_value(payload, "status") or {}
-    template_spec_value = template_spec(payload)
-    return RancherDeploymentDetail(
-        id=summary.id,
-        name=summary.name,
-        namespace=summary.namespace,
-        desired_replicas=summary.desired_replicas,
-        ready_replicas=summary.ready_replicas,
-        available_replicas=summary.available_replicas,
-        updated_replicas=summary.updated_replicas,
-        unavailable_replicas=summary.unavailable_replicas,
-        ready=summary.ready,
-        rollout_complete=summary.rollout_complete,
-        strategy_type=summary.strategy_type,
-        paused=summary.paused,
-        selector_match_labels=summary.selector_match_labels,
-        container_images=summary.container_images,
-        revision=string_value(annotations, "deployment.kubernetes.io/revision"),
-        generation=int_value(metadata, "generation"),
-        observed_generation=int_value(status, "observedGeneration"),
-        service_account_name=string_value(template_spec_value, "serviceAccountName"),
-        min_ready_seconds=int_value(spec, "minReadySeconds"),
-        annotation_keys=sorted(string_dict(annotations)),
-        conditions=conditions_from_status(status),
-        containers=container_summaries(template_spec_value),
-        payload=dict(payload),
+    return RancherDeploymentDetail.model_validate(payload).model_copy(
+        update={
+            "id": summary.id,
+            "ready": summary.ready,
+            "rollout_complete": summary.rollout_complete,
+            "container_images": summary.container_images,
+            "annotation_keys": sorted(string_dict(annotations)),
+            "payload": dict(payload),
+        }
     )
 
 

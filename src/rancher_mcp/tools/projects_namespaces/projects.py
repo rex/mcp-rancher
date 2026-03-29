@@ -9,10 +9,9 @@ from rancher_mcp.services.instances import resolve_instance
 from rancher_mcp.tools.projects_namespaces.shared import (
     build_project_query_params,
     data_items,
-    payload_conditions,
     project_summary_from_payload,
 )
-from rancher_mcp.tools.support.values import mapping_value, string_value
+from rancher_mcp.tools.support.values import mapping_value
 
 
 async def _fetch_projects_list(
@@ -88,24 +87,15 @@ async def _fetch_project_get(
 
     payload = await client.get_json(f"/v3/projects/{project_id}")
     summary = project_summary_from_payload(payload)
-    return RancherProjectDetail(
-        id=summary.id,
-        name=summary.name,
-        cluster_id=summary.cluster_id,
-        state=summary.state,
-        description=summary.description,
-        monitoring_enabled=summary.monitoring_enabled,
-        default_project=summary.default_project,
-        system_project=summary.system_project,
-        condition_types_true=summary.condition_types_true,
-        namespace_id=string_value(payload, "namespaceId"),
-        pod_security_policy_template_id=string_value(payload, "podSecurityPolicyTemplateId"),
-        transitioning=string_value(payload, "transitioning"),
-        transitioning_message=string_value(payload, "transitioningMessage"),
-        action_keys=sorted(mapping_value(payload, "actions") or {}),
-        link_keys=sorted(mapping_value(payload, "links") or {}),
-        conditions=payload_conditions(payload),
-        payload=dict(payload),
+    return RancherProjectDetail.model_validate(payload).model_copy(
+        update={
+            "default_project": summary.default_project,
+            "system_project": summary.system_project,
+            "condition_types_true": summary.condition_types_true,
+            "action_keys": sorted(mapping_value(payload, "actions") or {}),
+            "link_keys": sorted(mapping_value(payload, "links") or {}),
+            "payload": dict(payload),
+        }
     )
 
 

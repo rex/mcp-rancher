@@ -24,7 +24,7 @@ This is a critical product decision. It affects client design, source-of-truth s
 
 ## Implementation Status
 
-As of `2026-03-27`, the repo has already moved beyond pure planning:
+As of `2026-03-29`, the repo has already moved beyond pure planning:
 
 - the clean-slate scaffold, repo policy, and capability catalog are in place
 - the repo-managed Rancher `2.6.5` devlab is working and validated live
@@ -64,6 +64,11 @@ As of `2026-03-27`, the repo has already moved beyond pure planning:
   transient retry policy is now wired into management and streaming transports
   focused boundary and curated-tool tests now cover alias parsing, retries, empty collections, and
   readiness-filter behavior
+- alias-expansion follow-up is complete for the remaining current curated read packs:
+  clusters/nodes, pods/services, projects/namespaces, and workloads now parse direct and nested payload fields
+  through model aliases wherever the tool layer does not need computed normalization
+  the corresponding shared normalizers are now mostly limited to readiness, relationship, and derived-summary logic
+  workload models have been split into a package so the additional alias coverage does not recreate a monolithic file
 - repo-local devlab and fixture tooling remain outside the shipped `src/rancher_mcp` package boundary
 - tool modules are being kept logically split instead of allowing a single discovery or resource file to grow unbounded
 
@@ -72,7 +77,8 @@ The next high-value gaps are:
 - higher-level operational aggregate helpers
 - apps/catalogs and other remaining curated read packs
 - additional generic watch coverage where the live Rancher surface proves stable
-- continued opportunistic reduction of manual normalization as new curated packs and detail models land
+- continued opportunistic reduction of manual normalization as new curated packs and detail models land,
+  although the current curated read domains now use alias-first parsing for fields that do not require computation
 
 ---
 
