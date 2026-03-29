@@ -2,6 +2,34 @@
 
 ## [2026-03-29] - Agent: OpenAI Codex
 ### Added
+- Curated auth and identity tools:
+  `rancher_users_list`
+  `rancher_user_get`
+  `rancher_groups_list`
+  `rancher_group_get`
+  `rancher_auth_configs_list`
+  `rancher_auth_config_get`
+- Alias-aware typed models and thin per-resource tool modules for Rancher `user`, `group`, and `authConfig`
+  resources
+
+### Changed
+- Normalized Rancher `2.6.5` user detail parsing to treat `conditions: null` as an empty list so the curated
+  output stays stable against the live Norman payload shape
+- Recorded the live group-surface constraint observed on the Rancher `2.6.5` lab so future slices do not assume
+  populated group resources during local validation
+
+### Verified
+- `make check-architecture` passes
+- `make lint` passes
+- `make typecheck` passes
+- `make test` passes with `146 passed` and `89.95%` coverage
+- Live Rancher `2.6.5` validation succeeded for:
+  users list/get
+  groups list on the currently empty lab collection
+  auth configs list/get
+
+## [2026-03-29] - Agent: OpenAI Codex
+### Added
 - Curated app catalog tools:
   `rancher_catalogs_list`
   `rancher_catalog_get`

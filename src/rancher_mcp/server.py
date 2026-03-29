@@ -3,6 +3,7 @@
 from mcp.server.fastmcp import FastMCP
 
 from rancher_mcp.tools.apps_catalogs import register_app_catalog_tools
+from rancher_mcp.tools.auth_identity import register_auth_identity_tools
 from rancher_mcp.tools.clusters_nodes import register_cluster_node_tools
 from rancher_mcp.tools.discovery import register_discovery_tools
 from rancher_mcp.tools.disruption import register_disruption_tools
@@ -28,6 +29,7 @@ def create_mcp_server() -> FastMCP:
     register_pod_service_tools(mcp)
     register_project_namespace_tools(mcp)
     register_app_catalog_tools(mcp)
+    register_auth_identity_tools(mcp)
     register_settings_feature_tools(mcp)
     register_storage_tools(mcp)
     register_workload_tools(mcp)

@@ -193,15 +193,30 @@ Implement the clean-slate Rancher MCP project phase-by-phase against the live Ra
   templates list/get via `/v3/templates`
   template versions list/get via `/v3/templateversions`
 - `make lint`, `make typecheck`, `make test`, and `make check-architecture` passing after the curated apps/catalogs slice
+- next Phase 4 auth/identity slice completed:
+  `rancher_users_list`
+  `rancher_user_get`
+  `rancher_groups_list`
+  `rancher_group_get`
+  `rancher_auth_configs_list`
+  `rancher_auth_config_get`
+- live Rancher `2.6.5` validation completed for the auth/identity slice against Norman resources:
+  users list/get via `/v3/users`
+  groups list via `/v3/groups`
+  auth configs list/get via `/v3/authconfigs`
+- live Rancher `2.6.5` auth/identity notes captured:
+  `user.conditions` can be `null` instead of a list, so the curated user detail model normalizes null to `[]`
+  the lab currently exposes zero groups, so `group_get` remains unit-validated while list behavior is live-validated
+- `make lint`, `make typecheck`, `make test`, and `make check-architecture` passing after the curated auth/identity slice
 
 ## In Progress
 
-- resume Phase 4 outward now that the apps/catalogs slice is complete
+- resume Phase 4 outward now that the auth/identity slice is complete
 
 ## Next Steps
 
-1. Resume Phase 4 outward into the next high-value curated read packs, with auth/users/RBAC and adjacent
-   operator-facing surfaces next
+1. Resume Phase 4 outward into the next high-value curated read packs, with RBAC and adjacent
+   operator-facing authorization surfaces next
 2. Keep opportunistically expanding curated-tool edge and error-path coverage as new packs land so the
    current "happy-path-heavy" test posture continues to improve instead of regressing
 3. Start shaping the first operational aggregate helpers on top of the now-live
