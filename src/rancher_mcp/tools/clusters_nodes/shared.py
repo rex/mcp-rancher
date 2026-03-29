@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
-from typing import cast
 
 from rancher_mcp.models.clusters_nodes import (
     RancherClusterComponentStatus,
@@ -12,6 +11,48 @@ from rancher_mcp.models.clusters_nodes import (
     RancherCondition,
     RancherNodeSummary,
 )
+from rancher_mcp.tools._support.collections import object_items
+from rancher_mcp.tools._support.conditions import (
+    condition_is_true,
+    condition_types_true,
+    conditions_from_payload,
+)
+from rancher_mcp.tools._support.conditions import (
+    conditions_from_value as _conditions_from_value,
+)
+from rancher_mcp.tools._support.values import (
+    bool_value as _bool_value,
+)
+from rancher_mcp.tools._support.values import (
+    int_value as _int_value,
+)
+from rancher_mcp.tools._support.values import (
+    mapping_value as _mapping_value,
+)
+from rancher_mcp.tools._support.values import (
+    status_to_bool as _status_to_bool,
+)
+from rancher_mcp.tools._support.values import (
+    string_value as _string_value,
+)
+
+
+def _conditions_from_payload(payload: Mapping[str, object]) -> list[RancherCondition]:
+    """Normalize top-level conditions from a Rancher payload."""
+
+    return conditions_from_payload(payload)
+
+
+def _condition_types_true(payload: Mapping[str, object]) -> list[str]:
+    """Return sorted condition types whose status is true."""
+
+    return condition_types_true(_conditions_from_payload(payload))
+
+
+def _condition_is_true(payload: Mapping[str, object], condition_type: str) -> bool | None:
+    """Return the boolean value of one named condition if present."""
+
+    return condition_is_true(_conditions_from_payload(payload), condition_type)
 
 
 def _build_cluster_query_params(
@@ -129,14 +170,8 @@ def _component_statuses_from_payload(
 ) -> list[RancherClusterComponentStatus]:
     """Normalize cluster component statuses."""
 
-    raw_statuses = payload.get("componentStatuses")
-    if not isinstance(raw_statuses, list):
-        return []
     statuses: list[RancherClusterComponentStatus] = []
-    for raw_status in cast(list[object], raw_statuses):
-        if not isinstance(raw_status, dict):
-            continue
-        typed_status = cast(dict[str, object], raw_status)
+    for typed_status in object_items(payload, field="componentStatuses"):
         conditions = _conditions_from_value(typed_status.get("conditions"))
         healthy_condition = next((item for item in conditions if item.type == "Healthy"), None)
         statuses.append(
@@ -147,55 +182,6 @@ def _component_statuses_from_payload(
             )
         )
     return statuses
-
-
-def _conditions_from_payload(payload: Mapping[str, object]) -> list[RancherCondition]:
-    """Normalize top-level conditions from a Rancher payload."""
-
-    return _conditions_from_value(payload.get("conditions"))
-
-
-def _conditions_from_value(value: object) -> list[RancherCondition]:
-    """Normalize an arbitrary condition list."""
-
-    if not isinstance(value, list):
-        return []
-    conditions: list[RancherCondition] = []
-    for item in cast(list[object], value):
-        if not isinstance(item, dict):
-            continue
-        typed_item = cast(dict[str, object], item)
-        condition_type = _string_value(typed_item, "type")
-        if condition_type is None:
-            continue
-        conditions.append(
-            RancherCondition(
-                type=condition_type,
-                status=_string_value(typed_item, "status"),
-                reason=_string_value(typed_item, "reason"),
-                message=_string_value(typed_item, "message"),
-            )
-        )
-    return conditions
-
-
-def _condition_types_true(payload: Mapping[str, object]) -> list[str]:
-    """Return sorted condition types whose status is true."""
-
-    return sorted(
-        condition.type
-        for condition in _conditions_from_payload(payload)
-        if _status_to_bool(condition.status) is True
-    )
-
-
-def _condition_is_true(payload: Mapping[str, object], condition_type: str) -> bool | None:
-    """Return the boolean value of one named condition if present."""
-
-    for condition in _conditions_from_payload(payload):
-        if condition.type == condition_type:
-            return _status_to_bool(condition.status)
-    return None
 
 
 def _node_roles(payload: Mapping[str, object]) -> list[str]:
@@ -214,65 +200,4 @@ def _node_roles(payload: Mapping[str, object]) -> list[str]:
 def _data_items(payload: Mapping[str, object]) -> list[dict[str, object]]:
     """Extract typed collection items from a Rancher list payload."""
 
-    raw_items = payload.get("data")
-    if not isinstance(raw_items, list):
-        return []
-    items: list[dict[str, object]] = []
-    for item in cast(list[object], raw_items):
-        if isinstance(item, dict):
-            items.append(cast(dict[str, object], item))
-    return items
-
-
-def _mapping_value(
-    payload: Mapping[str, object] | None,
-    key: str,
-) -> dict[str, object] | None:
-    """Read one nested mapping value if present."""
-
-    if payload is None:
-        return None
-    raw_value = payload.get(key)
-    if not isinstance(raw_value, dict):
-        return None
-    return cast(dict[str, object], raw_value)
-
-
-def _string_value(payload: Mapping[str, object] | None, key: str) -> str | None:
-    """Read one string value if present."""
-
-    if payload is None:
-        return None
-    raw_value = payload.get(key)
-    return raw_value if isinstance(raw_value, str) else None
-
-
-def _int_value(payload: Mapping[str, object] | None, key: str) -> int | None:
-    """Read one integer value if present."""
-
-    if payload is None:
-        return None
-    raw_value = payload.get(key)
-    return raw_value if isinstance(raw_value, int) else None
-
-
-def _bool_value(payload: Mapping[str, object] | None, key: str) -> bool | None:
-    """Read one boolean value if present."""
-
-    if payload is None:
-        return None
-    raw_value = payload.get(key)
-    return raw_value if isinstance(raw_value, bool) else None
-
-
-def _status_to_bool(status: str | None) -> bool | None:
-    """Normalize Rancher condition status strings to booleans."""
-
-    if status is None:
-        return None
-    lowered = status.lower()
-    if lowered == "true":
-        return True
-    if lowered == "false":
-        return False
-    return None
+    return object_items(payload, field="data")

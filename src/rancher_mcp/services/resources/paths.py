@@ -144,6 +144,17 @@ def _normalized_resource_path(
     return path
 
 
+def normalize_resource_path(
+    *,
+    plane: str,
+    cluster_id: str | None,
+    value: object,
+) -> str | None:
+    """Normalize a self link into a client-usable path."""
+
+    return _normalized_resource_path(plane=plane, cluster_id=cluster_id, value=value)
+
+
 def _to_steve_relative_path(path: str, cluster_id: str | None) -> str:
     """Strip the Steve root prefix from a cluster-qualified path."""
 

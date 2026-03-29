@@ -153,22 +153,24 @@ Implement the clean-slate Rancher MCP project phase-by-phase against the live Ra
 - existing `discovery_schema` and `settings_features` package splits normalized to the same package-internal
   typing pattern used by the architecture-hardening slice
 - `make lint`, `make typecheck`, `make test`, and `make check-architecture` passing after the architecture-hardening slice
+- architecture-hardening follow-up completed:
+  remaining soft-limit warnings burned down across the streaming client, generic resource builders,
+  generic Norman/Steve list-get handlers, Steve resource action/link handlers, curated disruption helpers,
+  and shared typed-normalization modules
+- shared typed-normalization support modules added for reusable values, conditions, and list-item extraction
+- `make check-architecture` now passes with no remaining soft-limit or hard-limit violations
 
 ## In Progress
 
-- architecture-hardening follow-up:
-  the hard architecture gate is clean and the remaining soft-limit warnings are now explicitly tracked
+- resume Phase 4 outward expansion now that the architecture cleanup slice is complete
 
 ## Next Steps
 
-1. Burn down the remaining soft-limit warnings in `clients/streaming.py`, `services/resources/builders.py`,
-   `tools/clusters_nodes/shared.py`, `tools/disruption.py`, `tools/pods_services/shared.py`,
-   `tools/projects_namespaces/shared.py`, `tools/resource_actions/steve.py`,
-   `tools/resource_list_get.py`, and `tools/workloads/shared.py`
-2. Resume Phase 4 outward into the next high-value curated read packs, with apps/catalogs and adjacent
+1. Resume Phase 4 outward into the next high-value curated read packs, with apps/catalogs and adjacent
    operator-facing surfaces next
-3. Start shaping the first operational aggregate helpers on top of the now-live
+2. Start shaping the first operational aggregate helpers on top of the now-live
    cluster/node/pod/service/workload substrate
+3. Expand additional generic watch coverage only where the live Rancher `2.6.5` surface proves stable
 
 ## Notes
 
@@ -201,5 +203,5 @@ Implement the clean-slate Rancher MCP project phase-by-phase against the live Ra
   `500` on the live Rancher `2.6.5` lab while the raw `/apis/apps/v1/...` paths succeed
 - The convenience-tool brainstorm document is intentionally separate from the canonical implementation plan so
   rough ideas can accumulate without causing scope drift in the build sequence
-- The architecture gate currently hard-fails only the configured hard limits; soft-limit warnings are treated
-  as tracked refactor pressure and should be burned down before more growth is allowed
+- The architecture gate is currently clean on both hard and soft limits; future slices should preserve that
+  posture instead of allowing new refactor pressure to accumulate

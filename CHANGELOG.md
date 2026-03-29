@@ -1,5 +1,19 @@
 # Changelog
 
+## [2026-03-29] - Agent: OpenAI Codex
+### Changed
+- Burned down the remaining architecture soft-limit warnings so `make check-architecture` now passes cleanly
+- Split the remaining oversized generic files into narrower implementation modules with stable facades for:
+  the streaming client
+  generic Norman/Steve list-get handlers
+  Steve generic action/link handlers
+  generic resource builder helpers
+- Added reusable typed-normalization support modules for conditions, scalar/mapping values, and object-item extraction
+- Kept the public import surface stable while reducing internal file growth pressure across shared curated-tool modules
+
+### Verified
+- `make check-architecture` passes with no remaining soft-limit or hard-limit violations
+
 ## [2026-03-27] - Agent: OpenAI Codex
 ### Added
 - Clean-slate implementation plan for a comprehensive Rancher MCP server
@@ -197,4 +211,4 @@
 - `make lint` passes
 - `make typecheck` passes
 - `make test` passes
-- `make check-architecture` passes on hard limits and now reports only explicit soft-limit warnings
+- `make check-architecture` passes on hard limits and the follow-up architecture cleanup slice is now tracked

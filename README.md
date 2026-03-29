@@ -25,6 +25,7 @@ Current work is focused on:
 - seventh curated read-only pack for Rancher deployments, daemonsets, and statefulsets
 - committed sanitized Rancher `2.6.5` contract fixtures with a repo-local regeneration path
 - repo-managed local Rancher `2.6.5` lab infrastructure
+- completed architecture warning burn-down across the remaining oversized generic and shared modules
 - collaborative brainstorming document for future aggregate/convenience tools
 
 ## Stack
@@ -187,7 +188,7 @@ Current implemented slices include:
 - normalized generic list results that report the applied query params sent to Rancher
 - repo-local capture tooling and committed sanitized Norman/Steve contract fixtures for Rancher `2.6.5`
 - modular tool files with thin registration facades instead of allowing tool modules to grow unbounded
-- executable architecture enforcement with hard limits plus tracked soft-limit warnings
+- executable architecture enforcement with hard and soft limits currently clean
 
 For Rancher `2.6.5`, the curated storage, disruption, and workload-controller packs intentionally read
 through Rancher's raw Kubernetes proxy via the management client when Steve collection paths are unreliable.
