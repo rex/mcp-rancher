@@ -351,6 +351,36 @@ async def test_rancher_deployment_get_returns_typed_detail() -> None:
 
 
 @pytest.mark.asyncio
+async def test_rancher_deployments_list_handles_empty_collection() -> None:
+    """Curated deployment list should handle an empty raw Kubernetes collection cleanly."""
+
+    class EmptyDeploymentClient:
+        """Return an empty deployment collection."""
+
+        async def get_json(self, path: str, params: object = None) -> dict[str, object]:
+            """Return a deterministic empty collection."""
+
+            assert (
+                path
+                == "/k8s/clusters/venue-local/apis/apps/v1/namespaces/cattle-system/deployments"
+            )
+            assert params is None
+            return {"items": []}
+
+    result = await rancher_deployments_list(
+        namespace="cattle-system",
+        cluster_id="venue-local",
+        instance="work",
+        settings=build_settings(),
+        client=EmptyDeploymentClient(),
+    )
+
+    assert result.deployment_count == 0
+    assert result.applied_query_params == {}
+    assert result.deployments == []
+
+
+@pytest.mark.asyncio
 async def test_rancher_daemonsets_list_returns_typed_summaries() -> None:
     """Curated daemonset list should expose scheduling-aware summaries."""
 
@@ -368,6 +398,60 @@ async def test_rancher_daemonsets_list_returns_typed_summaries() -> None:
     assert result.daemonset_count == 1
     assert result.daemonsets[0].name == "kindnet"
     assert result.daemonsets[0].ready is True
+
+
+@pytest.mark.asyncio
+async def test_rancher_daemonsets_list_filters_not_ready_items() -> None:
+    """Curated daemonset list should apply the computed readiness filter."""
+
+    class MixedDaemonSetClient:
+        """Return ready and not-ready daemonsets."""
+
+        async def get_json(self, path: str, params: object = None) -> dict[str, object]:
+            """Return a deterministic daemonset collection."""
+
+            assert (
+                path == "/k8s/clusters/venue-local/apis/apps/v1/namespaces/kube-system/daemonsets"
+            )
+            assert params is None
+            return {
+                "items": [
+                    {
+                        "metadata": {"name": "ready-daemonset", "namespace": "kube-system"},
+                        "spec": {
+                            "template": {"spec": {"containers": [{"name": "app", "image": "demo"}]}}
+                        },
+                        "status": {
+                            "desiredNumberScheduled": 2,
+                            "numberReady": 2,
+                            "updatedNumberScheduled": 2,
+                        },
+                    },
+                    {
+                        "metadata": {"name": "not-ready-daemonset", "namespace": "kube-system"},
+                        "spec": {
+                            "template": {"spec": {"containers": [{"name": "app", "image": "demo"}]}}
+                        },
+                        "status": {
+                            "desiredNumberScheduled": 2,
+                            "numberReady": 1,
+                            "updatedNumberScheduled": 1,
+                        },
+                    },
+                ]
+            }
+
+    result = await rancher_daemonsets_list(
+        namespace="kube-system",
+        cluster_id="venue-local",
+        ready=False,
+        instance="work",
+        settings=build_settings(),
+        client=MixedDaemonSetClient(),
+    )
+
+    assert result.daemonset_count == 1
+    assert [daemonset.name for daemonset in result.daemonsets] == ["not-ready-daemonset"]
 
 
 @pytest.mark.asyncio
@@ -405,6 +489,33 @@ async def test_rancher_statefulsets_list_returns_typed_summaries() -> None:
     assert result.statefulset_count == 1
     assert result.statefulsets[0].name == "demo-db"
     assert result.statefulsets[0].ready is True
+
+
+@pytest.mark.asyncio
+async def test_rancher_statefulsets_list_handles_empty_collection() -> None:
+    """Curated statefulset list should handle an empty raw Kubernetes collection cleanly."""
+
+    class EmptyStatefulSetClient:
+        """Return an empty statefulset collection."""
+
+        async def get_json(self, path: str, params: object = None) -> dict[str, object]:
+            """Return a deterministic empty collection."""
+
+            assert path == "/k8s/clusters/venue-local/apis/apps/v1/namespaces/apps/statefulsets"
+            assert params is None
+            return {"items": []}
+
+    result = await rancher_statefulsets_list(
+        namespace="apps",
+        cluster_id="venue-local",
+        instance="work",
+        settings=build_settings(),
+        client=EmptyStatefulSetClient(),
+    )
+
+    assert result.statefulset_count == 0
+    assert result.applied_query_params == {}
+    assert result.statefulsets == []
 
 
 @pytest.mark.asyncio

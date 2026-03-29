@@ -223,6 +223,31 @@ async def test_rancher_project_get_returns_typed_detail() -> None:
 
 
 @pytest.mark.asyncio
+async def test_rancher_projects_list_handles_empty_collection() -> None:
+    """Curated project list should handle an empty Norman collection cleanly."""
+
+    class EmptyProjectClient:
+        """Return an empty project collection."""
+
+        async def get_json(self, path: str, params: object = None) -> dict[str, object]:
+            """Return a deterministic empty collection."""
+
+            assert path == "/v3/projects"
+            assert params is None
+            return {"data": []}
+
+    result = await rancher_projects_list(
+        instance="work",
+        settings=build_settings(),
+        client=EmptyProjectClient(),
+    )
+
+    assert result.project_count == 0
+    assert result.applied_query_params == {}
+    assert result.projects == []
+
+
+@pytest.mark.asyncio
 async def test_rancher_namespaces_list_returns_typed_summaries() -> None:
     """Curated namespaces list should expose typed namespace summaries."""
 
@@ -246,6 +271,45 @@ async def test_rancher_namespaces_list_returns_typed_summaries() -> None:
     assert result.namespaces[0].id == "cattle-system"
     assert result.namespaces[0].project_id == "venue-local:p-kzmtj"
     assert result.namespaces[0].project_id_short == "p-kzmtj"
+
+
+@pytest.mark.asyncio
+async def test_rancher_namespaces_list_filters_phase() -> None:
+    """Curated namespace list should apply the post-parse phase filter."""
+
+    class MixedNamespaceClient:
+        """Return mixed namespace phases through the Steve collection."""
+
+        async def get_json(self, path: str, params: object = None) -> dict[str, object]:
+            """Return a deterministic namespace collection."""
+
+            assert path == "/namespaces"
+            assert params is None
+            return {
+                "data": [
+                    {
+                        "id": "active-ns",
+                        "metadata": {"name": "active-ns"},
+                        "status": {"phase": "Active"},
+                    },
+                    {
+                        "id": "terminating-ns",
+                        "metadata": {"name": "terminating-ns"},
+                        "status": {"phase": "Terminating"},
+                    },
+                ]
+            }
+
+    result = await rancher_namespaces_list(
+        cluster_id="venue-local",
+        phase="Active",
+        instance="work",
+        settings=build_settings(),
+        client=MixedNamespaceClient(),
+    )
+
+    assert result.namespace_count == 1
+    assert [namespace.name for namespace in result.namespaces] == ["active-ns"]
 
 
 @pytest.mark.asyncio

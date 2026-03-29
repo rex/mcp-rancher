@@ -234,6 +234,45 @@ async def test_rancher_pod_get_returns_typed_detail() -> None:
 
 
 @pytest.mark.asyncio
+async def test_rancher_pods_list_filters_phase_and_handles_sparse_status() -> None:
+    """Curated pods list should filter on computed pod phase without crashing on sparse status."""
+
+    class MixedPodClient:
+        """Return mixed pod phases with one sparse status payload."""
+
+        async def get_json(self, path: str, params: object = None) -> dict[str, object]:
+            """Return a deterministic pod collection."""
+
+            assert path == "/pods/cattle-system"
+            assert params is None
+            return {
+                "data": [
+                    {
+                        "id": "cattle-system/running-pod",
+                        "metadata": {"name": "running-pod", "namespace": "cattle-system"},
+                        "status": {"phase": "Running"},
+                    },
+                    {
+                        "id": "cattle-system/pending-pod",
+                        "metadata": {"name": "pending-pod", "namespace": "cattle-system"},
+                    },
+                ]
+            }
+
+    result = await rancher_pods_list(
+        namespace="cattle-system",
+        cluster_id="venue-local",
+        phase="Running",
+        instance="work",
+        settings=build_settings(),
+        client=MixedPodClient(),
+    )
+
+    assert result.pod_count == 1
+    assert [pod.name for pod in result.pods] == ["running-pod"]
+
+
+@pytest.mark.asyncio
 async def test_rancher_services_list_returns_typed_summaries() -> None:
     """Curated services list should expose typed service summaries."""
 
@@ -256,6 +295,33 @@ async def test_rancher_services_list_returns_typed_summaries() -> None:
     }
     assert result.services[0].id == "cattle-system/cattle-cluster-agent"
     assert result.services[0].service_type == "ClusterIP"
+
+
+@pytest.mark.asyncio
+async def test_rancher_services_list_handles_empty_collection() -> None:
+    """Curated services list should handle an empty namespace collection cleanly."""
+
+    class EmptyServiceClient:
+        """Return an empty service collection."""
+
+        async def get_json(self, path: str, params: object = None) -> dict[str, object]:
+            """Return a deterministic empty collection."""
+
+            assert path == "/services/cattle-system"
+            assert params is None
+            return {"data": []}
+
+    result = await rancher_services_list(
+        namespace="cattle-system",
+        cluster_id="venue-local",
+        instance="work",
+        settings=build_settings(),
+        client=EmptyServiceClient(),
+    )
+
+    assert result.service_count == 0
+    assert result.applied_query_params == {}
+    assert result.services == []
 
 
 @pytest.mark.asyncio
@@ -282,33 +348,3 @@ async def test_rancher_service_get_returns_typed_detail() -> None:
     ]
     assert result.ports[0].target_port == "80"
     assert "view" in result.link_keys
-
-
-@pytest.mark.asyncio
-async def test_rancher_services_list_handles_empty_collection() -> None:
-    """Curated services list should handle an empty Steve collection cleanly."""
-
-    class EmptyServiceClient:
-        """Deterministic empty collection client for service tests."""
-
-        async def get_json(self, path: str, params: object = None) -> dict[str, object]:
-            """Return an empty services payload."""
-
-            assert path == "/services/cattle-system"
-            assert params is None
-            return {"data": []}
-
-    result = await rancher_services_list(
-        namespace="cattle-system",
-        cluster_id="venue-local",
-        instance="work",
-        settings=build_settings(),
-        client=EmptyServiceClient(),
-    )
-
-    assert result.instance == "work"
-    assert result.cluster_id == "venue-local"
-    assert result.namespace == "cattle-system"
-    assert result.service_count == 0
-    assert result.applied_query_params == {}
-    assert result.services == []

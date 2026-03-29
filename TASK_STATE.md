@@ -176,6 +176,11 @@ Implement the clean-slate Rancher MCP project phase-by-phase against the live Ra
   workload models were split from one file into a package so the alias cleanup preserved the architecture gate
   focused alias tests were expanded for cluster, node, pod, service, namespace, and workload detail parsing
 - `make lint`, `make typecheck`, `make test`, and `make check-architecture` passing after the alias-expansion follow-up slice
+- curated-tool edge/error coverage hardening completed for the current Phase 4 packs:
+  empty collections now have direct coverage across clusters, services, projects, deployments, and statefulsets
+  computed post-parse filters now have direct coverage across nodes, pods, namespaces, and daemonsets
+  workload readiness edge cases now have direct curated-tool tests instead of relying only on happy-path assertions
+- `make lint`, `make typecheck`, `make test`, and `make check-architecture` passing after the curated coverage-hardening slice
 
 ## In Progress
 
@@ -229,3 +234,5 @@ Implement the clean-slate Rancher MCP project phase-by-phase against the live Ra
   normalization, cutting the broad helper-call count in `src/rancher_mcp` down to `93`
 - The shared curated normalizers for clusters/nodes, pods/services, projects/namespaces, and workloads now sit at
   `164`, `92`, `193`, and `163` lines respectively, keeping the architecture gate clean after the alias cleanup
+- The curated-tool review feedback about thin happy-path-only coverage has been materially reduced, but new packs
+  should continue landing with empty-collection and computed-filter coverage as a baseline instead of as a cleanup

@@ -69,6 +69,9 @@ As of `2026-03-29`, the repo has already moved beyond pure planning:
   through model aliases wherever the tool layer does not need computed normalization
   the corresponding shared normalizers are now mostly limited to readiness, relationship, and derived-summary logic
   workload models have been split into a package so the additional alias coverage does not recreate a monolithic file
+- curated-tool coverage hardening is now also in place for the current Phase 4 surface:
+  empty-collection and computed-filter behaviors across the current curated packs now have direct tests, reducing
+  the earlier happy-path-heavy posture called out during review
 - repo-local devlab and fixture tooling remain outside the shipped `src/rancher_mcp` package boundary
 - tool modules are being kept logically split instead of allowing a single discovery or resource file to grow unbounded
 

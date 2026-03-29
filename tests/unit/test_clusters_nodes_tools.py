@@ -194,6 +194,31 @@ async def test_rancher_cluster_get_returns_typed_detail() -> None:
 
 
 @pytest.mark.asyncio
+async def test_rancher_clusters_list_handles_empty_collection() -> None:
+    """Curated clusters list should handle an empty Rancher collection cleanly."""
+
+    class EmptyClusterClient:
+        """Return an empty cluster collection."""
+
+        async def get_json(self, path: str, params: object = None) -> dict[str, object]:
+            """Return a deterministic empty collection."""
+
+            assert path == "/v3/clusters"
+            assert params is None
+            return {"data": []}
+
+    result = await rancher_clusters_list(
+        instance="work",
+        settings=build_settings(),
+        client=EmptyClusterClient(),
+    )
+
+    assert result.cluster_count == 0
+    assert result.applied_query_params == {}
+    assert result.clusters == []
+
+
+@pytest.mark.asyncio
 async def test_rancher_nodes_list_returns_typed_summaries() -> None:
     """Curated nodes list should expose typed node summaries."""
 
@@ -221,6 +246,48 @@ async def test_rancher_nodes_list_returns_typed_summaries() -> None:
 
 
 @pytest.mark.asyncio
+async def test_rancher_nodes_list_filters_unready_unschedulable_nodes() -> None:
+    """Curated nodes list should preserve computed readiness and role extraction."""
+
+    class SparseNodeClient:
+        """Return a node payload with computed-role and readiness edge cases."""
+
+        async def get_json(self, path: str, params: object = None) -> dict[str, object]:
+            """Return a deterministic sparse node collection."""
+
+            assert path == "/v3/nodes"
+            assert params == {"unschedulable": True}
+            return {
+                "data": [
+                    {
+                        "id": "local:machine-drain",
+                        "name": "worker-drain",
+                        "state": "draining",
+                        "worker": True,
+                        "controlPlane": True,
+                        "etcd": False,
+                        "unschedulable": True,
+                        "conditions": [
+                            {"type": "Ready", "status": "False", "message": "draining"},
+                        ],
+                    }
+                ]
+            }
+
+    result = await rancher_nodes_list(
+        unschedulable=True,
+        instance="work",
+        settings=build_settings(),
+        client=SparseNodeClient(),
+    )
+
+    assert result.node_count == 1
+    assert result.nodes[0].ready is False
+    assert result.nodes[0].roles == ["control-plane", "worker"]
+    assert result.nodes[0].unschedulable is True
+
+
+@pytest.mark.asyncio
 async def test_rancher_node_get_returns_typed_detail() -> None:
     """Curated node detail should expose capacity, allocatable, and actions."""
 
@@ -237,29 +304,3 @@ async def test_rancher_node_get_returns_typed_detail() -> None:
     assert result.cpu_capacity == "4"
     assert result.cpu_allocatable == "4"
     assert result.action_keys == ["drain"]
-
-
-@pytest.mark.asyncio
-async def test_rancher_clusters_list_handles_empty_collection() -> None:
-    """Curated clusters list should handle an empty Rancher collection cleanly."""
-
-    class EmptyClusterClient:
-        """Deterministic empty collection client for cluster tests."""
-
-        async def get_json(self, path: str, params: object = None) -> dict[str, object]:
-            """Return an empty cluster payload."""
-
-            assert path == "/v3/clusters"
-            assert params is None
-            return {"data": []}
-
-    result = await rancher_clusters_list(
-        instance="work",
-        settings=build_settings(),
-        client=EmptyClusterClient(),
-    )
-
-    assert result.instance == "work"
-    assert result.cluster_count == 0
-    assert result.applied_query_params == {}
-    assert result.clusters == []

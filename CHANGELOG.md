@@ -2,6 +2,20 @@
 
 ## [2026-03-29] - Agent: OpenAI Codex
 ### Changed
+- Expanded curated-tool coverage beyond the happy path for the current Phase 4 packs:
+  empty collections for clusters, services, projects, deployments, and statefulsets
+  computed filter behavior for nodes, pods, namespaces, and daemonsets
+- Tightened the workload readiness tests so daemonset readiness depends on the same derived fields the production
+  tool layer uses
+
+### Verified
+- `make check-architecture` passes
+- `make lint` passes
+- `make typecheck` passes
+- `make test` passes with `132 passed` and `90.03%` coverage
+
+## [2026-03-29] - Agent: OpenAI Codex
+### Changed
 - Pushed the remaining curated read domains toward alias-first parsing:
   clusters/nodes
   pods/services
