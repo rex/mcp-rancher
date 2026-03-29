@@ -55,6 +55,8 @@ As of `2026-03-29`, the repo has already moved beyond pure planning:
   live-validated
   ninth curated read-only pack for users, groups, and auth configs is implemented and live-validated where the
   local Rancher lab exposes populated resources
+  tenth curated read-only pack for global roles, role templates, and RBAC bindings is implemented and
+  live-validated where the local Rancher lab exposes populated resources
 - architecture-hardening is now also active work:
   repo policy has been hydrated from the current `vibe-code` defaults
   `make check-architecture` is wired as an executable repo gate
@@ -82,7 +84,7 @@ As of `2026-03-29`, the repo has already moved beyond pure planning:
 The next high-value gaps are:
 
 - higher-level operational aggregate helpers
-- RBAC and other remaining curated read packs
+- monitoring/logging, Fleet, diagnostics, and other remaining curated read packs
 - additional generic watch coverage where the live Rancher surface proves stable
 - continued opportunistic reduction of manual normalization as new curated packs and detail models land,
   although the current curated read domains now use alias-first parsing for fields that do not require computation

@@ -1,0 +1,192 @@
+"""Curated Rancher role-template tools."""
+
+from __future__ import annotations
+
+from rancher_mcp.clients.management import ManagementDiscoveryClient, RancherManagementClient
+from rancher_mcp.config import AppSettings, get_settings
+from rancher_mcp.models.rbac import RancherRoleTemplateDetail, RancherRoleTemplateList
+from rancher_mcp.services.instances import resolve_instance
+from rancher_mcp.tools.rbac.shared import (
+    action_keys,
+    build_query_params,
+    data_items,
+    link_keys,
+    role_template_summary_from_payload,
+)
+
+
+async def _fetch_role_templates_list(
+    instance_name: str,
+    limit: int | None,
+    builtin: bool | None,
+    context: str | None,
+    administrative: bool | None,
+    cluster_creator_default: bool | None,
+    project_creator_default: bool | None,
+    external: bool | None,
+    hidden: bool | None,
+    locked: bool | None,
+    name: str | None,
+    sort_by: str | None,
+    reverse: bool | None,
+    client: ManagementDiscoveryClient,
+) -> RancherRoleTemplateList:
+    """Fetch and normalize the Rancher role-template collection."""
+
+    query_params = build_query_params(
+        limit=limit,
+        builtin=builtin,
+        context=context,
+        administrative=administrative,
+        clusterCreatorDefault=cluster_creator_default,
+        projectCreatorDefault=project_creator_default,
+        external=external,
+        hidden=hidden,
+        locked=locked,
+        name=name,
+        sort=sort_by,
+        reverse=reverse,
+    )
+    payload = await client.get_json("/v3/roletemplates", params=query_params or None)
+    role_templates = [role_template_summary_from_payload(item) for item in data_items(payload)]
+    return RancherRoleTemplateList(
+        instance=instance_name,
+        role_template_count=len(role_templates),
+        applied_query_params=query_params,
+        role_templates=role_templates,
+    )
+
+
+async def rancher_role_templates_list(
+    limit: int | None = None,
+    builtin: bool | None = None,
+    context: str | None = None,
+    administrative: bool | None = None,
+    cluster_creator_default: bool | None = None,
+    project_creator_default: bool | None = None,
+    external: bool | None = None,
+    hidden: bool | None = None,
+    locked: bool | None = None,
+    name: str | None = None,
+    sort_by: str | None = None,
+    reverse: bool | None = None,
+    instance: str | None = None,
+    settings: AppSettings | None = None,
+    client: ManagementDiscoveryClient | None = None,
+) -> RancherRoleTemplateList:
+    """List Rancher role templates with typed summaries."""
+
+    resolved_settings = settings or get_settings()
+    instance_name, instance_config = resolve_instance(resolved_settings, instance)
+    if client is not None:
+        return await _fetch_role_templates_list(
+            instance_name,
+            limit,
+            builtin,
+            context,
+            administrative,
+            cluster_creator_default,
+            project_creator_default,
+            external,
+            hidden,
+            locked,
+            name,
+            sort_by,
+            reverse,
+            client,
+        )
+    async with RancherManagementClient(instance_name, instance_config) as managed_client:
+        return await _fetch_role_templates_list(
+            instance_name,
+            limit,
+            builtin,
+            context,
+            administrative,
+            cluster_creator_default,
+            project_creator_default,
+            external,
+            hidden,
+            locked,
+            name,
+            sort_by,
+            reverse,
+            managed_client,
+        )
+
+
+async def _fetch_role_template_get(
+    role_template_id: str,
+    client: ManagementDiscoveryClient,
+) -> RancherRoleTemplateDetail:
+    """Fetch and normalize one Rancher role template."""
+
+    payload = await client.get_json(f"/v3/roletemplates/{role_template_id}")
+    detail = RancherRoleTemplateDetail.model_validate(payload)
+    return detail.model_copy(
+        update={
+            "rule_count": len(detail.rules),
+            "inherited_role_template_count": len(detail.inherited_role_template_ids),
+            "action_keys": action_keys(payload),
+            "link_keys": link_keys(payload),
+            "payload": dict(payload),
+        }
+    )
+
+
+async def rancher_role_template_get(
+    role_template_id: str,
+    instance: str | None = None,
+    settings: AppSettings | None = None,
+    client: ManagementDiscoveryClient | None = None,
+) -> RancherRoleTemplateDetail:
+    """Fetch one Rancher role template by id."""
+
+    resolved_settings = settings or get_settings()
+    instance_name, instance_config = resolve_instance(resolved_settings, instance)
+    if client is not None:
+        return await _fetch_role_template_get(role_template_id, client)
+    async with RancherManagementClient(instance_name, instance_config) as managed_client:
+        return await _fetch_role_template_get(role_template_id, managed_client)
+
+
+async def rancher_role_templates_list_tool(
+    limit: int | None = None,
+    builtin: bool | None = None,
+    context: str | None = None,
+    administrative: bool | None = None,
+    cluster_creator_default: bool | None = None,
+    project_creator_default: bool | None = None,
+    external: bool | None = None,
+    hidden: bool | None = None,
+    locked: bool | None = None,
+    name: str | None = None,
+    sort_by: str | None = None,
+    reverse: bool | None = None,
+    instance: str | None = None,
+) -> RancherRoleTemplateList:
+    """Public MCP wrapper for curated role-template list."""
+
+    return await rancher_role_templates_list(
+        limit=limit,
+        builtin=builtin,
+        context=context,
+        administrative=administrative,
+        cluster_creator_default=cluster_creator_default,
+        project_creator_default=project_creator_default,
+        external=external,
+        hidden=hidden,
+        locked=locked,
+        name=name,
+        sort_by=sort_by,
+        reverse=reverse,
+        instance=instance,
+    )
+
+
+async def rancher_role_template_get_tool(
+    role_template_id: str,
+    instance: str | None = None,
+) -> RancherRoleTemplateDetail:
+    """Public MCP wrapper for curated role-template detail."""
+
+    return await rancher_role_template_get(role_template_id=role_template_id, instance=instance)

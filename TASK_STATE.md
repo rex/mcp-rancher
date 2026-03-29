@@ -208,15 +208,39 @@ Implement the clean-slate Rancher MCP project phase-by-phase against the live Ra
   `user.conditions` can be `null` instead of a list, so the curated user detail model normalizes null to `[]`
   the lab currently exposes zero groups, so `group_get` remains unit-validated while list behavior is live-validated
 - `make lint`, `make typecheck`, `make test`, and `make check-architecture` passing after the curated auth/identity slice
+- next Phase 4 RBAC slice completed:
+  `rancher_global_roles_list`
+  `rancher_global_role_get`
+  `rancher_role_templates_list`
+  `rancher_role_template_get`
+  `rancher_global_role_bindings_list`
+  `rancher_global_role_binding_get`
+  `rancher_cluster_role_template_bindings_list`
+  `rancher_cluster_role_template_binding_get`
+  `rancher_project_role_template_bindings_list`
+  `rancher_project_role_template_binding_get`
+- live Rancher `2.6.5` validation completed for the RBAC slice against Norman resources:
+  global roles list/get via `/v3/globalroles`
+  role templates list/get via `/v3/roletemplates`
+  global role bindings list/get via `/v3/globalrolebindings`
+  cluster role-template bindings list via `/v3/clusterroletemplatebindings`
+  project role-template bindings list via `/v3/projectroletemplatebindings`
+- live Rancher `2.6.5` RBAC notes captured:
+  the lab exposes populated `globalRole`, `roleTemplate`, and `globalRoleBinding` collections
+  the lab currently exposes empty `clusterRoleTemplateBinding` and `projectRoleTemplateBinding` collections, so
+  those list paths are live-validated while detail behavior remains unit-validated
+  role-template detail payloads may legitimately have empty `rules`, so the curated detail surface reports
+  explicit `rule_count` instead of assuming role templates always inline Kubernetes policy rules
+- `make lint`, `make typecheck`, `make test`, and `make check-architecture` passing after the curated RBAC slice
 
 ## In Progress
 
-- resume Phase 4 outward now that the auth/identity slice is complete
+- resume Phase 4 outward now that the RBAC slice is complete
 
 ## Next Steps
 
-1. Resume Phase 4 outward into the next high-value curated read packs, with RBAC and adjacent
-   operator-facing authorization surfaces next
+1. Resume Phase 4 outward into the next remaining high-value curated read packs, with monitoring/logging,
+   Fleet, and diagnostics surfaces next depending on what the live Rancher `2.6.5` lab actually exposes
 2. Keep opportunistically expanding curated-tool edge and error-path coverage as new packs land so the
    current "happy-path-heavy" test posture continues to improve instead of regressing
 3. Start shaping the first operational aggregate helpers on top of the now-live

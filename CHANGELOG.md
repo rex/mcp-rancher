@@ -2,6 +2,40 @@
 
 ## [2026-03-29] - Agent: OpenAI Codex
 ### Added
+- Curated RBAC tools:
+  `rancher_global_roles_list`
+  `rancher_global_role_get`
+  `rancher_role_templates_list`
+  `rancher_role_template_get`
+  `rancher_global_role_bindings_list`
+  `rancher_global_role_binding_get`
+  `rancher_cluster_role_template_bindings_list`
+  `rancher_cluster_role_template_binding_get`
+  `rancher_project_role_template_bindings_list`
+  `rancher_project_role_template_binding_get`
+- Alias-aware typed models and thin per-resource tool modules for Rancher `globalRole`, `roleTemplate`,
+  `globalRoleBinding`, `clusterRoleTemplateBinding`, and `projectRoleTemplateBinding` resources
+
+### Changed
+- Normalized RBAC detail parsing around explicit derived `rule_count`, `inherited_role_template_count`, and
+  binding `subject_kind` / `subject_id` fields so callers do not have to reconstruct those summaries by hand
+- Recorded the live RBAC collection split observed on the Rancher `2.6.5` lab so later slices do not assume
+  cluster or project role-template bindings are populated in the local environment
+
+### Verified
+- `make check-architecture` passes
+- `make lint` passes
+- `make typecheck` passes
+- `make test` passes with `156 passed` and `89.92%` coverage
+- Live Rancher `2.6.5` validation succeeded for:
+  global roles list/get
+  role templates list/get
+  global role bindings list/get
+  cluster role-template bindings list on the currently empty lab collection
+  project role-template bindings list on the currently empty lab collection
+
+## [2026-03-29] - Agent: OpenAI Codex
+### Added
 - Curated auth and identity tools:
   `rancher_users_list`
   `rancher_user_get`
