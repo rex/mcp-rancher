@@ -424,3 +424,76 @@ async def test_rancher_statefulset_get_returns_typed_detail() -> None:
     assert result.current_revision == "demo-db-7f9cfb6f8c"
     assert result.update_revision == "demo-db-7f9cfb6f8c"
     assert result.containers[0].name == "db"
+
+
+@pytest.mark.asyncio
+async def test_rancher_deployments_list_filters_ready_items() -> None:
+    """Curated deployment list should filter by computed rollout readiness."""
+
+    class MixedDeploymentClient:
+        """Deterministic workload client with ready and non-ready deployments."""
+
+        async def get_json(self, path: str, params: object = None) -> dict[str, object]:
+            """Return mixed deployment payloads."""
+
+            assert (
+                path
+                == "/k8s/clusters/venue-local/apis/apps/v1/namespaces/cattle-system/deployments"
+            )
+            assert params is None
+            return {
+                "items": [
+                    {
+                        "metadata": {
+                            "name": "ready-deployment",
+                            "namespace": "cattle-system",
+                            "generation": 2,
+                        },
+                        "spec": {
+                            "replicas": 1,
+                            "selector": {"matchLabels": {"app": "ready"}},
+                            "template": {
+                                "spec": {"containers": [{"name": "app", "image": "demo"}]}
+                            },
+                        },
+                        "status": {
+                            "observedGeneration": 2,
+                            "readyReplicas": 1,
+                            "availableReplicas": 1,
+                            "updatedReplicas": 1,
+                        },
+                    },
+                    {
+                        "metadata": {
+                            "name": "not-ready-deployment",
+                            "namespace": "cattle-system",
+                            "generation": 2,
+                        },
+                        "spec": {
+                            "replicas": 2,
+                            "selector": {"matchLabels": {"app": "not-ready"}},
+                            "template": {
+                                "spec": {"containers": [{"name": "app", "image": "demo"}]}
+                            },
+                        },
+                        "status": {
+                            "observedGeneration": 2,
+                            "readyReplicas": 1,
+                            "availableReplicas": 1,
+                            "updatedReplicas": 1,
+                        },
+                    },
+                ]
+            }
+
+    result = await rancher_deployments_list(
+        namespace="cattle-system",
+        cluster_id="venue-local",
+        ready=True,
+        instance="work",
+        settings=build_settings(),
+        client=MixedDeploymentClient(),
+    )
+
+    assert result.deployment_count == 1
+    assert [deployment.name for deployment in result.deployments] == ["ready-deployment"]

@@ -10,6 +10,7 @@ from websockets.asyncio.client import connect
 from websockets.exceptions import ConnectionClosed
 from websockets.typing import Subprotocol
 
+from rancher_mcp.clients.retry import run_with_retry
 from rancher_mcp.clients.streaming_transport import websocket_url
 from rancher_mcp.models.streaming import WebSocketCapture, WebSocketFrame
 
@@ -52,46 +53,49 @@ async def websocket_capture(
 ) -> WebSocketCapture:
     """Capture a bounded WebSocket exchange against a Rancher endpoint."""
 
-    resolved_url = websocket_url(base_url, path, params)
-    frames: list[WebSocketFrame] = []
-    truncated = False
+    async def capture() -> WebSocketCapture:
+        resolved_url = websocket_url(base_url, path, params)
+        frames: list[WebSocketFrame] = []
+        truncated = False
 
-    async with connect(
-        resolved_url,
-        additional_headers={"Authorization": f"Bearer {token}"},
-        subprotocols=tuple(subprotocols) if subprotocols else None,
-        open_timeout=10,
-        close_timeout=2,
-        ssl=ssl_context,
-    ) as websocket:
-        for message in outbound_messages or ():
-            await websocket.send(message)
+        async with connect(
+            resolved_url,
+            additional_headers={"Authorization": f"Bearer {token}"},
+            subprotocols=tuple(subprotocols) if subprotocols else None,
+            open_timeout=10,
+            close_timeout=2,
+            ssl=ssl_context,
+        ) as websocket:
+            for message in outbound_messages or ():
+                await websocket.send(message)
 
-        while len(frames) < max_messages:
-            try:
-                raw_message = await asyncio.wait_for(
-                    websocket.recv(),
-                    timeout=idle_timeout_seconds,
-                )
-            except TimeoutError:
-                break
-            except ConnectionClosed:
-                break
+            while len(frames) < max_messages:
+                try:
+                    raw_message = await asyncio.wait_for(
+                        websocket.recv(),
+                        timeout=idle_timeout_seconds,
+                    )
+                except TimeoutError:
+                    break
+                except ConnectionClosed:
+                    break
 
-            frames.append(frame_from_message(raw_message))
-        else:
-            truncated = True
+                frames.append(frame_from_message(raw_message))
+            else:
+                truncated = True
 
-        negotiated_subprotocol = websocket.subprotocol
+            negotiated_subprotocol = websocket.subprotocol
 
-    return WebSocketCapture(
-        instance=instance_name,
-        path=path,
-        negotiated_subprotocol=negotiated_subprotocol,
-        frame_count=len(frames),
-        truncated=truncated,
-        frames=frames,
-    )
+        return WebSocketCapture(
+            instance=instance_name,
+            path=path,
+            negotiated_subprotocol=negotiated_subprotocol,
+            frame_count=len(frames),
+            truncated=truncated,
+            frames=frames,
+        )
+
+    return await run_with_retry(capture)
 
 
 def frame_from_message(message: WebSocketMessage) -> WebSocketFrame:

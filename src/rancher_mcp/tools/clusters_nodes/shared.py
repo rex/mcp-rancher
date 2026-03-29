@@ -1,4 +1,3 @@
-# pyright: reportUnusedFunction=false
 """Shared normalization helpers for curated cluster and node tools."""
 
 from __future__ import annotations
@@ -11,28 +10,30 @@ from rancher_mcp.models.clusters_nodes import (
     RancherCondition,
     RancherNodeSummary,
 )
-from rancher_mcp.tools._support.collections import object_items
-from rancher_mcp.tools._support.conditions import (
+from rancher_mcp.tools.support.collections import object_items
+from rancher_mcp.tools.support.conditions import (
     condition_is_true,
     condition_types_true,
-    conditions_from_payload,
 )
-from rancher_mcp.tools._support.conditions import (
+from rancher_mcp.tools.support.conditions import (
+    conditions_from_payload as support_conditions_from_payload,
+)
+from rancher_mcp.tools.support.conditions import (
     conditions_from_value as _conditions_from_value,
 )
-from rancher_mcp.tools._support.values import (
+from rancher_mcp.tools.support.values import (
     bool_value as _bool_value,
 )
-from rancher_mcp.tools._support.values import (
+from rancher_mcp.tools.support.values import (
     int_value as _int_value,
 )
-from rancher_mcp.tools._support.values import (
+from rancher_mcp.tools.support.values import (
     mapping_value as _mapping_value,
 )
-from rancher_mcp.tools._support.values import (
+from rancher_mcp.tools.support.values import (
     status_to_bool as _status_to_bool,
 )
-from rancher_mcp.tools._support.values import (
+from rancher_mcp.tools.support.values import (
     string_value as _string_value,
 )
 
@@ -40,7 +41,7 @@ from rancher_mcp.tools._support.values import (
 def _conditions_from_payload(payload: Mapping[str, object]) -> list[RancherCondition]:
     """Normalize top-level conditions from a Rancher payload."""
 
-    return conditions_from_payload(payload)
+    return support_conditions_from_payload(payload)
 
 
 def _condition_types_true(payload: Mapping[str, object]) -> list[str]:
@@ -201,3 +202,12 @@ def _data_items(payload: Mapping[str, object]) -> list[dict[str, object]]:
     """Extract typed collection items from a Rancher list payload."""
 
     return object_items(payload, field="data")
+
+
+build_cluster_query_params = _build_cluster_query_params
+build_node_query_params = _build_node_query_params
+cluster_summary_from_payload = _cluster_summary_from_payload
+component_statuses_from_payload = _component_statuses_from_payload
+conditions_from_payload = _conditions_from_payload
+data_items = _data_items
+node_summary_from_payload = _node_summary_from_payload

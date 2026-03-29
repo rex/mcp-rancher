@@ -1,7 +1,8 @@
 """Typed models for curated Rancher pod and service reads."""
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
+from rancher_mcp.models.base import RancherModel
 from rancher_mcp.models.clusters_nodes import RancherCondition
 
 
@@ -35,7 +36,7 @@ def _empty_service_ports() -> list["RancherServicePortSummary"]:
     return []
 
 
-class RancherPodContainerSummary(BaseModel):
+class RancherPodContainerSummary(RancherModel):
     """Typed summary for one pod container."""
 
     name: str
@@ -45,7 +46,7 @@ class RancherPodContainerSummary(BaseModel):
     state: str | None = None
 
 
-class RancherPodSummary(BaseModel):
+class RancherPodSummary(RancherModel):
     """Typed summary for one pod."""
 
     id: str
@@ -74,7 +75,7 @@ class RancherPodDetail(RancherPodSummary):
     payload: dict[str, object] = Field(default_factory=dict)
 
 
-class RancherPodList(BaseModel):
+class RancherPodList(RancherModel):
     """Typed list response for pods in one namespace."""
 
     instance: str
@@ -85,7 +86,7 @@ class RancherPodList(BaseModel):
     pods: list[RancherPodSummary] = Field(default_factory=_empty_pod_summaries)
 
 
-class RancherServicePortSummary(BaseModel):
+class RancherServicePortSummary(RancherModel):
     """Typed summary for one service port."""
 
     name: str | None = None
@@ -94,7 +95,7 @@ class RancherServicePortSummary(BaseModel):
     target_port: str | None = None
 
 
-class RancherServiceSummary(BaseModel):
+class RancherServiceSummary(RancherModel):
     """Typed summary for one service."""
 
     id: str
@@ -119,7 +120,7 @@ class RancherServiceDetail(RancherServiceSummary):
     payload: dict[str, object] = Field(default_factory=dict)
 
 
-class RancherServiceList(BaseModel):
+class RancherServiceList(RancherModel):
     """Typed list response for services in one namespace."""
 
     instance: str

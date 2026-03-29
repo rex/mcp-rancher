@@ -1,6 +1,8 @@
 """Typed models for curated Rancher cluster and node reads."""
 
-from pydantic import BaseModel, Field
+from pydantic import Field
+
+from rancher_mcp.models.base import RancherModel
 
 
 def _empty_cluster_summaries() -> list["RancherClusterSummary"]:
@@ -27,7 +29,7 @@ def _empty_component_statuses() -> list["RancherClusterComponentStatus"]:
     return []
 
 
-class RancherCondition(BaseModel):
+class RancherCondition(RancherModel):
     """One Rancher or Kubernetes condition."""
 
     type: str
@@ -36,7 +38,7 @@ class RancherCondition(BaseModel):
     message: str | None = None
 
 
-class RancherClusterComponentStatus(BaseModel):
+class RancherClusterComponentStatus(RancherModel):
     """One summarized cluster component status."""
 
     name: str
@@ -44,7 +46,7 @@ class RancherClusterComponentStatus(BaseModel):
     message: str | None = None
 
 
-class RancherClusterSummary(BaseModel):
+class RancherClusterSummary(RancherModel):
     """Typed summary for one Rancher cluster."""
 
     id: str
@@ -73,7 +75,7 @@ class RancherClusterDetail(RancherClusterSummary):
     payload: dict[str, object] = Field(default_factory=dict)
 
 
-class RancherClusterList(BaseModel):
+class RancherClusterList(RancherModel):
     """Typed list response for Rancher clusters."""
 
     instance: str
@@ -82,7 +84,7 @@ class RancherClusterList(BaseModel):
     clusters: list[RancherClusterSummary] = Field(default_factory=_empty_cluster_summaries)
 
 
-class RancherNodeSummary(BaseModel):
+class RancherNodeSummary(RancherModel):
     """Typed summary for one Rancher-managed node."""
 
     id: str
@@ -115,7 +117,7 @@ class RancherNodeDetail(RancherNodeSummary):
     payload: dict[str, object] = Field(default_factory=dict)
 
 
-class RancherNodeList(BaseModel):
+class RancherNodeList(RancherModel):
     """Typed list response for Rancher nodes."""
 
     instance: str

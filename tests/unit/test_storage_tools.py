@@ -337,3 +337,50 @@ async def test_rancher_persistent_volume_claim_get_returns_typed_detail() -> Non
     assert result.id == "storage-validation/demo-claim"
     assert result.selected_node == "venue-worker-1"
     assert result.finalizers == ["kubernetes.io/pvc-protection"]
+
+
+@pytest.mark.asyncio
+async def test_rancher_storage_classes_list_applies_default_only_filter() -> None:
+    """Curated storage-class list should filter to default classes when requested."""
+
+    class MixedStorageClassClient:
+        """Deterministic storage-class client with default and non-default entries."""
+
+        async def get_json(self, path: str, params: object = None) -> dict[str, object]:
+            """Return mixed storage-class payloads."""
+
+            assert path == "/k8s/clusters/venue-local/apis/storage.k8s.io/v1/storageclasses"
+            assert params is None
+            return {
+                "items": [
+                    {
+                        "metadata": {
+                            "name": "standard",
+                            "annotations": {
+                                "storageclass.kubernetes.io/is-default-class": "true",
+                            },
+                        },
+                        "provisioner": "rancher.io/local-path",
+                    },
+                    {
+                        "metadata": {
+                            "name": "slow",
+                            "annotations": {
+                                "storageclass.kubernetes.io/is-default-class": "false",
+                            },
+                        },
+                        "provisioner": "kubernetes.io/noop",
+                    },
+                ]
+            }
+
+    result = await rancher_storage_classes_list(
+        cluster_id="venue-local",
+        default_only=True,
+        instance="work",
+        settings=build_settings(),
+        client=MixedStorageClassClient(),
+    )
+
+    assert result.storage_class_count == 1
+    assert [storage_class.name for storage_class in result.storage_classes] == ["standard"]

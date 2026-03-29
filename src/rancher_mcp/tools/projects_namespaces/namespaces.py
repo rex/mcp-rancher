@@ -1,4 +1,3 @@
-# pyright: reportPrivateUsage=false
 """Curated Rancher namespace tools."""
 
 from __future__ import annotations
@@ -8,14 +7,14 @@ from rancher_mcp.config import AppSettings, get_settings
 from rancher_mcp.models.projects_namespaces import RancherNamespaceDetail, RancherNamespaceList
 from rancher_mcp.services.instances import resolve_instance
 from rancher_mcp.tools.projects_namespaces.shared import (
-    _build_namespace_query_params,
-    _data_items,
-    _mapping_value,
-    _namespace_cattle_conditions,
-    _namespace_summary_from_payload,
-    _string_dict,
-    _string_list,
+    build_namespace_query_params,
+    data_items,
+    namespace_cattle_conditions,
+    namespace_summary_from_payload,
+    string_dict,
+    string_list,
 )
+from rancher_mcp.tools.support.values import mapping_value
 
 
 async def _fetch_namespaces_list(
@@ -30,16 +29,14 @@ async def _fetch_namespaces_list(
 ) -> RancherNamespaceList:
     """Fetch and normalize downstream namespaces."""
 
-    query_params = _build_namespace_query_params(
+    query_params = build_namespace_query_params(
         project_id=project_id,
         limit=limit,
         label_selector=label_selector,
         field_selector=field_selector,
     )
     payload = await client.get_json("/namespaces", params=query_params or None)
-    namespaces = [
-        _namespace_summary_from_payload(cluster_id, item) for item in _data_items(payload)
-    ]
+    namespaces = [namespace_summary_from_payload(cluster_id, item) for item in data_items(payload)]
     if phase is not None:
         namespaces = [namespace for namespace in namespaces if namespace.phase == phase]
     return RancherNamespaceList(
@@ -103,10 +100,10 @@ async def _fetch_namespace_get(
     """Fetch and normalize one downstream namespace."""
 
     payload = await client.get_json(f"/namespaces/{namespace}")
-    summary = _namespace_summary_from_payload(cluster_id, payload)
-    metadata = _mapping_value(payload, "metadata") or {}
-    annotations = _mapping_value(metadata, "annotations") or {}
-    labels = _mapping_value(metadata, "labels") or {}
+    summary = namespace_summary_from_payload(cluster_id, payload)
+    metadata = mapping_value(payload, "metadata") or {}
+    annotations = mapping_value(metadata, "annotations") or {}
+    labels = mapping_value(metadata, "labels") or {}
     return RancherNamespaceDetail(
         id=summary.id,
         name=summary.name,
@@ -118,11 +115,11 @@ async def _fetch_namespace_get(
         project_id=summary.project_id,
         project_id_short=summary.project_id_short,
         finalizer_count=summary.finalizer_count,
-        label_keys=sorted(_string_dict(labels)),
-        annotation_keys=sorted(_string_dict(annotations)),
-        finalizers=_string_list(metadata.get("finalizers")),
-        cattle_conditions=_namespace_cattle_conditions(metadata),
-        link_keys=sorted(_mapping_value(payload, "links") or {}),
+        label_keys=sorted(string_dict(labels)),
+        annotation_keys=sorted(string_dict(annotations)),
+        finalizers=string_list(metadata.get("finalizers")),
+        cattle_conditions=namespace_cattle_conditions(metadata),
+        link_keys=sorted(mapping_value(payload, "links") or {}),
         payload=dict(payload),
     )
 

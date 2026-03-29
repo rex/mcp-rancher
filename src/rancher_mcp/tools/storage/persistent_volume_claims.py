@@ -1,4 +1,3 @@
-# pyright: reportPrivateUsage=false
 """Curated Rancher persistent-volume-claim tools."""
 
 from __future__ import annotations
@@ -11,18 +10,15 @@ from rancher_mcp.models.storage import (
 )
 from rancher_mcp.services.instances import resolve_instance
 from rancher_mcp.tools.storage.paths import (
-    _persistent_volume_claim_collection_path,
-    _persistent_volume_claim_resource_path,
+    persistent_volume_claim_collection_path,
+    persistent_volume_claim_resource_path,
 )
 from rancher_mcp.tools.storage.shared import (
-    _build_list_query_params,
-    _items,
-    _mapping_value,
-    _persistent_volume_claim_summary_from_payload,
-    _string_dict,
-    _string_list,
-    _string_value,
+    build_list_query_params,
+    items,
+    persistent_volume_claim_summary_from_payload,
 )
+from rancher_mcp.tools.support.values import mapping_value, string_dict
 
 
 async def _fetch_persistent_volume_claims_list(
@@ -36,12 +32,12 @@ async def _fetch_persistent_volume_claims_list(
 ) -> RancherPersistentVolumeClaimList:
     """Fetch and normalize PVCs through Rancher's raw Kubernetes proxy."""
 
-    query_params = _build_list_query_params(limit=limit)
+    query_params = build_list_query_params(limit=limit)
     payload = await client.get_json(
-        _persistent_volume_claim_collection_path(cluster_id, namespace),
+        persistent_volume_claim_collection_path(cluster_id, namespace),
         params=query_params or None,
     )
-    claims = [_persistent_volume_claim_summary_from_payload(item) for item in _items(payload)]
+    claims = [persistent_volume_claim_summary_from_payload(item) for item in items(payload)]
     if phase is not None:
         claims = [claim for claim in claims if claim.phase == phase]
     if storage_class_name is not None:
@@ -102,26 +98,16 @@ async def _fetch_persistent_volume_claim_get(
     """Fetch and normalize one persistent volume claim."""
 
     payload = await client.get_json(
-        _persistent_volume_claim_resource_path(cluster_id, namespace, claim_name)
+        persistent_volume_claim_resource_path(cluster_id, namespace, claim_name)
     )
-    summary = _persistent_volume_claim_summary_from_payload(payload)
-    metadata = _mapping_value(payload, "metadata") or {}
-    annotations = _mapping_value(metadata, "annotations") or {}
-    return RancherPersistentVolumeClaimDetail(
-        id=summary.id,
-        name=summary.name,
-        namespace=summary.namespace,
-        phase=summary.phase,
-        storage_class_name=summary.storage_class_name,
-        requested_storage=summary.requested_storage,
-        capacity_storage=summary.capacity_storage,
-        volume_name=summary.volume_name,
-        access_modes=summary.access_modes,
-        volume_mode=summary.volume_mode,
-        annotation_keys=sorted(_string_dict(annotations)),
-        finalizers=_string_list(metadata.get("finalizers")),
-        selected_node=_string_value(annotations, "volume.kubernetes.io/selected-node"),
-        payload=dict(payload),
+    summary = persistent_volume_claim_summary_from_payload(payload)
+    metadata = mapping_value(payload, "metadata") or {}
+    return RancherPersistentVolumeClaimDetail.model_validate(payload).model_copy(
+        update={
+            "id": summary.id,
+            "annotation_keys": sorted(string_dict(mapping_value(metadata, "annotations") or {})),
+            "payload": dict(payload),
+        }
     )
 
 

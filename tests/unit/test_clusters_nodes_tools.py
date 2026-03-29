@@ -237,3 +237,29 @@ async def test_rancher_node_get_returns_typed_detail() -> None:
     assert result.cpu_capacity == "4"
     assert result.cpu_allocatable == "4"
     assert result.action_keys == ["drain"]
+
+
+@pytest.mark.asyncio
+async def test_rancher_clusters_list_handles_empty_collection() -> None:
+    """Curated clusters list should handle an empty Rancher collection cleanly."""
+
+    class EmptyClusterClient:
+        """Deterministic empty collection client for cluster tests."""
+
+        async def get_json(self, path: str, params: object = None) -> dict[str, object]:
+            """Return an empty cluster payload."""
+
+            assert path == "/v3/clusters"
+            assert params is None
+            return {"data": []}
+
+    result = await rancher_clusters_list(
+        instance="work",
+        settings=build_settings(),
+        client=EmptyClusterClient(),
+    )
+
+    assert result.instance == "work"
+    assert result.cluster_count == 0
+    assert result.applied_query_params == {}
+    assert result.clusters == []

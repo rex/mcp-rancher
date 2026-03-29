@@ -1,6 +1,8 @@
 """Typed models for curated Rancher storage reads."""
 
-from pydantic import BaseModel, Field
+from pydantic import AliasChoices, AliasPath, Field
+
+from rancher_mcp.models.base import RancherModel
 
 
 def _empty_storage_class_summaries() -> list["RancherStorageClassSummary"]:
@@ -21,10 +23,13 @@ def _empty_claim_summaries() -> list["RancherPersistentVolumeClaimSummary"]:
     return []
 
 
-class RancherStorageClassSummary(BaseModel):
+class RancherStorageClassSummary(RancherModel):
     """Typed summary for one storage class."""
 
-    name: str
+    name: str = Field(
+        default="<unknown-storage-class>",
+        validation_alias=AliasPath("metadata", "name"),
+    )
     provisioner: str | None = None
     reclaim_policy: str | None = None
     volume_binding_mode: str | None = None
@@ -41,7 +46,7 @@ class RancherStorageClassDetail(RancherStorageClassSummary):
     payload: dict[str, object] = Field(default_factory=dict)
 
 
-class RancherStorageClassList(BaseModel):
+class RancherStorageClassList(RancherModel):
     """Typed list response for storage classes."""
 
     instance: str
@@ -53,31 +58,65 @@ class RancherStorageClassList(BaseModel):
     )
 
 
-class RancherPersistentVolumeSummary(BaseModel):
+class RancherPersistentVolumeSummary(RancherModel):
     """Typed summary for one persistent volume."""
 
-    name: str
-    phase: str | None = None
-    storage_class_name: str | None = None
-    capacity_storage: str | None = None
-    claim_namespace: str | None = None
-    claim_name: str | None = None
-    reclaim_policy: str | None = None
-    access_modes: list[str] = Field(default_factory=list)
-    volume_mode: str | None = None
+    name: str = Field(
+        default="<unknown-persistent-volume>",
+        validation_alias=AliasPath("metadata", "name"),
+    )
+    phase: str | None = Field(default=None, validation_alias=AliasPath("status", "phase"))
+    storage_class_name: str | None = Field(
+        default=None,
+        validation_alias=AliasPath("spec", "storageClassName"),
+    )
+    capacity_storage: str | None = Field(
+        default=None,
+        validation_alias=AliasPath("spec", "capacity", "storage"),
+    )
+    claim_namespace: str | None = Field(
+        default=None,
+        validation_alias=AliasPath("spec", "claimRef", "namespace"),
+    )
+    claim_name: str | None = Field(
+        default=None,
+        validation_alias=AliasPath("spec", "claimRef", "name"),
+    )
+    reclaim_policy: str | None = Field(
+        default=None,
+        validation_alias=AliasPath("spec", "persistentVolumeReclaimPolicy"),
+    )
+    access_modes: list[str] = Field(
+        default_factory=list,
+        validation_alias=AliasPath("spec", "accessModes"),
+    )
+    volume_mode: str | None = Field(
+        default=None,
+        validation_alias=AliasPath("spec", "volumeMode"),
+    )
     volume_source_type: str | None = None
 
 
 class RancherPersistentVolumeDetail(RancherPersistentVolumeSummary):
     """Typed detail for one persistent volume."""
 
-    finalizers: list[str] = Field(default_factory=list)
+    finalizers: list[str] = Field(
+        default_factory=list,
+        validation_alias=AliasPath("metadata", "finalizers"),
+    )
     node_hostnames: list[str] = Field(default_factory=list)
-    provisioner: str | None = None
+    provisioner: str | None = Field(
+        default=None,
+        validation_alias=AliasPath(
+            "metadata",
+            "annotations",
+            "pv.kubernetes.io/provisioned-by",
+        ),
+    )
     payload: dict[str, object] = Field(default_factory=dict)
 
 
-class RancherPersistentVolumeList(BaseModel):
+class RancherPersistentVolumeList(RancherModel):
     """Typed list response for persistent volumes."""
 
     instance: str
@@ -89,31 +128,65 @@ class RancherPersistentVolumeList(BaseModel):
     )
 
 
-class RancherPersistentVolumeClaimSummary(BaseModel):
+class RancherPersistentVolumeClaimSummary(RancherModel):
     """Typed summary for one persistent volume claim."""
 
-    id: str
-    name: str
-    namespace: str
-    phase: str | None = None
-    storage_class_name: str | None = None
-    requested_storage: str | None = None
-    capacity_storage: str | None = None
-    volume_name: str | None = None
-    access_modes: list[str] = Field(default_factory=list)
-    volume_mode: str | None = None
+    id: str = ""
+    name: str = Field(
+        default="<unknown-persistent-volume-claim>",
+        validation_alias=AliasPath("metadata", "name"),
+    )
+    namespace: str = Field(
+        default="<unknown-namespace>",
+        validation_alias=AliasPath("metadata", "namespace"),
+    )
+    phase: str | None = Field(default=None, validation_alias=AliasPath("status", "phase"))
+    storage_class_name: str | None = Field(
+        default=None,
+        validation_alias=AliasPath("spec", "storageClassName"),
+    )
+    requested_storage: str | None = Field(
+        default=None,
+        validation_alias=AliasPath("spec", "resources", "requests", "storage"),
+    )
+    capacity_storage: str | None = Field(
+        default=None,
+        validation_alias=AliasPath("status", "capacity", "storage"),
+    )
+    volume_name: str | None = Field(default=None, validation_alias=AliasPath("spec", "volumeName"))
+    access_modes: list[str] = Field(
+        default_factory=list,
+        validation_alias=AliasChoices(
+            AliasPath("status", "accessModes"),
+            AliasPath("spec", "accessModes"),
+        ),
+    )
+    volume_mode: str | None = Field(
+        default=None,
+        validation_alias=AliasPath("spec", "volumeMode"),
+    )
 
 
 class RancherPersistentVolumeClaimDetail(RancherPersistentVolumeClaimSummary):
     """Typed detail for one persistent volume claim."""
 
     annotation_keys: list[str] = Field(default_factory=list)
-    finalizers: list[str] = Field(default_factory=list)
-    selected_node: str | None = None
+    finalizers: list[str] = Field(
+        default_factory=list,
+        validation_alias=AliasPath("metadata", "finalizers"),
+    )
+    selected_node: str | None = Field(
+        default=None,
+        validation_alias=AliasPath(
+            "metadata",
+            "annotations",
+            "volume.kubernetes.io/selected-node",
+        ),
+    )
     payload: dict[str, object] = Field(default_factory=dict)
 
 
-class RancherPersistentVolumeClaimList(BaseModel):
+class RancherPersistentVolumeClaimList(RancherModel):
     """Typed list response for persistent volume claims in one namespace."""
 
     instance: str

@@ -1,7 +1,8 @@
 """Typed models for curated Rancher project and namespace reads."""
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
+from rancher_mcp.models.base import RancherModel
 from rancher_mcp.models.clusters_nodes import RancherCondition
 
 
@@ -23,7 +24,7 @@ def _empty_conditions() -> list[RancherCondition]:
     return []
 
 
-class RancherProjectSummary(BaseModel):
+class RancherProjectSummary(RancherModel):
     """Typed summary for one Rancher project."""
 
     id: str
@@ -50,7 +51,7 @@ class RancherProjectDetail(RancherProjectSummary):
     payload: dict[str, object] = Field(default_factory=dict)
 
 
-class RancherProjectList(BaseModel):
+class RancherProjectList(RancherModel):
     """Typed list response for Rancher projects."""
 
     instance: str
@@ -59,7 +60,7 @@ class RancherProjectList(BaseModel):
     projects: list[RancherProjectSummary] = Field(default_factory=_empty_project_summaries)
 
 
-class RancherNamespaceSummary(BaseModel):
+class RancherNamespaceSummary(RancherModel):
     """Typed summary for one downstream namespace."""
 
     id: str
@@ -85,7 +86,7 @@ class RancherNamespaceDetail(RancherNamespaceSummary):
     payload: dict[str, object] = Field(default_factory=dict)
 
 
-class RancherNamespaceList(BaseModel):
+class RancherNamespaceList(RancherModel):
     """Typed list response for downstream namespaces."""
 
     instance: str

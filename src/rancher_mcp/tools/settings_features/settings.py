@@ -1,4 +1,3 @@
-# pyright: reportPrivateUsage=false
 """Curated Rancher setting tools."""
 
 from __future__ import annotations
@@ -8,9 +7,9 @@ from rancher_mcp.config import AppSettings, get_settings
 from rancher_mcp.models.settings_features import RancherSettingDetail, RancherSettingList
 from rancher_mcp.services.instances import resolve_instance
 from rancher_mcp.tools.settings_features.shared import (
-    _build_settings_query_params,
-    _data_items,
-    _setting_summary_from_payload,
+    build_settings_query_params,
+    data_items,
+    setting_summary_from_payload,
 )
 
 
@@ -25,7 +24,7 @@ async def _fetch_settings_list(
 ) -> RancherSettingList:
     """Fetch and normalize the Rancher settings collection."""
 
-    query_params = _build_settings_query_params(
+    query_params = build_settings_query_params(
         limit=limit,
         source=source,
         customized=customized,
@@ -33,7 +32,7 @@ async def _fetch_settings_list(
         reverse=reverse,
     )
     payload = await client.get_json("/v3/settings", params=query_params or None)
-    settings = [_setting_summary_from_payload(item) for item in _data_items(payload)]
+    settings = [setting_summary_from_payload(item) for item in data_items(payload)]
     return RancherSettingList(
         instance=instance_name,
         setting_count=len(settings),
@@ -86,15 +85,8 @@ async def _fetch_setting_get(
     """Fetch and normalize one Rancher setting."""
 
     payload = await client.get_json(f"/v3/settings/{setting_id}")
-    summary = _setting_summary_from_payload(payload)
-    return RancherSettingDetail(
-        id=summary.id,
-        name=summary.name,
-        value=summary.value,
-        default=summary.default,
-        source=summary.source,
-        customized=summary.customized,
-        payload=dict(payload),
+    return RancherSettingDetail.model_validate(payload).model_copy(
+        update={"payload": dict(payload)}
     )
 
 

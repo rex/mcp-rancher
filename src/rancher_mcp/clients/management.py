@@ -8,6 +8,7 @@ from typing import Protocol, cast
 
 import httpx
 
+from rancher_mcp.clients.retry import run_with_retry
 from rancher_mcp.exceptions import (
     RancherAPIError,
     RancherConflictError,
@@ -86,7 +87,7 @@ class RancherManagementClient:
     ) -> dict[str, object]:
         """Perform a GET request expecting a JSON object."""
 
-        response = await self._client.get(path, params=params)
+        response = await self._request("GET", path, params=params)
         self._raise_for_status(response)
         payload: object = response.json()
         if not isinstance(payload, dict):
@@ -101,7 +102,12 @@ class RancherManagementClient:
     ) -> dict[str, object]:
         """Perform a POST request expecting a JSON object."""
 
-        response = await self._client.post(path, params=params, json=dict(payload or {}))
+        response = await self._request(
+            "POST",
+            path,
+            params=params,
+            payload=payload,
+        )
         self._raise_for_status(response)
         decoded: object = response.json()
         if not isinstance(decoded, dict):
@@ -115,9 +121,31 @@ class RancherManagementClient:
     ) -> str:
         """Perform a GET request expecting text."""
 
-        response = await self._client.get(path, params=params)
+        response = await self._request("GET", path, params=params)
         self._raise_for_status(response)
         return response.text
+
+    async def _request(
+        self,
+        method: str,
+        path: str,
+        *,
+        params: Mapping[str, str | int | bool] | None = None,
+        payload: Mapping[str, object] | None = None,
+    ) -> httpx.Response:
+        """Perform one Rancher HTTP request with transient-failure retries."""
+
+        async def perform_request() -> httpx.Response:
+            response = await self._client.request(
+                method,
+                path,
+                params=params,
+                json=dict(payload or {}) if payload is not None else None,
+            )
+            self._raise_for_status(response)
+            return response
+
+        return await run_with_retry(perform_request)
 
     def _raise_for_status(self, response: httpx.Response) -> None:
         """Map HTTP errors into typed Rancher exceptions."""

@@ -1,4 +1,3 @@
-# pyright: reportPrivateUsage=false
 """API-plane discovery tools."""
 
 from __future__ import annotations
@@ -8,7 +7,7 @@ from rancher_mcp.clients.steve import RancherSteveClient, SteveDiscoveryClient
 from rancher_mcp.config import AppSettings, get_settings
 from rancher_mcp.models.discovery import APIPlaneList, APIPlaneSummary
 from rancher_mcp.services.instances import resolve_instance
-from rancher_mcp.tools.discovery_schema.shared import _api_version_string, _mapping_keys
+from rancher_mcp.tools.discovery_schema.shared import api_version_string, mapping_keys
 
 
 async def _fetch_api_plane_list(
@@ -26,16 +25,16 @@ async def _fetch_api_plane_list(
             id="norman",
             name="Rancher Norman management API",
             root_path="/v3",
-            api_version=_api_version_string(norman_root.get("apiVersion")),
-            link_count=len(_mapping_keys(norman_root.get("links"))),
+            api_version=api_version_string(norman_root.get("apiVersion")),
+            link_count=len(mapping_keys(norman_root.get("links"))),
         ),
         APIPlaneSummary(
             id="steve",
             name="Rancher Steve Kubernetes proxy API",
             root_path="/v1" if cluster_id == "local" else f"/k8s/clusters/{cluster_id}/v1",
-            api_version=_api_version_string(steve_root.get("apiVersion")),
+            api_version=api_version_string(steve_root.get("apiVersion")),
             cluster_id=cluster_id,
-            link_count=len(_mapping_keys(steve_root.get("links"))),
+            link_count=len(mapping_keys(steve_root.get("links"))),
         ),
     ]
     return APIPlaneList(instance=instance_name, cluster_id=cluster_id, planes=planes)

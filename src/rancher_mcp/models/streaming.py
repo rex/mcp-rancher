@@ -1,6 +1,8 @@
 """Streaming and WebSocket client data models."""
 
-from pydantic import BaseModel, Field
+from pydantic import Field
+
+from rancher_mcp.models.base import RancherModel
 
 
 def _empty_event_list() -> list[dict[str, object]]:
@@ -15,7 +17,7 @@ def _empty_frame_list() -> list["WebSocketFrame"]:
     return []
 
 
-class TextLineStreamCapture(BaseModel):
+class TextLineStreamCapture(RancherModel):
     """Captured text-line stream from a Rancher HTTP endpoint."""
 
     instance: str
@@ -25,7 +27,7 @@ class TextLineStreamCapture(BaseModel):
     lines: list[str] = Field(default_factory=list)
 
 
-class JSONEventStreamCapture(BaseModel):
+class JSONEventStreamCapture(RancherModel):
     """Captured JSON-line stream from a Rancher HTTP endpoint."""
 
     instance: str
@@ -35,7 +37,7 @@ class JSONEventStreamCapture(BaseModel):
     events: list[dict[str, object]] = Field(default_factory=_empty_event_list)
 
 
-class WebSocketFrame(BaseModel):
+class WebSocketFrame(RancherModel):
     """Captured WebSocket frame with optional Kubernetes channel decoding."""
 
     opcode: str
@@ -45,7 +47,7 @@ class WebSocketFrame(BaseModel):
     text: str | None = None
 
 
-class WebSocketCapture(BaseModel):
+class WebSocketCapture(RancherModel):
     """Captured WebSocket exchange against a Rancher proxied endpoint."""
 
     instance: str

@@ -1,4 +1,3 @@
-# pyright: reportPrivateUsage=false
 """Curated Rancher storage-class tools."""
 
 from __future__ import annotations
@@ -8,17 +7,16 @@ from rancher_mcp.config import AppSettings, get_settings
 from rancher_mcp.models.storage import RancherStorageClassDetail, RancherStorageClassList
 from rancher_mcp.services.instances import resolve_instance
 from rancher_mcp.tools.storage.paths import (
-    _storage_class_collection_path,
-    _storage_class_resource_path,
+    storage_class_collection_path,
+    storage_class_resource_path,
 )
 from rancher_mcp.tools.storage.shared import (
-    _build_list_query_params,
-    _items,
-    _mapping_value,
-    _storage_class_summary_from_payload,
-    _string_dict,
-    _string_list,
+    build_list_query_params,
+    items,
+    storage_class_summary_from_payload,
+    string_list,
 )
+from rancher_mcp.tools.support.values import mapping_value, string_dict
 
 
 async def _fetch_storage_classes_list(
@@ -30,12 +28,12 @@ async def _fetch_storage_classes_list(
 ) -> RancherStorageClassList:
     """Fetch and normalize storage classes through Rancher's raw Kubernetes proxy."""
 
-    query_params = _build_list_query_params(limit=limit)
+    query_params = build_list_query_params(limit=limit)
     payload = await client.get_json(
-        _storage_class_collection_path(cluster_id),
+        storage_class_collection_path(cluster_id),
         params=query_params or None,
     )
-    storage_classes = [_storage_class_summary_from_payload(item) for item in _items(payload)]
+    storage_classes = [storage_class_summary_from_payload(item) for item in items(payload)]
     if default_only is True:
         storage_classes = [item for item in storage_classes if item.default_class is True]
     return RancherStorageClassList(
@@ -85,20 +83,17 @@ async def _fetch_storage_class_get(
 ) -> RancherStorageClassDetail:
     """Fetch and normalize one storage class."""
 
-    payload = await client.get_json(_storage_class_resource_path(cluster_id, storage_class_name))
-    summary = _storage_class_summary_from_payload(payload)
-    metadata = _mapping_value(payload, "metadata") or {}
-    return RancherStorageClassDetail(
-        name=summary.name,
-        provisioner=summary.provisioner,
-        reclaim_policy=summary.reclaim_policy,
-        volume_binding_mode=summary.volume_binding_mode,
-        allow_volume_expansion=summary.allow_volume_expansion,
-        default_class=summary.default_class,
-        parameter_keys=summary.parameter_keys,
-        mount_options=_string_list(payload.get("mountOptions")),
-        annotation_keys=sorted(_string_dict(_mapping_value(metadata, "annotations") or {})),
-        payload=dict(payload),
+    payload = await client.get_json(storage_class_resource_path(cluster_id, storage_class_name))
+    summary = storage_class_summary_from_payload(payload)
+    metadata = mapping_value(payload, "metadata") or {}
+    return RancherStorageClassDetail.model_validate(payload).model_copy(
+        update={
+            "default_class": summary.default_class,
+            "parameter_keys": summary.parameter_keys,
+            "mount_options": string_list(payload.get("mountOptions")),
+            "annotation_keys": sorted(string_dict(mapping_value(metadata, "annotations") or {})),
+            "payload": dict(payload),
+        }
     )
 
 

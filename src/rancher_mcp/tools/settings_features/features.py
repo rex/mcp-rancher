@@ -1,4 +1,3 @@
-# pyright: reportPrivateUsage=false
 """Curated Rancher feature tools."""
 
 from __future__ import annotations
@@ -8,9 +7,9 @@ from rancher_mcp.config import AppSettings, get_settings
 from rancher_mcp.models.settings_features import RancherFeatureDetail, RancherFeatureList
 from rancher_mcp.services.instances import resolve_instance
 from rancher_mcp.tools.settings_features.shared import (
-    _build_feature_query_params,
-    _data_items,
-    _feature_summary_from_payload,
+    build_feature_query_params,
+    data_items,
+    feature_summary_from_payload,
 )
 
 
@@ -23,13 +22,13 @@ async def _fetch_features_list(
 ) -> RancherFeatureList:
     """Fetch and normalize the Rancher features collection."""
 
-    query_params = _build_feature_query_params(
+    query_params = build_feature_query_params(
         limit=limit,
         state=state,
         enabled=enabled,
     )
     payload = await client.get_json("/v3/features", params=query_params or None)
-    features = [_feature_summary_from_payload(item) for item in _data_items(payload)]
+    features = [feature_summary_from_payload(item) for item in data_items(payload)]
     return RancherFeatureList(
         instance=instance_name,
         feature_count=len(features),
@@ -76,18 +75,8 @@ async def _fetch_feature_get(
     """Fetch and normalize one Rancher feature flag."""
 
     payload = await client.get_json(f"/v3/features/{feature_id}")
-    summary = _feature_summary_from_payload(payload)
-    return RancherFeatureDetail(
-        id=summary.id,
-        name=summary.name,
-        enabled=summary.enabled,
-        state=summary.state,
-        description=summary.description,
-        dynamic=summary.dynamic,
-        default=summary.default,
-        transitioning=summary.transitioning,
-        transitioning_message=summary.transitioning_message,
-        payload=dict(payload),
+    return RancherFeatureDetail.model_validate(payload).model_copy(
+        update={"payload": dict(payload)}
     )
 
 

@@ -1,4 +1,3 @@
-# pyright: reportPrivateUsage=false
 """Schema reference helpers for generic Rancher resources."""
 
 from __future__ import annotations
@@ -9,7 +8,7 @@ from dataclasses import dataclass
 from typing import cast
 
 from rancher_mcp.exceptions import RancherCapabilityError
-from rancher_mcp.services.resources.paths import _path_from_value, _to_steve_relative_path
+from rancher_mcp.services.resources.paths import path_from_value, to_steve_relative_path
 from rancher_mcp.services.resources.shared import mapping_value
 
 
@@ -55,13 +54,13 @@ def schema_reference_from_payload(
 
     links = mapping_value(payload.get("links"))
     collection_value = links.get("collection") if links is not None else None
-    collection_path = _path_from_value(collection_value)
+    collection_path = path_from_value(collection_value)
 
     if collection_path is None:
         collection_path = f"/{raw_plural_name}" if plane == "steve" else f"/v3/{raw_plural_name}"
 
     if plane == "steve":
-        collection_path = _to_steve_relative_path(collection_path, cluster_id)
+        collection_path = to_steve_relative_path(collection_path, cluster_id)
 
     attributes = mapping_value(payload.get("attributes"))
     raw_namespaced = attributes.get("namespaced") if attributes is not None else None

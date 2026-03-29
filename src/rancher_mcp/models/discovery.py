@@ -1,9 +1,11 @@
 """Discovery-facing data models."""
 
-from pydantic import BaseModel, Field, SecretStr
+from pydantic import Field, SecretStr
+
+from rancher_mcp.models.base import RancherModel
 
 
-class RancherInstanceConfig(BaseModel):
+class RancherInstanceConfig(RancherModel):
     """Internal per-instance configuration."""
 
     url: str
@@ -13,7 +15,7 @@ class RancherInstanceConfig(BaseModel):
     read_only: bool = False
 
 
-class InstanceSummary(BaseModel):
+class InstanceSummary(RancherModel):
     """Public instance summary returned by discovery tools."""
 
     name: str
@@ -23,7 +25,7 @@ class InstanceSummary(BaseModel):
     is_default: bool = False
 
 
-class InstanceList(BaseModel):
+class InstanceList(RancherModel):
     """Configured Rancher instance inventory."""
 
     default_instance: str
@@ -31,20 +33,20 @@ class InstanceList(BaseModel):
     instances: list[InstanceSummary] = []
 
 
-class PrimaryTarget(BaseModel):
+class PrimaryTarget(RancherModel):
     """Primary compatibility target metadata."""
 
     product: str
     version: str
 
 
-class RiskTier(BaseModel):
+class RiskTier(RancherModel):
     """Risk tier metadata."""
 
     description: str
 
 
-class CapabilityDomain(BaseModel):
+class CapabilityDomain(RancherModel):
     """Machine-readable capability family."""
 
     id: str
@@ -54,7 +56,7 @@ class CapabilityDomain(BaseModel):
     resources: list[str] = Field(default_factory=list)
 
 
-class CapabilityCatalog(BaseModel):
+class CapabilityCatalog(RancherModel):
     """Full machine-readable capability catalog."""
 
     schema_version: int
@@ -63,7 +65,7 @@ class CapabilityCatalog(BaseModel):
     risk_tiers: dict[str, RiskTier] = Field(default_factory=dict)
 
 
-class CapabilityDomainSummary(BaseModel):
+class CapabilityDomainSummary(RancherModel):
     """Compact domain summary for discovery tools."""
 
     id: str
@@ -73,7 +75,7 @@ class CapabilityDomainSummary(BaseModel):
     resource_count: int
 
 
-class CapabilityDomainList(BaseModel):
+class CapabilityDomainList(RancherModel):
     """Capability domain inventory."""
 
     schema_version: int
@@ -81,7 +83,7 @@ class CapabilityDomainList(BaseModel):
     domains: list[CapabilityDomainSummary] = []
 
 
-class ServerProfile(BaseModel):
+class ServerProfile(RancherModel):
     """Static server profile information."""
 
     project_name: str
@@ -91,7 +93,7 @@ class ServerProfile(BaseModel):
     multi_instance_enabled: bool
 
 
-class APIPlaneSummary(BaseModel):
+class APIPlaneSummary(RancherModel):
     """Discovered Rancher API plane metadata."""
 
     id: str
@@ -102,7 +104,7 @@ class APIPlaneSummary(BaseModel):
     link_count: int = 0
 
 
-class APIPlaneList(BaseModel):
+class APIPlaneList(RancherModel):
     """Available API planes for a Rancher instance."""
 
     instance: str
@@ -110,7 +112,7 @@ class APIPlaneList(BaseModel):
     planes: list[APIPlaneSummary] = []
 
 
-class SchemaSummary(BaseModel):
+class SchemaSummary(RancherModel):
     """Compact schema summary for a Norman or Steve type."""
 
     id: str
@@ -121,7 +123,7 @@ class SchemaSummary(BaseModel):
     field_count: int = 0
 
 
-class SchemaList(BaseModel):
+class SchemaList(RancherModel):
     """Schema inventory for one Rancher API plane."""
 
     instance: str
@@ -131,7 +133,7 @@ class SchemaList(BaseModel):
     schemas: list[SchemaSummary] = []
 
 
-class SchemaDetail(BaseModel):
+class SchemaDetail(RancherModel):
     """Schema detail normalized across Norman and Steve."""
 
     instance: str

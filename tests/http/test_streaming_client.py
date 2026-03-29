@@ -86,6 +86,36 @@ async def test_stream_json_lines_parses_watch_events() -> None:
 
 
 @pytest.mark.asyncio
+async def test_stream_text_lines_retries_transient_transport_errors() -> None:
+    """Text streaming should retry transient transport failures before succeeding."""
+
+    attempts = 0
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal attempts
+        attempts += 1
+        if attempts == 1:
+            raise httpx.ReadError("transient stream failure", request=request)
+        return httpx.Response(200, text="first\nsecond\n")
+
+    transport = httpx.MockTransport(handler)
+    async with RancherStreamingClient(
+        "work",
+        build_config("https://rancher.work.example.com"),
+        transport=transport,
+    ) as client:
+        result = await client.stream_text_lines(
+            "/k8s/clusters/venue-local/api/v1/namespaces/default/pods/demo/log",
+            max_lines=5,
+        )
+
+    assert attempts == 2
+    assert result.line_count == 2
+    assert result.lines == ["first", "second"]
+    assert result.truncated is False
+
+
+@pytest.mark.asyncio
 async def test_websocket_capture_negotiates_subprotocol_and_decodes_channels() -> None:
     """WebSocket capture should preserve auth, params, and Kubernetes channel frames."""
 

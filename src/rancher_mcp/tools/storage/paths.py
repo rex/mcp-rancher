@@ -1,4 +1,3 @@
-# pyright: reportUnusedFunction=false
 """Raw Kubernetes proxy paths for curated storage tools."""
 
 from __future__ import annotations
@@ -103,3 +102,11 @@ def _append_identifier(path: str, identifier: str) -> str:
     """Append one quoted identifier to a relative path."""
 
     return f"{path.rstrip('/')}/{quote(identifier, safe='')}"
+
+
+persistent_volume_claim_collection_path = _persistent_volume_claim_collection_path
+persistent_volume_claim_resource_path = _persistent_volume_claim_resource_path
+persistent_volume_collection_path = _persistent_volume_collection_path
+persistent_volume_resource_path = _persistent_volume_resource_path
+storage_class_collection_path = _storage_class_collection_path
+storage_class_resource_path = _storage_class_resource_path

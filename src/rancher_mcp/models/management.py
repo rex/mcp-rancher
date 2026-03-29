@@ -1,9 +1,9 @@
 """Management-plane output models."""
 
-from pydantic import BaseModel
+from rancher_mcp.models.base import RancherModel
 
 
-class ServerHealth(BaseModel):
+class ServerHealth(RancherModel):
     """Rancher server health response."""
 
     instance: str
@@ -11,7 +11,7 @@ class ServerHealth(BaseModel):
     message: str | None = None
 
 
-class ServerVersion(BaseModel):
+class ServerVersion(RancherModel):
     """Rancher server version metadata."""
 
     instance: str

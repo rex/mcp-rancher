@@ -1,4 +1,3 @@
-# pyright: reportPrivateUsage=false
 """Norman schema discovery tools."""
 
 from __future__ import annotations
@@ -8,9 +7,9 @@ from rancher_mcp.config import AppSettings, get_settings
 from rancher_mcp.models.discovery import SchemaDetail, SchemaList
 from rancher_mcp.services.instances import resolve_instance
 from rancher_mcp.tools.discovery_schema.shared import (
-    _schema_detail_from_payload,
-    _schema_payloads,
-    _schema_summary_from_payload,
+    schema_detail_from_payload,
+    schema_payloads,
+    schema_summary_from_payload,
 )
 
 
@@ -21,7 +20,7 @@ async def _fetch_norman_schema_list(
     """Fetch Norman schema inventory."""
 
     payload = await client.get_json("/v3/schemas")
-    schemas = [_schema_summary_from_payload(item) for item in _schema_payloads(payload.get("data"))]
+    schemas = [schema_summary_from_payload(item) for item in schema_payloads(payload.get("data"))]
     return SchemaList(
         instance=instance_name,
         plane="norman",
@@ -53,7 +52,7 @@ async def _fetch_norman_schema_get(
     """Fetch one Norman schema by id."""
 
     payload = await client.get_json(f"/v3/schemas/{schema_id}")
-    return _schema_detail_from_payload(instance=instance_name, plane="norman", payload=payload)
+    return schema_detail_from_payload(instance=instance_name, plane="norman", payload=payload)
 
 
 async def rancher_norman_schema_get(

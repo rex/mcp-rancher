@@ -1,4 +1,3 @@
-# pyright: reportPrivateUsage=false
 """Steve schema discovery tools."""
 
 from __future__ import annotations
@@ -8,9 +7,9 @@ from rancher_mcp.config import AppSettings, get_settings
 from rancher_mcp.models.discovery import SchemaDetail, SchemaList
 from rancher_mcp.services.instances import resolve_instance
 from rancher_mcp.tools.discovery_schema.shared import (
-    _schema_detail_from_payload,
-    _schema_payloads,
-    _schema_summary_from_payload,
+    schema_detail_from_payload,
+    schema_payloads,
+    schema_summary_from_payload,
 )
 
 
@@ -22,7 +21,7 @@ async def _fetch_steve_schema_list(
     """Fetch Steve schema inventory for a target cluster."""
 
     payload = await client.get_json("/schemas")
-    schemas = [_schema_summary_from_payload(item) for item in _schema_payloads(payload.get("data"))]
+    schemas = [schema_summary_from_payload(item) for item in schema_payloads(payload.get("data"))]
     return SchemaList(
         instance=instance_name,
         plane="steve",
@@ -61,7 +60,7 @@ async def _fetch_steve_schema_get(
     """Fetch one Steve schema by id."""
 
     payload = await client.get_json(f"/schemas/{schema_id}")
-    return _schema_detail_from_payload(
+    return schema_detail_from_payload(
         instance=instance_name,
         plane="steve",
         payload=payload,

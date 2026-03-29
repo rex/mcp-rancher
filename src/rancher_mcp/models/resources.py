@@ -1,6 +1,8 @@
 """Generic resource tool data models."""
 
-from pydantic import BaseModel, Field
+from pydantic import Field
+
+from rancher_mcp.models.base import RancherModel
 
 
 def _empty_resource_items() -> list["GenericResourceItem"]:
@@ -15,7 +17,7 @@ def _empty_watch_events() -> list["GenericResourceWatchEvent"]:
     return []
 
 
-class ResourcePagination(BaseModel):
+class ResourcePagination(RancherModel):
     """Normalized pagination metadata for a resource collection."""
 
     limit: int | None = None
@@ -25,7 +27,7 @@ class ResourcePagination(BaseModel):
     continue_token: str | None = None
 
 
-class GenericResourceItem(BaseModel):
+class GenericResourceItem(RancherModel):
     """Normalized summary for one Rancher or Kubernetes resource."""
 
     id: str | None = None
@@ -38,7 +40,7 @@ class GenericResourceItem(BaseModel):
     payload: dict[str, object] = Field(default_factory=dict)
 
 
-class GenericResourceList(BaseModel):
+class GenericResourceList(RancherModel):
     """Normalized generic list result for one schema type."""
 
     instance: str
@@ -59,7 +61,7 @@ class GenericResourceList(BaseModel):
     resources: list[GenericResourceItem] = Field(default_factory=_empty_resource_items)
 
 
-class GenericResourceDetail(BaseModel):
+class GenericResourceDetail(RancherModel):
     """Normalized generic get result for one Rancher or Kubernetes resource."""
 
     instance: str
@@ -76,7 +78,7 @@ class GenericResourceDetail(BaseModel):
     payload: dict[str, object] = Field(default_factory=dict)
 
 
-class GenericResourceActionResult(BaseModel):
+class GenericResourceActionResult(RancherModel):
     """Normalized result from invoking a resource action."""
 
     instance: str
@@ -90,7 +92,7 @@ class GenericResourceActionResult(BaseModel):
     payload: dict[str, object] = Field(default_factory=dict)
 
 
-class GenericResourceLinkResult(BaseModel):
+class GenericResourceLinkResult(RancherModel):
     """Normalized result from following a resource link."""
 
     instance: str
@@ -104,7 +106,7 @@ class GenericResourceLinkResult(BaseModel):
     payload: dict[str, object] = Field(default_factory=dict)
 
 
-class GenericResourceWatchEvent(BaseModel):
+class GenericResourceWatchEvent(RancherModel):
     """Normalized watch event for one Rancher-proxied Kubernetes resource change."""
 
     event_type: str
@@ -116,7 +118,7 @@ class GenericResourceWatchEvent(BaseModel):
     payload: dict[str, object] = Field(default_factory=dict)
 
 
-class GenericResourceWatchResult(BaseModel):
+class GenericResourceWatchResult(RancherModel):
     """Normalized generic watch result for one Steve schema type."""
 
     instance: str

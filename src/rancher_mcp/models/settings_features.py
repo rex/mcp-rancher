@@ -1,6 +1,8 @@
 """Typed models for curated Rancher settings and features tools."""
 
-from pydantic import BaseModel, Field
+from pydantic import AliasPath, Field
+
+from rancher_mcp.models.base import RancherModel
 
 
 def _empty_settings() -> list["RancherSettingSummary"]:
@@ -15,11 +17,11 @@ def _empty_features() -> list["RancherFeatureSummary"]:
     return []
 
 
-class RancherSettingSummary(BaseModel):
+class RancherSettingSummary(RancherModel):
     """Typed summary for one Rancher setting."""
 
-    id: str
-    name: str
+    id: str = "<unknown-setting>"
+    name: str = "<unknown-setting>"
     value: str | None = None
     default: str | None = None
     source: str | None = None
@@ -32,7 +34,7 @@ class RancherSettingDetail(RancherSettingSummary):
     payload: dict[str, object] = Field(default_factory=dict)
 
 
-class RancherSettingList(BaseModel):
+class RancherSettingList(RancherModel):
     """Typed list response for Rancher settings."""
 
     instance: str
@@ -41,16 +43,19 @@ class RancherSettingList(BaseModel):
     settings: list[RancherSettingSummary] = Field(default_factory=_empty_settings)
 
 
-class RancherFeatureSummary(BaseModel):
+class RancherFeatureSummary(RancherModel):
     """Typed summary for one Rancher feature flag."""
 
-    id: str
-    name: str
-    enabled: bool | None = None
+    id: str = "<unknown-feature>"
+    name: str = "<unknown-feature>"
+    enabled: bool | None = Field(default=None, validation_alias="value")
     state: str | None = None
-    description: str | None = None
-    dynamic: bool | None = None
-    default: bool | None = None
+    description: str | None = Field(
+        default=None,
+        validation_alias=AliasPath("status", "description"),
+    )
+    dynamic: bool | None = Field(default=None, validation_alias=AliasPath("status", "dynamic"))
+    default: bool | None = Field(default=None, validation_alias=AliasPath("status", "default"))
     transitioning: str | None = None
     transitioning_message: str | None = None
 
@@ -61,7 +66,7 @@ class RancherFeatureDetail(RancherFeatureSummary):
     payload: dict[str, object] = Field(default_factory=dict)
 
 
-class RancherFeatureList(BaseModel):
+class RancherFeatureList(RancherModel):
     """Typed list response for Rancher features."""
 
     instance: str

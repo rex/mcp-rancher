@@ -1,4 +1,3 @@
-# pyright: reportUnusedFunction=false
 """Shared normalization helpers for curated project and namespace tools."""
 
 from __future__ import annotations
@@ -13,47 +12,34 @@ from rancher_mcp.models.projects_namespaces import (
     RancherProjectSummary,
 )
 from rancher_mcp.services.resource_queries import build_steve_list_query_params
-from rancher_mcp.tools._support.collections import object_items
-from rancher_mcp.tools._support.conditions import (
+from rancher_mcp.tools.support.collections import object_items
+from rancher_mcp.tools.support.conditions import (
     condition_types_true,
 )
-from rancher_mcp.tools._support.conditions import (
+from rancher_mcp.tools.support.conditions import (
     conditions_from_payload as _conditions_from_payload,
 )
-from rancher_mcp.tools._support.conditions import (
+from rancher_mcp.tools.support.conditions import (
     conditions_from_value as _conditions_from_value,
 )
-from rancher_mcp.tools._support.values import (
+from rancher_mcp.tools.support.values import (
     bool_value as _bool_value,
 )
-from rancher_mcp.tools._support.values import (
+from rancher_mcp.tools.support.values import (
     mapping_value as _mapping_value,
 )
-from rancher_mcp.tools._support.values import (
+from rancher_mcp.tools.support.values import (
     status_to_bool as _status_to_bool,
 )
-from rancher_mcp.tools._support.values import (
+from rancher_mcp.tools.support.values import (
     string_dict as _string_dict,
 )
-from rancher_mcp.tools._support.values import (
+from rancher_mcp.tools.support.values import (
     string_list as _string_list,
 )
-from rancher_mcp.tools._support.values import (
+from rancher_mcp.tools.support.values import (
     string_value as _string_value,
 )
-
-__all__ = [
-    "_build_namespace_query_params",
-    "_build_project_query_params",
-    "_conditions_from_payload",
-    "_data_items",
-    "_mapping_value",
-    "_namespace_cattle_conditions",
-    "_namespace_summary_from_payload",
-    "_project_summary_from_payload",
-    "_string_dict",
-    "_string_list",
-]
 
 
 def _build_project_query_params(
@@ -206,3 +192,16 @@ def _data_items(payload: Mapping[str, object]) -> list[dict[str, object]]:
     """Extract typed collection items from a Rancher list payload."""
 
     return object_items(payload, field="data")
+
+
+build_namespace_query_params = _build_namespace_query_params
+build_project_query_params = _build_project_query_params
+data_items = _data_items
+mapping_value = _mapping_value
+namespace_cattle_conditions = _namespace_cattle_conditions
+namespace_summary_from_payload = _namespace_summary_from_payload
+payload_conditions = _conditions_from_payload
+project_summary_from_payload = _project_summary_from_payload
+string_dict = _string_dict
+string_list = _string_list
+string_value = _string_value

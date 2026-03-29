@@ -282,3 +282,33 @@ async def test_rancher_service_get_returns_typed_detail() -> None:
     ]
     assert result.ports[0].target_port == "80"
     assert "view" in result.link_keys
+
+
+@pytest.mark.asyncio
+async def test_rancher_services_list_handles_empty_collection() -> None:
+    """Curated services list should handle an empty Steve collection cleanly."""
+
+    class EmptyServiceClient:
+        """Deterministic empty collection client for service tests."""
+
+        async def get_json(self, path: str, params: object = None) -> dict[str, object]:
+            """Return an empty services payload."""
+
+            assert path == "/services/cattle-system"
+            assert params is None
+            return {"data": []}
+
+    result = await rancher_services_list(
+        namespace="cattle-system",
+        cluster_id="venue-local",
+        instance="work",
+        settings=build_settings(),
+        client=EmptyServiceClient(),
+    )
+
+    assert result.instance == "work"
+    assert result.cluster_id == "venue-local"
+    assert result.namespace == "cattle-system"
+    assert result.service_count == 0
+    assert result.applied_query_params == {}
+    assert result.services == []

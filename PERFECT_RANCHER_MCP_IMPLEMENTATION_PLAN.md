@@ -56,6 +56,14 @@ As of `2026-03-27`, the repo has already moved beyond pure planning:
   `make check-architecture` is wired as an executable repo gate
   oversized tool and service modules have been split into package directories with thin facades
   the follow-up soft-limit burn-down is complete, so the architecture gate is clean on both hard and soft limits
+- post-review hardening is complete for the current substrate:
+  shared helper modules now live in a public `support/` package instead of `_support/`
+  alias-aware `RancherModel` parsing is in place and is now absorbing more direct and nested payload mapping
+  the current settings/features, storage, and disruption packs lean more heavily on model-boundary parsing and
+  less on hand-written normalization glue
+  transient retry policy is now wired into management and streaming transports
+  focused boundary and curated-tool tests now cover alias parsing, retries, empty collections, and
+  readiness-filter behavior
 - repo-local devlab and fixture tooling remain outside the shipped `src/rancher_mcp` package boundary
 - tool modules are being kept logically split instead of allowing a single discovery or resource file to grow unbounded
 
@@ -64,6 +72,7 @@ The next high-value gaps are:
 - higher-level operational aggregate helpers
 - apps/catalogs and other remaining curated read packs
 - additional generic watch coverage where the live Rancher surface proves stable
+- continued opportunistic reduction of manual normalization as new curated packs and detail models land
 
 ---
 

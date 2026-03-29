@@ -1,4 +1,3 @@
-# pyright: reportUnusedFunction=false
 """Shared normalization helpers for workload-controller tools."""
 
 from __future__ import annotations
@@ -12,23 +11,23 @@ from rancher_mcp.models.workloads import (
     RancherStatefulSetSummary,
     RancherWorkloadContainerSummary,
 )
-from rancher_mcp.tools._support.collections import object_items
-from rancher_mcp.tools._support.conditions import (
+from rancher_mcp.tools.support.collections import object_items
+from rancher_mcp.tools.support.conditions import (
     conditions_from_payload as _conditions_from_status,
 )
-from rancher_mcp.tools._support.values import (
+from rancher_mcp.tools.support.values import (
     bool_value as _bool_value,
 )
-from rancher_mcp.tools._support.values import (
+from rancher_mcp.tools.support.values import (
     int_value as _int_value,
 )
-from rancher_mcp.tools._support.values import (
+from rancher_mcp.tools.support.values import (
     mapping_value as _mapping_value,
 )
-from rancher_mcp.tools._support.values import (
+from rancher_mcp.tools.support.values import (
     string_dict as _string_dict,
 )
-from rancher_mcp.tools._support.values import (
+from rancher_mcp.tools.support.values import (
     string_value as _string_value,
 )
 from rancher_mcp.tools.workloads.readiness import (
@@ -43,20 +42,6 @@ from rancher_mcp.tools.workloads.readiness import (
 from rancher_mcp.tools.workloads.readiness import (
     statefulset_ready as _statefulset_ready,
 )
-
-__all__ = [
-    "_conditions_from_status",
-    "_container_summaries",
-    "_deployment_summary_from_payload",
-    "_int_value",
-    "_items",
-    "_mapping_value",
-    "_string_dict",
-    "_string_value",
-    "_template_spec",
-    "_daemonset_summary_from_payload",
-    "_statefulset_summary_from_payload",
-]
 
 
 def _deployment_summary_from_payload(payload: Mapping[str, object]) -> RancherDeploymentSummary:
@@ -228,3 +213,16 @@ def _namespaced_id(metadata: Mapping[str, object], fallback_kind: str) -> str:
     name = _string_value(metadata, "name") or f"<unknown-{fallback_kind}>"
     namespace = _string_value(metadata, "namespace") or "<unknown-namespace>"
     return f"{namespace}/{name}"
+
+
+conditions_from_status = _conditions_from_status
+container_summaries = _container_summaries
+daemonset_summary_from_payload = _daemonset_summary_from_payload
+deployment_summary_from_payload = _deployment_summary_from_payload
+int_value = _int_value
+items = _items
+mapping_value = _mapping_value
+string_dict = _string_dict
+string_value = _string_value
+statefulset_summary_from_payload = _statefulset_summary_from_payload
+template_spec = _template_spec

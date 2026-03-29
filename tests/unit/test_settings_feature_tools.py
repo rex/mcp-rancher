@@ -193,3 +193,29 @@ async def test_rancher_feature_get_returns_typed_detail() -> None:
     assert result.enabled is True
     assert result.dynamic is False
     assert result.payload["state"] == "active"
+
+
+@pytest.mark.asyncio
+async def test_rancher_settings_list_handles_empty_collection() -> None:
+    """Curated settings list should handle an empty Rancher collection cleanly."""
+
+    class EmptySettingsClient:
+        """Deterministic empty collection client for settings tests."""
+
+        async def get_json(self, path: str, params: object = None) -> dict[str, object]:
+            """Return an empty settings payload."""
+
+            assert path == "/v3/settings"
+            assert params is None
+            return {"data": []}
+
+    result = await rancher_settings_list(
+        instance="work",
+        settings=build_settings(),
+        client=EmptySettingsClient(),
+    )
+
+    assert result.instance == "work"
+    assert result.setting_count == 0
+    assert result.applied_query_params == {}
+    assert result.settings == []

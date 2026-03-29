@@ -159,18 +159,29 @@ Implement the clean-slate Rancher MCP project phase-by-phase against the live Ra
   and shared typed-normalization modules
 - shared typed-normalization support modules added for reusable values, conditions, and list-item extraction
 - `make check-architecture` now passes with no remaining soft-limit or hard-limit violations
+- review-fix hardening slice completed across the current curated-tool substrate:
+  private helper modules renamed from `_support` to public `support`
+  private-usage pyright suppressions removed from the codebase
+  alias-aware `RancherModel` base added so direct camelCase and nested alias-path parsing can happen at the model boundary
+  settings/features, storage, and disruption models now consume more raw Rancher/Kubernetes payload structure directly
+  low-value manual normalization in settings/features, storage, and disruption helpers reduced in favor of `model_validate`
+  transient retry policy added for Rancher management and streaming transport failures
+  curated-tool and boundary tests expanded for alias parsing, retry behavior, empty collections, and computed filter paths
+- `make lint`, `make typecheck`, `make test`, and `make check-architecture` passing after the review-fix hardening slice
 
 ## In Progress
 
-- resume Phase 4 outward expansion now that the architecture cleanup slice is complete
+- resume Phase 4 outward expansion now that the review-fix hardening slice is complete
 
 ## Next Steps
 
 1. Resume Phase 4 outward into the next high-value curated read packs, with apps/catalogs and adjacent
    operator-facing surfaces next
-2. Start shaping the first operational aggregate helpers on top of the now-live
+2. Keep opportunistically expanding curated-tool edge and error-path coverage as new packs land so the
+   current "happy-path-heavy" test posture continues to improve instead of regressing
+3. Start shaping the first operational aggregate helpers on top of the now-live
    cluster/node/pod/service/workload substrate
-3. Expand additional generic watch coverage only where the live Rancher `2.6.5` surface proves stable
+4. Expand additional generic watch coverage only where the live Rancher `2.6.5` surface proves stable
 
 ## Notes
 
@@ -205,3 +216,5 @@ Implement the clean-slate Rancher MCP project phase-by-phase against the live Ra
   rough ideas can accumulate without causing scope drift in the build sequence
 - The architecture gate is currently clean on both hard and soft limits; future slices should preserve that
   posture instead of allowing new refactor pressure to accumulate
+- The current review-fix slice moved more payload parsing into Pydantic aliases and added transient retries,
+  but there is still room to push more curated detail builders toward model-boundary parsing as new domains land

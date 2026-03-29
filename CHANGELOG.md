@@ -2,6 +2,24 @@
 
 ## [2026-03-29] - Agent: OpenAI Codex
 ### Changed
+- Replaced the private `tools/_support` package with public `tools/support` helpers and removed the private-usage pyright suppressions that had been masking those imports
+- Added a shared alias-aware `RancherModel` base and moved more settings/features, storage, and disruption parsing to `model_validate(...)` plus nested alias paths instead of hand-copying every field
+- Reduced low-value manual normalization in the current curated-tool builders by letting detail models parse direct and nested Rancher/Kubernetes payload fields
+- Added a shared transient retry policy for management and streaming clients so `429`, `502`, `503`, `504`, and transport errors retry before failing a tool call
+- Expanded test coverage for:
+  direct alias-based model validation
+  transient retry behavior in management and streaming clients
+  curated-tool empty-collection and computed-filter cases
+- Ignored stray local `images/` artifacts so binary scratch files do not pollute git state
+
+### Verified
+- `make check-architecture` passes
+- `make lint` passes
+- `make typecheck` passes
+- `make test` passes with `120 passed` and `89.88%` coverage
+
+## [2026-03-29] - Agent: OpenAI Codex
+### Changed
 - Burned down the remaining architecture soft-limit warnings so `make check-architecture` now passes cleanly
 - Split the remaining oversized generic files into narrower implementation modules with stable facades for:
   the streaming client

@@ -1,4 +1,3 @@
-# pyright: reportUnusedFunction=false
 """Relative path helpers for generic Rancher resources."""
 
 from __future__ import annotations
@@ -208,3 +207,7 @@ def _named_path(
             f"Resource did not include {container_key[:-1]} {entry_name!r}"
         )
     return path
+
+
+path_from_value = _path_from_value
+to_steve_relative_path = _to_steve_relative_path

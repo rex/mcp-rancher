@@ -15,9 +15,6 @@ from rancher_mcp.tools.disruption_support import (
     build_list_query_params as _build_list_query_params,
 )
 from rancher_mcp.tools.disruption_support import (
-    conditions_from_payload as _conditions_from_status,
-)
-from rancher_mcp.tools.disruption_support import (
     items as _items,
 )
 from rancher_mcp.tools.disruption_support import (
@@ -104,21 +101,13 @@ async def _fetch_pod_disruption_budget_get(
     payload = await client.get_json(_pdb_resource_path(cluster_id, namespace, budget_name))
     summary = _pdb_summary_from_payload(payload)
     metadata = _mapping_value(payload, "metadata") or {}
-    return RancherPodDisruptionBudgetDetail(
-        id=summary.id,
-        name=summary.name,
-        namespace=summary.namespace,
-        min_available=summary.min_available,
-        max_unavailable=summary.max_unavailable,
-        current_healthy=summary.current_healthy,
-        desired_healthy=summary.desired_healthy,
-        expected_pods=summary.expected_pods,
-        disruptions_allowed=summary.disruptions_allowed,
-        disruption_allowed=summary.disruption_allowed,
-        selector_match_labels=summary.selector_match_labels,
-        annotation_keys=sorted(_string_dict(_mapping_value(metadata, "annotations") or {})),
-        conditions=_conditions_from_status(_mapping_value(payload, "status") or {}),
-        payload=dict(payload),
+    return RancherPodDisruptionBudgetDetail.model_validate(payload).model_copy(
+        update={
+            "id": summary.id,
+            "disruption_allowed": summary.disruption_allowed,
+            "annotation_keys": sorted(_string_dict(_mapping_value(metadata, "annotations") or {})),
+            "payload": dict(payload),
+        }
     )
 
 

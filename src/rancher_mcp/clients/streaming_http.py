@@ -9,6 +9,7 @@ from typing import cast
 
 import httpx
 
+from rancher_mcp.clients.retry import run_with_retry
 from rancher_mcp.clients.streaming_transport import raise_for_status
 from rancher_mcp.exceptions import RancherAPIError
 from rancher_mcp.models.streaming import JSONEventStreamCapture, TextLineStreamCapture
@@ -25,29 +26,32 @@ async def stream_text_lines(
 ) -> TextLineStreamCapture:
     """Read a bounded text-line stream from a Rancher endpoint."""
 
-    lines: list[str] = []
-    truncated = False
+    async def capture() -> TextLineStreamCapture:
+        lines: list[str] = []
+        truncated = False
 
-    async with client.stream("GET", path, params=params) as response:
-        raise_for_status(response)
-        iterator = response.aiter_lines()
-        while len(lines) < max_lines:
-            line = await next_with_timeout(iterator, idle_timeout_seconds)
-            if line is None:
-                break
-            if not line:
-                continue
-            lines.append(line)
-        else:
-            truncated = True
+        async with client.stream("GET", path, params=params) as response:
+            raise_for_status(response)
+            iterator = response.aiter_lines()
+            while len(lines) < max_lines:
+                line = await next_with_timeout(iterator, idle_timeout_seconds)
+                if line is None:
+                    break
+                if not line:
+                    continue
+                lines.append(line)
+            else:
+                truncated = True
 
-    return TextLineStreamCapture(
-        instance=instance_name,
-        path=path,
-        line_count=len(lines),
-        truncated=truncated,
-        lines=lines,
-    )
+        return TextLineStreamCapture(
+            instance=instance_name,
+            path=path,
+            line_count=len(lines),
+            truncated=truncated,
+            lines=lines,
+        )
+
+    return await run_with_retry(capture)
 
 
 async def stream_json_lines(
@@ -61,35 +65,38 @@ async def stream_json_lines(
 ) -> JSONEventStreamCapture:
     """Read a bounded JSON-line stream from a Rancher endpoint."""
 
-    events: list[dict[str, object]] = []
-    truncated = False
+    async def capture() -> JSONEventStreamCapture:
+        events: list[dict[str, object]] = []
+        truncated = False
 
-    async with client.stream("GET", path, params=params) as response:
-        raise_for_status(response)
-        iterator = response.aiter_lines()
-        while len(events) < max_events:
-            line = await next_with_timeout(iterator, idle_timeout_seconds)
-            if line is None:
-                break
-            if not line:
-                continue
-            payload: object = json.loads(line)
-            if not isinstance(payload, dict):
-                raise RancherAPIError(
-                    response.status_code,
-                    "Expected each streamed watch event to be a JSON object",
-                )
-            events.append(cast(dict[str, object], payload))
-        else:
-            truncated = True
+        async with client.stream("GET", path, params=params) as response:
+            raise_for_status(response)
+            iterator = response.aiter_lines()
+            while len(events) < max_events:
+                line = await next_with_timeout(iterator, idle_timeout_seconds)
+                if line is None:
+                    break
+                if not line:
+                    continue
+                payload: object = json.loads(line)
+                if not isinstance(payload, dict):
+                    raise RancherAPIError(
+                        response.status_code,
+                        "Expected each streamed watch event to be a JSON object",
+                    )
+                events.append(cast(dict[str, object], payload))
+            else:
+                truncated = True
 
-    return JSONEventStreamCapture(
-        instance=instance_name,
-        path=path,
-        event_count=len(events),
-        truncated=truncated,
-        events=events,
-    )
+        return JSONEventStreamCapture(
+            instance=instance_name,
+            path=path,
+            event_count=len(events),
+            truncated=truncated,
+            events=events,
+        )
+
+    return await run_with_retry(capture)
 
 
 async def next_with_timeout(

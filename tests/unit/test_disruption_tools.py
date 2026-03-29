@@ -127,6 +127,7 @@ async def test_rancher_pod_disruption_budgets_list_returns_typed_summaries() -> 
     assert result.namespace == "storage-validation"
     assert result.budget_count == 1
     assert result.pod_disruption_budgets[0].id == "storage-validation/demo-consumer-pdb"
+    assert result.pod_disruption_budgets[0].min_available == "1"
     assert result.pod_disruption_budgets[0].disruption_allowed is False
 
 
@@ -144,5 +145,6 @@ async def test_rancher_pod_disruption_budget_get_returns_typed_detail() -> None:
     )
 
     assert result.id == "storage-validation/demo-consumer-pdb"
+    assert result.min_available == "1"
     assert result.selector_match_labels == {"app": "demo-consumer"}
     assert result.conditions[0].reason == "InsufficientPods"

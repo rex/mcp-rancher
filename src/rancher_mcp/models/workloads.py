@@ -1,7 +1,8 @@
 """Typed models for curated Rancher workload-controller reads."""
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
+from rancher_mcp.models.base import RancherModel
 from rancher_mcp.models.clusters_nodes import RancherCondition
 
 
@@ -35,14 +36,14 @@ def _empty_statefulset_summaries() -> list["RancherStatefulSetSummary"]:
     return []
 
 
-class RancherWorkloadContainerSummary(BaseModel):
+class RancherWorkloadContainerSummary(RancherModel):
     """Typed summary for one workload template container."""
 
     name: str
     image: str | None = None
 
 
-class RancherDeploymentSummary(BaseModel):
+class RancherDeploymentSummary(RancherModel):
     """Typed summary for one deployment."""
 
     id: str
@@ -77,7 +78,7 @@ class RancherDeploymentDetail(RancherDeploymentSummary):
     payload: dict[str, object] = Field(default_factory=dict)
 
 
-class RancherDeploymentList(BaseModel):
+class RancherDeploymentList(RancherModel):
     """Typed list response for deployments in one namespace."""
 
     instance: str
@@ -88,7 +89,7 @@ class RancherDeploymentList(BaseModel):
     deployments: list[RancherDeploymentSummary] = Field(default_factory=_empty_deployment_summaries)
 
 
-class RancherDaemonSetSummary(BaseModel):
+class RancherDaemonSetSummary(RancherModel):
     """Typed summary for one daemonset."""
 
     id: str
@@ -120,7 +121,7 @@ class RancherDaemonSetDetail(RancherDaemonSetSummary):
     payload: dict[str, object] = Field(default_factory=dict)
 
 
-class RancherDaemonSetList(BaseModel):
+class RancherDaemonSetList(RancherModel):
     """Typed list response for daemonsets in one namespace."""
 
     instance: str
@@ -131,7 +132,7 @@ class RancherDaemonSetList(BaseModel):
     daemonsets: list[RancherDaemonSetSummary] = Field(default_factory=_empty_daemonset_summaries)
 
 
-class RancherStatefulSetSummary(BaseModel):
+class RancherStatefulSetSummary(RancherModel):
     """Typed summary for one statefulset."""
 
     id: str
@@ -165,7 +166,7 @@ class RancherStatefulSetDetail(RancherStatefulSetSummary):
     payload: dict[str, object] = Field(default_factory=dict)
 
 
-class RancherStatefulSetList(BaseModel):
+class RancherStatefulSetList(RancherModel):
     """Typed list response for statefulsets in one namespace."""
 
     instance: str

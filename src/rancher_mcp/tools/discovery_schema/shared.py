@@ -1,4 +1,3 @@
-# pyright: reportUnusedFunction=false
 """Shared helpers for API-plane and schema discovery tools."""
 
 from __future__ import annotations
@@ -104,3 +103,10 @@ def _schema_detail_from_payload(
         field_keys=_mapping_keys(payload.get("resourceFields")),
         collection_filter_keys=_mapping_keys(payload.get("collectionFilters")),
     )
+
+
+api_version_string = _api_version_string
+mapping_keys = _mapping_keys
+schema_detail_from_payload = _schema_detail_from_payload
+schema_payloads = _schema_payloads
+schema_summary_from_payload = _schema_summary_from_payload
