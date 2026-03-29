@@ -7,6 +7,7 @@ from rancher_mcp.tools.auth_identity import register_auth_identity_tools
 from rancher_mcp.tools.clusters_nodes import register_cluster_node_tools
 from rancher_mcp.tools.discovery import register_discovery_tools
 from rancher_mcp.tools.disruption import register_disruption_tools
+from rancher_mcp.tools.fleet_registration import register_fleet_registration_tools
 from rancher_mcp.tools.pods_services import register_pod_service_tools
 from rancher_mcp.tools.projects_namespaces import register_project_namespace_tools
 from rancher_mcp.tools.rbac import register_rbac_tools
@@ -25,6 +26,7 @@ def create_mcp_server() -> FastMCP:
     )
     register_discovery_tools(mcp)
     register_disruption_tools(mcp)
+    register_fleet_registration_tools(mcp)
     register_resource_tools(mcp)
     register_cluster_node_tools(mcp)
     register_pod_service_tools(mcp)

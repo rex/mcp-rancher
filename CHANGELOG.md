@@ -2,6 +2,31 @@
 
 ## [2026-03-29] - Agent: OpenAI Codex
 ### Added
+- Curated Fleet and cluster-registration tools:
+  `rancher_fleet_workspaces_list`
+  `rancher_fleet_workspace_get`
+  `rancher_cluster_registration_tokens_list`
+  `rancher_cluster_registration_token_get`
+- Alias-aware typed models and thin per-resource tool modules for Rancher `fleetWorkspace` and
+  `clusterRegistrationToken` resources
+
+### Changed
+- Normalized Fleet workspace detail parsing around stable `status_keys`, `action_keys`, and `link_keys` so callers
+  do not have to reverse-engineer the sparse live `status` object returned by the Rancher `2.6.5` lab
+- Recorded the live registration-token behavior observed on the Rancher `2.6.5` lab so later write slices can
+  safely build on manifest URLs and onboarding commands that are already exposed here
+
+### Verified
+- `make check-architecture` passes
+- `make lint` passes
+- `make typecheck` passes
+- `make test` passes with `160 passed` and `89.97%` coverage
+- Live Rancher `2.6.5` validation succeeded for:
+  Fleet workspaces list/get
+  cluster registration tokens list/get
+
+## [2026-03-29] - Agent: OpenAI Codex
+### Added
 - Curated RBAC tools:
   `rancher_global_roles_list`
   `rancher_global_role_get`

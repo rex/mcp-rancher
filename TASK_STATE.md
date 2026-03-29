@@ -232,15 +232,31 @@ Implement the clean-slate Rancher MCP project phase-by-phase against the live Ra
   role-template detail payloads may legitimately have empty `rules`, so the curated detail surface reports
   explicit `rule_count` instead of assuming role templates always inline Kubernetes policy rules
 - `make lint`, `make typecheck`, `make test`, and `make check-architecture` passing after the curated RBAC slice
+- next Phase 4 Fleet/registration slice completed:
+  `rancher_fleet_workspaces_list`
+  `rancher_fleet_workspace_get`
+  `rancher_cluster_registration_tokens_list`
+  `rancher_cluster_registration_token_get`
+- live Rancher `2.6.5` validation completed for the Fleet/registration slice against Norman resources:
+  Fleet workspaces list/get via `/v3/fleetworkspaces`
+  cluster registration tokens list/get via `/v3/clusterregistrationtokens`
+- live Rancher `2.6.5` Fleet/registration notes captured:
+  the management cluster currently exposes two Fleet workspaces and a sparse workspace `status` object that only
+  reports a schema `type`, so the curated detail surface exposes stable `status_keys` instead of pretending the
+  lab always has richer Fleet status data
+  cluster registration token detail payloads expose manifest URLs plus secure and insecure registration commands,
+  so the curated detail surface keeps those onboarding commands directly available
+- `make lint`, `make typecheck`, `make test`, and `make check-architecture` passing after the curated
+  Fleet/registration slice
 
 ## In Progress
 
-- resume Phase 4 outward now that the RBAC slice is complete
+- resume Phase 4 outward now that the Fleet/registration slice is complete
 
 ## Next Steps
 
 1. Resume Phase 4 outward into the next remaining high-value curated read packs, with monitoring/logging,
-   Fleet, and diagnostics surfaces next depending on what the live Rancher `2.6.5` lab actually exposes
+   backup, and diagnostics surfaces next depending on what the live Rancher `2.6.5` lab actually exposes
 2. Keep opportunistically expanding curated-tool edge and error-path coverage as new packs land so the
    current "happy-path-heavy" test posture continues to improve instead of regressing
 3. Start shaping the first operational aggregate helpers on top of the now-live
