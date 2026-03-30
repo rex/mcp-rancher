@@ -1,211 +1,276 @@
-# rancher-mcp
+<p align="center">
+  <img src="images/readme-banner.png" alt="MCP Rancher banner" />
+</p>
 
-Capability-aware Rancher MCP server optimized first for Rancher `2.6.5`, with multi-instance support, schema-driven discovery, generic fallback tools, and curated operator workflows.
+<p align="center">
+  <a href="https://www.python.org/"><img src="https://img.shields.io/badge/python-3.12+-blue?logo=python&logoColor=white" alt="Python 3.12+" /></a>
+  <a href="https://modelcontextprotocol.io"><img src="https://img.shields.io/badge/MCP-1.0-green?logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHBhdGggZmlsbD0id2hpdGUiIGQ9Ik0xMiAyQzYuNDggMiAyIDYuNDggMiAxMnM0LjQ4IDEwIDEwIDEwIDEwLTQuNDggMTAtMTBTMTcuNTIgMiAxMiAyem0wIDE4Yy00LjQyIDAtOC0zLjU4LTgtOHMzLjU4LTggOC04IDggMy41OCA4IDgtMy41OCA4LTggOHoiLz48L3N2Zz4=" alt="MCP 1.0" /></a>
+  <a href="https://github.com/astral-sh/ruff"><img src="https://img.shields.io/badge/linting-ruff-purple" alt="Ruff" /></a>
+  <a href="https://github.com/microsoft/pyright"><img src="https://img.shields.io/badge/types-pyright_strict-blue" alt="Pyright strict" /></a>
+</p>
 
-## Status
+# MCP Rancher
 
-This repo has been reset around the clean-slate plan in [PERFECT_RANCHER_MCP_IMPLEMENTATION_PLAN.md](/Users/pierce/Code/mcp-servers/mcp-rancher/PERFECT_RANCHER_MCP_IMPLEMENTATION_PLAN.md).
+A comprehensive [Model Context Protocol](https://modelcontextprotocol.io) server for operating [Rancher](https://www.rancher.com/)-managed Kubernetes clusters through any MCP client. Built with schema-driven discovery, multi-instance support, and curated operator workflows.
 
-Current work is focused on:
+**Primary compatibility target:** Rancher `2.6.5` (later versions supported via capability detection)
 
-- repo policy and capability catalog
-- executable architecture policy and validation gates
-- executable scaffold
-- multi-instance configuration
-- discovery-first server foundations
-- generic fallback tools for Norman and Steve list/get/action/link/query flows
-- live-validated streaming substrate for log tail, exec, and watch-style flows
-- first generic Steve watch tool over the Rancher Kubernetes proxy
-- first curated read-only pack for Rancher settings and features
-- second curated read-only pack for Rancher clusters and nodes
-- third curated read-only pack for Rancher pods and services
-- fourth curated read-only pack for Rancher projects and namespaces
-- fifth curated read-only pack for Rancher storage classes, persistent volumes, and persistent volume claims
-- sixth curated read-only pack for Rancher pod disruption budgets
-- seventh curated read-only pack for Rancher deployments, daemonsets, and statefulsets
-- committed sanitized Rancher `2.6.5` contract fixtures with a repo-local regeneration path
-- repo-managed local Rancher `2.6.5` lab infrastructure
-- completed architecture warning burn-down across the remaining oversized generic and shared modules
-- collaborative brainstorming document for future aggregate/convenience tools
+## Features
 
-## Stack
+### Discovery & Introspection
+- **Schema-driven discovery** — enumerate every Norman and Steve API resource, action, and link available on your Rancher instance
+- **API plane exploration** — browse Norman (`/v3`) and Steve (`/v1`) schemas with field-level detail
+- **Capability catalog** — machine-readable inventory of supported domains and resources
+- **Multi-instance awareness** — discover and switch between multiple Rancher instances
 
-- Python `3.12`
-- `uv` for dependency and environment management
-- `FastMCP` for the server framework
-- `Pydantic v2` and `pydantic-settings` for data modeling and configuration
-- `httpx` and `websockets` for Rancher transport layers
-- `structlog` for logging
-- `pytest`, `pytest-asyncio`, `pytest-cov`, and `respx` for testing
+### Cluster & Node Operations
+- **Cluster health** — list clusters with state, conditions, Kubernetes version, node count, and capacity
+- **Cluster detail** — component statuses, provider, driver, full condition set, API endpoint
+- **Node inventory** — roles, conditions, resource pressure flags, taints, labels, allocatable vs capacity
+- **Node detail** — scheduling state, IPs, pod CIDR, Kubernetes version per node
 
-## Primary Compatibility Target
+### Workload Management
+- **Deployments** — list and inspect with replica counts, rollout status, strategy, revision, readiness
+- **StatefulSets** — replicas, update strategy, current/update revisions, service binding
+- **DaemonSets** — scheduling counts, rollout progress, node coverage
+- **Container detail** — images, resource requests/limits, conditions per workload
 
-The primary target is Rancher `2.6.5`.
+### Pod & Service Visibility
+- **Pod inventory** — phase, readiness, restart counts, QoS class, owner references, node placement
+- **Pod detail** — init containers, volume mounts, service account, conditions, events
+- **Service discovery** — type, selector, ports, cluster IP, session affinity, traffic policy
 
-That means:
+### Storage
+- **PersistentVolumeClaims** — status, capacity, storage class, bound volume, access modes
+- **PersistentVolumes** — phase, reclaim policy, capacity, volume source, node affinity
+- **StorageClasses** — provisioner, parameters, default class, volume expansion support
 
-- Norman and 2.6.5-era Steve behavior are the primary contracts
-- later-version references are supplemental until verified
-- live validation against Rancher `2.6.5` is required before claiming production readiness
+### Projects, Namespaces & RBAC
+- **Projects** — Rancher project inventory with monitoring, PSP, and condition status
+- **Namespaces** — phase, project assignment, Rancher-specific conditions, finalizers
+- **Namespace detail** — labels, annotations, cattle conditions from embedded status
 
-## Project Layout
+### Rancher Platform
+- **Settings** — list and inspect all Rancher settings with default/custom/source tracking
+- **Feature flags** — enabled/disabled state, dynamic toggle capability, transitioning status
+- **Server health** — management server healthz check
+- **Server version** — Rancher version metadata
 
-```text
-catalog/                 machine-readable capability inventory
-docs/                    human-readable architecture and capability docs
-devtools/                repo-local lab and fixture tooling, intentionally not shipped
-scripts/                 repo-local helper entrypoints
-src/rancher_mcp/         application package
-tests/                   unit and HTTP-boundary tests
-VIBE.yaml                machine-readable repo policy
-CONVENIENCE_TOOLS_BRAINSTORM.md collaborative brainstorm for higher-level helper tools
-```
+### Pod Disruption Budgets
+- **PDB inventory** — min available, max unavailable, disruptions allowed, selector labels
+- **PDB detail** — current/expected/desired healthy counts, observed generation, conditions
 
-## Setup
+### Generic Resource Access
+- **Norman list/get** — query any Norman (`/v3`) resource by schema ID with filters, sorting, pagination
+- **Steve list/get** — query any Steve (`/v1`) resource with label selectors, field selectors, continuation
+- **Action invocation** — invoke any schema-defined action on Norman or Steve resources
+- **Link traversal** — follow any resource link (logs, metrics, related resources)
+- **Resource watch** — stream real-time Kubernetes watch events through the Steve proxy
+
+## Quick Start
+
+### Prerequisites
+
+- Python 3.12+
+- [uv](https://docs.astral.sh/uv/) package manager
+- A Rancher instance with an API token ([how to create one](https://ranchermanager.docs.rancher.com/reference-guides/user-settings/api-keys))
+
+### Install
 
 ```bash
+git clone https://github.com/rex/mcp-rancher.git
+cd mcp-rancher
 make setup
 ```
 
-This will:
+### Configure
 
-- sync dependencies
-- create `.env` from `.env.example` if missing
-- install pre-commit hooks
-
-## Local Lab
-
-The repo includes a self-contained local lab that does not depend on Docker Desktop's built-in Kubernetes and does not write to your global kubeconfig.
-
-It uses:
-
-- a repo-managed `kind` binary
-- a management cluster pinned to Kubernetes `v1.20.15`
-- Rancher `2.6.5` installed onto that management cluster via Helm
-- a separate downstream simulated cluster pinned to Kubernetes `v1.23.17`
-- repo-local kubeconfigs and runtime state under `.lab/`
-- repo-local downloaded tools under `.tools/`
-
-This is the validated shape for the real environment split:
-
-- the Rancher control plane runs on `v1.20.15`
-- venue clusters run on `v1.23.17+rke2r1`
-
-The downstream local simulation matches the Kubernetes version exactly. It is still `kind`, not true RKE2, so the runtime is intentionally swappable later if exact RKE2 behavior becomes necessary.
-
-Both `.lab/` and `.tools/` are ignored by git, so generated state and downloaded binaries are never committed.
-Raw fixture captures are also written under `.lab/contract-fixtures/raw`, so only sanitized fixture artifacts are committed.
-The lab CLI itself is repo-local in `devtools/` and is not part of the shipped `rancher_mcp` package.
-
-Bring the full lab up:
+Copy the example environment file and fill in your Rancher credentials:
 
 ```bash
-make lab-up
+cp .env.example .env
 ```
 
-Inspect status:
-
-```bash
-make lab-status
+**Single instance:**
+```env
+RANCHER_URL=https://rancher.example.com
+RANCHER_TOKEN=token-xxxxx:yyyyyyyyy
+RANCHER_VERIFY_SSL=true
 ```
 
-Tear the running lab down:
-
-```bash
-make lab-down
+**Multiple instances:**
+```env
+RANCHER_INSTANCES_JSON='{
+  "production": {
+    "url": "https://rancher.prod.example.com",
+    "token": "token-xxxxx:yyyyyyyyy",
+    "verify_ssl": true,
+    "read_only": false
+  },
+  "staging": {
+    "url": "https://rancher.staging.example.com",
+    "token": "token-aaaaa:bbbbbbbbb",
+    "verify_ssl": true,
+    "read_only": true
+  }
+}'
+RANCHER_DEFAULT_INSTANCE=production
 ```
 
-Destroy repo-local runtime state as well:
+### Run
 
 ```bash
-make lab-reset
-```
-
-## Environment Variables
-
-The server supports both:
-
-- a single-instance shorthand via `RANCHER_URL` and related vars
-- a multi-instance JSON configuration via `RANCHER_INSTANCES_JSON`
-
-See [.env.example](/Users/pierce/Code/mcp-servers/mcp-rancher/.env.example) for the canonical template.
-
-## Make Targets
-
-```bash
-make help
-make setup
 make dev
-make lab-up
-make lab-status
-make capture-fixtures
-make check-architecture
-make validate
-make lint
-make typecheck
-make test
-make fix
-make info
 ```
 
-## Testing
+### Claude Desktop Configuration
 
-Testing is enabled from the start.
+Add to your Claude Desktop `claude_desktop_config.json`:
 
-- `make test` is required
-- the minimum coverage gate is `60%`
-- fixture-backed contract testing is part of the target design
-- the committed live fixture set lives under [tests/fixtures/rancher_2_6_5](/Users/pierce/Code/mcp-servers/mcp-rancher/tests/fixtures/rancher_2_6_5)
-- regenerate fixtures from the running devlab with `make capture-fixtures`
-- `make typecheck` now covers `src/`, `devtools/`, and `scripts/`
-- `make check-architecture` enforces the machine-readable architecture policy in `VIBE.yaml`
+```json
+{
+  "mcpServers": {
+    "rancher": {
+      "command": "uv",
+      "args": ["run", "--directory", "/path/to/mcp-rancher", "rancher-mcp"],
+      "env": {
+        "RANCHER_URL": "https://rancher.example.com",
+        "RANCHER_TOKEN": "token-xxxxx:yyyyyyyyy"
+      }
+    }
+  }
+}
+```
 
-## Architecture Direction
+## Tool Reference
 
-The server is being built in three layers:
+### Discovery (10 tools)
 
-1. discovery and schema tools
-2. generic resource and action tools
-3. curated operator workflows
+| Tool | Description |
+|------|-------------|
+| `rancher_instance_list` | List all configured Rancher instances |
+| `rancher_server_health` | Rancher management server health check |
+| `rancher_server_version` | Rancher server version metadata |
+| `rancher_server_profile_get` | Static server profile and configuration |
+| `rancher_capability_domain_list` | Capability catalog domain inventory |
+| `rancher_api_plane_list` | Available API planes (Norman/Steve) for an instance |
+| `rancher_norman_schema_list` | Norman API schema inventory |
+| `rancher_norman_schema_get` | Norman schema detail with fields and actions |
+| `rancher_steve_schema_list` | Steve API schema inventory |
+| `rancher_steve_schema_get` | Steve schema detail with fields and actions |
 
-This is the only realistic way to produce a comprehensive Rancher MCP server without hardcoding the entire surface area by hand.
+### Curated Resources (28 tools)
 
-Current implemented slices include:
+| Tool | Description |
+|------|-------------|
+| `rancher_clusters_list` | List clusters with health, version, capacity |
+| `rancher_cluster_get` | Cluster detail with conditions, components, endpoint |
+| `rancher_nodes_list` | List nodes with roles, conditions, scheduling state |
+| `rancher_node_get` | Node detail with capacity, allocatable, taints |
+| `rancher_pods_list` | List pods with phase, readiness, restarts |
+| `rancher_pod_get` | Pod detail with containers, volumes, conditions |
+| `rancher_services_list` | List services with type, ports, selector |
+| `rancher_service_get` | Service detail with traffic policy, session affinity |
+| `rancher_deployments_list` | List deployments with replicas, rollout status |
+| `rancher_deployment_get` | Deployment detail with strategy, revision, conditions |
+| `rancher_daemonsets_list` | List daemonsets with scheduling and readiness |
+| `rancher_daemonset_get` | DaemonSet detail with update strategy, conditions |
+| `rancher_statefulsets_list` | List statefulsets with replicas, update strategy |
+| `rancher_statefulset_get` | StatefulSet detail with revisions, conditions |
+| `rancher_persistent_volume_claims_list` | List PVCs with status, capacity, storage class |
+| `rancher_persistent_volume_claim_get` | PVC detail with bound volume, finalizers |
+| `rancher_persistent_volumes_list` | List PVs with phase, capacity, reclaim policy |
+| `rancher_persistent_volume_get` | PV detail with volume source, node affinity |
+| `rancher_storage_classes_list` | List storage classes with provisioner, defaults |
+| `rancher_storage_class_get` | StorageClass detail with parameters, mount options |
+| `rancher_projects_list` | List Rancher projects with monitoring, PSP status |
+| `rancher_project_get` | Project detail with conditions, actions, links |
+| `rancher_namespaces_list` | List namespaces with project assignment, state |
+| `rancher_namespace_get` | Namespace detail with labels, cattle conditions |
+| `rancher_settings_list` | List Rancher settings with default/custom tracking |
+| `rancher_setting_get` | Setting detail with full payload |
+| `rancher_features_list` | List feature flags with enabled/dynamic state |
+| `rancher_feature_get` | Feature detail with transitioning status |
 
-- discovery, API-plane, and schema introspection for Norman and Steve
-- generic Norman and Steve list/get tools
-- generic Norman and Steve action/link tools
-- typed generic Norman and Steve query controls for filters, selectors, and pagination passthrough
-- async streaming primitives for HTTP line streams, JSON watch streams, and Kubernetes-channel WebSocket capture
-- generic Steve watch tools that derive raw Kubernetes proxy paths from Steve schema metadata
-- curated typed read tools for Rancher settings and features
-- curated typed read tools for Rancher clusters and nodes
-- curated typed read tools for Rancher pods and services
-- curated typed read tools for Rancher projects and namespaces
-- curated typed read tools for Rancher storage classes, persistent volumes, and persistent volume claims
-- curated typed read tools for Rancher pod disruption budgets
-- curated typed read tools for Rancher deployments, daemonsets, and statefulsets
-- normalized generic list results that report the applied query params sent to Rancher
-- repo-local capture tooling and committed sanitized Norman/Steve contract fixtures for Rancher `2.6.5`
-- modular tool files with thin registration facades instead of allowing tool modules to grow unbounded
-- executable architecture enforcement with hard and soft limits currently clean
+### Disruption (2 tools)
 
-For Rancher `2.6.5`, the curated storage, disruption, and workload-controller packs intentionally read
-through Rancher's raw Kubernetes proxy via the management client when Steve collection paths are unreliable.
+| Tool | Description |
+|------|-------------|
+| `rancher_pod_disruption_budgets_list` | List PDBs with availability and disruption counts |
+| `rancher_pod_disruption_budget_get` | PDB detail with conditions and health metrics |
 
-## Development Workflow
+### Generic Resource Access (9 tools)
 
-1. update the capability catalog when a durable scope decision changes
-2. implement the smallest coherent vertical slice
-3. add or update tests in the same change
-4. run `make check-architecture`, `make lint`, `make typecheck`, and `make test`
-5. commit with a signed conventional commit
-6. push immediately
+| Tool | Description |
+|------|-------------|
+| `rancher_norman_resource_list` | List any Norman resource by schema ID |
+| `rancher_norman_resource_get` | Get any Norman resource by schema ID and resource ID |
+| `rancher_steve_resource_list` | List any Steve resource by schema ID |
+| `rancher_steve_resource_get` | Get any Steve resource by schema ID and resource ID |
+| `rancher_norman_resource_action_invoke` | Invoke a schema-defined action on a Norman resource |
+| `rancher_norman_resource_link_follow` | Follow a link on a Norman resource |
+| `rancher_steve_resource_action_invoke` | Invoke a schema-defined action on a Steve resource |
+| `rancher_steve_resource_link_follow` | Follow a link on a Steve resource |
+| `rancher_steve_resource_watch` | Stream real-time watch events for a Steve resource |
 
-## Repo Policy
+## Architecture
 
-Machine-readable repo policy lives in [VIBE.yaml](/Users/pierce/Code/mcp-servers/mcp-rancher/VIBE.yaml).
+The server is built in three layers:
 
-## Canonical Plan
+1. **Discovery** — schema introspection and API plane enumeration let you explore what any Rancher instance can do
+2. **Generic resources** — list, get, action, link, and watch tools work with any Norman or Steve resource by schema ID
+3. **Curated tools** — typed, validated tools for common operational workflows with rich response models
 
-The current canonical planning document is [PERFECT_RANCHER_MCP_IMPLEMENTATION_PLAN.md](/Users/pierce/Code/mcp-servers/mcp-rancher/PERFECT_RANCHER_MCP_IMPLEMENTATION_PLAN.md).
+This layered approach means you can operate on any resource Rancher exposes, even if a curated tool hasn't been built for it yet.
+
+## Development
+
+### Make Targets
+
+```bash
+make setup              # Install dependencies, create .env, install pre-commit hooks
+make dev                # Run the MCP server
+make validate           # Run all quality gates (architecture + lint + typecheck + test)
+make lint               # Ruff linter
+make typecheck          # Pyright strict mode
+make test               # pytest with coverage
+make fix                # Auto-fix lint issues
+make lab-up             # Start local Rancher 2.6.5 development lab
+make lab-down           # Stop the development lab
+make lab-status         # Check lab status
+make capture-fixtures   # Regenerate contract fixtures from running lab
+make check-architecture # Enforce module size and function count policies
+```
+
+### Local Development Lab
+
+The repo includes a self-contained local lab for development and testing:
+
+- Management cluster on Kubernetes `v1.20.15` with Rancher `2.6.5`
+- Downstream simulated cluster on Kubernetes `v1.23.17`
+- Repo-local kubeconfigs and runtime state (never committed)
+- Contract fixture capture and sanitization
+
+```bash
+make lab-up       # Full lab: management cluster + Rancher + downstream cluster
+make lab-status   # Check what's running
+make lab-down     # Stop everything
+```
+
+### Testing
+
+```bash
+make test
+```
+
+Tests use deterministic stub clients and [respx](https://github.com/lundberg/respx) for HTTP boundary testing. Contract fixtures captured from a live Rancher `2.6.5` instance are committed under `tests/fixtures/`.
+
+### Stack
+
+- **Runtime:** Python 3.12, [FastMCP](https://github.com/jlowin/fastmcp), [httpx](https://www.python-httpx.org/), [websockets](https://websockets.readthedocs.io/), [Pydantic v2](https://docs.pydantic.dev/)
+- **Quality:** [ruff](https://docs.astral.sh/ruff/), [pyright](https://github.com/microsoft/pyright) (strict), [pytest](https://docs.pytest.org/) with coverage gates
+- **Packaging:** [uv](https://docs.astral.sh/uv/)
+
+## License
+
+MIT

@@ -43,4 +43,4 @@ make lab-reset
 
 ## Environment
 
-See [.env.example](/Users/pierce/Code/mcp-servers/mcp-rancher/.env.example) for the full set of `RANCHER_MCP_LAB_*` variables.
+See [.env.example](../.env.example) for the full set of `RANCHER_MCP_LAB_*` variables.

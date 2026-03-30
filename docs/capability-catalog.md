@@ -2,7 +2,7 @@
 
 This file describes the capability taxonomy for the "perfect" Rancher MCP server.
 
-The machine-readable source of truth is [catalog/capabilities.yaml](/Users/pierce/Code/mcp-servers/mcp-rancher/catalog/capabilities.yaml).
+The machine-readable source of truth is [catalog/capabilities.yaml](../catalog/capabilities.yaml).
 
 ## Principles
 

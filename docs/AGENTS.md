@@ -6,7 +6,7 @@ This folder holds durable human-readable documentation for the Rancher MCP serve
 
 ## Rules
 
-- Keep docs aligned with [VIBE.yaml](/Users/pierce/Code/mcp-servers/mcp-rancher/VIBE.yaml) and the canonical plan.
+- Keep docs aligned with [VIBE.yaml](../VIBE.yaml) and the canonical plan.
 - Prefer operationally useful docs over speculative prose.
 - Update docs in the same change when setup, architecture, or developer workflow changes.
 - Do not store generated artifacts or scratch notes here.
