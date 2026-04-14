@@ -74,6 +74,44 @@ async def test_post_json_sends_payload_and_auth_header() -> None:
 
 @pytest.mark.asyncio
 @respx.mock
+async def test_patch_content_json_sends_custom_content_type() -> None:
+    """Raw PATCH requests should preserve the caller-specified content type."""
+
+    route = respx.patch(
+        "https://rancher.example.com/v1/configmaps/default/demo",
+        params={"fieldManager": "rancher-mcp"},
+    ).mock(return_value=httpx.Response(200, json={"kind": "ConfigMap"}))
+
+    async with RancherManagementClient("work", build_config()) as client:
+        result = await client.patch_content_json(
+            "/v1/configmaps/default/demo",
+            content='{"kind":"ConfigMap"}',
+            content_type="application/apply-patch+yaml",
+            params={"fieldManager": "rancher-mcp"},
+        )
+
+    assert result == {"kind": "ConfigMap"}
+    assert route.called
+    assert route.calls.last.request.headers["Content-Type"] == "application/apply-patch+yaml"
+
+
+@pytest.mark.asyncio
+@respx.mock
+async def test_delete_json_tolerates_empty_success_body() -> None:
+    """DELETE requests should normalize empty 2xx responses into empty objects."""
+
+    respx.delete("https://rancher.example.com/v3/projects/c-local:p-test").mock(
+        return_value=httpx.Response(204)
+    )
+
+    async with RancherManagementClient("work", build_config()) as client:
+        result = await client.delete_json("/v3/projects/c-local:p-test")
+
+    assert result == {}
+
+
+@pytest.mark.asyncio
+@respx.mock
 async def test_get_json_retries_transient_503_response() -> None:
     """JSON requests should retry transient Rancher HTTP failures before succeeding."""
 

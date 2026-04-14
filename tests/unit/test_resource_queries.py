@@ -5,6 +5,7 @@ import pytest
 from rancher_mcp.exceptions import RancherCapabilityError
 from rancher_mcp.services.resource_queries import (
     build_norman_list_query_params,
+    build_steve_apply_query_params,
     build_steve_list_query_params,
     parse_query_params,
 )
@@ -78,6 +79,35 @@ def test_build_steve_list_query_params_maps_selectors_and_continue_token() -> No
         "labelSelector": "app=test",
         "fieldSelector": "metadata.name=test-pod",
     }
+
+
+def test_build_steve_apply_query_params_maps_field_manager_and_force() -> None:
+    """Steve apply helpers should emit Kubernetes server-side-apply params."""
+
+    params = build_steve_apply_query_params(
+        field_manager="rancher-mcp",
+        force=True,
+        params_json='{"dryRun": "All"}',
+    )
+
+    assert params == {
+        "fieldManager": "rancher-mcp",
+        "force": True,
+        "dryRun": "All",
+    }
+
+
+def test_build_steve_apply_query_params_rejects_duplicate_passthrough_keys() -> None:
+    """Apply params must not silently override the typed field-manager controls."""
+
+    with pytest.raises(
+        RancherCapabilityError,
+        match="Typed query controls and params_json both set the same query params: fieldManager",
+    ):
+        build_steve_apply_query_params(
+            field_manager="rancher-mcp",
+            params_json='{"fieldManager": "other"}',
+        )
 
 
 def test_build_steve_watch_query_params_sets_reserved_stream_controls() -> None:

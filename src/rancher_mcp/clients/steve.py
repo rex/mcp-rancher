@@ -31,6 +31,48 @@ class SteveDiscoveryClient(Protocol):
         ...
 
 
+class SteveMutationClient(SteveDiscoveryClient, Protocol):
+    """Protocol for mutation-capable Steve client behavior used by tools."""
+
+    async def post_json(
+        self,
+        path: str,
+        payload: Mapping[str, object] | None = None,
+        params: Mapping[str, str | int | bool] | None = None,
+    ) -> dict[str, object]:
+        """Perform a JSON POST request."""
+        ...
+
+    async def patch_json(
+        self,
+        path: str,
+        payload: Mapping[str, object] | None = None,
+        params: Mapping[str, str | int | bool] | None = None,
+    ) -> dict[str, object]:
+        """Perform a JSON PATCH request."""
+        ...
+
+    async def patch_content_json(
+        self,
+        path: str,
+        content: str,
+        *,
+        content_type: str,
+        params: Mapping[str, str | int | bool] | None = None,
+    ) -> dict[str, object]:
+        """Perform a raw-content PATCH request expecting JSON."""
+        ...
+
+    async def delete_json(
+        self,
+        path: str,
+        payload: Mapping[str, object] | None = None,
+        params: Mapping[str, str | int | bool] | None = None,
+    ) -> dict[str, object]:
+        """Perform a JSON DELETE request."""
+        ...
+
+
 class RancherSteveClient:
     """Async client for Rancher's Steve/Kubernetes proxy endpoints."""
 
@@ -81,6 +123,65 @@ class RancherSteveClient:
         """Perform a text GET against the Steve plane."""
 
         return await self._management_client.get_text(self._qualified_path(path), params=params)
+
+    async def post_json(
+        self,
+        path: str,
+        payload: Mapping[str, object] | None = None,
+        params: Mapping[str, str | int | bool] | None = None,
+    ) -> dict[str, object]:
+        """Perform a JSON POST against the Steve plane."""
+
+        return await self._management_client.post_json(
+            self._qualified_path(path),
+            payload=payload,
+            params=params,
+        )
+
+    async def patch_json(
+        self,
+        path: str,
+        payload: Mapping[str, object] | None = None,
+        params: Mapping[str, str | int | bool] | None = None,
+    ) -> dict[str, object]:
+        """Perform a JSON PATCH against the Steve plane."""
+
+        return await self._management_client.patch_json(
+            self._qualified_path(path),
+            payload=payload,
+            params=params,
+        )
+
+    async def patch_content_json(
+        self,
+        path: str,
+        content: str,
+        *,
+        content_type: str,
+        params: Mapping[str, str | int | bool] | None = None,
+    ) -> dict[str, object]:
+        """Perform a raw-content PATCH against the Steve plane."""
+
+        return await self._management_client.patch_content_json(
+            self._qualified_path(path),
+            content=content,
+            content_type=content_type,
+            params=params,
+        )
+
+    async def delete_json(
+        self,
+        path: str,
+        payload: Mapping[str, object] | None = None,
+        params: Mapping[str, str | int | bool] | None = None,
+    ) -> dict[str, object]:
+        """Perform a JSON DELETE against the Steve plane."""
+
+        return await self._management_client.delete_json(
+            self._qualified_path(path),
+            payload=payload,
+            params=params,
+        )
 
     def _qualified_path(self, path: str) -> str:
         """Prefix a relative Steve path with the correct cluster root."""

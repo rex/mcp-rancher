@@ -15,7 +15,7 @@ A comprehensive [Model Context Protocol](https://modelcontextprotocol.io) server
 
 **Primary compatibility target:** Rancher `2.6.5` (later versions supported via capability detection)
 
-**Current public surface:** 92 tools across discovery, generic fallbacks, curated reads, and operational summaries.
+**Current public surface:** 100 tools across discovery, generic fallbacks, curated reads, and operational summaries.
 
 ## Features
 
@@ -60,8 +60,8 @@ A comprehensive [Model Context Protocol](https://modelcontextprotocol.io) server
 - **Namespace and project rollups** — summarize pod health plus deployment/daemonset/statefulset readiness in one response
 
 ### Generic Resource Access
-- **Norman list/get** — query any Norman (`/v3`) resource by schema ID with filters, sorting, pagination
-- **Steve list/get** — query any Steve (`/v1`) resource with label selectors, field selectors, continuation
+- **Norman list/get/create/apply/patch/delete** — query and mutate any Norman (`/v3`) resource by schema ID with schema-aware writable-field filtering
+- **Steve list/get/create/apply/patch/delete** — query any Steve (`/v1`) resource and mutate Kubernetes-backed resources through Rancher's validated cluster proxy paths
 - **Action invocation** — invoke any schema-defined action on Norman or Steve resources
 - **Link traversal** — follow any resource link (logs, metrics, related resources)
 - **Resource watch** — stream real-time Kubernetes watch events through the Steve proxy
@@ -158,14 +158,22 @@ Add to your Claude Desktop `claude_desktop_config.json`:
 | `rancher_steve_schema_list` | Steve API schema inventory |
 | `rancher_steve_schema_get` | Steve schema detail with fields and actions |
 
-### Generic Resource Access (9 tools)
+### Generic Resource Access (17 tools)
 
 | Tool | Description |
 |------|-------------|
 | `rancher_norman_resource_list` | List any Norman resource by schema ID |
 | `rancher_norman_resource_get` | Get any Norman resource by schema ID and resource ID |
+| `rancher_norman_resource_create` | Create any Norman resource by schema ID |
+| `rancher_norman_resource_apply` | Replace a Norman resource using schema-filtered mutable fields |
+| `rancher_norman_resource_patch` | Patch a Norman resource by merging into mutable fields |
+| `rancher_norman_resource_delete` | Delete any Norman resource with explicit confirmation |
 | `rancher_steve_resource_list` | List any Steve resource by schema ID |
 | `rancher_steve_resource_get` | Get any Steve resource by schema ID and resource ID |
+| `rancher_steve_resource_create` | Create any Steve resource through Rancher's Kubernetes proxy |
+| `rancher_steve_resource_apply` | Server-side apply a Steve resource through Rancher's Kubernetes proxy |
+| `rancher_steve_resource_patch` | Merge-patch a Steve resource through Rancher's Kubernetes proxy |
+| `rancher_steve_resource_delete` | Delete any Steve resource with explicit confirmation |
 | `rancher_norman_resource_action_invoke` | Invoke a schema-defined action on a Norman resource |
 | `rancher_norman_resource_link_follow` | Follow a link on a Norman resource |
 | `rancher_steve_resource_action_invoke` | Invoke a schema-defined action on a Steve resource |
@@ -310,7 +318,7 @@ Add to your Claude Desktop `claude_desktop_config.json`:
 The server is built in three layers:
 
 1. **Discovery** — schema introspection and API plane enumeration let you explore what any Rancher instance can do
-2. **Generic resources** — list, get, action, link, and watch tools work with any Norman or Steve resource by schema ID
+2. **Generic resources** — list, get, create, apply, patch, delete, action, link, and watch tools work with any Norman or Steve resource by schema ID
 3. **Curated tools** — typed, validated tools for common operational workflows with rich response models
 
 This layered approach means you can operate on any resource Rancher exposes, even if a curated tool hasn't been built for it yet.

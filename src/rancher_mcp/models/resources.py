@@ -92,6 +92,25 @@ class GenericResourceActionResult(RancherModel):
     payload: dict[str, object] = Field(default_factory=dict)
 
 
+class GenericResourceMutationResult(RancherModel):
+    """Normalized result from a generic resource mutation request."""
+
+    instance: str
+    plane: str
+    schema_id: str
+    operation: str
+    request_method: str
+    request_path: str
+    cluster_id: str | None = None
+    namespace: str | None = None
+    resource_id: str | None = None
+    resource_path: str | None = None
+    type: str | None = None
+    action_keys: list[str] = Field(default_factory=list)
+    link_keys: list[str] = Field(default_factory=list)
+    payload: dict[str, object] = Field(default_factory=dict)
+
+
 class GenericResourceLinkResult(RancherModel):
     """Normalized result from following a resource link."""
 

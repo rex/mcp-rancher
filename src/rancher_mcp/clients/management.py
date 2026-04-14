@@ -47,6 +47,48 @@ class ManagementDiscoveryClient(Protocol):
         ...
 
 
+class ManagementMutationClient(ManagementDiscoveryClient, Protocol):
+    """Protocol for mutation-capable management client behavior used by tools."""
+
+    async def put_json(
+        self,
+        path: str,
+        payload: Mapping[str, object] | None = None,
+        params: Mapping[str, str | int | bool] | None = None,
+    ) -> dict[str, object]:
+        """Perform a JSON PUT request."""
+        ...
+
+    async def patch_json(
+        self,
+        path: str,
+        payload: Mapping[str, object] | None = None,
+        params: Mapping[str, str | int | bool] | None = None,
+    ) -> dict[str, object]:
+        """Perform a JSON PATCH request."""
+        ...
+
+    async def patch_content_json(
+        self,
+        path: str,
+        content: str,
+        *,
+        content_type: str,
+        params: Mapping[str, str | int | bool] | None = None,
+    ) -> dict[str, object]:
+        """Perform a raw-content PATCH request expecting a JSON object response."""
+        ...
+
+    async def delete_json(
+        self,
+        path: str,
+        payload: Mapping[str, object] | None = None,
+        params: Mapping[str, str | int | bool] | None = None,
+    ) -> dict[str, object]:
+        """Perform a JSON DELETE request."""
+        ...
+
+
 class RancherManagementClient:
     """Async HTTP client for Rancher management-plane endpoints."""
 
@@ -89,10 +131,7 @@ class RancherManagementClient:
 
         response = await self._request("GET", path, params=params)
         self._raise_for_status(response)
-        payload: object = response.json()
-        if not isinstance(payload, dict):
-            raise RancherAPIError(response.status_code, "Expected a JSON object response")
-        return cast(dict[str, object], payload)
+        return self._decode_json_object(response)
 
     async def post_json(
         self,
@@ -102,17 +141,71 @@ class RancherManagementClient:
     ) -> dict[str, object]:
         """Perform a POST request expecting a JSON object."""
 
+        response = await self._request("POST", path, params=params, payload=payload)
+        self._raise_for_status(response)
+        return self._decode_json_object(response)
+
+    async def put_json(
+        self,
+        path: str,
+        payload: Mapping[str, object] | None = None,
+        params: Mapping[str, str | int | bool] | None = None,
+    ) -> dict[str, object]:
+        """Perform a PUT request expecting a JSON object."""
+
+        response = await self._request("PUT", path, params=params, payload=payload)
+        self._raise_for_status(response)
+        return self._decode_json_object(response)
+
+    async def patch_json(
+        self,
+        path: str,
+        payload: Mapping[str, object] | None = None,
+        params: Mapping[str, str | int | bool] | None = None,
+    ) -> dict[str, object]:
+        """Perform a JSON merge-patch request expecting a JSON object."""
+
         response = await self._request(
-            "POST",
+            "PATCH",
             path,
             params=params,
             payload=payload,
+            headers={"Content-Type": "application/merge-patch+json"},
         )
         self._raise_for_status(response)
-        decoded: object = response.json()
-        if not isinstance(decoded, dict):
-            raise RancherAPIError(response.status_code, "Expected a JSON object response")
-        return cast(dict[str, object], decoded)
+        return self._decode_json_object(response)
+
+    async def patch_content_json(
+        self,
+        path: str,
+        content: str,
+        *,
+        content_type: str,
+        params: Mapping[str, str | int | bool] | None = None,
+    ) -> dict[str, object]:
+        """Perform a raw-content PATCH request expecting a JSON object."""
+
+        response = await self._request(
+            "PATCH",
+            path,
+            params=params,
+            content=content,
+            headers={"Content-Type": content_type},
+        )
+        self._raise_for_status(response)
+        return self._decode_json_object(response)
+
+    async def delete_json(
+        self,
+        path: str,
+        payload: Mapping[str, object] | None = None,
+        params: Mapping[str, str | int | bool] | None = None,
+    ) -> dict[str, object]:
+        """Perform a DELETE request expecting either JSON or an empty body."""
+
+        response = await self._request("DELETE", path, params=params, payload=payload)
+        self._raise_for_status(response)
+        return self._decode_json_object(response)
 
     async def get_text(
         self,
@@ -132,6 +225,8 @@ class RancherManagementClient:
         *,
         params: Mapping[str, str | int | bool] | None = None,
         payload: Mapping[str, object] | None = None,
+        content: str | None = None,
+        headers: Mapping[str, str] | None = None,
     ) -> httpx.Response:
         """Perform one Rancher HTTP request with transient-failure retries."""
 
@@ -141,11 +236,24 @@ class RancherManagementClient:
                 path,
                 params=params,
                 json=dict(payload or {}) if payload is not None else None,
+                content=content,
+                headers=dict(headers or {}),
             )
             self._raise_for_status(response)
             return response
 
         return await run_with_retry(perform_request)
+
+    def _decode_json_object(self, response: httpx.Response) -> dict[str, object]:
+        """Decode a JSON object response, tolerating empty success bodies."""
+
+        if not response.content or not response.text.strip():
+            return {}
+
+        payload: object = response.json()
+        if not isinstance(payload, dict):
+            raise RancherAPIError(response.status_code, "Expected a JSON object response")
+        return cast(dict[str, object], payload)
 
     def _raise_for_status(self, response: httpx.Response) -> None:
         """Map HTTP errors into typed Rancher exceptions."""

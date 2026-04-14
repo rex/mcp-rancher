@@ -65,3 +65,25 @@ async def test_steve_client_uses_cluster_scoped_root_for_non_local_clusters() ->
 
     assert result == {"id": "pod"}
     assert route.called
+
+
+@pytest.mark.asyncio
+@respx.mock
+async def test_steve_client_patch_content_uses_cluster_scoped_root() -> None:
+    """Raw Steve PATCH requests should preserve cluster-qualified Steve paths."""
+
+    route = respx.patch(
+        "https://rancher.example.com/k8s/clusters/venue-local/v1/configmaps/default/demo",
+        params={"fieldManager": "rancher-mcp"},
+    ).mock(return_value=httpx.Response(200, json={"kind": "ConfigMap"}))
+
+    async with RancherSteveClient("work", build_config(), cluster_id="venue-local") as client:
+        result = await client.patch_content_json(
+            "/configmaps/default/demo",
+            content='{"kind":"ConfigMap"}',
+            content_type="application/apply-patch+yaml",
+            params={"fieldManager": "rancher-mcp"},
+        )
+
+    assert result == {"kind": "ConfigMap"}
+    assert route.called

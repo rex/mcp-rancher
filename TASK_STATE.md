@@ -4,6 +4,11 @@
 
 Keep the repo clean and fully validated while executing the canonical Rancher MCP implementation plan in phase order against the live Rancher `2.6.5` devlab.
 
+## Standing User Directives
+
+- Most recent standing directive: continue iterating until Phase 3 is fully complete, quality-gated, committed, pushed, and the tree is clean.
+- That directive is satisfied only by publishing the Phase 3 closure slice itself; it is not permission to start net-new later-phase work without a new user instruction.
+
 ## Phase Discipline
 
 - Work the oldest incomplete canonical phase first.
@@ -16,13 +21,26 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 
 - Canonical plan: `PERFECT_RANCHER_MCP_IMPLEMENTATION_PLAN.md`
 - Primary compatibility target: Rancher `2.6.5`
-- Public tool surface: 92 tools
+- Public tool surface: 100 tools
 - Completion gate: `make check-if-the-agent-can-consider-this-task-completed`
 - Active quality gates:
   `make check-architecture`
   `make lint`
   `make typecheck`
   `make test`
+
+## Latest Logical Step
+
+- Phase 3 generic fallback coverage is now complete:
+  Norman and Steve list/get/create/apply/patch/delete
+  generic action invocation
+  generic link following
+  Steve watch support
+  schema query and capability discovery
+- Live Rancher `2.6.5` validation succeeded for:
+  Norman project create/apply/patch/delete
+  Steve ConfigMap create/apply/patch/delete
+- Steve generic mutations are validated through Rancher's Kubernetes proxy paths under `/k8s/clusters/.../api` and `/k8s/clusters/.../apis`, not by assuming direct Steve write paths are reliable on `2.6.5`.
 
 ## Architecture Gate Semantics
 
@@ -38,12 +56,12 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 | 0. Product and capability definition | completed | `VIBE.yaml`, canonical plan, and capability catalog are committed. | none |
 | 1. Project scaffold | completed | `uv`, docs, Makefile, config, hooks, and baseline repo structure are in place. | none |
 | 2. Core client and discovery layer | completed | management client, Steve client, discovery/schema tools, streaming substrate, and live `2.6.5` devlab are landed. | none |
-| 3. Generic tool engine | in_progress | generic Norman/Steve list/get, action/link, query controls, watch support, and contract fixtures are landed. | generic create/apply/patch/delete parity and any remaining generic mutation coverage |
+| 3. Generic tool engine | completed | generic Norman/Steve list/get/create/apply/patch/delete, action/link, watch support, schema query controls, and contract fixtures are landed and live-validated against the local Rancher `2.6.5` devlab. | none |
 | 4. Curated read-only packs | in_progress | settings/features, clusters/nodes, projects/namespaces, pods/services, storage, disruption, workloads, apps/catalogs, auth/identity, RBAC, Fleet/registration, logging/backup, and ops aggregate helpers are landed. | monitoring, alerts, compliance, diagnostics, and any remaining read-only packs plus live validation for new helpers |
-| 5. Curated safe write packs | pending | not started intentionally. | blocked on Phases 3 and 4 closing |
-| 6. Curated high-risk and destructive packs | pending | not started intentionally. | blocked on Phases 3, 4, and 5 closing |
+| 5. Curated safe write packs | pending | not started intentionally. | blocked on Phase 4 closing |
+| 6. Curated high-risk and destructive packs | pending | not started intentionally. | blocked on Phases 4 and 5 closing |
 | 7. Subsystem completeness | pending | only the Phase 4 read slices that touch Fleet/logging/backup are landed so far. | Longhorn, deeper monitoring/logging/compliance, backup operator, extensions |
-| 8. Live validation and contract capture | partially_completed | local Rancher `2.6.5` lab is working and sanitized contract fixtures are committed. | broaden live validation across the remaining packs and capture a compatibility matrix |
+| 8. Live validation and contract capture | partially_completed | local Rancher `2.6.5` lab is working, sanitized contract fixtures are committed, and the Phase 3 generic Norman/Steve mutation flows are now live-validated. | broaden live validation across the remaining Phase 4 packs and capture a compatibility matrix |
 | 9. Hardening | partially_completed | retries, stderr logging, strict typing, test coverage gates, and architecture checks are landed. | audit logging, write confirmations, rate limiting, and remaining production hardening |
 | 10. Catalog completion and gap closure | pending | no explicit coverage report exists yet. | compare curated coverage to live-discovered capability surface and publish the gap report |
 
@@ -58,14 +76,14 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 
 ## Current Risks And Constraints
 
-- The oldest incomplete phase is still Phase 3, so future net-new feature work should close generic mutation coverage before starting safe writes or destructive flows.
+- The oldest incomplete canonical phase is now Phase 4, so the next net-new feature work should finish the remaining read-only packs before starting safe writes or destructive flows.
 - Some landed Phase 4 domains are live-validated only against empty lab collections; keep that distinction explicit in docs and changelog entries.
+- Steve generic mutations on Rancher `2.6.5` are validated through Rancher's Kubernetes proxy paths; do not switch them back to direct Steve write paths without fresh live proof.
 - The downstream devlab remains `kind`, not true RKE2, so live validation claims must stay precise about what was actually exercised.
 - Steve list pagination and some Steve collection paths in Rancher `2.6.5` remain quirky; prefer the already-established Norman/raw-proxy paths that are known-good in this repo.
 
 ## Next Queue
 
-1. Close Phase 3 by adding the missing generic create/apply/patch/delete fallback tools and their validation.
-2. Finish Phase 4 with the remaining monitoring, alerting, compliance, and diagnostics read packs.
-3. Expand live validation coverage for the newer Phase 4 helper surfaces and record the results explicitly.
-4. Start Phase 5 only after Phases 3 and 4 are fully closed and committed.
+1. Finish Phase 4 with the remaining monitoring, alerting, compliance, and diagnostics read packs.
+2. Expand live validation coverage for the newer Phase 4 helper surfaces and record the results explicitly.
+3. Start Phase 5 only after Phase 4 is fully closed and committed.

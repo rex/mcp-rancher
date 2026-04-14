@@ -2,6 +2,34 @@
 
 ## [2026-04-14] - Agent: OpenAI Codex
 ### Added
+- Generic mutation fallback tools:
+  `rancher_norman_resource_create`
+  `rancher_norman_resource_apply`
+  `rancher_norman_resource_patch`
+  `rancher_norman_resource_delete`
+  `rancher_steve_resource_create`
+  `rancher_steve_resource_apply`
+  `rancher_steve_resource_patch`
+  `rancher_steve_resource_delete`
+- Shared mutation helpers for schema-aware writable-field filtering, shared delete confirmations,
+  resource mutation result normalization, and reusable Norman/Steve resource contexts
+- Direct unit coverage for the generic mutation pack plus HTTP client coverage for custom PATCH
+  content types and empty-body delete responses
+
+### Changed
+- Completed canonical Phase 3 in `TASK_STATE.md`; Phase 4 is now the oldest incomplete phase
+- Updated the README to reflect the 100-tool public surface and the full generic fallback layer
+- Routed Steve generic create/apply/patch/delete through Rancher's Kubernetes proxy paths, which
+  are the live-validated write path on Rancher `2.6.5`
+
+### Verified
+- `make validate` passes
+- Live Rancher `2.6.5` validation succeeded for:
+  Norman project create/apply/patch/delete
+  Steve ConfigMap create/apply/patch/delete via Rancher's Kubernetes proxy paths
+
+## [2026-04-14] - Agent: OpenAI Codex
+### Added
 - Curated operational aggregate helpers:
   `rancher_cluster_health_check`
   `rancher_clusters_health_summary`

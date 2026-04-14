@@ -97,6 +97,21 @@ def build_steve_list_query_params(
     return merge_query_params(params, parse_query_params(params_json))
 
 
+def build_steve_apply_query_params(
+    *,
+    field_manager: str,
+    force: bool | None = None,
+    params_json: str | None = None,
+) -> QueryParamMap:
+    """Build normalized Kubernetes server-side-apply query params."""
+
+    params: QueryParamMap = {}
+    _set_non_empty_string(params, "fieldManager", field_manager)
+    if force is not None:
+        params["force"] = force
+    return merge_query_params(params, parse_query_params(params_json))
+
+
 def merge_query_params(base: QueryParamMap, extra: QueryParamMap) -> QueryParamMap:
     """Merge two query-param maps and reject duplicate keys."""
 
