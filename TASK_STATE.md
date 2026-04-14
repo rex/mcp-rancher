@@ -2,331 +2,70 @@
 
 ## Current Objective
 
-Implement the clean-slate Rancher MCP project phase-by-phase against the live Rancher `2.6.5` devlab.
+Keep the repo clean and fully validated while executing the canonical Rancher MCP implementation plan in phase order against the live Rancher `2.6.5` devlab.
 
-## Completed
+## Phase Discipline
 
-- Historical snapshot of the legacy repo state committed and pushed
-- Legacy planning docs removed from the working tree
-- Clean-slate plan created and promoted as canonical
-- `uv` project initialized with runtime and dev dependencies
-- repo policy files and initial capability catalog created
-- executable scaffold created
-- multi-instance settings and catalog loading implemented
-- initial discovery tools implemented
-- `make lint`, `make typecheck`, and `make test` passing
-- `.env` generated and pre-commit hooks installed
-- management-plane Rancher HTTP client implemented
-- live-capable `rancher_server_health` and `rancher_server_version` tools implemented
-- HTTP boundary tests added for the management client
-- repo-managed local lab implemented and validated live:
-  management cluster on Kubernetes `v1.20.15`
-  Rancher `2.6.5` installed via Helm
-  downstream simulated cluster on Kubernetes `v1.23.17`
-- downstream simulated cluster import fully automated and validated live
-- Rancher local management cluster component health warnings resolved
-- local lab docs, CLI, and tests updated to the validated topology
-- `make lint`, `make typecheck`, and `make test-unit` passing with the live devlab running
-- Norman and Steve discovery/schema tools implemented and registered safely with FastMCP
-- live Rancher `2.6.5` validation completed for API plane discovery plus Norman/Steve schema detail lookups
-- first Phase 3 generic fallback tools implemented:
-  Norman generic list/get
-  Steve generic list/get
-  schema-driven path resolution and normalized resource models
-- live Rancher `2.6.5` validation completed for generic Norman cluster and Steve pod list/get flows
-- generic action/link coverage implemented:
-  Norman generic action invoke and link follow
-  Steve generic action invoke and link follow
-  management-plane follow-up for Steve `view`-style links outside the Steve root
-- discovery and generic resource tools split into logically scoped modules with thin facades instead of growing monoliths
-- live Rancher `2.6.5` validation completed for Norman cluster action/link flows and Steve pod link-follow flows
-- `make lint`, `make typecheck`, and `make test` passing for the current generic action/link slice
-- typed generic query controls implemented for Norman and Steve list tools:
-  Norman `limit`, `marker`, `sort_by`, `reverse`, and `filters_json`
-  Steve `limit`, `continue_token`, `label_selector`, and `field_selector`
-- generic list results now expose the applied query params sent to Rancher
-- Steve pagination normalization now derives `continue_token` from `pagination.next` URLs when Rancher omits
-  `pagination.continue`
-- live Rancher `2.6.5` validation completed for Norman filter/sort/marker flows and Steve selector/continue flows
-- `make lint`, `make typecheck`, and `make test` passing for the current generic query-controls slice
-- repo-local fixture capture tooling implemented outside the shipped MCP package:
-  `devtools/contract_fixtures.py`
-  `scripts/capture_contract_fixtures.py`
-  `make capture-fixtures`
-- sanitized live Rancher `2.6.5` contract fixtures committed under `tests/fixtures/rancher_2_6_5`
-- raw live capture output written under `.lab/contract-fixtures/raw` and kept out of git
-- unit coverage added for fixture sanitization, fixture capture writing, and committed-fixture hygiene checks
-- `make typecheck` expanded to cover `src/`, `devtools/`, and `scripts/`
-- `make lint`, `make typecheck`, and `make test` passing for the current contract-fixture slice
-- Phase 2 streaming substrate implemented:
-  async HTTP text-line capture
-  async HTTP JSON-event capture for watch flows
-  async WebSocket capture with Kubernetes channel decoding for exec-style endpoints
-- live Rancher `2.6.5` validation completed for:
-  pod log streaming
-  pod exec via WebSocket subprotocol negotiation
-  pod watch events through the Rancher Kubernetes proxy
-- repo-local devlab CLI moved out of `src/rancher_mcp` into `devtools/` so lab workflows do not ship in the MCP package
-- `make lint`, `make typecheck`, and `make test` passing for the current streaming-client slice
-- first generic watch tool implemented:
-  `rancher_steve_resource_watch`
-- Steve watch paths now derive from Steve schema `group`/`version`/`resource` metadata and execute through the
-  Rancher Kubernetes proxy instead of assuming Steve `/v1/...` watch semantics
-- live Rancher `2.6.5` validation completed for the public generic Steve watch tool against downstream pod events
-- `make lint`, `make typecheck`, and `make test` passing for the current generic watch slice
-- first curated read-only pack implemented:
-  `rancher_settings_list`
-  `rancher_setting_get`
-  `rancher_features_list`
-  `rancher_feature_get`
-- live Rancher `2.6.5` validation completed for curated settings and feature reads against the management plane
-- `make lint`, `make typecheck`, and `make test` passing for the current curated settings/features slice
-- collaborative brainstorming document created at repo root:
-  `CONVENIENCE_TOOLS_BRAINSTORM.md`
-- second curated read-only pack implemented:
-  `rancher_clusters_list`
-  `rancher_cluster_get`
-  `rancher_nodes_list`
-  `rancher_node_get`
-- live Rancher `2.6.5` validation completed for curated cluster and node reads against the management plane
-- `make lint`, `make typecheck`, and `make test` passing for the current curated clusters/nodes slice
-- third curated read-only pack implemented:
-  `rancher_pods_list`
-  `rancher_pod_get`
-  `rancher_services_list`
-  `rancher_service_get`
-- live Rancher `2.6.5` validation completed for curated pod and service reads against the downstream
-  cluster proxy surface
-- `make lint`, `make typecheck`, and `make test` passing for the current curated pods/services slice
-- fourth curated read-only pack implemented:
-  `rancher_projects_list`
-  `rancher_project_get`
-  `rancher_namespaces_list`
-  `rancher_namespace_get`
-- live Rancher `2.6.5` validation completed for curated project reads against Norman and curated
-  namespace reads against the downstream Steve proxy surface
-- `make lint`, `make typecheck`, and `make test` passing for the current curated projects/namespaces
-  slice
-- fifth curated read-only pack implemented:
-  `rancher_storage_classes_list`
-  `rancher_storage_class_get`
-  `rancher_persistent_volumes_list`
-  `rancher_persistent_volume_get`
-  `rancher_persistent_volume_claims_list`
-  `rancher_persistent_volume_claim_get`
-- live Rancher `2.6.5` validation completed for curated storage reads against the downstream raw
-  Kubernetes proxy surface
-- repo-local downstream storage validation fixture added under `devtools/manifests/` so the lab has a
-  real bound PVC/PV pair for ongoing development
-- `make lint`, `make typecheck`, and `make test` passing for the current curated storage slice
-- sixth curated read-only pack implemented:
-  `rancher_pod_disruption_budgets_list`
-  `rancher_pod_disruption_budget_get`
-- live Rancher `2.6.5` validation completed for curated pod disruption budget reads against the downstream
-  raw Kubernetes proxy surface
-- repo-local downstream validation fixture now also seeds a real PDB for ongoing maintenance-tool
-  development
-- `make lint`, `make typecheck`, and `make test` passing for the current curated disruption slice
-- seventh curated read-only pack implemented:
-  `rancher_deployments_list`
-  `rancher_deployment_get`
-  `rancher_daemonsets_list`
-  `rancher_daemonset_get`
-  `rancher_statefulsets_list`
-  `rancher_statefulset_get`
-- live Rancher `2.6.5` validation completed for curated deployment and daemonset reads against the downstream
-  raw Kubernetes proxy surface, plus curated statefulset list validation against the currently empty live
-  downstream collection
-- `make lint`, `make typecheck`, and `make test` passing for the current curated workload-controller slice
-- repo policy hydrated from the current `vibe-code` defaults and promoted into executable repo validation
-- repo-local architecture gate implemented:
+- Work the oldest incomplete canonical phase first.
+- Completed work from later phases stays committed; do not delete it merely because an earlier phase is still open.
+- If the working tree already contains in-flight later-phase work, land that slice cleanly before starting anything new.
+- Do not start net-new Phase 5+ scope until Phases 3 and 4 are actually closed.
+- Update this file and `CHANGELOG.md` at every logical step so future agents can resume without reconstructing state from git history.
+
+## Repo Snapshot
+
+- Canonical plan: `PERFECT_RANCHER_MCP_IMPLEMENTATION_PLAN.md`
+- Primary compatibility target: Rancher `2.6.5`
+- Public tool surface: 92 tools
+- Completion gate: `make check-if-the-agent-can-consider-this-task-completed`
+- Active quality gates:
   `make check-architecture`
-  `devtools/architecture_check.py`
-  `scripts/check_architecture.py`
-- oversized service and tool modules split into package directories with thin facades for:
-  `services/resources`
-  `tools/clusters_nodes`
-  `tools/pods_services`
-  `tools/projects_namespaces`
-  `tools/storage`
-  `tools/workloads`
-- existing `discovery_schema` and `settings_features` package splits normalized to the same package-internal
-  typing pattern used by the architecture-hardening slice
-- `make lint`, `make typecheck`, `make test`, and `make check-architecture` passing after the architecture-hardening slice
-- architecture-hardening follow-up completed:
-  remaining soft-limit warnings burned down across the streaming client, generic resource builders,
-  generic Norman/Steve list-get handlers, Steve resource action/link handlers, curated disruption helpers,
-  and shared typed-normalization modules
-- shared typed-normalization support modules added for reusable values, conditions, and list-item extraction
-- `make check-architecture` now passes with no remaining soft-limit or hard-limit violations
-- review-fix hardening slice completed across the current curated-tool substrate:
-  private helper modules renamed from `_support` to public `support`
-  private-usage pyright suppressions removed from the codebase
-  alias-aware `RancherModel` base added so direct camelCase and nested alias-path parsing can happen at the model boundary
-  settings/features, storage, and disruption models now consume more raw Rancher/Kubernetes payload structure directly
-  low-value manual normalization in settings/features, storage, and disruption helpers reduced in favor of `model_validate`
-  transient retry policy added for Rancher management and streaming transport failures
-  curated-tool and boundary tests expanded for alias parsing, retry behavior, empty collections, and computed filter paths
-- `make lint`, `make typecheck`, `make test`, and `make check-architecture` passing after the review-fix hardening slice
-- alias-expansion follow-up completed across the remaining curated read domains:
-  clusters/nodes, pods/services, projects/namespaces, and workloads now map direct and nested Rancher/Kubernetes
-  payload fields through Pydantic aliases and alias paths at the model boundary
-  the remaining shared normalizers in those domains were reduced to computed fields only, with detail builders now
-  centered on `model_validate(...)` plus explicit derived updates
-  workload models were split from one file into a package so the alias cleanup preserved the architecture gate
-  focused alias tests were expanded for cluster, node, pod, service, namespace, and workload detail parsing
-- `make lint`, `make typecheck`, `make test`, and `make check-architecture` passing after the alias-expansion follow-up slice
-- curated-tool edge/error coverage hardening completed for the current Phase 4 packs:
-  empty collections now have direct coverage across clusters, services, projects, deployments, and statefulsets
-  computed post-parse filters now have direct coverage across nodes, pods, namespaces, and daemonsets
-  workload readiness edge cases now have direct curated-tool tests instead of relying only on happy-path assertions
-- `make lint`, `make typecheck`, `make test`, and `make check-architecture` passing after the curated coverage-hardening slice
-- next Phase 4 apps/catalogs slice completed:
-  `rancher_catalogs_list`
-  `rancher_catalog_get`
-  `rancher_templates_list`
-  `rancher_template_get`
-  `rancher_template_versions_list`
-  `rancher_template_version_get`
-- live Rancher `2.6.5` validation completed for the apps/catalogs slice against Norman resources:
-  catalogs list/get via `/v3/catalogs`
-  templates list/get via `/v3/templates`
-  template versions list/get via `/v3/templateversions`
-- `make lint`, `make typecheck`, `make test`, and `make check-architecture` passing after the curated apps/catalogs slice
-- next Phase 4 auth/identity slice completed:
-  `rancher_users_list`
-  `rancher_user_get`
-  `rancher_groups_list`
-  `rancher_group_get`
-  `rancher_auth_configs_list`
-  `rancher_auth_config_get`
-- live Rancher `2.6.5` validation completed for the auth/identity slice against Norman resources:
-  users list/get via `/v3/users`
-  groups list via `/v3/groups`
-  auth configs list/get via `/v3/authconfigs`
-- live Rancher `2.6.5` auth/identity notes captured:
-  `user.conditions` can be `null` instead of a list, so the curated user detail model normalizes null to `[]`
-  the lab currently exposes zero groups, so `group_get` remains unit-validated while list behavior is live-validated
-- `make lint`, `make typecheck`, `make test`, and `make check-architecture` passing after the curated auth/identity slice
-- next Phase 4 RBAC slice completed:
-  `rancher_global_roles_list`
-  `rancher_global_role_get`
-  `rancher_role_templates_list`
-  `rancher_role_template_get`
-  `rancher_global_role_bindings_list`
-  `rancher_global_role_binding_get`
-  `rancher_cluster_role_template_bindings_list`
-  `rancher_cluster_role_template_binding_get`
-  `rancher_project_role_template_bindings_list`
-  `rancher_project_role_template_binding_get`
-- live Rancher `2.6.5` validation completed for the RBAC slice against Norman resources:
-  global roles list/get via `/v3/globalroles`
-  role templates list/get via `/v3/roletemplates`
-  global role bindings list/get via `/v3/globalrolebindings`
-  cluster role-template bindings list via `/v3/clusterroletemplatebindings`
-  project role-template bindings list via `/v3/projectroletemplatebindings`
-- live Rancher `2.6.5` RBAC notes captured:
-  the lab exposes populated `globalRole`, `roleTemplate`, and `globalRoleBinding` collections
-  the lab currently exposes empty `clusterRoleTemplateBinding` and `projectRoleTemplateBinding` collections, so
-  those list paths are live-validated while detail behavior remains unit-validated
-  role-template detail payloads may legitimately have empty `rules`, so the curated detail surface reports
-  explicit `rule_count` instead of assuming role templates always inline Kubernetes policy rules
-- `make lint`, `make typecheck`, `make test`, and `make check-architecture` passing after the curated RBAC slice
-- next Phase 4 Fleet/registration slice completed:
-  `rancher_fleet_workspaces_list`
-  `rancher_fleet_workspace_get`
-  `rancher_cluster_registration_tokens_list`
-  `rancher_cluster_registration_token_get`
-- live Rancher `2.6.5` validation completed for the Fleet/registration slice against Norman resources:
-  Fleet workspaces list/get via `/v3/fleetworkspaces`
-  cluster registration tokens list/get via `/v3/clusterregistrationtokens`
-- live Rancher `2.6.5` Fleet/registration notes captured:
-  the management cluster currently exposes two Fleet workspaces and a sparse workspace `status` object that only
-  reports a schema `type`, so the curated detail surface exposes stable `status_keys` instead of pretending the
-  lab always has richer Fleet status data
-  cluster registration token detail payloads expose manifest URLs plus secure and insecure registration commands,
-  so the curated detail surface keeps those onboarding commands directly available
-- `make lint`, `make typecheck`, `make test`, and `make check-architecture` passing after the curated
-  Fleet/registration slice
-- next Phase 4 logging/backup slice completed:
-  `rancher_cluster_loggings_list`
-  `rancher_cluster_logging_get`
-  `rancher_project_loggings_list`
-  `rancher_project_logging_get`
-  `rancher_etcd_backups_list`
-  `rancher_etcd_backup_get`
-- live Rancher `2.6.5` validation completed for the logging/backup slice against Norman resources:
-  cluster loggings list via `/v3/clusterloggings`
-  project loggings list via `/v3/projectloggings`
-  etcd backups list via `/v3/etcdbackups`
-- live Rancher `2.6.5` logging/backup notes captured:
-  the local lab exposes the cluster logging, project logging, and etcd backup collections but they are currently
-  empty, so list paths are live-validated while detail behavior remains unit-validated
-  the curated logging detail surfaces expose derived `target_types` and `status_keys` so callers can quickly see
-  which logging backend is configured when data is present
-- `make lint`, `make typecheck`, `make test`, and `make check-architecture` passing after the curated
-  logging/backup slice
+  `make lint`
+  `make typecheck`
+  `make test`
 
-## In Progress
+## Architecture Gate Semantics
 
-- resume Phase 4 outward now that the logging/backup slice is complete
+- Soft `max_lines_per_file.soft` findings are warnings to track.
+- Hard `max_lines_per_file.hard` findings fail the architecture gate.
+- `max_public_functions_per_module` findings fail the architecture gate.
+- A warnings-only architecture run is valid for commit and completion if the rest of the required gates pass.
 
-## Next Steps
+## Phase Tracker
 
-1. Resume Phase 4 outward into the next remaining high-value curated read packs, with monitoring,
-   alerts, and diagnostics surfaces next depending on what the live Rancher `2.6.5` lab actually exposes
-2. Keep opportunistically expanding curated-tool edge and error-path coverage as new packs land so the
-   current "happy-path-heavy" test posture continues to improve instead of regressing
-3. Start shaping the first operational aggregate helpers on top of the now-live
-   cluster/node/pod/service/workload substrate
-4. Expand additional generic watch coverage only where the live Rancher `2.6.5` surface proves stable
-5. Continue using aliases instead of helper extraction wherever a field does not require truly computed normalization
+| Phase | Status | Repo Reality | Remaining To Close |
+| --- | --- | --- | --- |
+| 0. Product and capability definition | completed | `VIBE.yaml`, canonical plan, and capability catalog are committed. | none |
+| 1. Project scaffold | completed | `uv`, docs, Makefile, config, hooks, and baseline repo structure are in place. | none |
+| 2. Core client and discovery layer | completed | management client, Steve client, discovery/schema tools, streaming substrate, and live `2.6.5` devlab are landed. | none |
+| 3. Generic tool engine | in_progress | generic Norman/Steve list/get, action/link, query controls, watch support, and contract fixtures are landed. | generic create/apply/patch/delete parity and any remaining generic mutation coverage |
+| 4. Curated read-only packs | in_progress | settings/features, clusters/nodes, projects/namespaces, pods/services, storage, disruption, workloads, apps/catalogs, auth/identity, RBAC, Fleet/registration, logging/backup, and ops aggregate helpers are landed. | monitoring, alerts, compliance, diagnostics, and any remaining read-only packs plus live validation for new helpers |
+| 5. Curated safe write packs | pending | not started intentionally. | blocked on Phases 3 and 4 closing |
+| 6. Curated high-risk and destructive packs | pending | not started intentionally. | blocked on Phases 3, 4, and 5 closing |
+| 7. Subsystem completeness | pending | only the Phase 4 read slices that touch Fleet/logging/backup are landed so far. | Longhorn, deeper monitoring/logging/compliance, backup operator, extensions |
+| 8. Live validation and contract capture | partially_completed | local Rancher `2.6.5` lab is working and sanitized contract fixtures are committed. | broaden live validation across the remaining packs and capture a compatibility matrix |
+| 9. Hardening | partially_completed | retries, stderr logging, strict typing, test coverage gates, and architecture checks are landed. | audit logging, write confirmations, rate limiting, and remaining production hardening |
+| 10. Catalog completion and gap closure | pending | no explicit coverage report exists yet. | compare curated coverage to live-discovered capability surface and publish the gap report |
 
-## Notes
+## Landed Curated Packs
 
-- Primary compatibility target is Rancher `2.6.5`
-- RK-API/OpenAPI from later versions is reference material, not the primary contract
-- The local lab matches the real management-plane Kubernetes version exactly
-- The downstream local lab matches Kubernetes `v1.23.17` exactly but is still `kind`, not true RKE2
-- Rancher registration in this local topology needed a declarative convergence loop because Rancher `2.6.5`
-  re-mutates the downstream agent after initial import
-- Steve list pagination in Rancher `2.6.5` may surface continuation only through `pagination.next` URLs, so
-  the generic layer normalizes both URL-derived and explicit `continue` tokens
-- Lab-only and test-only fixture tooling lives outside `src/rancher_mcp` so the shipped MCP package does not
-  gain runtime entanglement from devlab capture workflows
-- The repo-local Rancher port-forward can restart after heavy stream activity; live watch validation is reliable
-  when opened on a fresh connection after the supervisor restabilizes the forwarder
-- Steve schema metadata is rich enough to derive raw Rancher Kubernetes-proxy watch paths without hardcoding
-  `/api` group/version/resource layout per resource type
-- Curated pod and service reads are intentionally namespaced and typed rather than trying to hide Kubernetes
-  scoping rules behind lossy global shortcuts
-- Curated project reads and curated namespace reads intentionally span Norman and Steve rather than forcing
-  those concepts into a single API plane that Rancher itself does not use
-- Curated storage reads intentionally use the raw Rancher Kubernetes proxy through the management client
-  because Steve `storageclass` collection paths return `500` on the live Rancher `2.6.5` lab while the
-  raw `/apis/storage.k8s.io/v1/...` paths succeed
-- Curated pod disruption budget reads intentionally use the raw Rancher Kubernetes proxy through the
-  management client because Steve `poddisruptionbudgets` collection paths return `500` on the live
-  Rancher `2.6.5` lab while the raw `/apis/policy/v1/...` paths succeed
-- Curated workload-controller reads intentionally use the raw Rancher Kubernetes proxy through the
-  management client because Steve `deployment`, `daemonset`, and `statefulset` collection paths return
-  `500` on the live Rancher `2.6.5` lab while the raw `/apis/apps/v1/...` paths succeed
-- The convenience-tool brainstorm document is intentionally separate from the canonical implementation plan so
-  rough ideas can accumulate without causing scope drift in the build sequence
-- The architecture gate is currently clean on both hard and soft limits; future slices should preserve that
-  posture instead of allowing new refactor pressure to accumulate
-- The current alias-expansion follow-up reduced the remaining helper-call-heavy curated domains to computed-only
-  normalization, cutting the broad helper-call count in `src/rancher_mcp` down to `93`
-- The shared curated normalizers for clusters/nodes, pods/services, projects/namespaces, and workloads now sit at
-  `164`, `92`, `193`, and `163` lines respectively, keeping the architecture gate clean after the alias cleanup
-- The curated-tool review feedback about thin happy-path-only coverage has been materially reduced, but new packs
-  should continue landing with empty-collection and computed-filter coverage as a baseline instead of as a cleanup
-- Curated app catalog reads are intentionally built on Norman `catalog`, `template`, and `templateVersion`
-  resources because those are the live `2.6.5` management-plane resources with real data in the lab; there is no
-  simple `/v3/apps` root collection exposed on this instance
-- On the live Rancher `2.6.5` lab, `templates?catalogId=...` works but `templates?category=...` appears to return
-  zero results despite the schema advertising `category` as a collection filter, so category filtering should be
-  treated as schema-advertised but runtime-questionable until broader validation says otherwise
-- On the live Rancher `2.6.5` lab, template-version detail exposes `files` as a filename-to-content map while the
-  collection view exposes `files` as a filename list, so the curated tool surface normalizes that to stable
-  `file_names` plus `file_count`
+- Phase 4 server/platform: settings, features
+- Phase 4 inventory: clusters, nodes, projects, namespaces
+- Phase 4 workload substrate: pods, services, deployments, daemonsets, statefulsets
+- Phase 4 storage/disruption: storage classes, PVs, PVCs, pod disruption budgets
+- Phase 4 platform integrations: apps/catalogs, auth/identity, RBAC, Fleet/registration, logging/backup
+- Phase 4 operational summaries: cluster health, node summaries, failure finders, namespace/project rollups
+
+## Current Risks And Constraints
+
+- The oldest incomplete phase is still Phase 3, so future net-new feature work should close generic mutation coverage before starting safe writes or destructive flows.
+- Some landed Phase 4 domains are live-validated only against empty lab collections; keep that distinction explicit in docs and changelog entries.
+- The downstream devlab remains `kind`, not true RKE2, so live validation claims must stay precise about what was actually exercised.
+- Steve list pagination and some Steve collection paths in Rancher `2.6.5` remain quirky; prefer the already-established Norman/raw-proxy paths that are known-good in this repo.
+
+## Next Queue
+
+1. Close Phase 3 by adding the missing generic create/apply/patch/delete fallback tools and their validation.
+2. Finish Phase 4 with the remaining monitoring, alerting, compliance, and diagnostics read packs.
+3. Expand live validation coverage for the newer Phase 4 helper surfaces and record the results explicitly.
+4. Start Phase 5 only after Phases 3 and 4 are fully closed and committed.

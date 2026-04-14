@@ -1,5 +1,43 @@
 # Changelog
 
+## [2026-04-14] - Agent: OpenAI Codex
+### Added
+- Curated operational aggregate helpers:
+  `rancher_cluster_health_check`
+  `rancher_clusters_health_summary`
+  `rancher_cluster_nodes_summary`
+  `rancher_find_failing_pods`
+  `rancher_find_unready_nodes`
+  `rancher_find_stalled_rollouts`
+  `rancher_find_services_without_endpoints`
+  `rancher_find_unbound_pvcs`
+  `rancher_find_pdbs_blocking`
+  `rancher_namespace_workloads_summary`
+  `rancher_project_health_summary`
+- Typed ops output models and direct unit coverage for the new operational helper pack
+- Subfolder agent guidance for:
+  `src/rancher_mcp/models/ops`
+  `src/rancher_mcp/tools/ops`
+
+### Changed
+- Reworked `TASK_STATE.md` into a phase-oriented resume file so future agents track the oldest incomplete phase,
+  current repo reality, and the remaining work to close each phase
+- Clarified repo agent guidance so completed later-phase work is landed cleanly rather than deleted on principle
+- Tightened the architecture-check report so soft line-limit findings render as warnings while hard-limit and
+  error-level findings still fail the gate
+- Updated the README to reflect the current 92-tool public surface and the repo's actual validation semantics
+- Corrected the new ops helper behavior so fleet summaries include real node rollups, project summaries count all
+  workload-controller families, and selector-based NodePort services are still treated as endpoint-bearing services
+
+### Verified
+- `make validate` passes
+- `make check-architecture` passes with warnings only:
+  `src/rancher_mcp/tools/ops/cluster_health.py`
+  `src/rancher_mcp/tools/ops/rollups.py`
+- `make lint` passes
+- `make typecheck` passes
+- `make test` passes with `176 passed` and `90.12%` coverage
+
 ## [2026-03-29] - Agent: OpenAI Codex
 ### Added
 - Curated logging and backup tools:

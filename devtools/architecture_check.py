@@ -29,10 +29,22 @@ class ArchitectureReport:
     violations: tuple[ArchitectureViolation, ...]
 
     @property
+    def error_count(self) -> int:
+        """Return the number of error-severity violations."""
+
+        return sum(1 for violation in self.violations if violation.severity == "error")
+
+    @property
+    def warning_count(self) -> int:
+        """Return the number of warning-severity violations."""
+
+        return sum(1 for violation in self.violations if violation.severity == "warning")
+
+    @property
     def has_failures(self) -> bool:
         """Return whether the report contains any architecture failures."""
 
-        return any(violation.severity == "error" for violation in self.violations)
+        return self.error_count > 0
 
 
 def load_vibe_policy(repo_root: Path) -> dict[str, Any]:
@@ -139,10 +151,14 @@ def render_report(report: ArchitectureReport) -> str:
 
     lines = [f"checked_files={report.checked_files}"]
     if not report.violations:
+        lines.append("warning_count=0")
+        lines.append("error_count=0")
         lines.append("status=ok")
         return "\n".join(lines)
 
-    lines.append("status=violations")
+    lines.append(f"warning_count={report.warning_count}")
+    lines.append(f"error_count={report.error_count}")
+    lines.append("status=failures" if report.has_failures else "status=warnings")
     for violation in report.violations:
         lines.append(
             f"{violation.severity}: {violation.path} {violation.rule} actual={violation.actual} "

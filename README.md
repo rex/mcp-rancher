@@ -15,6 +15,8 @@ A comprehensive [Model Context Protocol](https://modelcontextprotocol.io) server
 
 **Primary compatibility target:** Rancher `2.6.5` (later versions supported via capability detection)
 
+**Current public surface:** 92 tools across discovery, generic fallbacks, curated reads, and operational summaries.
+
 ## Features
 
 ### Discovery & Introspection
@@ -23,11 +25,11 @@ A comprehensive [Model Context Protocol](https://modelcontextprotocol.io) server
 - **Capability catalog** — machine-readable inventory of supported domains and resources
 - **Multi-instance awareness** — discover and switch between multiple Rancher instances
 
-### Cluster & Node Operations
-- **Cluster health** — list clusters with state, conditions, Kubernetes version, node count, and capacity
-- **Cluster detail** — component statuses, provider, driver, full condition set, API endpoint
-- **Node inventory** — roles, conditions, resource pressure flags, taints, labels, allocatable vs capacity
-- **Node detail** — scheduling state, IPs, pod CIDR, Kubernetes version per node
+### Cluster, Project, and Namespace Reads
+- **Cluster inventory** — state, conditions, Kubernetes version, node count, capacity, and provider metadata
+- **Node detail** — scheduling state, roles, IPs, pod CIDR, allocatable vs capacity, and conditions
+- **Projects and namespaces** — project assignment, monitoring/PSP signals, cattle conditions, labels, and finalizers
+- **Typed summaries** — deterministic shaped responses instead of raw Rancher payload spelunking
 
 ### Workload Management
 - **Deployments** — list and inspect with replica counts, rollout status, strategy, revision, readiness
@@ -35,30 +37,27 @@ A comprehensive [Model Context Protocol](https://modelcontextprotocol.io) server
 - **DaemonSets** — scheduling counts, rollout progress, node coverage
 - **Container detail** — images, resource requests/limits, conditions per workload
 
-### Pod & Service Visibility
+### Pod, Service, Storage, and Disruption Visibility
 - **Pod inventory** — phase, readiness, restart counts, QoS class, owner references, node placement
 - **Pod detail** — init containers, volume mounts, service account, conditions, events
 - **Service discovery** — type, selector, ports, cluster IP, session affinity, traffic policy
-
-### Storage
 - **PersistentVolumeClaims** — status, capacity, storage class, bound volume, access modes
 - **PersistentVolumes** — phase, reclaim policy, capacity, volume source, node affinity
 - **StorageClasses** — provisioner, parameters, default class, volume expansion support
+- **PodDisruptionBudgets** — min/max disruption policy, healthy counts, and disruption allowance
 
-### Projects, Namespaces & RBAC
-- **Projects** — Rancher project inventory with monitoring, PSP, and condition status
-- **Namespaces** — phase, project assignment, Rancher-specific conditions, finalizers
-- **Namespace detail** — labels, annotations, cattle conditions from embedded status
-
-### Rancher Platform
+### Rancher Platform, Identity, and Access
 - **Settings** — list and inspect all Rancher settings with default/custom/source tracking
 - **Feature flags** — enabled/disabled state, dynamic toggle capability, transitioning status
-- **Server health** — management server healthz check
-- **Server version** — Rancher version metadata
+- **Auth and identity** — users, groups, and auth config inspection
+- **RBAC** — global roles, role templates, and scoped role-template bindings
+- **Fleet and registration** — Fleet workspaces plus cluster-registration token onboarding detail
+- **Logging and backup** — cluster/project logging resources and etcd backup visibility
 
-### Pod Disruption Budgets
-- **PDB inventory** — min available, max unavailable, disruptions allowed, selector labels
-- **PDB detail** — current/expected/desired healthy counts, observed generation, conditions
+### Operational Aggregate Helpers
+- **Cluster health rollups** — one-call cluster diagnosis plus fleet-wide cluster summaries
+- **Failure finders** — unready nodes, failing pods, stalled rollouts, services without endpoints, unbound PVCs, and PDB blockers
+- **Namespace and project rollups** — summarize pod health plus deployment/daemonset/statefulset readiness in one response
 
 ### Generic Resource Access
 - **Norman list/get** — query any Norman (`/v3`) resource by schema ID with filters, sorting, pagination
@@ -159,46 +158,6 @@ Add to your Claude Desktop `claude_desktop_config.json`:
 | `rancher_steve_schema_list` | Steve API schema inventory |
 | `rancher_steve_schema_get` | Steve schema detail with fields and actions |
 
-### Curated Resources (28 tools)
-
-| Tool | Description |
-|------|-------------|
-| `rancher_clusters_list` | List clusters with health, version, capacity |
-| `rancher_cluster_get` | Cluster detail with conditions, components, endpoint |
-| `rancher_nodes_list` | List nodes with roles, conditions, scheduling state |
-| `rancher_node_get` | Node detail with capacity, allocatable, taints |
-| `rancher_pods_list` | List pods with phase, readiness, restarts |
-| `rancher_pod_get` | Pod detail with containers, volumes, conditions |
-| `rancher_services_list` | List services with type, ports, selector |
-| `rancher_service_get` | Service detail with traffic policy, session affinity |
-| `rancher_deployments_list` | List deployments with replicas, rollout status |
-| `rancher_deployment_get` | Deployment detail with strategy, revision, conditions |
-| `rancher_daemonsets_list` | List daemonsets with scheduling and readiness |
-| `rancher_daemonset_get` | DaemonSet detail with update strategy, conditions |
-| `rancher_statefulsets_list` | List statefulsets with replicas, update strategy |
-| `rancher_statefulset_get` | StatefulSet detail with revisions, conditions |
-| `rancher_persistent_volume_claims_list` | List PVCs with status, capacity, storage class |
-| `rancher_persistent_volume_claim_get` | PVC detail with bound volume, finalizers |
-| `rancher_persistent_volumes_list` | List PVs with phase, capacity, reclaim policy |
-| `rancher_persistent_volume_get` | PV detail with volume source, node affinity |
-| `rancher_storage_classes_list` | List storage classes with provisioner, defaults |
-| `rancher_storage_class_get` | StorageClass detail with parameters, mount options |
-| `rancher_projects_list` | List Rancher projects with monitoring, PSP status |
-| `rancher_project_get` | Project detail with conditions, actions, links |
-| `rancher_namespaces_list` | List namespaces with project assignment, state |
-| `rancher_namespace_get` | Namespace detail with labels, cattle conditions |
-| `rancher_settings_list` | List Rancher settings with default/custom tracking |
-| `rancher_setting_get` | Setting detail with full payload |
-| `rancher_features_list` | List feature flags with enabled/dynamic state |
-| `rancher_feature_get` | Feature detail with transitioning status |
-
-### Disruption (2 tools)
-
-| Tool | Description |
-|------|-------------|
-| `rancher_pod_disruption_budgets_list` | List PDBs with availability and disruption counts |
-| `rancher_pod_disruption_budget_get` | PDB detail with conditions and health metrics |
-
 ### Generic Resource Access (9 tools)
 
 | Tool | Description |
@@ -213,6 +172,139 @@ Add to your Claude Desktop `claude_desktop_config.json`:
 | `rancher_steve_resource_link_follow` | Follow a link on a Steve resource |
 | `rancher_steve_resource_watch` | Stream real-time watch events for a Steve resource |
 
+### Rancher Platform (4 tools)
+
+| Tool | Description |
+|------|-------------|
+| `rancher_settings_list` | List Rancher settings with default/custom tracking |
+| `rancher_setting_get` | Get one Rancher setting with full payload detail |
+| `rancher_features_list` | List Rancher feature flags with enabled/dynamic state |
+| `rancher_feature_get` | Get one Rancher feature flag with transition detail |
+
+### Cluster and Node Reads (4 tools)
+
+| Tool | Description |
+|------|-------------|
+| `rancher_clusters_list` | List clusters with health, version, capacity |
+| `rancher_cluster_get` | Cluster detail with conditions, components, endpoint |
+| `rancher_nodes_list` | List nodes with roles, conditions, scheduling state |
+| `rancher_node_get` | Node detail with capacity, allocatable, taints |
+
+### Project and Namespace Reads (4 tools)
+
+| Tool | Description |
+|------|-------------|
+| `rancher_projects_list` | List Rancher projects with monitoring, PSP status |
+| `rancher_project_get` | Project detail with conditions, actions, and links |
+| `rancher_namespaces_list` | List namespaces with project assignment and state |
+| `rancher_namespace_get` | Namespace detail with labels and cattle conditions |
+
+### Pod and Service Reads (4 tools)
+
+| Tool | Description |
+|------|-------------|
+| `rancher_pods_list` | List pods with phase, readiness, restarts |
+| `rancher_pod_get` | Pod detail with containers, volumes, conditions |
+| `rancher_services_list` | List services with type, ports, selector |
+| `rancher_service_get` | Service detail with traffic policy, session affinity |
+
+### Workloads and Disruption (8 tools)
+
+| Tool | Description |
+|------|-------------|
+| `rancher_deployments_list` | List deployments with replicas, rollout status |
+| `rancher_deployment_get` | Deployment detail with strategy, revision, conditions |
+| `rancher_daemonsets_list` | List daemonsets with scheduling and readiness |
+| `rancher_daemonset_get` | DaemonSet detail with update strategy, conditions |
+| `rancher_statefulsets_list` | List statefulsets with replicas, update strategy |
+| `rancher_statefulset_get` | StatefulSet detail with revisions, conditions |
+| `rancher_pod_disruption_budgets_list` | List PDBs with availability and disruption counts |
+| `rancher_pod_disruption_budget_get` | PDB detail with conditions and health metrics |
+
+### Storage (6 tools)
+
+| Tool | Description |
+|------|-------------|
+| `rancher_persistent_volume_claims_list` | List PVCs with status, capacity, storage class |
+| `rancher_persistent_volume_claim_get` | PVC detail with bound volume, finalizers |
+| `rancher_persistent_volumes_list` | List PVs with phase, capacity, reclaim policy |
+| `rancher_persistent_volume_get` | PV detail with volume source, node affinity |
+| `rancher_storage_classes_list` | List storage classes with provisioner, defaults |
+| `rancher_storage_class_get` | StorageClass detail with parameters, mount options |
+
+### Apps and Catalogs (6 tools)
+
+| Tool | Description |
+|------|-------------|
+| `rancher_catalogs_list` | List Rancher app catalogs |
+| `rancher_catalog_get` | Get one Rancher app catalog |
+| `rancher_templates_list` | List Rancher templates |
+| `rancher_template_get` | Get one Rancher template |
+| `rancher_template_versions_list` | List Rancher template versions |
+| `rancher_template_version_get` | Get one Rancher template version |
+
+### Auth and Identity (6 tools)
+
+| Tool | Description |
+|------|-------------|
+| `rancher_users_list` | List Rancher users |
+| `rancher_user_get` | Get one Rancher user |
+| `rancher_groups_list` | List Rancher groups |
+| `rancher_group_get` | Get one Rancher group |
+| `rancher_auth_configs_list` | List Rancher auth configuration resources |
+| `rancher_auth_config_get` | Get one Rancher auth configuration resource |
+
+### RBAC (10 tools)
+
+| Tool | Description |
+|------|-------------|
+| `rancher_global_roles_list` | List Rancher global roles |
+| `rancher_global_role_get` | Get one Rancher global role |
+| `rancher_role_templates_list` | List Rancher role templates |
+| `rancher_role_template_get` | Get one Rancher role template |
+| `rancher_global_role_bindings_list` | List Rancher global role bindings |
+| `rancher_global_role_binding_get` | Get one Rancher global role binding |
+| `rancher_cluster_role_template_bindings_list` | List cluster role-template bindings |
+| `rancher_cluster_role_template_binding_get` | Get one cluster role-template binding |
+| `rancher_project_role_template_bindings_list` | List project role-template bindings |
+| `rancher_project_role_template_binding_get` | Get one project role-template binding |
+
+### Fleet and Registration (4 tools)
+
+| Tool | Description |
+|------|-------------|
+| `rancher_fleet_workspaces_list` | List Fleet workspaces |
+| `rancher_fleet_workspace_get` | Get one Fleet workspace |
+| `rancher_cluster_registration_tokens_list` | List cluster registration tokens |
+| `rancher_cluster_registration_token_get` | Get one cluster registration token |
+
+### Logging and Backup (6 tools)
+
+| Tool | Description |
+|------|-------------|
+| `rancher_cluster_loggings_list` | List Rancher cluster logging resources |
+| `rancher_cluster_logging_get` | Get one Rancher cluster logging resource |
+| `rancher_project_loggings_list` | List Rancher project logging resources |
+| `rancher_project_logging_get` | Get one Rancher project logging resource |
+| `rancher_etcd_backups_list` | List Rancher etcd backups |
+| `rancher_etcd_backup_get` | Get one Rancher etcd backup |
+
+### Operational Summaries and Finders (11 tools)
+
+| Tool | Description |
+|------|-------------|
+| `rancher_cluster_health_check` | Diagnose one cluster using state, conditions, components, and nodes |
+| `rancher_clusters_health_summary` | Summarize cluster health across all clusters in an instance |
+| `rancher_cluster_nodes_summary` | Roll up node readiness and schedulability for one cluster |
+| `rancher_find_failing_pods` | Find failed, pending, crash-looping, or not-ready pods in a namespace |
+| `rancher_find_unready_nodes` | Find unready or unschedulable nodes |
+| `rancher_find_stalled_rollouts` | Find deployments and statefulsets that are not converging |
+| `rancher_find_services_without_endpoints` | Find selector-based services without ready backing endpoints |
+| `rancher_find_unbound_pvcs` | Find PVCs that are not bound |
+| `rancher_find_pdbs_blocking` | Find PDBs currently blocking disruption |
+| `rancher_namespace_workloads_summary` | Summarize pod counts and workload readiness for one namespace |
+| `rancher_project_health_summary` | Summarize pod and workload health across a Rancher project |
+
 ## Architecture
 
 The server is built in three layers:
@@ -222,6 +314,8 @@ The server is built in three layers:
 3. **Curated tools** — typed, validated tools for common operational workflows with rich response models
 
 This layered approach means you can operate on any resource Rancher exposes, even if a curated tool hasn't been built for it yet.
+
+Repo-wide validation, architecture policy, and completion rules are defined in [VIBE.yaml](VIBE.yaml). Active implementation-phase tracking lives in [TASK_STATE.md](TASK_STATE.md).
 
 ## Development
 
@@ -239,7 +333,7 @@ make lab-up             # Start local Rancher 2.6.5 development lab
 make lab-down           # Stop the development lab
 make lab-status         # Check lab status
 make capture-fixtures   # Regenerate contract fixtures from running lab
-make check-architecture # Enforce module size and function count policies
+make check-architecture # Enforce hard architecture limits and report soft-limit warnings
 ```
 
 ### Local Development Lab

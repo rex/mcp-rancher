@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from devtools.architecture_check import check_architecture, count_public_functions
+from devtools.architecture_check import check_architecture, count_public_functions, render_report
 
 
 def build_policy() -> dict[str, object]:
@@ -83,3 +83,27 @@ def test_check_architecture_reports_soft_and_hard_and_public_function_violations
         "max_public_functions_per_module",
         "error",
     ) in violations
+    assert report.warning_count == 2
+    assert report.error_count == 2
+    assert report.has_failures is True
+
+
+def test_render_report_uses_warning_status_for_soft_limit_only(tmp_path: Path) -> None:
+    """Warnings alone should not be rendered as architecture failures."""
+
+    src_dir = tmp_path / "src" / "example"
+    src_dir.mkdir(parents=True)
+    (src_dir / "soft.py").write_text("a\nb\nc\nd\n", encoding="utf-8")
+
+    report = check_architecture(tmp_path, build_policy())
+
+    assert report.warning_count == 1
+    assert report.error_count == 0
+    assert report.has_failures is False
+    assert render_report(report).splitlines() == [
+        "checked_files=1",
+        "warning_count=1",
+        "error_count=0",
+        "status=warnings",
+        "warning: src/example/soft.py max_lines_per_file.soft actual=4 limit=3",
+    ]
