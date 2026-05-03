@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from typing import cast
 from urllib.parse import parse_qs, urlsplit
 
 from rancher_mcp.models.resources import ResourcePagination
@@ -46,3 +47,39 @@ def continue_token_from_url(value: str | None) -> str | None:
         return None
     token = candidates[0].strip()
     return token or None
+
+
+def next_page_token_from_payload(payload: object) -> str | None:
+    """Extract an opaque continuation token from a Norman or Steve collection payload.
+
+    Norman: reads the ``marker`` query param from ``pagination.next`` URL.
+    Steve:  reads ``metadata.continue`` directly.
+    Returns None when no next page exists.
+    """
+
+    mapping = mapping_value(payload)
+    if mapping is None:
+        return None
+
+    # Steve format: metadata.continue is a plain string token.
+    raw_metadata = mapping.get("metadata")
+    if isinstance(raw_metadata, dict):
+        metadata = cast(dict[str, object], raw_metadata)
+        steve_token = metadata.get("continue")
+        if isinstance(steve_token, str) and steve_token:
+            return steve_token
+
+    # Norman format: pagination.next is a URL containing marker=<value>.
+    raw_pagination = mapping.get("pagination")
+    if isinstance(raw_pagination, dict):
+        pagination = cast(dict[str, object], raw_pagination)
+        next_url = pagination.get("next")
+        if isinstance(next_url, str) and next_url:
+            parsed = urlsplit(next_url)
+            candidates = parse_qs(parsed.query).get("marker")
+            if candidates:
+                token = candidates[0].strip()
+                if token:
+                    return token
+
+    return None

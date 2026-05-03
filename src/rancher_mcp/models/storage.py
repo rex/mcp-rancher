@@ -52,6 +52,7 @@ class RancherStorageClassList(RancherModel):
     instance: str
     cluster_id: str
     storage_class_count: int
+    next_page_token: str | None = None
     applied_query_params: dict[str, str | int | bool] = Field(default_factory=dict)
     storage_classes: list[RancherStorageClassSummary] = Field(
         default_factory=_empty_storage_class_summaries
@@ -122,6 +123,7 @@ class RancherPersistentVolumeList(RancherModel):
     instance: str
     cluster_id: str
     volume_count: int
+    next_page_token: str | None = None
     applied_query_params: dict[str, str | int | bool] = Field(default_factory=dict)
     persistent_volumes: list[RancherPersistentVolumeSummary] = Field(
         default_factory=_empty_volume_summaries
@@ -193,6 +195,7 @@ class RancherPersistentVolumeClaimList(RancherModel):
     cluster_id: str
     namespace: str
     claim_count: int
+    next_page_token: str | None = None
     applied_query_params: dict[str, str | int | bool] = Field(default_factory=dict)
     persistent_volume_claims: list[RancherPersistentVolumeClaimSummary] = Field(
         default_factory=_empty_claim_summaries

@@ -47,12 +47,15 @@ def _build_cluster_query_params(
     state: str | None,
     sort_by: str | None,
     reverse: bool | None,
+    marker: str | None = None,
 ) -> dict[str, str | int | bool]:
     """Build typed query params for the Rancher clusters collection."""
 
     params: dict[str, str | int | bool] = {}
     if limit is not None:
         params["limit"] = limit
+    if marker is not None:
+        params["marker"] = marker
     if state is not None:
         params["state"] = state
     if sort_by is not None:
@@ -71,6 +74,7 @@ def _build_node_query_params(
     limit: int | None,
     sort_by: str | None,
     reverse: bool | None,
+    marker: str | None = None,
 ) -> dict[str, str | int | bool]:
     """Build typed query params for the Rancher nodes collection."""
 
@@ -89,6 +93,8 @@ def _build_node_query_params(
         params["unschedulable"] = unschedulable
     if limit is not None:
         params["limit"] = limit
+    if marker is not None:
+        params["marker"] = marker
     if sort_by is not None:
         params["sort"] = sort_by
     if reverse is not None:

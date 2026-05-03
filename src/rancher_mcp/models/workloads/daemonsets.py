@@ -99,5 +99,6 @@ class RancherDaemonSetList(RancherModel):
     cluster_id: str
     namespace: str
     daemonset_count: int
+    next_page_token: str | None = None
     applied_query_params: dict[str, str | int | bool] = Field(default_factory=dict)
     daemonsets: list[RancherDaemonSetSummary] = Field(default_factory=_empty_daemonset_summaries)

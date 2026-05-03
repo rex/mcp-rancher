@@ -6,6 +6,7 @@ from rancher_mcp.clients.management import ManagementDiscoveryClient, RancherMan
 from rancher_mcp.config import AppSettings, get_settings
 from rancher_mcp.models.clusters_nodes import RancherNodeDetail, RancherNodeList
 from rancher_mcp.services.instances import resolve_instance
+from rancher_mcp.services.resources.builders_pagination import next_page_token_from_payload
 from rancher_mcp.tools.clusters_nodes.shared import (
     build_node_query_params,
     data_items,
@@ -24,6 +25,7 @@ async def _fetch_nodes_list(
     sort_by: str | None,
     reverse: bool | None,
     client: ManagementDiscoveryClient,
+    page_token: str | None = None,
 ) -> RancherNodeList:
     """Fetch and normalize the Rancher nodes collection."""
 
@@ -35,12 +37,14 @@ async def _fetch_nodes_list(
         limit=limit,
         sort_by=sort_by,
         reverse=reverse,
+        marker=page_token,
     )
     payload = await client.get_json("/v3/nodes", params=query_params or None)
     nodes = [node_summary_from_payload(item) for item in data_items(payload)]
     return RancherNodeList(
         instance=instance_name,
         node_count=len(nodes),
+        next_page_token=next_page_token_from_payload(payload),
         applied_query_params=query_params,
         nodes=nodes,
     )
@@ -54,6 +58,7 @@ async def rancher_nodes_list(
     limit: int | None = None,
     sort_by: str | None = None,
     reverse: bool | None = None,
+    page_token: str | None = None,
     instance: str | None = None,
     settings: AppSettings | None = None,
     client: ManagementDiscoveryClient | None = None,
@@ -73,6 +78,7 @@ async def rancher_nodes_list(
             sort_by,
             reverse,
             client,
+            page_token,
         )
     async with RancherManagementClient(instance_name, instance_config) as managed_client:
         return await _fetch_nodes_list(
@@ -85,6 +91,7 @@ async def rancher_nodes_list(
             sort_by,
             reverse,
             managed_client,
+            page_token,
         )
 
 
@@ -133,6 +140,7 @@ async def rancher_nodes_list_tool(
     limit: int | None = None,
     sort_by: str | None = None,
     reverse: bool | None = None,
+    page_token: str | None = None,
     instance: str | None = None,
 ) -> RancherNodeList:
     """Public MCP wrapper for curated nodes list."""
@@ -145,6 +153,7 @@ async def rancher_nodes_list_tool(
         limit=limit,
         sort_by=sort_by,
         reverse=reverse,
+        page_token=page_token,
         instance=instance,
     )
 

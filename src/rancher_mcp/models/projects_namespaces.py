@@ -64,6 +64,7 @@ class RancherProjectList(RancherModel):
 
     instance: str
     project_count: int
+    next_page_token: str | None = None
     applied_query_params: dict[str, str | int | bool] = Field(default_factory=dict)
     projects: list[RancherProjectSummary] = Field(default_factory=_empty_project_summaries)
 
@@ -126,5 +127,6 @@ class RancherNamespaceList(RancherModel):
     instance: str
     cluster_id: str
     namespace_count: int
+    next_page_token: str | None = None
     applied_query_params: dict[str, str | int | bool] = Field(default_factory=dict)
     namespaces: list[RancherNamespaceSummary] = Field(default_factory=_empty_namespace_summaries)

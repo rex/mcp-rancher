@@ -20,12 +20,17 @@ from rancher_mcp.tools.support.values import (
 )
 
 
-def _build_list_query_params(*, limit: int | None) -> dict[str, str | int | bool]:
+def _build_list_query_params(
+    *, limit: int | None, continue_token: str | None = None
+) -> dict[str, str | int | bool]:
     """Build typed list query params for raw Kubernetes proxy list calls."""
 
-    if limit is None:
-        return {}
-    return {"limit": limit}
+    params: dict[str, str | int | bool] = {}
+    if limit is not None:
+        params["limit"] = limit
+    if continue_token is not None:
+        params["continue"] = continue_token
+    return params
 
 
 def _storage_class_summary_from_payload(

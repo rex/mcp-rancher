@@ -105,5 +105,6 @@ class RancherDeploymentList(RancherModel):
     cluster_id: str
     namespace: str
     deployment_count: int
+    next_page_token: str | None = None
     applied_query_params: dict[str, str | int | bool] = Field(default_factory=dict)
     deployments: list[RancherDeploymentSummary] = Field(default_factory=_empty_deployment_summaries)

@@ -7,6 +7,7 @@ from rancher_mcp.config import AppSettings, get_settings
 from rancher_mcp.models.workloads import RancherDeploymentDetail, RancherDeploymentList
 from rancher_mcp.services.instances import resolve_instance
 from rancher_mcp.services.resource_queries import build_steve_list_query_params
+from rancher_mcp.services.resources.builders_pagination import next_page_token_from_payload
 from rancher_mcp.tools.support.values import mapping_value, string_dict
 from rancher_mcp.tools.workloads.paths import workload_collection_path, workload_resource_path
 from rancher_mcp.tools.workloads.shared import (
@@ -24,11 +25,13 @@ async def _fetch_deployments_list(
     label_selector: str | None,
     field_selector: str | None,
     client: ManagementDiscoveryClient,
+    page_token: str | None = None,
 ) -> RancherDeploymentList:
     """Fetch and normalize deployments through Rancher's raw Kubernetes proxy."""
 
     query_params = build_steve_list_query_params(
         limit=limit,
+        continue_token=page_token,
         label_selector=label_selector,
         field_selector=field_selector,
     )
@@ -44,6 +47,7 @@ async def _fetch_deployments_list(
         cluster_id=cluster_id,
         namespace=namespace,
         deployment_count=len(deployments),
+        next_page_token=next_page_token_from_payload(payload),
         applied_query_params=query_params,
         deployments=deployments,
     )
@@ -56,6 +60,7 @@ async def rancher_deployments_list(
     limit: int | None = None,
     label_selector: str | None = None,
     field_selector: str | None = None,
+    page_token: str | None = None,
     instance: str | None = None,
     settings: AppSettings | None = None,
     client: ManagementDiscoveryClient | None = None,
@@ -74,6 +79,7 @@ async def rancher_deployments_list(
             label_selector,
             field_selector,
             client,
+            page_token,
         )
     async with RancherManagementClient(instance_name, instance_config) as managed_client:
         return await _fetch_deployments_list(
@@ -85,6 +91,7 @@ async def rancher_deployments_list(
             label_selector,
             field_selector,
             managed_client,
+            page_token,
         )
 
 
@@ -152,6 +159,7 @@ async def rancher_deployments_list_tool(
     limit: int | None = None,
     label_selector: str | None = None,
     field_selector: str | None = None,
+    page_token: str | None = None,
     instance: str | None = None,
 ) -> RancherDeploymentList:
     """Public MCP wrapper for curated deployment list."""
@@ -163,6 +171,7 @@ async def rancher_deployments_list_tool(
         limit=limit,
         label_selector=label_selector,
         field_selector=field_selector,
+        page_token=page_token,
         instance=instance,
     )
 

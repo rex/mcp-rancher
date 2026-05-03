@@ -7,6 +7,7 @@ from rancher_mcp.config import AppSettings, get_settings
 from rancher_mcp.models.pods_services import RancherServiceDetail, RancherServiceList
 from rancher_mcp.services.instances import resolve_instance
 from rancher_mcp.services.resource_queries import build_steve_list_query_params
+from rancher_mcp.services.resources.builders_pagination import next_page_token_from_payload
 from rancher_mcp.tools.pods_services.shared import (
     data_items,
     relationship_types,
@@ -22,10 +23,13 @@ async def _fetch_services_list(
     limit: int | None,
     label_selector: str | None,
     client: SteveDiscoveryClient,
+    page_token: str | None = None,
 ) -> RancherServiceList:
     """Fetch and normalize the services collection for one namespace."""
 
-    query_params = build_steve_list_query_params(limit=limit, label_selector=label_selector)
+    query_params = build_steve_list_query_params(
+        limit=limit, continue_token=page_token, label_selector=label_selector
+    )
     payload = await client.get_json(f"/services/{namespace}", params=query_params or None)
     services = [service_summary_from_payload(item) for item in data_items(payload)]
     return RancherServiceList(
@@ -33,6 +37,7 @@ async def _fetch_services_list(
         cluster_id=cluster_id,
         namespace=namespace,
         service_count=len(services),
+        next_page_token=next_page_token_from_payload(payload),
         applied_query_params=query_params,
         services=services,
     )
@@ -43,6 +48,7 @@ async def rancher_services_list(
     cluster_id: str = "local",
     limit: int | None = None,
     label_selector: str | None = None,
+    page_token: str | None = None,
     instance: str | None = None,
     settings: AppSettings | None = None,
     client: SteveDiscoveryClient | None = None,
@@ -59,6 +65,7 @@ async def rancher_services_list(
             limit,
             label_selector,
             client,
+            page_token,
         )
     async with RancherSteveClient(
         instance_name,
@@ -72,6 +79,7 @@ async def rancher_services_list(
             limit,
             label_selector,
             steve_client,
+            page_token,
         )
 
 
@@ -130,6 +138,7 @@ async def rancher_services_list_tool(
     cluster_id: str = "local",
     limit: int | None = None,
     label_selector: str | None = None,
+    page_token: str | None = None,
     instance: str | None = None,
 ) -> RancherServiceList:
     """Public MCP wrapper for curated service list."""
@@ -139,6 +148,7 @@ async def rancher_services_list_tool(
         cluster_id=cluster_id,
         limit=limit,
         label_selector=label_selector,
+        page_token=page_token,
         instance=instance,
     )
 

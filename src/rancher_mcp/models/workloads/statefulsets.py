@@ -107,6 +107,7 @@ class RancherStatefulSetList(RancherModel):
     cluster_id: str
     namespace: str
     statefulset_count: int
+    next_page_token: str | None = None
     applied_query_params: dict[str, str | int | bool] = Field(default_factory=dict)
     statefulsets: list[RancherStatefulSetSummary] = Field(
         default_factory=_empty_statefulset_summaries

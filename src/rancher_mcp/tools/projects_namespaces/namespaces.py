@@ -6,6 +6,7 @@ from rancher_mcp.clients.steve import RancherSteveClient, SteveDiscoveryClient
 from rancher_mcp.config import AppSettings, get_settings
 from rancher_mcp.models.projects_namespaces import RancherNamespaceDetail, RancherNamespaceList
 from rancher_mcp.services.instances import resolve_instance
+from rancher_mcp.services.resources.builders_pagination import next_page_token_from_payload
 from rancher_mcp.tools.projects_namespaces.shared import (
     build_namespace_query_params,
     data_items,
@@ -25,6 +26,7 @@ async def _fetch_namespaces_list(
     label_selector: str | None,
     field_selector: str | None,
     client: SteveDiscoveryClient,
+    page_token: str | None = None,
 ) -> RancherNamespaceList:
     """Fetch and normalize downstream namespaces."""
 
@@ -33,6 +35,7 @@ async def _fetch_namespaces_list(
         limit=limit,
         label_selector=label_selector,
         field_selector=field_selector,
+        continue_token=page_token,
     )
     payload = await client.get_json("/namespaces", params=query_params or None)
     namespaces = [namespace_summary_from_payload(cluster_id, item) for item in data_items(payload)]
@@ -42,6 +45,7 @@ async def _fetch_namespaces_list(
         instance=instance_name,
         cluster_id=cluster_id,
         namespace_count=len(namespaces),
+        next_page_token=next_page_token_from_payload(payload),
         applied_query_params=query_params,
         namespaces=namespaces,
     )
@@ -54,6 +58,7 @@ async def rancher_namespaces_list(
     limit: int | None = None,
     label_selector: str | None = None,
     field_selector: str | None = None,
+    page_token: str | None = None,
     instance: str | None = None,
     settings: AppSettings | None = None,
     client: SteveDiscoveryClient | None = None,
@@ -72,6 +77,7 @@ async def rancher_namespaces_list(
             label_selector,
             field_selector,
             client,
+            page_token,
         )
     async with RancherSteveClient(
         instance_name,
@@ -87,6 +93,7 @@ async def rancher_namespaces_list(
             label_selector,
             field_selector,
             steve_client,
+            page_token,
         )
 
 
@@ -145,6 +152,7 @@ async def rancher_namespaces_list_tool(
     limit: int | None = None,
     label_selector: str | None = None,
     field_selector: str | None = None,
+    page_token: str | None = None,
     instance: str | None = None,
 ) -> RancherNamespaceList:
     """Public MCP wrapper for curated namespace list."""
@@ -156,6 +164,7 @@ async def rancher_namespaces_list_tool(
         limit=limit,
         label_selector=label_selector,
         field_selector=field_selector,
+        page_token=page_token,
         instance=instance,
     )
 

@@ -6,6 +6,7 @@ from rancher_mcp.clients.management import ManagementDiscoveryClient, RancherMan
 from rancher_mcp.config import AppSettings, get_settings
 from rancher_mcp.models.projects_namespaces import RancherProjectDetail, RancherProjectList
 from rancher_mcp.services.instances import resolve_instance
+from rancher_mcp.services.resources.builders_pagination import next_page_token_from_payload
 from rancher_mcp.tools.projects_namespaces.shared import (
     build_project_query_params,
     data_items,
@@ -22,6 +23,7 @@ async def _fetch_projects_list(
     sort_by: str | None,
     reverse: bool | None,
     client: ManagementDiscoveryClient,
+    page_token: str | None = None,
 ) -> RancherProjectList:
     """Fetch and normalize the Rancher projects collection."""
 
@@ -31,12 +33,14 @@ async def _fetch_projects_list(
         limit=limit,
         sort_by=sort_by,
         reverse=reverse,
+        marker=page_token,
     )
     payload = await client.get_json("/v3/projects", params=query_params or None)
     projects = [project_summary_from_payload(item) for item in data_items(payload)]
     return RancherProjectList(
         instance=instance_name,
         project_count=len(projects),
+        next_page_token=next_page_token_from_payload(payload),
         applied_query_params=query_params,
         projects=projects,
     )
@@ -48,6 +52,7 @@ async def rancher_projects_list(
     limit: int | None = None,
     sort_by: str | None = None,
     reverse: bool | None = None,
+    page_token: str | None = None,
     instance: str | None = None,
     settings: AppSettings | None = None,
     client: ManagementDiscoveryClient | None = None,
@@ -65,6 +70,7 @@ async def rancher_projects_list(
             sort_by,
             reverse,
             client,
+            page_token,
         )
     async with RancherManagementClient(instance_name, instance_config) as managed_client:
         return await _fetch_projects_list(
@@ -75,6 +81,7 @@ async def rancher_projects_list(
             sort_by,
             reverse,
             managed_client,
+            page_token,
         )
 
 
@@ -121,6 +128,7 @@ async def rancher_projects_list_tool(
     limit: int | None = None,
     sort_by: str | None = None,
     reverse: bool | None = None,
+    page_token: str | None = None,
     instance: str | None = None,
 ) -> RancherProjectList:
     """Public MCP wrapper for curated project list."""
@@ -131,6 +139,7 @@ async def rancher_projects_list_tool(
         limit=limit,
         sort_by=sort_by,
         reverse=reverse,
+        page_token=page_token,
         instance=instance,
     )
 

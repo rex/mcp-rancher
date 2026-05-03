@@ -46,6 +46,7 @@ def _build_project_query_params(
     limit: int | None,
     sort_by: str | None,
     reverse: bool | None,
+    marker: str | None = None,
 ) -> dict[str, str | int | bool]:
     """Build typed query params for the Rancher projects collection."""
 
@@ -56,6 +57,8 @@ def _build_project_query_params(
         params["state"] = state
     if limit is not None:
         params["limit"] = limit
+    if marker is not None:
+        params["marker"] = marker
     if sort_by is not None:
         params["sort"] = sort_by
     if reverse is not None:
@@ -69,12 +72,14 @@ def _build_namespace_query_params(
     limit: int | None,
     label_selector: str | None,
     field_selector: str | None,
+    continue_token: str | None = None,
 ) -> dict[str, str | int | bool]:
     """Build typed query params for the downstream namespaces collection."""
 
     merged_label_selector = _merge_project_label_selector(label_selector, project_id)
     return build_steve_list_query_params(
         limit=limit,
+        continue_token=continue_token,
         label_selector=merged_label_selector,
         field_selector=field_selector,
     )

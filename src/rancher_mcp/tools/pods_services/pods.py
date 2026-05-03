@@ -7,6 +7,7 @@ from rancher_mcp.config import AppSettings, get_settings
 from rancher_mcp.models.pods_services import RancherPodDetail, RancherPodList
 from rancher_mcp.services.instances import resolve_instance
 from rancher_mcp.services.resource_queries import build_steve_list_query_params
+from rancher_mcp.services.resources.builders_pagination import next_page_token_from_payload
 from rancher_mcp.tools.pods_services.shared import (
     data_items,
     pod_summary_from_payload,
@@ -23,11 +24,13 @@ async def _fetch_pods_list(
     label_selector: str | None,
     field_selector: str | None,
     client: SteveDiscoveryClient,
+    page_token: str | None = None,
 ) -> RancherPodList:
     """Fetch and normalize the pods collection for one namespace."""
 
     query_params = build_steve_list_query_params(
         limit=limit,
+        continue_token=page_token,
         label_selector=label_selector,
         field_selector=field_selector,
     )
@@ -40,6 +43,7 @@ async def _fetch_pods_list(
         cluster_id=cluster_id,
         namespace=namespace,
         pod_count=len(pods),
+        next_page_token=next_page_token_from_payload(payload),
         applied_query_params=query_params,
         pods=pods,
     )
@@ -52,6 +56,7 @@ async def rancher_pods_list(
     limit: int | None = None,
     label_selector: str | None = None,
     field_selector: str | None = None,
+    page_token: str | None = None,
     instance: str | None = None,
     settings: AppSettings | None = None,
     client: SteveDiscoveryClient | None = None,
@@ -70,6 +75,7 @@ async def rancher_pods_list(
             label_selector,
             field_selector,
             client,
+            page_token,
         )
     async with RancherSteveClient(
         instance_name,
@@ -85,6 +91,7 @@ async def rancher_pods_list(
             label_selector,
             field_selector,
             steve_client,
+            page_token,
         )
 
 
@@ -141,6 +148,7 @@ async def rancher_pods_list_tool(
     limit: int | None = None,
     label_selector: str | None = None,
     field_selector: str | None = None,
+    page_token: str | None = None,
     instance: str | None = None,
 ) -> RancherPodList:
     """Public MCP wrapper for curated pod list."""
@@ -152,6 +160,7 @@ async def rancher_pods_list_tool(
         limit=limit,
         label_selector=label_selector,
         field_selector=field_selector,
+        page_token=page_token,
         instance=instance,
     )
 

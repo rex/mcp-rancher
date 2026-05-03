@@ -6,6 +6,7 @@ from rancher_mcp.clients.management import ManagementDiscoveryClient, RancherMan
 from rancher_mcp.config import AppSettings, get_settings
 from rancher_mcp.models.storage import RancherStorageClassDetail, RancherStorageClassList
 from rancher_mcp.services.instances import resolve_instance
+from rancher_mcp.services.resources.builders_pagination import next_page_token_from_payload
 from rancher_mcp.tools.storage.paths import (
     storage_class_collection_path,
     storage_class_resource_path,
@@ -25,10 +26,11 @@ async def _fetch_storage_classes_list(
     default_only: bool | None,
     limit: int | None,
     client: ManagementDiscoveryClient,
+    page_token: str | None = None,
 ) -> RancherStorageClassList:
     """Fetch and normalize storage classes through Rancher's raw Kubernetes proxy."""
 
-    query_params = build_list_query_params(limit=limit)
+    query_params = build_list_query_params(limit=limit, continue_token=page_token)
     payload = await client.get_json(
         storage_class_collection_path(cluster_id),
         params=query_params or None,
@@ -40,6 +42,7 @@ async def _fetch_storage_classes_list(
         instance=instance_name,
         cluster_id=cluster_id,
         storage_class_count=len(storage_classes),
+        next_page_token=next_page_token_from_payload(payload),
         applied_query_params=query_params,
         storage_classes=storage_classes,
     )
@@ -49,6 +52,7 @@ async def rancher_storage_classes_list(
     cluster_id: str = "local",
     default_only: bool | None = None,
     limit: int | None = None,
+    page_token: str | None = None,
     instance: str | None = None,
     settings: AppSettings | None = None,
     client: ManagementDiscoveryClient | None = None,
@@ -64,6 +68,7 @@ async def rancher_storage_classes_list(
             default_only,
             limit,
             client,
+            page_token,
         )
     async with RancherManagementClient(instance_name, instance_config) as managed_client:
         return await _fetch_storage_classes_list(
@@ -72,6 +77,7 @@ async def rancher_storage_classes_list(
             default_only,
             limit,
             managed_client,
+            page_token,
         )
 
 
@@ -128,6 +134,7 @@ async def rancher_storage_classes_list_tool(
     cluster_id: str = "local",
     default_only: bool | None = None,
     limit: int | None = None,
+    page_token: str | None = None,
     instance: str | None = None,
 ) -> RancherStorageClassList:
     """Public MCP wrapper for curated storage-class list."""
@@ -136,6 +143,7 @@ async def rancher_storage_classes_list_tool(
         cluster_id=cluster_id,
         default_only=default_only,
         limit=limit,
+        page_token=page_token,
         instance=instance,
     )
 

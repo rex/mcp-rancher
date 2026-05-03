@@ -6,6 +6,7 @@ from rancher_mcp.clients.management import ManagementDiscoveryClient, RancherMan
 from rancher_mcp.config import AppSettings, get_settings
 from rancher_mcp.models.clusters_nodes import RancherClusterDetail, RancherClusterList
 from rancher_mcp.services.instances import resolve_instance
+from rancher_mcp.services.resources.builders_pagination import next_page_token_from_payload
 from rancher_mcp.tools.clusters_nodes.shared import (
     build_cluster_query_params,
     cluster_summary_from_payload,
@@ -21,6 +22,7 @@ async def _fetch_clusters_list(
     sort_by: str | None,
     reverse: bool | None,
     client: ManagementDiscoveryClient,
+    page_token: str | None = None,
 ) -> RancherClusterList:
     """Fetch and normalize the Rancher clusters collection."""
 
@@ -29,12 +31,14 @@ async def _fetch_clusters_list(
         state=state,
         sort_by=sort_by,
         reverse=reverse,
+        marker=page_token,
     )
     payload = await client.get_json("/v3/clusters", params=query_params or None)
     clusters = [cluster_summary_from_payload(item) for item in data_items(payload)]
     return RancherClusterList(
         instance=instance_name,
         cluster_count=len(clusters),
+        next_page_token=next_page_token_from_payload(payload),
         applied_query_params=query_params,
         clusters=clusters,
     )
@@ -45,6 +49,7 @@ async def rancher_clusters_list(
     state: str | None = None,
     sort_by: str | None = None,
     reverse: bool | None = None,
+    page_token: str | None = None,
     instance: str | None = None,
     settings: AppSettings | None = None,
     client: ManagementDiscoveryClient | None = None,
@@ -54,7 +59,9 @@ async def rancher_clusters_list(
     resolved_settings = settings or get_settings()
     instance_name, instance_config = resolve_instance(resolved_settings, instance)
     if client is not None:
-        return await _fetch_clusters_list(instance_name, limit, state, sort_by, reverse, client)
+        return await _fetch_clusters_list(
+            instance_name, limit, state, sort_by, reverse, client, page_token
+        )
     async with RancherManagementClient(instance_name, instance_config) as managed_client:
         return await _fetch_clusters_list(
             instance_name,
@@ -63,6 +70,7 @@ async def rancher_clusters_list(
             sort_by,
             reverse,
             managed_client,
+            page_token,
         )
 
 
@@ -109,6 +117,7 @@ async def rancher_clusters_list_tool(
     state: str | None = None,
     sort_by: str | None = None,
     reverse: bool | None = None,
+    page_token: str | None = None,
     instance: str | None = None,
 ) -> RancherClusterList:
     """Public MCP wrapper for curated clusters list."""
@@ -118,6 +127,7 @@ async def rancher_clusters_list_tool(
         state=state,
         sort_by=sort_by,
         reverse=reverse,
+        page_token=page_token,
         instance=instance,
     )
 

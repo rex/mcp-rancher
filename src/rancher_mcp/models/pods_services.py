@@ -126,6 +126,7 @@ class RancherPodList(RancherModel):
     cluster_id: str
     namespace: str
     pod_count: int
+    next_page_token: str | None = None
     applied_query_params: dict[str, str | int | bool] = Field(default_factory=dict)
     pods: list[RancherPodSummary] = Field(default_factory=_empty_pod_summaries)
 
@@ -213,5 +214,6 @@ class RancherServiceList(RancherModel):
     cluster_id: str
     namespace: str
     service_count: int
+    next_page_token: str | None = None
     applied_query_params: dict[str, str | int | bool] = Field(default_factory=dict)
     services: list[RancherServiceSummary] = Field(default_factory=_empty_service_summaries)
