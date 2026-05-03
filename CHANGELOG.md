@@ -1,5 +1,22 @@
 # Changelog
 
+## [2026-05-02] - Agent: Claude Sonnet 4.6
+### Added
+- Monitoring status tool: `rancher_monitoring_status` — detects if Rancher Monitoring is installed
+  on a cluster and reports grafana/prometheus endpoints and condition state
+- CIS compliance tools (requires CIS Benchmark app installed):
+  `rancher_cis_scan_profiles_list`, `rancher_cis_scan_profile_get`
+  `rancher_cis_scans_list`, `rancher_cis_scan_get`
+- Kubernetes events tool: `rancher_cluster_events_list` — lists events in a namespace
+  with optional filtering by event_type (Warning/Normal) or reason
+
+### Changed
+- Phase 4 curated read-only packs advanced: monitoring, compliance, and diagnostics domains landed
+- Total public tool surface: 104 tools
+
+### Verified
+- `make validate` passes (200 tests, 90% coverage, 0 errors)
+
 ## [2026-04-14] - Agent: OpenAI Codex
 ### Added
 - Generic mutation fallback tools:

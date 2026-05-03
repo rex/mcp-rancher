@@ -6,6 +6,10 @@ from rancher_mcp.models.ops.cluster_health import (
     ClustersHealthSummary,
     NodeHealthRollup,
 )
+from rancher_mcp.models.ops.events import (
+    RancherEventList,
+    RancherEventSummary,
+)
 from rancher_mcp.models.ops.failure_finders import (
     FailingPodsList,
     FailingPodSummary,
@@ -28,6 +32,8 @@ from rancher_mcp.models.ops.rollups import (
 
 __all__ = [
     "ClusterHealthCheck",
+    "RancherEventList",
+    "RancherEventSummary",
     "ClusterHealthSummary",
     "ClustersHealthSummary",
     "FailingPodSummary",

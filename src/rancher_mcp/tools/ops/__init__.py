@@ -7,6 +7,7 @@ from rancher_mcp.tools.ops.cluster_health import (
     rancher_cluster_nodes_summary_tool,
     rancher_clusters_health_summary_tool,
 )
+from rancher_mcp.tools.ops.events import rancher_cluster_events_list_tool
 from rancher_mcp.tools.ops.find_failing_pods import rancher_find_failing_pods_tool
 from rancher_mcp.tools.ops.find_pdbs_blocking import rancher_find_pdbs_blocking_tool
 from rancher_mcp.tools.ops.find_services_no_endpoints import (
@@ -37,3 +38,4 @@ def register_ops_tools(mcp: FastMCP) -> None:
     mcp.tool(name="rancher_find_pdbs_blocking")(rancher_find_pdbs_blocking_tool)
     mcp.tool(name="rancher_namespace_workloads_summary")(rancher_namespace_workloads_summary_tool)
     mcp.tool(name="rancher_project_health_summary")(rancher_project_health_summary_tool)
+    mcp.tool(name="rancher_cluster_events_list")(rancher_cluster_events_list_tool)
