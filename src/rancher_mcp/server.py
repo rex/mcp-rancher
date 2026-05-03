@@ -1,37 +1,41 @@
 """FastMCP server construction."""
 
+from __future__ import annotations
+
 from mcp.server.fastmcp import FastMCP
 
-from rancher_mcp.tools.alerts import register_alerts_tools
-from rancher_mcp.tools.apps_catalogs import register_app_catalog_tools
-from rancher_mcp.tools.auth_identity import register_auth_identity_tools
-from rancher_mcp.tools.clusters_nodes import register_cluster_node_tools
-from rancher_mcp.tools.compliance import register_compliance_tools
-from rancher_mcp.tools.discovery import register_discovery_tools
-from rancher_mcp.tools.disruption import register_disruption_tools
-from rancher_mcp.tools.fleet_registration import register_fleet_registration_tools
-from rancher_mcp.tools.logging_backups import register_logging_backup_tools
-from rancher_mcp.tools.mcp_prompts import register_mcp_prompts
-from rancher_mcp.tools.mcp_resources import register_mcp_resources
-from rancher_mcp.tools.monitoring import register_monitoring_tools
-from rancher_mcp.tools.ops import register_ops_tools
-from rancher_mcp.tools.pods_services import register_pod_service_tools
-from rancher_mcp.tools.projects_namespaces import register_project_namespace_tools
-from rancher_mcp.tools.rbac import register_rbac_tools
-from rancher_mcp.tools.resources import register_resource_tools
-from rancher_mcp.tools.settings_features import register_settings_feature_tools
-from rancher_mcp.tools.storage import register_storage_tools
-from rancher_mcp.tools.support.errors import apply_structured_errors_to_all_tools
-from rancher_mcp.tools.workloads import register_workload_tools
 
+def register_all_tools(mcp: FastMCP) -> None:
+    """Import and register every tool module on *mcp*.
 
-def create_mcp_server() -> FastMCP:
-    """Create and register the FastMCP server."""
+    All tool-module imports are deferred until this function is called so that
+    ``import rancher_mcp.server`` is cheap.  In production ``__main__.main()``
+    calls this from a background thread, allowing the MCP ``initialize``
+    handshake to complete before the heavy imports begin.
+    """
+    # Local imports are intentional: keep module-level import cost near-zero.
+    from rancher_mcp.tools.alerts import register_alerts_tools
+    from rancher_mcp.tools.apps_catalogs import register_app_catalog_tools
+    from rancher_mcp.tools.auth_identity import register_auth_identity_tools
+    from rancher_mcp.tools.clusters_nodes import register_cluster_node_tools
+    from rancher_mcp.tools.compliance import register_compliance_tools
+    from rancher_mcp.tools.discovery import register_discovery_tools
+    from rancher_mcp.tools.disruption import register_disruption_tools
+    from rancher_mcp.tools.fleet_registration import register_fleet_registration_tools
+    from rancher_mcp.tools.logging_backups import register_logging_backup_tools
+    from rancher_mcp.tools.mcp_prompts import register_mcp_prompts
+    from rancher_mcp.tools.mcp_resources import register_mcp_resources
+    from rancher_mcp.tools.monitoring import register_monitoring_tools
+    from rancher_mcp.tools.ops import register_ops_tools
+    from rancher_mcp.tools.pods_services import register_pod_service_tools
+    from rancher_mcp.tools.projects_namespaces import register_project_namespace_tools
+    from rancher_mcp.tools.rbac import register_rbac_tools
+    from rancher_mcp.tools.resources import register_resource_tools
+    from rancher_mcp.tools.settings_features import register_settings_feature_tools
+    from rancher_mcp.tools.storage import register_storage_tools
+    from rancher_mcp.tools.support.errors import apply_structured_errors_to_all_tools
+    from rancher_mcp.tools.workloads import register_workload_tools
 
-    mcp = FastMCP(
-        name="rancher-mcp",
-        instructions="Capability-aware Rancher MCP server for Rancher 2.6.5",
-    )
     register_discovery_tools(mcp)
     register_disruption_tools(mcp)
     register_fleet_registration_tools(mcp)
@@ -53,7 +57,17 @@ def create_mcp_server() -> FastMCP:
     register_mcp_resources(mcp)
     register_mcp_prompts(mcp)
     apply_structured_errors_to_all_tools(mcp)
+
+
+def create_mcp_server() -> FastMCP:
+    """Create a fully-configured FastMCP server (tools eager-loaded).
+
+    Intended for tests and one-off scripts.  Production startup uses
+    ``register_all_tools`` from a background thread instead.
+    """
+    mcp = FastMCP(
+        name="rancher-mcp",
+        instructions="Capability-aware Rancher MCP server for Rancher 2.6.5",
+    )
+    register_all_tools(mcp)
     return mcp
-
-
-mcp = create_mcp_server()
