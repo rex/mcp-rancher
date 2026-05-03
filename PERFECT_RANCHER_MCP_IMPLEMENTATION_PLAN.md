@@ -836,7 +836,42 @@ Implement curated read tools for:
 Deliverable:
 - highly usable read surface
 
-### Phase 5 — Curated Safe Write Packs
+### Phase 5 — MCP Protocol Excellence
+
+Make this a first-class MCP citizen, not just a Python HTTP wrapper with tool decorators.
+Promoted above all other pending phases.
+
+Items in priority order:
+
+- **Tool annotations** — declare `readOnly`, `destructive`, `idempotent` on every tool via
+  FastMCP's annotation support so clients and agents can reason about safety without parsing text.
+- **Cursor-based pagination** — expose Rancher's `continue` tokens as opaque continuation tokens
+  agents can pass back without understanding the pagination scheme.
+- **Structured error taxonomy** — typed error codes (`CLUSTER_NOT_FOUND`, `RATE_LIMITED`,
+  `INSUFFICIENT_PERMISSIONS`) agents can branch on without parsing error strings.
+- **MCP Prompts** — pre-built prompt templates for common operator workflows: cluster diagnosis,
+  namespace rollup, workload health check, scale deployment, and similar.
+- **Next-step hints in responses** — `suggested_next_steps` or `related_tools` fields in
+  curated tool responses so agents know what to call after a given tool.
+- **MCP Resources** — expose cluster state, node lists, namespace inventories, and the
+  capability catalog as URI-addressed MCP resources (`rancher://capabilities`, etc.).
+- **Progress notifications** — emit MCP progress tokens for long-running operations such as
+  CIS scans, cluster provisioning waits, and app installs.
+- **Elicitation** (MCP 1.1+) — pause-and-confirm flow for destructive write operations,
+  replacing the `confirm: bool` parameter pattern.
+- **OAuth 2.0** — dynamic auth via the MCP auth spec (PKCE flow) for multi-user and CI deployments.
+- **Metrics** — Prometheus metrics for tool-call counts, latency histograms, and error rates.
+- **Audit trail** — structured write audit log capturing who called what, when, and with what args.
+
+Deliverable:
+- protocol-complete MCP server with all major spec features exercised
+- every tool annotated for safety classification
+- operator-facing prompts for the ten most common Rancher workflows
+
+### Phase 6 — Curated Safe Write Packs
+
+Blocked on Phase 5 (MCP Protocol Excellence) closing — elicitation and tool annotations
+must be in place before safe writes are exposed.
 
 Implement reversible and lower-risk writes for:
 
@@ -849,7 +884,7 @@ Implement reversible and lower-risk writes for:
 Deliverable:
 - practical day-to-day operator write surface
 
-### Phase 6 — Curated High-Risk and Destructive Packs
+### Phase 7 — Curated High-Risk and Destructive Packs
 
 Implement guarded tools for:
 
@@ -863,7 +898,7 @@ Implement guarded tools for:
 Deliverable:
 - complete guarded write surface
 
-### Phase 7 — Subsystem Completeness
+### Phase 8 — Subsystem Completeness
 
 Deepen support for:
 
@@ -878,7 +913,7 @@ Deepen support for:
 Deliverable:
 - major Rancher-integrated subsystem coverage
 
-### Phase 8 — Live Validation and Contract Capture
+### Phase 9 — Live Validation and Contract Capture
 
 - validate against live Rancher instances
 - validate first against Rancher 2.6.5
@@ -891,7 +926,7 @@ Deliverable:
 - contract fixtures
 - compatibility matrix
 
-### Phase 9 — Hardening
+### Phase 10 — Hardening
 
 - audit safety
 - verify token masking
@@ -903,7 +938,7 @@ Deliverable:
 Deliverable:
 - production hardening
 
-### Phase 10 — Catalog Completion and Gap Closure
+### Phase 11 — Catalog Completion and Gap Closure
 
 - compare live-discovered types against curated coverage
 - identify missing high-value packs
