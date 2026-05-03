@@ -50,6 +50,11 @@ async def _fetch_deployments_list(
         next_page_token=next_page_token_from_payload(payload),
         applied_query_params=query_params,
         deployments=deployments,
+        suggested_next_steps=[
+            "rancher_deployment_get",
+            "rancher_pods_list",
+            "rancher_workload_readiness",
+        ],
     )
 
 
@@ -118,6 +123,11 @@ async def _fetch_deployment_get(
             "container_images": summary.container_images,
             "annotation_keys": sorted(string_dict(annotations)),
             "payload": dict(payload),
+            "suggested_next_steps": [
+                "rancher_deployments_list",
+                "rancher_pods_list",
+                "rancher_workload_readiness",
+            ],
         }
     )
 

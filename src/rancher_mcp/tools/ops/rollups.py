@@ -284,6 +284,12 @@ async def _build_project_health(
         failing_pods=failing_pods,
         total_workloads=total_workloads,
         unhealthy_workloads=unhealthy_workloads,
+        suggested_next_steps=[
+            "rancher_project_get",
+            "rancher_namespaces_list",
+            "rancher_pods_list",
+            "rancher_deployments_list",
+        ],
     )
 
 

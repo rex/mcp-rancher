@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 from pydantic.alias_generators import to_camel
 
 
@@ -14,3 +14,5 @@ class RancherModel(BaseModel):
         populate_by_name=True,
         extra="ignore",
     )
+
+    suggested_next_steps: list[str] = Field(default_factory=list)

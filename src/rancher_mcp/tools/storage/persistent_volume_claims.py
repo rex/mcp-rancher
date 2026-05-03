@@ -52,6 +52,11 @@ async def _fetch_persistent_volume_claims_list(
         next_page_token=next_page_token_from_payload(payload),
         applied_query_params=query_params,
         persistent_volume_claims=claims,
+        suggested_next_steps=[
+            "rancher_persistent_volume_claim_get",
+            "rancher_persistent_volumes_list",
+            "rancher_pods_list",
+        ],
     )
 
 
@@ -113,6 +118,11 @@ async def _fetch_persistent_volume_claim_get(
             "id": summary.id,
             "annotation_keys": sorted(string_dict(mapping_value(metadata, "annotations") or {})),
             "payload": dict(payload),
+            "suggested_next_steps": [
+                "rancher_persistent_volume_claims_list",
+                "rancher_persistent_volumes_list",
+                "rancher_pods_list",
+            ],
         }
     )
 

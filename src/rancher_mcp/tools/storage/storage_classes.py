@@ -45,6 +45,11 @@ async def _fetch_storage_classes_list(
         next_page_token=next_page_token_from_payload(payload),
         applied_query_params=query_params,
         storage_classes=storage_classes,
+        suggested_next_steps=[
+            "rancher_storage_class_get",
+            "rancher_persistent_volumes_list",
+            "rancher_persistent_volume_claims_list",
+        ],
     )
 
 
@@ -99,6 +104,10 @@ async def _fetch_storage_class_get(
             "mount_options": string_list(payload.get("mountOptions")),
             "annotation_keys": sorted(string_dict(mapping_value(metadata, "annotations") or {})),
             "payload": dict(payload),
+            "suggested_next_steps": [
+                "rancher_storage_classes_list",
+                "rancher_persistent_volumes_list",
+            ],
         }
     )
 

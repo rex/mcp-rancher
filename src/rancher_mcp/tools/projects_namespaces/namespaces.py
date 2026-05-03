@@ -48,6 +48,11 @@ async def _fetch_namespaces_list(
         next_page_token=next_page_token_from_payload(payload),
         applied_query_params=query_params,
         namespaces=namespaces,
+        suggested_next_steps=[
+            "rancher_namespace_get",
+            "rancher_pods_list",
+            "rancher_deployments_list",
+        ],
     )
 
 
@@ -120,6 +125,11 @@ async def _fetch_namespace_get(
             "cattle_conditions": namespace_cattle_conditions(metadata),
             "link_keys": sorted(mapping_value(payload, "links") or {}),
             "payload": dict(payload),
+            "suggested_next_steps": [
+                "rancher_namespaces_list",
+                "rancher_pods_list",
+                "rancher_deployments_list",
+            ],
         }
     )
 

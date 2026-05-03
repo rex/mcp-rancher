@@ -46,6 +46,11 @@ async def _fetch_pods_list(
         next_page_token=next_page_token_from_payload(payload),
         applied_query_params=query_params,
         pods=pods,
+        suggested_next_steps=[
+            "rancher_pod_get",
+            "rancher_services_list",
+            "rancher_deployments_list",
+        ],
     )
 
 
@@ -115,6 +120,7 @@ async def _fetch_pod_get(
             "restart_count": summary.restart_count,
             "link_keys": sorted(mapping_value(payload, "links") or {}),
             "payload": dict(payload),
+            "suggested_next_steps": ["rancher_pods_list", "rancher_services_list"],
         }
     )
 

@@ -152,6 +152,11 @@ async def _build_cluster_health(
         component_unhealthy_names=cu_names,
         nodes=nodes,
         issues=issues,
+        suggested_next_steps=[
+            "rancher_clusters_health_summary",
+            "rancher_nodes_list",
+            "rancher_pods_list",
+        ],
     )
 
 
@@ -240,6 +245,11 @@ async def _build_clusters_health_summary(
         healthy_count=healthy_count,
         unhealthy_count=len(summaries) - healthy_count,
         clusters=summaries,
+        suggested_next_steps=[
+            "rancher_cluster_health_check",
+            "rancher_nodes_list",
+            "rancher_clusters_list",
+        ],
     )
 
 

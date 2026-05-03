@@ -50,6 +50,7 @@ async def _fetch_statefulsets_list(
         next_page_token=next_page_token_from_payload(payload),
         applied_query_params=query_params,
         statefulsets=statefulsets,
+        suggested_next_steps=["rancher_statefulset_get", "rancher_pods_list"],
     )
 
 
@@ -117,6 +118,7 @@ async def _fetch_statefulset_get(
             "container_images": summary.container_images,
             "annotation_keys": sorted(string_dict(annotations)),
             "payload": dict(payload),
+            "suggested_next_steps": ["rancher_statefulsets_list", "rancher_pods_list"],
         }
     )
 

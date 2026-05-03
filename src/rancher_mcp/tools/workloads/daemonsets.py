@@ -50,6 +50,7 @@ async def _fetch_daemonsets_list(
         next_page_token=next_page_token_from_payload(payload),
         applied_query_params=query_params,
         daemonsets=daemonsets,
+        suggested_next_steps=["rancher_daemonset_get", "rancher_pods_list"],
     )
 
 
@@ -117,6 +118,7 @@ async def _fetch_daemonset_get(
             "container_images": summary.container_images,
             "annotation_keys": sorted(string_dict(annotations)),
             "payload": dict(payload),
+            "suggested_next_steps": ["rancher_daemonsets_list", "rancher_pods_list"],
         }
     )
 

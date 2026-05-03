@@ -40,6 +40,11 @@ async def _fetch_services_list(
         next_page_token=next_page_token_from_payload(payload),
         applied_query_params=query_params,
         services=services,
+        suggested_next_steps=[
+            "rancher_service_get",
+            "rancher_pods_list",
+            "rancher_deployments_list",
+        ],
     )
 
 
@@ -101,6 +106,7 @@ async def _fetch_service_get(
             "relationship_types": relationship_types(metadata),
             "link_keys": sorted(mapping_value(payload, "links") or {}),
             "payload": dict(payload),
+            "suggested_next_steps": ["rancher_services_list", "rancher_pods_list"],
         }
     )
 

@@ -47,6 +47,7 @@ async def _fetch_nodes_list(
         next_page_token=next_page_token_from_payload(payload),
         applied_query_params=query_params,
         nodes=nodes,
+        suggested_next_steps=["rancher_node_get", "rancher_cluster_health_check"],
     )
 
 
@@ -112,6 +113,7 @@ async def _fetch_node_get(
             "roles": summary.roles,
             "action_keys": sorted(mapping_value(payload, "actions") or {}),
             "payload": dict(payload),
+            "suggested_next_steps": ["rancher_nodes_list", "rancher_cluster_health_check"],
         }
     )
 

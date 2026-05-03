@@ -47,6 +47,11 @@ async def _fetch_persistent_volumes_list(
         next_page_token=next_page_token_from_payload(payload),
         applied_query_params=query_params,
         persistent_volumes=volumes,
+        suggested_next_steps=[
+            "rancher_persistent_volume_get",
+            "rancher_persistent_volume_claims_list",
+            "rancher_storage_classes_list",
+        ],
     )
 
 
@@ -101,6 +106,10 @@ async def _fetch_persistent_volume_get(
             "volume_source_type": summary.volume_source_type,
             "node_hostnames": persistent_volume_node_hostnames(payload),
             "payload": dict(payload),
+            "suggested_next_steps": [
+                "rancher_persistent_volumes_list",
+                "rancher_persistent_volume_claims_list",
+            ],
         }
     )
 

@@ -41,6 +41,11 @@ async def _fetch_clusters_list(
         next_page_token=next_page_token_from_payload(payload),
         applied_query_params=query_params,
         clusters=clusters,
+        suggested_next_steps=[
+            "rancher_cluster_get",
+            "rancher_nodes_list",
+            "rancher_cluster_health_check",
+        ],
     )
 
 
@@ -92,6 +97,12 @@ async def _fetch_cluster_get(
             "api_endpoint": string_value(payload, "apiEndpoint"),
             "action_keys": sorted(mapping_value(payload, "actions") or {}),
             "payload": dict(payload),
+            "suggested_next_steps": [
+                "rancher_nodes_list",
+                "rancher_cluster_health_check",
+                "rancher_projects_list",
+                "rancher_pods_list",
+            ],
         }
     )
 
