@@ -4,17 +4,25 @@
 class RancherMCPError(Exception):
     """Base exception for Rancher MCP errors."""
 
+    error_code: str = "MCP_ERROR"
+
 
 class ConfigurationError(RancherMCPError):
     """Raised when runtime configuration is invalid or incomplete."""
+
+    error_code: str = "CONFIGURATION_ERROR"
 
 
 class RancherCapabilityError(RancherMCPError):
     """Raised when a requested schema capability is not available."""
 
+    error_code: str = "CAPABILITY_ERROR"
+
 
 class RancherAPIError(RancherMCPError):
     """HTTP error returned by the Rancher API."""
+
+    error_code: str = "API_ERROR"
 
     def __init__(self, status_code: int, message: str, field: str | None = None) -> None:
         self.status_code = status_code
@@ -28,10 +36,16 @@ class RancherAPIError(RancherMCPError):
 class RancherUnauthorizedError(RancherAPIError):
     """Raised for authentication and authorization failures."""
 
+    error_code: str = "UNAUTHORIZED"
+
 
 class RancherNotFoundError(RancherAPIError):
     """Raised when a resource does not exist."""
 
+    error_code: str = "NOT_FOUND"
+
 
 class RancherConflictError(RancherAPIError):
     """Raised when the API reports a conflict."""
+
+    error_code: str = "CONFLICT"

@@ -21,6 +21,7 @@ from rancher_mcp.tools.rbac import register_rbac_tools
 from rancher_mcp.tools.resources import register_resource_tools
 from rancher_mcp.tools.settings_features import register_settings_feature_tools
 from rancher_mcp.tools.storage import register_storage_tools
+from rancher_mcp.tools.support.errors import apply_structured_errors_to_all_tools
 from rancher_mcp.tools.workloads import register_workload_tools
 
 
@@ -51,6 +52,7 @@ def create_mcp_server() -> FastMCP:
     register_workload_tools(mcp)
     register_mcp_resources(mcp)
     register_mcp_prompts(mcp)
+    apply_structured_errors_to_all_tools(mcp)
     return mcp
 
 
