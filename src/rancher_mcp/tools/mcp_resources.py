@@ -27,22 +27,20 @@ async def _instances_resource() -> str:
 def register_mcp_resources(mcp: FastMCP) -> None:
     """Register rancher:// MCP resources with the server."""
 
-    mcp.resource(
-        "rancher://capabilities",
-        name="Rancher Capabilities",
+    # FastMCP treats all rancher:// URIs as the same template pattern, so a
+    # single template handler with internal dispatch is required.
+    @mcp.resource(
+        "rancher://{resource_id}",
+        name="Rancher Resource",
         description=(
-            "Machine-readable capability catalog — tool domains available "
-            "and their compatibility with Rancher versions."
-        ),
-        mime_type="application/yaml",
-    )(_capabilities_resource)
-
-    mcp.resource(
-        "rancher://instances",
-        name="Rancher Instances",
-        description=(
-            "Configured Rancher instance inventory — names, URLs, "
-            "read-only status, and default instance designation."
+            "rancher://capabilities — YAML capability catalog. "
+            "rancher://instances — JSON instance inventory."
         ),
         mime_type="application/json",
-    )(_instances_resource)
+    )
+    async def _rancher_resource(resource_id: str) -> str:  # pyright: ignore[reportUnusedFunction]
+        if resource_id == "capabilities":
+            return await _capabilities_resource()
+        if resource_id == "instances":
+            return await _instances_resource()
+        raise ValueError(f"Unknown Rancher resource: {resource_id}")
