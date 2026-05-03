@@ -55,20 +55,24 @@ Then in order:
 
 1. `mcp__serena__initial_instructions` — fetches the dynamically-
    composed Serena Instructions Manual.
-2. `mcp__serena__check_onboarding_performed`.
-3. If not onboarded: `mcp__serena__onboarding`, then write each
+2. `mcp__serena__activate_project` with the project name or path.
+   Skip only if step 1's output already reports an active project.
+3. `mcp__serena__check_onboarding_performed`.
+4. If not onboarded: `mcp__serena__onboarding`, then write each
    prompted memory via `mcp__serena__write_memory`.
-4. If onboarded: `mcp__serena__list_memories`, read what's relevant.
-
-Once `mcp__serena__initial_instructions` succeeds, write the flag
-file to clear this warning for the rest of the session:
+   If onboarded: `mcp__serena__list_memories`, read what's relevant.
+   CRITICAL: If list_memories returns only a placeholder entry
+   (e.g. "this_is_a_test_memory") with no real project content, treat
+   onboarding as NOT performed and run `mcp__serena__onboarding`.
+5. Write the flag file ONLY after ALL steps above are complete:
 
 ```
 mkdir -p .claude && touch .claude/serena-initialized
 ```
 
-Do NOT proceed with the user's request until Serena is initialized.
-This is a hard gate, not a suggestion. Full protocol:
+Do NOT write the flag file after step 1. Do NOT proceed with the
+user's request until all steps are done. This is a hard gate, not a
+suggestion. Full protocol:
 `~/.claude/skills/serena/references/protocol.md`. Why this hook
 exists: `~/.claude/skills/agentic-skeleton/references/skill-vs-slash-vs-hook.md`.
 EOF
