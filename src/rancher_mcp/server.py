@@ -11,6 +11,7 @@ from rancher_mcp.tools.discovery import register_discovery_tools
 from rancher_mcp.tools.disruption import register_disruption_tools
 from rancher_mcp.tools.fleet_registration import register_fleet_registration_tools
 from rancher_mcp.tools.logging_backups import register_logging_backup_tools
+from rancher_mcp.tools.mcp_resources import register_mcp_resources
 from rancher_mcp.tools.monitoring import register_monitoring_tools
 from rancher_mcp.tools.ops import register_ops_tools
 from rancher_mcp.tools.pods_services import register_pod_service_tools
@@ -47,6 +48,7 @@ def create_mcp_server() -> FastMCP:
     register_compliance_tools(mcp)
     register_alerts_tools(mcp)
     register_workload_tools(mcp)
+    register_mcp_resources(mcp)
     return mcp
 
 
