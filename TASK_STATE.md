@@ -100,5 +100,10 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 ## Next Queue
 
 1. **Phase 5 is COMPLETE** — all 7 slices (P5-1 through P5-7) are done and pushed.
-2. Produce live validation and compatibility matrix for the newer Phase 4 packs to formally close Phase 4.
-3. Start Phase 6 safe-write packs only after explicit user instruction is received (Phase 5 gate is clear).
+2. Fix `rancher_project_health_summary` bug — calls `/v3/namespaces?projectId=...` (Norman) which 404s on downstream clusters; must switch to Steve path `/k8s/clusters/{cluster_id}/v1/namespaces?labelSelector=field.cattle.io/projectId={short_id}` (live-validated 2025-05-03).
+3. Produce live validation and compatibility matrix for the newer Phase 4 packs to formally close Phase 4.
+4. Start Phase 6 safe-write packs only after explicit user instruction is received (Phase 5 gate is clear).
+
+## Captured Future Requests (not started)
+
+- **Server naming / client identity config** — user wants to configure how the server names itself and appears in MCP clients (server name, version string, instructions/description shown in client UIs). Likely: `RANCHER_MCP_SERVER_NAME`, `RANCHER_MCP_SERVER_DESCRIPTION` env vars wired through `config.py` → `FastMCP(name=..., instructions=...)` and the Phase 0 early-init response hardcoded strings in `__main__.py`.
