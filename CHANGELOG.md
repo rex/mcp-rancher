@@ -1,5 +1,18 @@
 # Changelog
 
+## [2026-05-03] - Agent: Claude Sonnet 4.6
+### Added
+- Alerting and notifier tools (Rancher legacy v1 alert system):
+  `rancher_notifiers_list`, `rancher_notifier_get`
+  `rancher_cluster_alert_rules_list`, `rancher_cluster_alert_rule_get`
+
+### Changed
+- Total public tool surface: 108 tools
+- Cleared standing continue-until-blocked directive in TASK_STATE.md; Phase 5 requires explicit user instruction
+
+### Verified
+- `make validate` passes (208 tests, 90% coverage, 0 errors)
+
 ## [2026-05-02] - Agent: Claude Sonnet 4.6
 ### Added
 - Monitoring status tool: `rancher_monitoring_status` — detects if Rancher Monitoring is installed

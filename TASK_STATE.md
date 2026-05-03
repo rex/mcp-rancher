@@ -6,8 +6,7 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 
 ## Standing User Directives
 
-- Most recent standing directive: continue iterating until Phase 3 is fully complete, quality-gated, committed, pushed, and the tree is clean.
-- That directive is satisfied only by publishing the Phase 3 closure slice itself; it is not permission to start net-new later-phase work without a new user instruction.
+- Most recent standing directive: none active. Awaiting user instruction before starting Phase 5 work.
 
 ## Phase Discipline
 
@@ -57,7 +56,7 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 | 1. Project scaffold | completed | `uv`, docs, Makefile, config, hooks, and baseline repo structure are in place. | none |
 | 2. Core client and discovery layer | completed | management client, Steve client, discovery/schema tools, streaming substrate, and live `2.6.5` devlab are landed. | none |
 | 3. Generic tool engine | completed | generic Norman/Steve list/get/create/apply/patch/delete, action/link, watch support, schema query controls, and contract fixtures are landed and live-validated against the local Rancher `2.6.5` devlab. | none |
-| 4. Curated read-only packs | in_progress | settings/features, clusters/nodes, projects/namespaces, pods/services, storage, disruption, workloads, apps/catalogs, auth/identity, RBAC, Fleet/registration, logging/backup, ops aggregate helpers, monitoring status, CIS compliance, and Kubernetes events are landed. | alerts/notifiers, live validation for newer helpers, compatibility matrix |
+| 4. Curated read-only packs | in_progress | settings/features, clusters/nodes, projects/namespaces, pods/services, storage, disruption, workloads, apps/catalogs, auth/identity, RBAC, Fleet/registration, logging/backup, ops aggregate helpers, monitoring status, CIS compliance, Kubernetes events, notifiers, and cluster alert rules are landed. | live validation for newer helpers, compatibility matrix |
 | 5. Curated safe write packs | pending | not started intentionally. | blocked on Phase 4 closing |
 | 6. Curated high-risk and destructive packs | pending | not started intentionally. | blocked on Phases 4 and 5 closing |
 | 7. Subsystem completeness | pending | only the Phase 4 read slices that touch Fleet/logging/backup are landed so far. | Longhorn, deeper monitoring/logging/compliance, backup operator, extensions |
@@ -74,6 +73,7 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 - Phase 4 platform integrations: apps/catalogs, auth/identity, RBAC, Fleet/registration, logging/backup
 - Phase 4 operational summaries: cluster health, node summaries, failure finders, namespace/project rollups
 - Phase 4 observability: monitoring status, CIS compliance (profiles + scans), Kubernetes events
+- Phase 4 alerting: notifiers, cluster alert rules
 
 ## Current Risks And Constraints
 
@@ -85,6 +85,5 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 
 ## Next Queue
 
-1. Finish Phase 4 with remaining alerting/notifier read packs and live validation for newer helpers.
-2. Produce compatibility matrix against live Rancher 2.6.5 devlab for newer Phase 4 packs.
-3. Start Phase 5 only after Phase 4 is fully closed and committed.
+1. Produce live validation and compatibility matrix for the newer Phase 4 packs.
+2. Start Phase 5 safe-write packs only after receiving explicit user instruction.
