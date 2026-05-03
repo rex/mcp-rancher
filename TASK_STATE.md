@@ -85,8 +85,20 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 - The downstream devlab remains `kind`, not true RKE2, so live validation claims must stay precise about what was actually exercised.
 - Steve list pagination and some Steve collection paths in Rancher `2.6.5` remain quirky; prefer the already-established Norman/raw-proxy paths that are known-good in this repo.
 
+## Active Phase 5 Slices
+
+| ID | Slice | Status |
+| --- | --- | --- |
+| P5-1 | Tool annotations sweep — all 110 tools | in_progress |
+| P5-2 | MCP Resources (`rancher://capabilities`, `rancher://instances`) | pending |
+| P5-3 | MCP Prompts — 10 operator workflow templates | pending |
+| P5-4 | Structured error taxonomy | pending |
+| P5-5 | Cursor-based pagination on list tools | pending |
+| P5-6 | Progress notifications on long-running tools | pending |
+| P5-7 | Next-step hints in curated tool responses | pending |
+
 ## Next Queue
 
 1. Produce live validation and compatibility matrix for the newer Phase 4 packs to close Phase 4.
-2. Begin Phase 5 (MCP Protocol Excellence) after Phase 4 closes — tool annotations first (highest impact, lowest effort).
+2. Phase 5 is now active — working slices in order above.
 3. Start Phase 6 safe-write packs only after Phase 5 closes and explicit user instruction is received.
