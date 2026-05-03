@@ -13,10 +13,11 @@ MUST be (in order):
 1. `mcp__serena__initial_instructions` — fetches the dynamically-composed
    Serena Instructions Manual for the current context + modes. Do this
    before any other work.
-2. `mcp__serena__activate_project` with the project name or path. Skip
-   only if step 1's output already reports an active project.
+2. `mcp__serena__activate_project` — pass the project name or path.
+   Required for first-time project registration. Skip only if Serena
+   already reports an active project in step 1's output.
 3. `mcp__serena__check_onboarding_performed` — does this project have
-   memories yet?
+   real memories yet?
 4. If onboarding not done: `mcp__serena__onboarding`. Follow its prompt
    to gather project purpose, tech stack, code style/conventions
    (naming/type hints/docstrings), task-completion commands
@@ -27,11 +28,11 @@ MUST be (in order):
    `style_conventions`, `task_completion`, `codebase_structure`).
    If onboarding done: `mcp__serena__list_memories` and read only the
    memories relevant to the task.
-   **CRITICAL**: If `list_memories` returns only a placeholder entry
-   such as `this_is_a_test_memory` with no real project content, treat
-   onboarding as not performed and call `mcp__serena__onboarding`.
-5. Write `.claude/serena-initialized` only after all steps above are
-   complete: `mkdir -p .claude && touch .claude/serena-initialized`.
+   CRITICAL: If list_memories returns only a placeholder such as
+   `this_is_a_test_memory` with no real project content, treat onboarding
+   as NOT complete and run `mcp__serena__onboarding` regardless.
+5. Write `.claude/serena-initialized` ONLY after all steps above are
+   done: `mkdir -p .claude && touch .claude/serena-initialized`.
    Do NOT write this flag after step 1.
 
 **Do NOT touch code with built-in `Read`, `Edit`, `Glob`, or `Grep`
@@ -84,9 +85,11 @@ These bite repeatedly. Burn them in.
   "line 42"; you must use 41.
 - **`replace_content` backreferences are `$!1`, NOT `\1`.** Distinct
   from every other regex tool you know.
-- **`activate_project` is disabled in single-project contexts**
-  (`claude-code`, `ide`, `vscode`). Restart Serena with `--project
-  <new>` to switch projects.
+- **`activate_project` for project-switching is disabled in
+  single-project contexts** (`claude-code`, `ide`, `vscode`). But it
+  IS required for first-time project registration — call it in the
+  init chain if Serena has no active project. To switch projects
+  mid-session, restart Serena with `--project <new>`.
 - **`onboarding` should be called at most once per conversation.**
   If memories were lost, prefer `list_memories` + targeted
   `write_memory` over re-running the full sweep.
