@@ -14,6 +14,7 @@ from rancher_mcp.tools.pods_services.services import (
     rancher_services_list,
     rancher_services_list_tool,
 )
+from rancher_mcp.tools.support.annotations import READ_ONLY
 
 __all__ = [
     "rancher_pod_get",
@@ -27,7 +28,7 @@ __all__ = [
 def register_pod_service_tools(mcp: FastMCP) -> None:
     """Register curated pod/service tools with the FastMCP server."""
 
-    mcp.tool(name="rancher_pods_list")(rancher_pods_list_tool)
-    mcp.tool(name="rancher_pod_get")(rancher_pod_get_tool)
-    mcp.tool(name="rancher_services_list")(rancher_services_list_tool)
-    mcp.tool(name="rancher_service_get")(rancher_service_get_tool)
+    mcp.tool(name="rancher_pods_list", annotations=READ_ONLY)(rancher_pods_list_tool)
+    mcp.tool(name="rancher_pod_get", annotations=READ_ONLY)(rancher_pod_get_tool)
+    mcp.tool(name="rancher_services_list", annotations=READ_ONLY)(rancher_services_list_tool)
+    mcp.tool(name="rancher_service_get", annotations=READ_ONLY)(rancher_service_get_tool)

@@ -32,6 +32,7 @@ from rancher_mcp.tools.disruption_support import (
 from rancher_mcp.tools.disruption_support import (
     string_dict as _string_dict,
 )
+from rancher_mcp.tools.support.annotations import READ_ONLY
 
 
 async def _fetch_pod_disruption_budgets_list(
@@ -144,8 +145,12 @@ async def rancher_pod_disruption_budget_get(
 def register_disruption_tools(mcp: FastMCP) -> None:
     """Register curated disruption-management tools with the FastMCP server."""
 
-    mcp.tool(name="rancher_pod_disruption_budgets_list")(rancher_pod_disruption_budgets_list_tool)
-    mcp.tool(name="rancher_pod_disruption_budget_get")(rancher_pod_disruption_budget_get_tool)
+    mcp.tool(name="rancher_pod_disruption_budgets_list", annotations=READ_ONLY)(
+        rancher_pod_disruption_budgets_list_tool
+    )
+    mcp.tool(name="rancher_pod_disruption_budget_get", annotations=READ_ONLY)(
+        rancher_pod_disruption_budget_get_tool
+    )
 
 
 async def rancher_pod_disruption_budgets_list_tool(

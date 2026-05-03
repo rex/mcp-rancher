@@ -44,6 +44,13 @@ from rancher_mcp.tools.resource_watch import (
     rancher_steve_resource_watch,
     rancher_steve_resource_watch_tool,
 )
+from rancher_mcp.tools.support.annotations import (
+    DESTRUCTIVE,
+    IDEMPOTENT_WRITE,
+    READ_ONLY,
+    SAFE_WRITE,
+    UNKNOWN_ACTION,
+)
 
 __all__ = [
     "rancher_norman_resource_action_invoke",
@@ -70,22 +77,54 @@ __all__ = [
 def register_resource_tools(mcp: FastMCP) -> None:
     """Register generic resource tools with the FastMCP server."""
 
-    mcp.tool(name="rancher_norman_resource_list")(rancher_norman_resource_list_tool)
-    mcp.tool(name="rancher_norman_resource_get")(rancher_norman_resource_get_tool)
-    mcp.tool(name="rancher_norman_resource_create")(rancher_norman_resource_create_tool)
-    mcp.tool(name="rancher_norman_resource_apply")(rancher_norman_resource_apply_tool)
-    mcp.tool(name="rancher_norman_resource_patch")(rancher_norman_resource_patch_tool)
-    mcp.tool(name="rancher_norman_resource_delete")(rancher_norman_resource_delete_tool)
-    mcp.tool(name="rancher_norman_resource_action_invoke")(
+    mcp.tool(name="rancher_norman_resource_list", annotations=READ_ONLY)(
+        rancher_norman_resource_list_tool
+    )
+    mcp.tool(name="rancher_norman_resource_get", annotations=READ_ONLY)(
+        rancher_norman_resource_get_tool
+    )
+    mcp.tool(name="rancher_norman_resource_create", annotations=SAFE_WRITE)(
+        rancher_norman_resource_create_tool
+    )
+    mcp.tool(name="rancher_norman_resource_apply", annotations=IDEMPOTENT_WRITE)(
+        rancher_norman_resource_apply_tool
+    )
+    mcp.tool(name="rancher_norman_resource_patch", annotations=SAFE_WRITE)(
+        rancher_norman_resource_patch_tool
+    )
+    mcp.tool(name="rancher_norman_resource_delete", annotations=DESTRUCTIVE)(
+        rancher_norman_resource_delete_tool
+    )
+    mcp.tool(name="rancher_norman_resource_action_invoke", annotations=UNKNOWN_ACTION)(
         rancher_norman_resource_action_invoke_tool
     )
-    mcp.tool(name="rancher_norman_resource_link_follow")(rancher_norman_resource_link_follow_tool)
-    mcp.tool(name="rancher_steve_resource_list")(rancher_steve_resource_list_tool)
-    mcp.tool(name="rancher_steve_resource_get")(rancher_steve_resource_get_tool)
-    mcp.tool(name="rancher_steve_resource_create")(rancher_steve_resource_create_tool)
-    mcp.tool(name="rancher_steve_resource_apply")(rancher_steve_resource_apply_tool)
-    mcp.tool(name="rancher_steve_resource_patch")(rancher_steve_resource_patch_tool)
-    mcp.tool(name="rancher_steve_resource_delete")(rancher_steve_resource_delete_tool)
-    mcp.tool(name="rancher_steve_resource_watch")(rancher_steve_resource_watch_tool)
-    mcp.tool(name="rancher_steve_resource_action_invoke")(rancher_steve_resource_action_invoke_tool)
-    mcp.tool(name="rancher_steve_resource_link_follow")(rancher_steve_resource_link_follow_tool)
+    mcp.tool(name="rancher_norman_resource_link_follow", annotations=READ_ONLY)(
+        rancher_norman_resource_link_follow_tool
+    )
+    mcp.tool(name="rancher_steve_resource_list", annotations=READ_ONLY)(
+        rancher_steve_resource_list_tool
+    )
+    mcp.tool(name="rancher_steve_resource_get", annotations=READ_ONLY)(
+        rancher_steve_resource_get_tool
+    )
+    mcp.tool(name="rancher_steve_resource_create", annotations=SAFE_WRITE)(
+        rancher_steve_resource_create_tool
+    )
+    mcp.tool(name="rancher_steve_resource_apply", annotations=IDEMPOTENT_WRITE)(
+        rancher_steve_resource_apply_tool
+    )
+    mcp.tool(name="rancher_steve_resource_patch", annotations=SAFE_WRITE)(
+        rancher_steve_resource_patch_tool
+    )
+    mcp.tool(name="rancher_steve_resource_delete", annotations=DESTRUCTIVE)(
+        rancher_steve_resource_delete_tool
+    )
+    mcp.tool(name="rancher_steve_resource_watch", annotations=READ_ONLY)(
+        rancher_steve_resource_watch_tool
+    )
+    mcp.tool(name="rancher_steve_resource_action_invoke", annotations=UNKNOWN_ACTION)(
+        rancher_steve_resource_action_invoke_tool
+    )
+    mcp.tool(name="rancher_steve_resource_link_follow", annotations=READ_ONLY)(
+        rancher_steve_resource_link_follow_tool
+    )

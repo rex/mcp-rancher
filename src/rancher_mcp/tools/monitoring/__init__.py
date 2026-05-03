@@ -6,6 +6,7 @@ from rancher_mcp.tools.monitoring.status import (
     rancher_monitoring_status,
     rancher_monitoring_status_tool,
 )
+from rancher_mcp.tools.support.annotations import READ_ONLY
 
 __all__ = [
     "rancher_monitoring_status",
@@ -16,4 +17,6 @@ __all__ = [
 def register_monitoring_tools(mcp: FastMCP) -> None:
     """Register curated monitoring tools with the FastMCP server."""
 
-    mcp.tool(name="rancher_monitoring_status")(rancher_monitoring_status_tool)
+    mcp.tool(name="rancher_monitoring_status", annotations=READ_ONLY)(
+        rancher_monitoring_status_tool
+    )

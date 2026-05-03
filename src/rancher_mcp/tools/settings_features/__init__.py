@@ -14,6 +14,7 @@ from rancher_mcp.tools.settings_features.settings import (
     rancher_settings_list,
     rancher_settings_list_tool,
 )
+from rancher_mcp.tools.support.annotations import READ_ONLY
 
 __all__ = [
     "rancher_feature_get",
@@ -27,7 +28,7 @@ __all__ = [
 def register_settings_feature_tools(mcp: FastMCP) -> None:
     """Register curated settings/features tools with the FastMCP server."""
 
-    mcp.tool(name="rancher_settings_list")(rancher_settings_list_tool)
-    mcp.tool(name="rancher_setting_get")(rancher_setting_get_tool)
-    mcp.tool(name="rancher_features_list")(rancher_features_list_tool)
-    mcp.tool(name="rancher_feature_get")(rancher_feature_get_tool)
+    mcp.tool(name="rancher_settings_list", annotations=READ_ONLY)(rancher_settings_list_tool)
+    mcp.tool(name="rancher_setting_get", annotations=READ_ONLY)(rancher_setting_get_tool)
+    mcp.tool(name="rancher_features_list", annotations=READ_ONLY)(rancher_features_list_tool)
+    mcp.tool(name="rancher_feature_get", annotations=READ_ONLY)(rancher_feature_get_tool)

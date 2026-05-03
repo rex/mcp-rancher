@@ -20,6 +20,7 @@ from rancher_mcp.tools.logging_backups.project_loggings import (
     rancher_project_loggings_list,
     rancher_project_loggings_list_tool,
 )
+from rancher_mcp.tools.support.annotations import READ_ONLY
 
 __all__ = [
     "rancher_cluster_logging_get",
@@ -35,9 +36,19 @@ __all__ = [
 def register_logging_backup_tools(mcp: FastMCP) -> None:
     """Register curated logging and backup tools with the FastMCP server."""
 
-    mcp.tool(name="rancher_cluster_loggings_list")(rancher_cluster_loggings_list_tool)
-    mcp.tool(name="rancher_cluster_logging_get")(rancher_cluster_logging_get_tool)
-    mcp.tool(name="rancher_project_loggings_list")(rancher_project_loggings_list_tool)
-    mcp.tool(name="rancher_project_logging_get")(rancher_project_logging_get_tool)
-    mcp.tool(name="rancher_etcd_backups_list")(rancher_etcd_backups_list_tool)
-    mcp.tool(name="rancher_etcd_backup_get")(rancher_etcd_backup_get_tool)
+    mcp.tool(name="rancher_cluster_loggings_list", annotations=READ_ONLY)(
+        rancher_cluster_loggings_list_tool
+    )
+    mcp.tool(name="rancher_cluster_logging_get", annotations=READ_ONLY)(
+        rancher_cluster_logging_get_tool
+    )
+    mcp.tool(name="rancher_project_loggings_list", annotations=READ_ONLY)(
+        rancher_project_loggings_list_tool
+    )
+    mcp.tool(name="rancher_project_logging_get", annotations=READ_ONLY)(
+        rancher_project_logging_get_tool
+    )
+    mcp.tool(name="rancher_etcd_backups_list", annotations=READ_ONLY)(
+        rancher_etcd_backups_list_tool
+    )
+    mcp.tool(name="rancher_etcd_backup_get", annotations=READ_ONLY)(rancher_etcd_backup_get_tool)

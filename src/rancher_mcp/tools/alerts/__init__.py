@@ -14,6 +14,7 @@ from rancher_mcp.tools.alerts.notifiers import (
     rancher_notifiers_list,
     rancher_notifiers_list_tool,
 )
+from rancher_mcp.tools.support.annotations import READ_ONLY
 
 __all__ = [
     "rancher_cluster_alert_rule_get",
@@ -27,7 +28,11 @@ __all__ = [
 def register_alerts_tools(mcp: FastMCP) -> None:
     """Register curated alerting and notifier tools with the FastMCP server."""
 
-    mcp.tool(name="rancher_notifiers_list")(rancher_notifiers_list_tool)
-    mcp.tool(name="rancher_notifier_get")(rancher_notifier_get_tool)
-    mcp.tool(name="rancher_cluster_alert_rules_list")(rancher_cluster_alert_rules_list_tool)
-    mcp.tool(name="rancher_cluster_alert_rule_get")(rancher_cluster_alert_rule_get_tool)
+    mcp.tool(name="rancher_notifiers_list", annotations=READ_ONLY)(rancher_notifiers_list_tool)
+    mcp.tool(name="rancher_notifier_get", annotations=READ_ONLY)(rancher_notifier_get_tool)
+    mcp.tool(name="rancher_cluster_alert_rules_list", annotations=READ_ONLY)(
+        rancher_cluster_alert_rules_list_tool
+    )
+    mcp.tool(name="rancher_cluster_alert_rule_get", annotations=READ_ONLY)(
+        rancher_cluster_alert_rule_get_tool
+    )
