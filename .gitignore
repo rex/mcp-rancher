@@ -32,3 +32,6 @@ htmlcov/
 images/
 tfplan
 tfplan.*
+
+# Claude Code session transcripts
+[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]-*.txt
