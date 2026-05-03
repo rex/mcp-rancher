@@ -28,6 +28,23 @@ from rancher_mcp.tools.support.conditions import (
 )
 from rancher_mcp.tools.support.values import status_to_bool, string_value
 
+# Rancher cluster conditions that represent optional features or configuration
+# choices — False means "not enabled", not "broken". Exclude from health issues.
+_FEATURE_FLAG_CONDITIONS: frozenset[str] = frozenset(
+    {
+        "AgentTlsStrictCheck",
+        "AlertingEnabled",
+        "BackupEnabled",
+        "CisScanEnabled",
+        "IstioEnabled",
+        "LoggingEnabled",
+        "MonitoringEnabled",
+        "OPAGatekeeperEnabled",
+        "PipelineEnabled",
+        "RotateCertificates",
+    }
+)
+
 
 def _condition_types_false(conditions: list[RancherCondition]) -> list[str]:
     """Return sorted condition types whose status is explicitly false."""
@@ -79,7 +96,8 @@ def _derive_issues(
     if state is not None and state != "active":
         issues.append(f"Cluster state is '{state}', expected 'active'")
     for ct in conditions_false:
-        issues.append(f"Condition {ct} is False")
+        if ct not in _FEATURE_FLAG_CONDITIONS:
+            issues.append(f"Condition {ct} is False")
     for name in component_unhealthy_names:
         issues.append(f"Component '{name}' is unhealthy")
     if nodes.not_ready > 0:
