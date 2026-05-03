@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+from typing import Any
+
+from mcp.server.fastmcp import Context
+
 from rancher_mcp.clients.management import ManagementDiscoveryClient, RancherManagementClient
 from rancher_mcp.config import AppSettings, get_settings
 from rancher_mcp.models.clusters_nodes import RancherCondition
@@ -108,9 +112,12 @@ async def _build_cluster_health(
     instance_name: str,
     cluster_id: str,
     client: ManagementDiscoveryClient,
+    ctx: Context[Any, Any, Any] | None = None,
 ) -> ClusterHealthCheck:
     """Fetch cluster detail + nodes and produce a health diagnosis."""
 
+    if ctx:
+        await ctx.report_progress(0, 2)
     payload = await client.get_json(f"/v3/clusters/{cluster_id}")
     summary = cluster_summary_from_payload(payload)
     conditions = conditions_from_value(payload.get("conditions"))
@@ -118,6 +125,8 @@ async def _build_cluster_health(
     ct_false = _condition_types_false(conditions)
     ch, cu, cu_names = _component_health(payload)
 
+    if ctx:
+        await ctx.report_progress(1, 2)
     node_payload = await client.get_json(
         "/v3/nodes",
         params={"clusterId": cluster_id},
@@ -151,36 +160,44 @@ async def rancher_cluster_health_check(
     instance: str | None = None,
     settings: AppSettings | None = None,
     client: ManagementDiscoveryClient | None = None,
+    ctx: Context[Any, Any, Any] | None = None,
 ) -> ClusterHealthCheck:
     """One-call cluster health diagnosis."""
 
     resolved = settings or get_settings()
     name, config = resolve_instance(resolved, instance)
     if client is not None:
-        return await _build_cluster_health(name, cluster_id, client)
+        return await _build_cluster_health(name, cluster_id, client, ctx)
     async with RancherManagementClient(name, config) as mc:
-        return await _build_cluster_health(name, cluster_id, mc)
+        return await _build_cluster_health(name, cluster_id, mc, ctx)
 
 
 async def rancher_cluster_health_check_tool(
     cluster_id: str,
     instance: str | None = None,
+    ctx: Context[Any, Any, Any] | None = None,
 ) -> ClusterHealthCheck:
     """One-call cluster health check with conditions, components, and nodes."""
 
     return await rancher_cluster_health_check(
         cluster_id=cluster_id,
         instance=instance,
+        ctx=ctx,
     )
 
 
 async def _build_clusters_health_summary(
     instance_name: str,
     client: ManagementDiscoveryClient,
+    ctx: Context[Any, Any, Any] | None = None,
 ) -> ClustersHealthSummary:
     """Fetch all clusters and produce a fleet-wide health rollup."""
 
+    if ctx:
+        await ctx.report_progress(0, 2)
     cluster_payload = await client.get_json("/v3/clusters")
+    if ctx:
+        await ctx.report_progress(1, 2)
     node_payload = await client.get_json("/v3/nodes")
     clusters_data = data_items(cluster_payload)
     all_nodes = data_items(node_payload)
@@ -230,23 +247,25 @@ async def rancher_clusters_health_summary(
     instance: str | None = None,
     settings: AppSettings | None = None,
     client: ManagementDiscoveryClient | None = None,
+    ctx: Context[Any, Any, Any] | None = None,
 ) -> ClustersHealthSummary:
     """Estate-wide cluster health rollup across all clusters."""
 
     resolved = settings or get_settings()
     name, config = resolve_instance(resolved, instance)
     if client is not None:
-        return await _build_clusters_health_summary(name, client)
+        return await _build_clusters_health_summary(name, client, ctx)
     async with RancherManagementClient(name, config) as mc:
-        return await _build_clusters_health_summary(name, mc)
+        return await _build_clusters_health_summary(name, mc, ctx)
 
 
 async def rancher_clusters_health_summary_tool(
     instance: str | None = None,
+    ctx: Context[Any, Any, Any] | None = None,
 ) -> ClustersHealthSummary:
     """Estate-wide cluster health summary with per-cluster health."""
 
-    return await rancher_clusters_health_summary(instance=instance)
+    return await rancher_clusters_health_summary(instance=instance, ctx=ctx)
 
 
 async def _build_cluster_nodes_summary(

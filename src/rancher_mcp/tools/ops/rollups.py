@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+from typing import Any
+
+from mcp.server.fastmcp import Context
+
 from rancher_mcp.clients.management import ManagementDiscoveryClient, RancherManagementClient
 from rancher_mcp.config import AppSettings, get_settings
 from rancher_mcp.models.ops.rollups import (
@@ -178,14 +182,19 @@ async def _build_project_health(
     instance_name: str,
     project_id: str,
     client: ManagementDiscoveryClient,
+    ctx: Context[Any, Any, Any] | None = None,
 ) -> ProjectHealthSummary:
     """Fetch one project and its namespaces, compute health summary."""
 
+    if ctx:
+        await ctx.report_progress(0, 2)
     project_payload = await client.get_json(f"/v3/projects/{project_id}")
     project_name = string_value(project_payload, "name") or project_id
     state = string_value(project_payload, "state")
     cluster_id = string_value(project_payload, "clusterId")
 
+    if ctx:
+        await ctx.report_progress(1, 2)
     ns_payload = await client.get_json(
         "/v3/namespaces",
         params={"projectId": project_id},
@@ -283,24 +292,27 @@ async def rancher_project_health_summary(
     instance: str | None = None,
     settings: AppSettings | None = None,
     client: ManagementDiscoveryClient | None = None,
+    ctx: Context[Any, Any, Any] | None = None,
 ) -> ProjectHealthSummary:
     """One-call project health: state, namespaces, failing pods, unhealthy workloads."""
 
     resolved_settings = settings or get_settings()
     instance_name, instance_config = resolve_instance(resolved_settings, instance)
     if client is not None:
-        return await _build_project_health(instance_name, project_id, client)
+        return await _build_project_health(instance_name, project_id, client, ctx)
     async with RancherManagementClient(instance_name, instance_config) as managed_client:
-        return await _build_project_health(instance_name, project_id, managed_client)
+        return await _build_project_health(instance_name, project_id, managed_client, ctx)
 
 
 async def rancher_project_health_summary_tool(
     project_id: str,
     instance: str | None = None,
+    ctx: Context[Any, Any, Any] | None = None,
 ) -> ProjectHealthSummary:
     """One-call project health overview: state, namespaces, pods, and workload readiness."""
 
     return await rancher_project_health_summary(
         project_id=project_id,
         instance=instance,
+        ctx=ctx,
     )
