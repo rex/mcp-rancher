@@ -57,7 +57,7 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 | 2. Core client and discovery layer | completed | management client, Steve client, discovery/schema tools, streaming substrate, and live `2.6.5` devlab are landed. | none |
 | 3. Generic tool engine | completed | generic Norman/Steve list/get/create/apply/patch/delete, action/link, watch support, schema query controls, and contract fixtures are landed and live-validated against the local Rancher `2.6.5` devlab. | none |
 | 4. Curated read-only packs | in_progress | settings/features, clusters/nodes, projects/namespaces, pods/services, storage, disruption, workloads, apps/catalogs, auth/identity, RBAC, Fleet/registration, logging/backup, ops aggregate helpers, monitoring status, CIS compliance, Kubernetes events, notifiers, and cluster alert rules are landed. | live validation for newer helpers, compatibility matrix |
-| 5. MCP protocol excellence | pending | not started intentionally. | tool annotations, MCP resources, MCP prompts, cursor pagination, structured errors, next-step hints, progress notifications, elicitation, OAuth 2.0, capability manifest resource, metrics, audit trail |
+| 5. MCP protocol excellence | completed | All 7 slices done (P5-1 through P5-7). | tool annotations, MCP resources, MCP prompts, cursor pagination, structured errors, next-step hints, progress notifications |
 | 6. Curated safe write packs | pending | not started intentionally. | blocked on Phase 5 closing |
 | 7. Curated high-risk and destructive packs | pending | not started intentionally. | blocked on Phases 5 and 6 closing |
 | 8. Subsystem completeness | pending | only the Phase 4 read slices that touch Fleet/logging/backup are landed so far. | Longhorn, deeper monitoring/logging/compliance, backup operator, extensions |
@@ -89,16 +89,16 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 
 | ID | Slice | Status |
 | --- | --- | --- |
-| P5-1 | Tool annotations sweep — all 110 tools | in_progress |
-| P5-2 | MCP Resources (`rancher://capabilities`, `rancher://instances`) | pending |
-| P5-3 | MCP Prompts — 10 operator workflow templates | pending |
-| P5-4 | Structured error taxonomy | pending |
-| P5-5 | Cursor-based pagination on list tools | pending |
-| P5-6 | Progress notifications on long-running tools | pending |
-| P5-7 | Next-step hints in curated tool responses | pending |
+| P5-1 | Tool annotations sweep — all 110 tools | completed |
+| P5-2 | MCP Resources (`rancher://capabilities`, `rancher://instances`) | completed |
+| P5-3 | MCP Prompts — 10 operator workflow templates | completed |
+| P5-4 | Structured error taxonomy | completed |
+| P5-5 | Cursor-based pagination on list tools | completed |
+| P5-6 | Progress notifications on long-running tools | completed |
+| P5-7 | Next-step hints in curated tool responses | completed |
 
 ## Next Queue
 
-1. Produce live validation and compatibility matrix for the newer Phase 4 packs to close Phase 4.
-2. Phase 5 is now active — working slices in order above.
-3. Start Phase 6 safe-write packs only after Phase 5 closes and explicit user instruction is received.
+1. **Phase 5 is COMPLETE** — all 7 slices (P5-1 through P5-7) are done and pushed.
+2. Produce live validation and compatibility matrix for the newer Phase 4 packs to formally close Phase 4.
+3. Start Phase 6 safe-write packs only after explicit user instruction is received (Phase 5 gate is clear).
