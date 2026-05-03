@@ -1,26 +1,6 @@
 {
   "$schema": "https://modelcontextprotocol.io/schema/v1/mcp.json",
   "mcpServers": {
-    "rancher-mcp": {
-      "command": "uv",
-      "args": [
-        "--directory",
-        "/Users/Pierce/Code/mcp-rancher",
-        "run",
-        "python",
-        "-m",
-        "rancher_mcp"
-      ],
-      "env": {
-        "RANCHER_URL": "${RANCHER_URL}",
-        "RANCHER_TOKEN": "${RANCHER_TOKEN}",
-        "RANCHER_VERIFY_SSL": "${RANCHER_VERIFY_SSL}",
-        "RANCHER_READ_ONLY": "${RANCHER_READ_ONLY}",
-        "RANCHER_MCP_CATALOG_PATH": "/Users/Pierce/Code/mcp-rancher/catalog/capabilities.yaml",
-        "LOG_LEVEL": "INFO",
-        "MCP_TIMEOUT": "60000"
-      }
-    },
     "serena": {
       "command": "uvx",
       "args": [
