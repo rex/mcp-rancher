@@ -2,7 +2,7 @@
 
 from typing import cast
 
-from pydantic import AliasChoices, AliasPath, Field, model_validator
+from pydantic import AliasChoices, AliasPath, Field, field_validator, model_validator
 
 from rancher_mcp.models.base import RancherModel
 
@@ -98,6 +98,12 @@ class RancherClusterSummary(RancherModel):
         default=None,
         validation_alias=AliasChoices("nodeVersion", AliasPath("version", "gitVersion")),
     )
+
+    @field_validator("kubernetes_version", mode="before")
+    @classmethod
+    def coerce_kubernetes_version(cls, v: object) -> object:
+        return str(v) if v is not None and not isinstance(v, str) else v
+
     node_count: int | None = None
     cpu_capacity: str | None = Field(default=None, validation_alias=AliasPath("capacity", "cpu"))
     memory_capacity: str | None = Field(
