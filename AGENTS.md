@@ -1,39 +1,78 @@
-# rancher-mcp — Project Standards
+# AGENTS.md — rancher-mcp
 
-## What This Repo Is
+## 1. Project snapshot
 
-This repo builds a comprehensive Rancher MCP server with primary compatibility targeting Rancher `2.6.5`.
+- **What**: Capability-aware Rancher MCP server; 100+ tools across discovery, generic fallbacks, and curated operator workflows. Primary target: Rancher 2.6.5.
+- **Runtime**: Python 3.12 · FastMCP · uv · httpx · structlog
+- **Non-goals**: Does not manage Rancher itself; does not support non-Rancher Kubernetes APIs directly.
 
-## Core Design Decisions
+## 2. Setup
 
-- Multi-instance support is first-class.
-- Discovery and schema coverage are mandatory.
-- Generic fallback tools are mandatory for exhaustiveness.
-- Curated operator workflows are mandatory for usability.
-- The server must be capability-aware and version-aware.
+```bash
+make setup        # install deps, copy .env, install pre-commit hooks
+cp .env.example .env && $EDITOR .env   # set RANCHER_URL, RANCHER_TOKEN
+make dev          # run the MCP server (stdio)
+make lab-up       # spin up local Rancher 2.6.5 lab (kind + helm)
+```
 
-## Operating Rules
-
-- Read [VIBE.yaml](/Users/pierce/Code/mcp-servers/mcp-rancher/VIBE.yaml) before making repo-wide decisions.
-- Treat [PERFECT_RANCHER_MCP_IMPLEMENTATION_PLAN.md](/Users/pierce/Code/mcp-servers/mcp-rancher/PERFECT_RANCHER_MCP_IMPLEMENTATION_PLAN.md) as the canonical plan.
-- Complete the oldest incomplete canonical phase before starting net-new work for a later phase.
-- If the working tree already contains later-phase work, land that slice cleanly before starting anything else so the repo returns to a clean state.
-- Preserve primary compatibility with Rancher `2.6.5`.
-- Use live Rancher validation before trusting undocumented or later-version-only behavior.
-- Keep secrets out of tool schemas.
-- Log to `stderr`, never MCP `stdout`.
-- Treat architecture soft line-limit findings as warnings to track, not commit blockers; hard-limit and other error-level findings still fail the gate.
-
-## Quality Gates
+## 3. Commands the agent MUST run before declaring done
 
 - `make lint`
 - `make typecheck`
 - `make test`
+- `make validate` (runs all three + architecture check)
 
-All are required before commit.
+## 4. Repo layout
 
-## Git Rules
+```
+src/rancher_mcp/     MCP server — tools, models, client, config
+tests/               unit/ and integration/ test suites
+catalog/             capabilities.yaml — machine-readable tool catalog
+devtools/            local lab scripts, mock Rancher server
+scripts/             architecture check, fixture capture
+docs/                ADRs and supplemental docs
+```
 
-- Use signed conventional commits.
-- Push after every logical commit.
-- Keep `TASK_STATE.md` and `CHANGELOG.md` current.
+## 5. Code style
+
+- One resource family or one operation family per module (`tool_module_rule`).
+- Soft file limit 250 lines, hard 400. Architecture gate enforces this.
+- Log to `stderr` only — never MCP protocol `stdout`.
+
+## 6. Testing policy
+
+Required. `make test` runs the full suite with coverage (60% minimum). Contract fixtures live in `tests/`. Capture fresh fixtures with `make capture-fixtures` against a live lab.
+
+## 7. Security (hard stops)
+
+- No secrets committed. `detect-secrets` + gitleaks enforce.
+- Never log secrets or tokens to any output stream.
+- All write operations require destructive confirmation guard.
+- Do not regress Rancher 2.6.5 compatibility to chase newer APIs.
+
+## 8. Architectural decisions
+
+- Canonical plan: `PERFECT_RANCHER_MCP_IMPLEMENTATION_PLAN.md`
+- Capability catalog: `catalog/capabilities.yaml`
+- Tool layers: discovery-and-schema → generic-resource-and-action → curated-operator-workflows (keep separate)
+- Multi-instance is first-class. Prefer capability detection over version assumptions.
+
+## 9. Things agents get wrong here
+
+- (none yet)
+
+## 10. Workflow
+
+1. Read this file and `VIBE.yaml` before repo-wide decisions.
+2. Complete the oldest incomplete plan phase before starting later-phase work.
+3. If `.mcp.json` declares `serena`: call `mcp__serena__initial_instructions` → `mcp__serena__check_onboarding_performed` first. Use Serena symbolic tools over built-in Read/Edit/Grep for code work.
+4. Run §3 commands before declaring done.
+
+## 11. When ending a session
+
+- Update `TASK_STATE.md` §6 (Handoff note).
+- Update `CHANGELOG.md` for any user-visible changes.
+
+## 12. Subdirectory AGENTS.md
+
+- (none yet)

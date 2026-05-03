@@ -6,12 +6,11 @@ project:
   lifecycle: brownfield
   stack: python-fastmcp
   description: Capability-aware Rancher MCP server with comprehensive Rancher 2.6.5 coverage
-  primary_target:
-    product: rancher-manager
-    version: "2.6.5"
-  support_policy:
-    primary_version: "2.6.5"
-    secondary_versions: "later versions via capability detection and validation"
+  primary_target: kubernetes
+  support_policy: maintained
+  extensions:
+    rancher_version: "2.6.5"
+    rancher_support: "2.6.5 primary; later versions via capability detection"
 
 stack:
   language: python
@@ -59,10 +58,10 @@ quality_gates:
     required: true
     command: make typecheck
   tests:
-    mode: enabled
+    mode: required
     command: make test
     required_suites:
-      - tests
+      - unit
     require_test_updates_for_all_code_changes: true
     coverage:
       enabled: true
