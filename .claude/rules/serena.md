@@ -13,9 +13,11 @@ MUST be (in order):
 1. `mcp__serena__initial_instructions` — fetches the dynamically-composed
    Serena Instructions Manual for the current context + modes. Do this
    before any other work.
-2. `mcp__serena__check_onboarding_performed` — does this project have
+2. `mcp__serena__activate_project` with the project name or path. Skip
+   only if step 1's output already reports an active project.
+3. `mcp__serena__check_onboarding_performed` — does this project have
    memories yet?
-3. If onboarding not done: `mcp__serena__onboarding`. Follow its prompt
+4. If onboarding not done: `mcp__serena__onboarding`. Follow its prompt
    to gather project purpose, tech stack, code style/conventions
    (naming/type hints/docstrings), task-completion commands
    (lint/format/test), codebase structure, entrypoint commands, system
@@ -23,8 +25,14 @@ MUST be (in order):
    Write each as a separate memory file via
    `mcp__serena__write_memory` (e.g. `suggested_commands`,
    `style_conventions`, `task_completion`, `codebase_structure`).
-4. If onboarding done: `mcp__serena__list_memories` and read only the
+   If onboarding done: `mcp__serena__list_memories` and read only the
    memories relevant to the task.
+   **CRITICAL**: If `list_memories` returns only a placeholder entry
+   such as `this_is_a_test_memory` with no real project content, treat
+   onboarding as not performed and call `mcp__serena__onboarding`.
+5. Write `.claude/serena-initialized` only after all steps above are
+   complete: `mkdir -p .claude && touch .claude/serena-initialized`.
+   Do NOT write this flag after step 1.
 
 **Do NOT touch code with built-in `Read`, `Edit`, `Glob`, or `Grep`
 until the above is complete.** Serena's symbolic tools are the default
