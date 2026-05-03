@@ -92,6 +92,12 @@ Single table of every MCP tool. Update on every PR that adds, renames, or remove
 | ops | cluster | nodes-summary | `rancher_cluster_nodes_summary` | ✅ live |
 | ops | project | health-summary | `rancher_project_health_summary` | ✅ live |
 | ops | namespace | workloads-summary | `rancher_namespace_workloads_summary` | ✅ live |
+| monitoring | cluster | monitoring-status | `rancher_monitoring_status` | ✅ live |
+| compliance | cis-scan-profile | list | `rancher_cis_scan_profiles_list` | ✅ live |
+| compliance | cis-scan-profile | get | `rancher_cis_scan_profile_get` | ✅ live |
+| compliance | cis-scan | list | `rancher_cis_scans_list` | ✅ live |
+| compliance | cis-scan | get | `rancher_cis_scan_get` | ✅ live |
+| ops | cluster | events-list | `rancher_cluster_events_list` | ✅ live |
 | resource_actions | norman-resource | action-invoke | `rancher_norman_resource_action_invoke` | ✅ live |
 | resource_actions | norman-resource | link-follow | `rancher_norman_resource_link_follow` | ✅ live |
 | resource_actions | steve-resource | action-invoke | `rancher_steve_resource_action_invoke` | ✅ live |
@@ -111,7 +117,7 @@ Single table of every MCP tool. Update on every PR that adds, renames, or remove
 | resource_mutations | steve-resource | delete | `rancher_steve_resource_delete` | ✅ live |
 
 ## Stats
-- Total: 98 tools
-- Live: 98
+- Total: 104 tools
+- Live: 104
 - WIP: 0
 - Planned: 0
