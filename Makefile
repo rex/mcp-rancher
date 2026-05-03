@@ -5,7 +5,7 @@ SHELL := /opt/homebrew/bin/zsh
         build clean clean-all info update validate check-architecture \
         check-if-the-agent-can-consider-this-task-completed capture-fixtures \
         lab-up lab-down lab-reset lab-status lab-logs lab-tools lab-rancher-up \
-        lab-rancher-down lab-kind-up lab-kind-down
+        lab-rancher-down lab-kind-up lab-kind-down mock-rancher
 
 # ─── Configuration ────────────────────────────────────────────────────────────
 PYTHON       := uv run python
@@ -43,6 +43,7 @@ help:
 	@echo "  \033[32mlab-kind-up\033[0m   Start the managed and downstream kind clusters"
 	@echo "  \033[32mlab-kind-down\033[0m Stop both managed kind clusters"
 	@echo "  \033[32mcapture-fixtures\033[0m Capture sanitized Rancher contract fixtures from the live devlab"
+	@echo "  \033[32mmock-rancher\033[0m   Run a fixture-backed mock Rancher server for provider config testing"
 	@echo ""
 	@echo "\033[1;36mQuality\033[0m"
 	@echo "  \033[32mlint\033[0m           Run ruff check"
@@ -134,6 +135,10 @@ lab-kind-down:
 ## Capture sanitized Rancher contract fixtures from the live devlab
 capture-fixtures:
 	$(PYTHON) scripts/capture_contract_fixtures.py
+
+## Run the fixture-backed mock Rancher server for local provider validation
+mock-rancher:
+	$(PYTHON) -m devtools.mock_rancher
 
 # ─── Quality ──────────────────────────────────────────────────────────────────
 ## Run ruff linter

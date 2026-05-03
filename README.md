@@ -141,6 +141,44 @@ Add to your Claude Desktop `claude_desktop_config.json`:
 }
 ```
 
+### Mock Rancher For Provider Config Testing
+
+You can validate MCP-provider wiring without a live Rancher by running the fixture-backed mock server:
+
+```bash
+make mock-rancher
+```
+
+Default mock auth:
+
+```text
+URL: http://127.0.0.1:18443
+username: admin
+password: admin
+token: token-mock:secret
+```
+
+The mock supports Rancher-style login at `/v3-public/localProviders/local?action=login`, bearer-token auth on the served endpoints, and a small read-only surface backed by the committed sanitized `2.6.5` fixtures:
+
+- `/healthz`
+- `/v3`
+- `/v3/settings/server-version`
+- `/v3/schemas`
+- `/v3/schemas/cluster`
+- `/v3/clusters`
+- `/v3/clusters/local`
+- `/v3/settings?limit=2&sort=name&source=default`
+- `/v1`
+- `/v1/schemas`
+- `/v1/schemas/namespace`
+- `/v1/schemas/service`
+- `/v1/namespaces?limit=2`
+- `/v1/namespaces/cattle-system`
+- `/v1/services?limit=2`
+- `/v1/services/default/kubernetes`
+
+That is enough to test provider configuration, bearer auth, discovery tools, and a few curated read flows before pointing the MCP server at a real Rancher instance.
+
 ## Tool Reference
 
 ### Discovery (10 tools)
