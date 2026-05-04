@@ -1,0 +1,73 @@
+schema_version: 1
+
+id: storage_classes
+pack: storage
+display_name_singular: storage_class
+display_name_plural: storage_classes
+
+plane: steve
+transport: k8s-proxy
+namespaced: false
+
+path_helper:
+  module: rancher_mcp.tools.storage.paths
+  list_function: storage_class_collection_path
+  detail_function: storage_class_resource_path
+
+list_response_model: rancher_mcp.models.storage.RancherStorageClassList
+detail_response_model: rancher_mcp.models.storage.RancherStorageClassDetail
+
+shared_imports:
+  - items
+  - storage_class_summary_from_payload
+  - string_list
+support_value_imports:
+  - string_dict
+summary_function: storage_class_summary_from_payload
+query_builder_function: build_list_query_params
+query_builder_in_shared: true
+
+operations: [list, get]
+
+list:
+  query_params: [limit, continue_token]
+  filters:
+    - name: default_only
+      summary_field: default_class
+      type: bool
+      predicate: is_true
+  count_field: storage_class_count
+  collection_field: storage_classes
+  next_steps:
+    - rancher_storage_class_get
+    - rancher_persistent_volumes_list
+    - rancher_persistent_volume_claims_list
+
+get:
+  arg_name: storage_class_name
+  summary_copy_fields:
+    - default_class
+    - parameter_keys
+  locals:
+    - name: metadata
+      expression: 'mapping_value(payload, "metadata") or {}'
+  extras:
+    - field: mount_options
+      expression: string_list(payload.get("mountOptions"))
+    - field: annotation_keys
+      expression: 'sorted(string_dict(mapping_value(metadata, "annotations") or {}))'
+  include_link_keys: false
+  include_payload: true
+  next_steps:
+    - rancher_storage_classes_list
+    - rancher_persistent_volumes_list
+
+tools:
+  list:
+    name: rancher_storage_classes_list
+    description: List storage classes via Rancher's raw Kubernetes proxy. Returns curated summaries.
+    annotation_set: READ_ONLY
+  get:
+    name: rancher_storage_class_get
+    description: Fetch one storage class by name via Rancher's raw Kubernetes proxy. Returns the curated summary plus full payload, mount options, and annotation keys.
+    annotation_set: READ_ONLY

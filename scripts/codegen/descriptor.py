@@ -20,6 +20,7 @@ import yaml
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 Plane = Literal["norman", "steve"]
+Transport = Literal["steve", "k8s-proxy"]
 Operation = Literal["list", "get", "create", "apply", "patch", "delete"]
 AnnotationSet = Literal[
     "READ_ONLY",
@@ -28,6 +29,8 @@ AnnotationSet = Literal[
     "DESTRUCTIVE",
     "UNKNOWN_ACTION",
 ]
+FilterType = Literal["str", "bool"]
+FilterPredicate = Literal["is_provided", "is_true"]
 
 
 class FilterSpec(BaseModel):
@@ -40,6 +43,37 @@ class FilterSpec(BaseModel):
 
     summary_field: str
     """Attribute on the summary model to compare against."""
+
+    type: FilterType = "str"
+    """Filter value type. `bool` uses `is`, `str` uses `==`."""
+
+    predicate: FilterPredicate = "is_provided"
+    """When the filter is applied. `is_provided` (default): `if X is not None`.
+    `is_true`: `if X is True` (only filters when explicitly True)."""
+
+
+class PathHelper(BaseModel):
+    """Path-helper functions for transports that don't use simple URL templates.
+
+    Used by `transport: k8s-proxy` to call helpers like
+    `workload_collection_path(cluster_id, namespace, "deployments")`.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    module: str
+    """Full import path to the module containing the helpers."""
+
+    list_function: str
+    """Function name for the list collection path."""
+
+    detail_function: str
+    """Function name for the detail resource path."""
+
+    resource_kind: str | None = None
+    """If set, passed as a string-literal positional arg to both helpers
+    (e.g. `"deployments"` for the workloads path helper). Omit for helpers
+    pre-bound to one resource (e.g. `storage_class_collection_path`)."""
 
 
 class ListConfig(BaseModel):
@@ -173,14 +207,25 @@ class Descriptor(BaseModel):
     plane: Plane
     """Rancher API plane: `norman` (/v3) or `steve` (/v1)."""
 
+    transport: Transport = "steve"
+    """Which client + path style. `steve` = SteveDiscoveryClient + URL templates.
+    `k8s-proxy` = ManagementDiscoveryClient + path-helper functions (used for
+    workload controllers on Rancher 2.6.5 where Steve write paths are unreliable).
+    """
+
     namespaced: bool = True
     """Whether the resource is namespaced. Affects path templating."""
 
-    list_path: str
-    """List path template (e.g. `/pods/{namespace}` or `/storageclasses`)."""
+    list_path: str = ""
+    """List path template (e.g. `/pods/{namespace}`). Required when transport=steve.
+    Ignored when transport=k8s-proxy (paths come from path_helper)."""
 
-    detail_path: str
-    """Detail path template (e.g. `/pods/{namespace}/{pod_name}`)."""
+    detail_path: str = ""
+    """Detail path template (e.g. `/pods/{namespace}/{pod_name}`). Required when
+    transport=steve. Ignored when transport=k8s-proxy."""
+
+    path_helper: PathHelper | None = None
+    """Path-helper config for transport=k8s-proxy. Must be None for transport=steve."""
 
     # --- Models (full import paths) --------------------------------
 
@@ -195,8 +240,21 @@ class Descriptor(BaseModel):
     shared_imports: list[str] = []
     """Names imported from `tools.<pack>.shared` (e.g. `data_items`)."""
 
+    support_value_imports: list[str] = []
+    """Extra names imported from `tools.support.values` beyond `mapping_value`
+    (e.g. `string_dict` for annotation extraction)."""
+
     summary_function: str
     """Name of the summary normalizer function (e.g. `pod_summary_from_payload`)."""
+
+    query_builder_function: str = "build_steve_list_query_params"
+    """Name of the query-param builder function. Default lives in
+    `rancher_mcp.services.resource_queries`. Override when a pack uses a
+    pack-specific builder (then set `query_builder_in_shared` to True)."""
+
+    query_builder_in_shared: bool = False
+    """If True, import `query_builder_function` from `tools.<pack>.shared`
+    instead of `services.resource_queries`."""
 
     # --- Operations to generate ------------------------------------
 
@@ -231,10 +289,25 @@ class Descriptor(BaseModel):
             raise ValueError("operations includes 'list' but tools.list metadata is missing")
         if "get" in self.operations and self.tools.get is None:
             raise ValueError("operations includes 'get' but tools.get metadata is missing")
-        if self.namespaced and "{namespace}" not in self.list_path:
-            raise ValueError("namespaced=true requires {namespace} in list_path")
-        if self.namespaced and "{namespace}" not in self.detail_path:
-            raise ValueError("namespaced=true requires {namespace} in detail_path")
+        if self.transport == "steve":
+            if not self.list_path:
+                raise ValueError("transport=steve requires list_path")
+            if not self.detail_path:
+                raise ValueError("transport=steve requires detail_path")
+            if self.path_helper is not None:
+                raise ValueError("transport=steve must not set path_helper")
+            if self.namespaced and "{namespace}" not in self.list_path:
+                raise ValueError("namespaced=true requires {namespace} in list_path")
+            if self.namespaced and "{namespace}" not in self.detail_path:
+                raise ValueError("namespaced=true requires {namespace} in detail_path")
+        elif self.transport == "k8s-proxy":
+            if self.path_helper is None:
+                raise ValueError("transport=k8s-proxy requires path_helper")
+            if self.list_path or self.detail_path:
+                raise ValueError(
+                    "transport=k8s-proxy must not set list_path/detail_path; "
+                    "use path_helper instead"
+                )
         return self
 
 

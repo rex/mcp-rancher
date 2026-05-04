@@ -2,24 +2,45 @@
 
 from __future__ import annotations
 
-{% if plane == 'steve' -%}
+{% if transport == 'steve' -%}
 from rancher_mcp.clients.steve import RancherSteveClient, SteveDiscoveryClient
+{% elif transport == 'k8s-proxy' -%}
+from rancher_mcp.clients.management import ManagementDiscoveryClient, RancherManagementClient
 {% endif -%}
 from rancher_mcp.config import AppSettings, get_settings
 from rancher_mcp.models.{{ pack }} import {{ list_model_name }}, {{ detail_model_name }}
 from rancher_mcp.services.instances import resolve_instance
-{% if plane == 'steve' -%}
-from rancher_mcp.services.resource_queries import build_steve_list_query_params
+{% if not query_builder_in_shared -%}
+from rancher_mcp.services.resource_queries import {{ query_builder_function }}
 {% endif -%}
 from rancher_mcp.services.resources.builders_pagination import next_page_token_from_payload
+{% if support_value_imports -%}
+from rancher_mcp.tools.support.values import mapping_value, {{ support_value_imports|join(', ') }}
+{% else -%}
+from rancher_mcp.tools.support.values import mapping_value
+{% endif -%}
+{% if path_helper -%}
+from {{ path_helper.module }} import {{ path_helper.list_function }}, {{ path_helper.detail_function }}
+{% endif -%}
 from rancher_mcp.tools.{{ pack }}.shared import (
 {%- for name in shared_imports %}
     {{ name }},
 {%- endfor %}
 )
-from rancher_mcp.tools.support.values import mapping_value
 
 
+{# Transport-specific shorthand definitions for use in the template #}
+{%- if transport == 'steve' -%}
+{%- set client_protocol = 'SteveDiscoveryClient' -%}
+{%- set client_class = 'RancherSteveClient' -%}
+{%- set client_var = 'steve_client' -%}
+{%- set items_function = 'data_items' -%}
+{%- elif transport == 'k8s-proxy' -%}
+{%- set client_protocol = 'ManagementDiscoveryClient' -%}
+{%- set client_class = 'RancherManagementClient' -%}
+{%- set client_var = 'managed_client' -%}
+{%- set items_function = 'items' -%}
+{%- endif %}
 {# ===================== LIST OPERATION ===================== #}
 {% if 'list' in operations -%}
 async def _fetch_{{ display_name_plural }}_list(
@@ -29,17 +50,17 @@ async def _fetch_{{ display_name_plural }}_list(
     namespace: str,
     {% endif -%}
     {%- for filter in list.filters %}
-    {{ filter.name }}: str | None,
+    {{ filter.name }}: {{ filter.type }} | None,
     {%- endfor %}
     {%- for qp in list.query_params if qp != 'continue_token' %}
     {{ qp }}: {{ qp_type(qp) }} | None,
     {%- endfor %}
-    client: SteveDiscoveryClient,
+    client: {{ client_protocol }},
     page_token: str | None = None,
 ) -> {{ list_model_name }}:
-    """Fetch and normalize the {{ display_name_plural }} collection for one namespace."""
+    """Fetch and normalize {{ fetch_docstring_phrase }}."""
 
-    query_params = build_steve_list_query_params(
+    query_params = {{ query_builder_function }}(
         {%- for qp in list.query_params %}
         {%- if qp == 'continue_token' %}
         continue_token=page_token,
@@ -48,11 +69,23 @@ async def _fetch_{{ display_name_plural }}_list(
         {%- endif %}
         {%- endfor %}
     )
+    {% if transport == 'steve' -%}
     payload = await client.get_json(f"{{ list_path }}", params=query_params or None)
-    {{ display_name_plural }} = [{{ summary_function }}(item) for item in data_items(payload)]
+    {%- elif transport == 'k8s-proxy' -%}
+    payload = await client.get_json(
+        {{ path_helper.list_function }}(cluster_id{% if namespaced %}, namespace{% endif %}{% if path_helper.resource_kind %}, "{{ path_helper.resource_kind }}"{% endif %}),
+        params=query_params or None,
+    )
+    {%- endif %}
+    {{ display_name_plural }} = [{{ summary_function }}(item) for item in {{ items_function }}(payload)]
     {%- for filter in list.filters %}
+    {%- if filter.predicate == 'is_true' %}
+    if {{ filter.name }} is True:
+        {{ display_name_plural }} = [{{ display_name_singular }} for {{ display_name_singular }} in {{ display_name_plural }} if {{ display_name_singular }}.{{ filter.summary_field }} is True]
+    {%- else %}
     if {{ filter.name }} is not None:
-        {{ display_name_plural }} = [{{ display_name_singular }} for {{ display_name_singular }} in {{ display_name_plural }} if {{ display_name_singular }}.{{ filter.summary_field }} == {{ filter.name }}]
+        {{ display_name_plural }} = [{{ display_name_singular }} for {{ display_name_singular }} in {{ display_name_plural }} if {{ display_name_singular }}.{{ filter.summary_field }} {{ 'is' if filter.type == 'bool' else '==' }} {{ filter.name }}]
+    {%- endif %}
     {%- endfor %}
     return {{ list_model_name }}(
         instance=instance_name,
@@ -78,7 +111,7 @@ async def rancher_{{ display_name_plural }}_list(
     {% endif -%}
     cluster_id: str = "local",
     {%- for filter in list.filters %}
-    {{ filter.name }}: str | None = None,
+    {{ filter.name }}: {{ filter.type }} | None = None,
     {%- endfor %}
     {%- for qp in list.query_params if qp != 'continue_token' %}
     {{ qp }}: {{ qp_type(qp) }} | None = None,
@@ -86,9 +119,9 @@ async def rancher_{{ display_name_plural }}_list(
     page_token: str | None = None,
     instance: str | None = None,
     settings: AppSettings | None = None,
-    client: SteveDiscoveryClient | None = None,
+    client: {{ client_protocol }} | None = None,
 ) -> {{ list_model_name }}:
-    """List {{ display_name_plural }} in one namespace with typed summaries."""
+    """List {{ display_name_plural }}{{ ' in one namespace' if namespaced else '' }} with typed summaries."""
 
     resolved_settings = settings or get_settings()
     instance_name, instance_config = resolve_instance(resolved_settings, instance)
@@ -108,11 +141,15 @@ async def rancher_{{ display_name_plural }}_list(
             client,
             page_token,
         )
-    async with RancherSteveClient(
+    {% if transport == 'steve' -%}
+    async with {{ client_class }}(
         instance_name,
         instance_config,
         cluster_id=cluster_id,
-    ) as steve_client:
+    ) as {{ client_var }}:
+    {%- elif transport == 'k8s-proxy' -%}
+    async with {{ client_class }}(instance_name, instance_config) as {{ client_var }}:
+    {%- endif %}
         return await _fetch_{{ display_name_plural }}_list(
             instance_name,
             cluster_id,
@@ -125,7 +162,7 @@ async def rancher_{{ display_name_plural }}_list(
             {%- for qp in list.query_params if qp != 'continue_token' %}
             {{ qp }},
             {%- endfor %}
-            steve_client,
+            {{ client_var }},
             page_token,
         )
 
@@ -140,11 +177,17 @@ async def _fetch_{{ display_name_singular }}_get(
     namespace: str,
     {% endif -%}
     {{ get.arg_name }}: str,
-    client: SteveDiscoveryClient,
+    client: {{ client_protocol }},
 ) -> {{ detail_model_name }}:
     """Fetch and normalize one {{ display_name_singular }}."""
 
+    {% if transport == 'steve' -%}
     payload = await client.get_json(f"{{ detail_path }}")
+    {%- elif transport == 'k8s-proxy' -%}
+    payload = await client.get_json(
+        {{ path_helper.detail_function }}(cluster_id{% if namespaced %}, namespace{% endif %}{% if path_helper.resource_kind %}, "{{ path_helper.resource_kind }}"{% endif %}, {{ get.arg_name }})
+    )
+    {%- endif %}
     summary = {{ summary_function }}(payload)
     {%- for local in get.locals %}
     {{ local.name }} = {{ local.expression }}
@@ -176,19 +219,23 @@ async def rancher_{{ display_name_singular }}_get(
     cluster_id: str = "local",
     instance: str | None = None,
     settings: AppSettings | None = None,
-    client: SteveDiscoveryClient | None = None,
+    client: {{ client_protocol }} | None = None,
 ) -> {{ detail_model_name }}:
-    """Fetch one {{ display_name_singular }} by namespace and name."""
+    """Fetch one {{ display_name_singular }}{{ ' by namespace and name' if namespaced else ' by name' }}."""
 
     resolved_settings = settings or get_settings()
     instance_name, instance_config = resolve_instance(resolved_settings, instance)
     if client is not None:
         return await _fetch_{{ display_name_singular }}_get(instance_name, cluster_id, {% if namespaced %}namespace, {% endif %}{{ get.arg_name }}, client)
-    async with RancherSteveClient(
+    {% if transport == 'steve' -%}
+    async with {{ client_class }}(
         instance_name,
         instance_config,
         cluster_id=cluster_id,
-    ) as steve_client:
+    ) as {{ client_var }}:
+    {%- elif transport == 'k8s-proxy' -%}
+    async with {{ client_class }}(instance_name, instance_config) as {{ client_var }}:
+    {%- endif %}
         return await _fetch_{{ display_name_singular }}_get(
             instance_name,
             cluster_id,
@@ -196,7 +243,7 @@ async def rancher_{{ display_name_singular }}_get(
             namespace,
             {% endif -%}
             {{ get.arg_name }},
-            steve_client,
+            {{ client_var }},
         )
 
 
@@ -209,7 +256,7 @@ async def rancher_{{ display_name_plural }}_list_tool(
     {% endif -%}
     cluster_id: str = "local",
     {%- for filter in list.filters %}
-    {{ filter.name }}: str | None = None,
+    {{ filter.name }}: {{ filter.type }} | None = None,
     {%- endfor %}
     {%- for qp in list.query_params if qp != 'continue_token' %}
     {{ qp }}: {{ qp_type(qp) }} | None = None,

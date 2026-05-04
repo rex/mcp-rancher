@@ -40,6 +40,30 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 
 ## Latest Logical Step
 
+- **J-1 in progress.** Migrated 3 of ~14 read-only packs into
+  descriptors (8 of ~30 resource types):
+  - `pods_services` (J-0 + verified)
+  - `workloads` (deployments, daemonsets, statefulsets) — added
+    k8s-proxy transport support
+  - `storage` (storage_classes, persistent_volumes,
+    persistent_volume_claims) — added cluster-scoped support,
+    custom query builder, `is_true` filter predicate
+- Schema extensions during J-1 (descriptor.py, plan.py,
+  tool_module.py.j2): `transport`, `path_helper` with optional
+  `resource_kind`, `namespaced` toggle, `query_builder_function`/
+  `query_builder_in_shared`, `FilterSpec.type` (str | bool),
+  `FilterSpec.predicate` (is_provided | is_true),
+  `support_value_imports`. See `ROADMAP.md` Track J entry for full
+  list and remaining packs.
+- `make validate` green: 210 tests, 85.57% coverage.
+- Per `default_slice_completion_behavior: continue-until-blocked`,
+  J-1 continues immediately on resume. Next packs (in order):
+  `disruption`, `projects_namespaces`, `clusters_nodes` (introduces
+  Norman plane — biggest remaining schema extension), then the
+  Norman-only packs (`settings_features`, `apps_catalogs`,
+  `auth_identity`, `rbac`, `fleet_registration`, `logging_backups`,
+  `alerts`, `compliance`). `monitoring` and `ops` are last (may not
+  fit per-type pattern; evaluate during migration).
 - **J-0 complete.** Built-time codegen substrate landed:
   `scripts/codegen/` (descriptor + plan + emitter + formatter +
   drift-check + Jinja templates), `catalog/curated_tools/` with
@@ -47,14 +71,12 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
   snapshot test, `make codegen` + `make check-codegen` wired into
   `make validate`, `serena-gate.py` denylists generated files.
   Existing pod/service tests pass against the generated module
-  without modification. Total tests: 210 (was 208).
-- Default slice-completion policy is now `continue-until-blocked`
-  (per `VIBE.yaml`), so J-1 (migrate the remaining ~28 read-only
-  resource types into descriptors) starts immediately on J-0 push.
+  without modification.
+- Default slice-completion policy is `continue-until-blocked`
+  (per `VIBE.yaml`).
 - Approved Track J (build-time codegen for curated tool plumbing).
-  Spec landed at `docs/codegen-curated-tools.md`. Track J inserted
-  in `ROADMAP.md` ahead of Tracks B/D/E/F. Next action after J-0
-  is J-1.
+  Spec at `docs/codegen-curated-tools.md`. Track J inserted in
+  `ROADMAP.md` ahead of Tracks B/D/E/F.
 - Captured the full track-level operational roadmap in `ROADMAP.md`
   (Tracks A-I plus a generation-potential appendix discussing
   codegen vs hand-written tradeoff). Future agents should read

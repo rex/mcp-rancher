@@ -1,0 +1,70 @@
+schema_version: 1
+
+id: daemonsets
+pack: workloads
+display_name_singular: daemonset
+display_name_plural: daemonsets
+
+plane: steve
+transport: k8s-proxy
+namespaced: true
+
+path_helper:
+  module: rancher_mcp.tools.workloads.paths
+  list_function: workload_collection_path
+  detail_function: workload_resource_path
+  resource_kind: daemonsets
+
+list_response_model: rancher_mcp.models.workloads.RancherDaemonSetList
+detail_response_model: rancher_mcp.models.workloads.RancherDaemonSetDetail
+
+shared_imports:
+  - daemonset_summary_from_payload
+  - items
+support_value_imports:
+  - string_dict
+summary_function: daemonset_summary_from_payload
+
+operations: [list, get]
+
+list:
+  query_params: [limit, continue_token, label_selector, field_selector]
+  filters:
+    - name: ready
+      summary_field: ready
+      type: bool
+  count_field: daemonset_count
+  collection_field: daemonsets
+  next_steps:
+    - rancher_daemonset_get
+    - rancher_pods_list
+
+get:
+  arg_name: daemonset_name
+  summary_copy_fields:
+    - id
+    - ready
+    - container_images
+  locals:
+    - name: metadata
+      expression: 'mapping_value(payload, "metadata") or {}'
+    - name: annotations
+      expression: 'mapping_value(metadata, "annotations") or {}'
+  extras:
+    - field: annotation_keys
+      expression: sorted(string_dict(annotations))
+  include_link_keys: false
+  include_payload: true
+  next_steps:
+    - rancher_daemonsets_list
+    - rancher_pods_list
+
+tools:
+  list:
+    name: rancher_daemonsets_list
+    description: List daemonsets in one namespace via Rancher's raw Kubernetes proxy. Returns curated summaries with readiness state.
+    annotation_set: READ_ONLY
+  get:
+    name: rancher_daemonset_get
+    description: Fetch one daemonset by namespace and name via Rancher's raw Kubernetes proxy. Returns the curated summary plus full payload and annotation keys.
+    annotation_set: READ_ONLY

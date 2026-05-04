@@ -2,6 +2,66 @@
 
 ## [2026-05-04] - Agent: Claude Sonnet 4.6
 ### Added
+- **Track J slice J-1 partial**: 2 more read-only packs migrated
+  to descriptors. Total tools migrated: pods, services,
+  deployments, daemonsets, statefulsets, storage_classes,
+  persistent_volumes, persistent_volume_claims (8 of ~30).
+  - `catalog/curated_tools/{deployments,daemonsets,statefulsets}.yml`
+    plus `_packs/workloads.yml`. Workloads use `transport: k8s-proxy`
+    (raw Kubernetes proxy via `RancherManagementClient`), bool
+    `ready` filter, annotation-keys derivation in detail.
+  - `catalog/curated_tools/{storage_classes,persistent_volumes,persistent_volume_claims}.yml`
+    plus `_packs/storage.yml`. Storage mixes cluster-scoped
+    (`storage_classes`, `persistent_volumes`) and namespaced
+    (`persistent_volume_claims`) k8s-proxy resources, uses a custom
+    query builder (`build_list_query_params` in pack's `shared.py`)
+    with only `limit` + `continue_token`, demonstrates the
+    `is_true` filter predicate (`default_only` flag), and
+    multiple-filter chaining (`phase` + `storage_class_name` on
+    PVs/PVCs).
+  - `src/rancher_mcp/tools/workloads/{_generated_deployments.py,_generated_daemonsets.py,_generated_statefulsets.py,__init__.py}` regenerated.
+  - `src/rancher_mcp/tools/storage/{_generated_storage_classes.py,_generated_persistent_volumes.py,_generated_persistent_volume_claims.py,__init__.py}` regenerated.
+  - Hand-rolled `workloads/{deployments,daemonsets,statefulsets}.py`
+    and `storage/{storage_classes,persistent_volumes,persistent_volume_claims}.py`
+    deleted.
+  - `.claude/hooks/serena-gate.py` `_CODEGEN_PACKS` extended with
+    `workloads` and `storage`.
+
+- **Schema extensions** (added incrementally as each pack revealed
+  a new pattern, kept the schema flexible without bloating it):
+  - `Descriptor.transport: steve | k8s-proxy` — picks client class
+    (`SteveDiscoveryClient` vs `ManagementDiscoveryClient`), items
+    extractor (`data_items` vs `items`), and async-with form
+    (`cluster_id=` kwarg or not).
+  - `Descriptor.path_helper` — module + list/detail function names
+    + optional `resource_kind`. Required when `transport=k8s-proxy`,
+    forbidden for `transport=steve` (validated). Supports both
+    workload-style helpers that take resource_kind as a runtime
+    arg AND storage-style helpers that are pre-bound to one
+    resource.
+  - `Descriptor.namespaced: bool` toggle (default true). Affects
+    function signature, URL templating, and path-helper call.
+  - `Descriptor.query_builder_function` / `query_builder_in_shared`
+    — picks query-param builder. Default
+    `build_steve_list_query_params` from
+    `services.resource_queries`; else the named function from the
+    pack's `shared.py`. The function name is auto-included in
+    `shared_imports` when `in_shared=true`.
+  - `FilterSpec.type: str | bool` — comparison operator (`==` vs
+    `is`).
+  - `FilterSpec.predicate: is_provided | is_true` — when filter
+    activates. `is_provided` is `if X is not None:`, `is_true` is
+    `if X is True:` (only filters when explicitly True).
+  - `Descriptor.support_value_imports` — extra imports from
+    `tools.support.values` beyond default `mapping_value`.
+
+### Verified
+- `make validate` passes: 210 tests, 85.57% coverage.
+- Existing test suites for migrated packs
+  (`test_pods_services_tools.py`, `test_workloads_tools.py`,
+  `test_storage_tools.py`) pass against the generated modules
+  without modification.
+
 - **Track J slice J-0**: build-time codegen substrate.
   - `scripts/codegen/` — descriptor schema (Pydantic, validates every
     YAML at load time), plan (turns descriptors into Jinja-ready

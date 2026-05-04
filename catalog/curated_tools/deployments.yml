@@ -1,0 +1,73 @@
+schema_version: 1
+
+id: deployments
+pack: workloads
+display_name_singular: deployment
+display_name_plural: deployments
+
+plane: steve
+transport: k8s-proxy
+namespaced: true
+
+path_helper:
+  module: rancher_mcp.tools.workloads.paths
+  list_function: workload_collection_path
+  detail_function: workload_resource_path
+  resource_kind: deployments
+
+list_response_model: rancher_mcp.models.workloads.RancherDeploymentList
+detail_response_model: rancher_mcp.models.workloads.RancherDeploymentDetail
+
+shared_imports:
+  - deployment_summary_from_payload
+  - items
+support_value_imports:
+  - string_dict
+summary_function: deployment_summary_from_payload
+
+operations: [list, get]
+
+list:
+  query_params: [limit, continue_token, label_selector, field_selector]
+  filters:
+    - name: ready
+      summary_field: ready
+      type: bool
+  count_field: deployment_count
+  collection_field: deployments
+  next_steps:
+    - rancher_deployment_get
+    - rancher_pods_list
+    - rancher_workload_readiness
+
+get:
+  arg_name: deployment_name
+  summary_copy_fields:
+    - id
+    - ready
+    - rollout_complete
+    - container_images
+  locals:
+    - name: metadata
+      expression: 'mapping_value(payload, "metadata") or {}'
+    - name: annotations
+      expression: 'mapping_value(metadata, "annotations") or {}'
+  extras:
+    - field: annotation_keys
+      expression: sorted(string_dict(annotations))
+  include_link_keys: false
+  include_payload: true
+  next_steps:
+    - rancher_deployments_list
+    - rancher_pods_list
+    - rancher_workload_readiness
+
+tools:
+  list:
+    name: rancher_deployments_list
+    description: List deployments in one namespace via Rancher's raw Kubernetes proxy. Returns curated summaries with readiness and rollout state.
+    annotation_set: READ_ONLY
+  get:
+    name: rancher_deployment_get
+    description: Fetch one deployment by namespace and name via Rancher's raw Kubernetes proxy. Returns the curated summary plus full payload and annotation keys.
+    annotation_set: READ_ONLY

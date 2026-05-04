@@ -1,0 +1,70 @@
+schema_version: 1
+
+id: persistent_volume_claims
+pack: storage
+display_name_singular: persistent_volume_claim
+display_name_plural: persistent_volume_claims
+
+plane: steve
+transport: k8s-proxy
+namespaced: true
+
+path_helper:
+  module: rancher_mcp.tools.storage.paths
+  list_function: persistent_volume_claim_collection_path
+  detail_function: persistent_volume_claim_resource_path
+
+list_response_model: rancher_mcp.models.storage.RancherPersistentVolumeClaimList
+detail_response_model: rancher_mcp.models.storage.RancherPersistentVolumeClaimDetail
+
+shared_imports:
+  - items
+  - persistent_volume_claim_summary_from_payload
+support_value_imports:
+  - string_dict
+summary_function: persistent_volume_claim_summary_from_payload
+query_builder_function: build_list_query_params
+query_builder_in_shared: true
+
+operations: [list, get]
+
+list:
+  query_params: [limit, continue_token]
+  filters:
+    - name: phase
+      summary_field: phase
+    - name: storage_class_name
+      summary_field: storage_class_name
+  count_field: claim_count
+  collection_field: persistent_volume_claims
+  next_steps:
+    - rancher_persistent_volume_claim_get
+    - rancher_persistent_volumes_list
+    - rancher_pods_list
+
+get:
+  arg_name: claim_name
+  summary_copy_fields:
+    - id
+  locals:
+    - name: metadata
+      expression: 'mapping_value(payload, "metadata") or {}'
+  extras:
+    - field: annotation_keys
+      expression: 'sorted(string_dict(mapping_value(metadata, "annotations") or {}))'
+  include_link_keys: false
+  include_payload: true
+  next_steps:
+    - rancher_persistent_volume_claims_list
+    - rancher_persistent_volumes_list
+    - rancher_pods_list
+
+tools:
+  list:
+    name: rancher_persistent_volume_claims_list
+    description: List persistent volume claims in one namespace via Rancher's raw Kubernetes proxy. Filter by phase or storage class.
+    annotation_set: READ_ONLY
+  get:
+    name: rancher_persistent_volume_claim_get
+    description: Fetch one persistent volume claim by namespace and name via Rancher's raw Kubernetes proxy. Returns the curated summary plus full payload and annotation keys.
+    annotation_set: READ_ONLY

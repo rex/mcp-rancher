@@ -1,0 +1,5 @@
+schema_version: 1
+id: storage
+register_function: register_storage_tools
+docstring: Curated Rancher storage tools.
+register_docstring: Register curated storage tools with the FastMCP server.

@@ -60,7 +60,7 @@ B/D/E/F locks in technical debt the migration would later remove.
   - Added `_generated_*.py` and descriptor-driven `__init__.py`
     paths to `.claude/hooks/serena-gate.py` codegen-output denylist.
     Edits route the agent back to the descriptor.
-- [ ] **J-1** Migrate existing read-only packs (~30 resource types)
+- [~] **J-1** Migrate existing read-only packs (~30 resource types)
   - One descriptor per resource type under
     `catalog/curated_tools/`. Pack the migrations into ~5-10 commits
     grouped by package.
@@ -68,6 +68,55 @@ B/D/E/F locks in technical debt the migration would later remove.
     pack tests pass.
   - Acceptance: tool count unchanged, `make validate` green, live
     `mcp_probe.py` reports the same tool count as before.
+  - **Migrated so far** (3 of ~14 packs, 8 of ~30 resource types):
+    - [x] `pods_services` — pods, services (Steve namespaced)
+    - [x] `workloads` — deployments, daemonsets, statefulsets
+      (k8s-proxy namespaced, bool filters, custom annotation extras)
+    - [x] `storage` — storage_classes, persistent_volumes,
+      persistent_volume_claims (k8s-proxy with cluster-scoped +
+      namespaced mix, custom query builder, is_true predicate)
+  - **Schema extensions added during J-1** (kept descriptor schema
+    flexible without bloating it):
+    - `transport: steve | k8s-proxy` — picks client class, items
+      extractor, and async-with form
+    - `path_helper` (required for k8s-proxy) — module + list/detail
+      function names, optional `resource_kind` for helpers that take
+      it as a runtime arg
+    - `namespaced: bool` toggle (was previously implicit)
+    - `query_builder_function` + `query_builder_in_shared` — picks
+      the query-param builder (default
+      `build_steve_list_query_params` from services; else from
+      pack's `shared.py`)
+    - `FilterSpec.type` (str | bool) — comparison operator
+    - `FilterSpec.predicate` (is_provided | is_true) — when filter
+      activates
+    - `support_value_imports` — extra imports from
+      `tools.support.values` (e.g. `string_dict`)
+  - **Remaining packs** (~11 of ~14 packs, all read-only):
+    - `disruption` — pod_disruption_budgets (likely steve-style)
+    - `projects_namespaces` — projects (Norman), namespaces (Steve)
+    - `clusters_nodes` — clusters (Norman), nodes (Steve)
+    - `settings_features` — settings, features (Norman)
+    - `apps_catalogs` — catalogs, templates, template_versions
+      (Norman)
+    - `auth_identity` — users, groups, auth_configs (Norman)
+    - `rbac` — global_roles, role_templates, three binding types
+      (Norman)
+    - `fleet_registration` — fleet_workspaces, registration_tokens
+    - `logging_backups` — cluster_loggings, project_loggings,
+      etcd_backups
+    - `alerts` — notifiers, cluster_alert_rules
+    - `compliance` — cis_scan_profiles, cis_scans
+    - `monitoring` — monitoring_status (single capability detection;
+      may not fit per-type pattern — evaluate during migration)
+    - `ops` — operator-intent rollups; **NOT migrated**, stays
+      hand-written per spec non-goals
+  - **Schema extensions still needed** (will surface during
+    migration of those packs):
+    - `plane: norman` transport (different client, different list
+      payload shape `{type:collection, data:[...]}` vs Steve's,
+      different query builder). 9 of 11 remaining packs use Norman.
+    - Possibly more shared-helper or detail-extras patterns.
 - [ ] **J-2** Track B new read tools via descriptors only
   - Provisioning (B-1), networking expansion (B-2),
     config-and-secrets (B-3), certificates (B-4), and the

@@ -66,23 +66,46 @@ class ModuleContext:
         """Convert to a kwargs dict for Jinja's `template.render(**ctx)`."""
 
         descriptor = self.descriptor
+        if descriptor.transport == "k8s-proxy":
+            fetch_docstring_phrase = (
+                f"{descriptor.display_name_plural} through Rancher's raw Kubernetes proxy"
+            )
+        elif descriptor.namespaced:
+            fetch_docstring_phrase = (
+                f"the {descriptor.display_name_plural} collection for one namespace"
+            )
+        else:
+            fetch_docstring_phrase = f"the {descriptor.display_name_plural} collection"
         return {
             "id": descriptor.id,
             "pack": descriptor.pack,
             "display_name_singular": descriptor.display_name_singular,
             "display_name_plural": descriptor.display_name_plural,
             "plane": descriptor.plane,
+            "transport": descriptor.transport,
             "namespaced": descriptor.namespaced,
             "list_path": descriptor.list_path,
             "detail_path": descriptor.detail_path,
+            "path_helper": descriptor.path_helper,
             "list_model_name": self.list_model_name,
             "detail_model_name": self.detail_model_name,
-            "shared_imports": sorted(descriptor.shared_imports),
+            "shared_imports": sorted(
+                set(descriptor.shared_imports)
+                | (
+                    {descriptor.query_builder_function}
+                    if descriptor.query_builder_in_shared
+                    else set()
+                )
+            ),
+            "support_value_imports": sorted(descriptor.support_value_imports),
             "summary_function": descriptor.summary_function,
+            "query_builder_function": descriptor.query_builder_function,
+            "query_builder_in_shared": descriptor.query_builder_in_shared,
             "operations": descriptor.operations,
             "list": descriptor.list_,
             "get": descriptor.get,
             "tools": descriptor.tools,
+            "fetch_docstring_phrase": fetch_docstring_phrase,
         }
 
 

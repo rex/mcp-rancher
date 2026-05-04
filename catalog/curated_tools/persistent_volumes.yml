@@ -1,0 +1,66 @@
+schema_version: 1
+
+id: persistent_volumes
+pack: storage
+display_name_singular: persistent_volume
+display_name_plural: persistent_volumes
+
+plane: steve
+transport: k8s-proxy
+namespaced: false
+
+path_helper:
+  module: rancher_mcp.tools.storage.paths
+  list_function: persistent_volume_collection_path
+  detail_function: persistent_volume_resource_path
+
+list_response_model: rancher_mcp.models.storage.RancherPersistentVolumeList
+detail_response_model: rancher_mcp.models.storage.RancherPersistentVolumeDetail
+
+shared_imports:
+  - items
+  - persistent_volume_node_hostnames
+  - persistent_volume_summary_from_payload
+summary_function: persistent_volume_summary_from_payload
+query_builder_function: build_list_query_params
+query_builder_in_shared: true
+
+operations: [list, get]
+
+list:
+  query_params: [limit, continue_token]
+  filters:
+    - name: phase
+      summary_field: phase
+    - name: storage_class_name
+      summary_field: storage_class_name
+  count_field: volume_count
+  collection_field: persistent_volumes
+  next_steps:
+    - rancher_persistent_volume_get
+    - rancher_persistent_volume_claims_list
+    - rancher_storage_classes_list
+
+get:
+  arg_name: volume_name
+  summary_copy_fields:
+    - volume_source_type
+  locals: []
+  extras:
+    - field: node_hostnames
+      expression: persistent_volume_node_hostnames(payload)
+  include_link_keys: false
+  include_payload: true
+  next_steps:
+    - rancher_persistent_volumes_list
+    - rancher_persistent_volume_claims_list
+
+tools:
+  list:
+    name: rancher_persistent_volumes_list
+    description: List persistent volumes via Rancher's raw Kubernetes proxy. Filter by phase or storage class. Returns curated summaries.
+    annotation_set: READ_ONLY
+  get:
+    name: rancher_persistent_volume_get
+    description: Fetch one persistent volume by name via Rancher's raw Kubernetes proxy. Returns the curated summary plus full payload and node hostnames.
+    annotation_set: READ_ONLY
