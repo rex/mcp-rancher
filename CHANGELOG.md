@@ -1,6 +1,23 @@
 # Changelog
 
 ## [2026-05-04] - Agent: Claude Sonnet 4.6
+### Added
+- `.claude/hooks/serena-gate.py` PreToolUse hook that hard-blocks
+  built-in `Read`/`Edit`/`MultiEdit`/`Write`/`Glob`/`Grep` on repo
+  source paths (`src/`, `devtools/`, `scripts/`, `tests/`) and Bash
+  invocations of `cat`/`head`/`tail`/`grep`/`rg`/`awk`/`sed`/`find`/
+  `wc`/`mv`/`cp`/`touch` (plus shell `>` redirection) targeting the
+  same paths. Forces Serena's symbolic tools per the project Serena
+  rule. Allows pipelines whose leading command is not in the
+  blocklist (e.g. `git log | head`), exempts `.venv/` (Serena
+  refuses gitignored paths — use
+  `mcp__serena__execute_shell_command` for those), and emits a
+  rejection message naming the Serena equivalent. Wired into
+  `.claude/settings.json` PreToolUse with matcher
+  `Bash|Read|Edit|MultiEdit|Write|Glob|Grep`, alongside the
+  existing `bash-guard.sh`. Verified live: Bash `cat src/...` and
+  built-in `Read` on `src/...` both reject correctly.
+
 ### Fixed
 - Reverted Phase 0 stdlib fast-path in `src/rancher_mcp/__main__.py`
   (commit `b8e8f76`). The fast-path's stdin/stdout reshuffling

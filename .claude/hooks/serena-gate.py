@@ -1,0 +1,232 @@
+#!/usr/bin/env python3
+"""PreToolUse gate: force Serena tools for repo source operations.
+
+Blocks built-in Read/Edit/MultiEdit/Write/Glob/Grep on repo source paths
+(src/, devtools/, scripts/, tests/) and Bash invocations of file-content
+extraction tools (cat/head/tail/grep/rg/awk/sed/find/wc/mv/cp/touch and
+shell redirection) that target those paths.
+
+Exemptions: anything containing ".venv/" passes through (Serena refuses
+gitignored paths, so .venv reads must use Bash via
+mcp__serena__execute_shell_command).
+
+Reads: tool-call JSON on stdin.
+Emits: PreToolUse permissionDecision JSON on stdout, exit 0.
+       Stays silent (exit 0) to allow.
+"""
+
+from __future__ import annotations
+
+import json
+import os
+import re
+import shlex
+import sys
+from pathlib import Path
+
+REPO_ROOT = Path("/Users/pierce/Code/mcp-servers/mcp-rancher").resolve()
+BLOCKED_DIRS = ("src", "devtools", "scripts", "tests")
+EXEMPT_SUBSTRINGS = (".venv/",)
+
+BLOCKED_BASH_LEADERS: dict[str, str] = {
+    "grep": "Use mcp__serena__search_for_pattern instead.",
+    "rg": "Use mcp__serena__search_for_pattern instead.",
+    "ripgrep": "Use mcp__serena__search_for_pattern instead.",
+    "ag": "Use mcp__serena__search_for_pattern instead.",
+    "ack": "Use mcp__serena__search_for_pattern instead.",
+    "awk": "Use mcp__serena__read_file or replace_content for repo files.",
+    "sed": "Use mcp__serena__replace_content (regex mode) for repo files.",
+    "cat": "Use mcp__serena__read_file for repo files.",
+    "head": "Use mcp__serena__read_file with start_line/end_line.",
+    "tail": "Use mcp__serena__read_file with start_line/end_line.",
+    "wc": "Avoid wc on repo source; use mcp__serena__find_symbol or read_file.",
+    "find": "Use mcp__serena__find_file or list_dir for repo path discovery.",
+    "mv": "Use mcp__serena__rename_symbol or read_file + create_text_file.",
+    "cp": "Use mcp__serena__read_file then create_text_file.",
+    "touch": "Use mcp__serena__create_text_file for new repo files.",
+}
+
+
+def deny(reason: str) -> None:
+    """Emit a deny decision and exit."""
+    json.dump(
+        {
+            "hookSpecificOutput": {
+                "hookEventName": "PreToolUse",
+                "permissionDecision": "deny",
+                "permissionDecisionReason": reason,
+            }
+        },
+        sys.stdout,
+    )
+    sys.stdout.write("\n")
+    sys.exit(0)
+
+
+def _is_exempt(path_str: str) -> bool:
+    return any(s in path_str for s in EXEMPT_SUBSTRINGS)
+
+
+def is_repo_source_path(path_str: str) -> bool:
+    """True if path resolves under REPO_ROOT/{src,devtools,scripts,tests}/.
+
+    Returns False for empty, .venv-containing, or out-of-repo paths.
+    """
+    if not path_str or _is_exempt(path_str):
+        return False
+    p = Path(path_str)
+    p = (REPO_ROOT / p).resolve() if not p.is_absolute() else p.resolve()
+    try:
+        rel = p.relative_to(REPO_ROOT)
+    except ValueError:
+        return False
+    parts = rel.parts
+    if not parts:
+        return False
+    return parts[0] in BLOCKED_DIRS and ".venv" not in parts
+
+
+def is_repo_root_or_source(path_str: str) -> bool:
+    """True if path is REPO_ROOT itself or under a blocked dir."""
+    if not path_str or _is_exempt(path_str):
+        return False
+    p = Path(path_str)
+    p = (REPO_ROOT / p).resolve() if not p.is_absolute() else p.resolve()
+    if p == REPO_ROOT:
+        return True
+    return is_repo_source_path(str(p))
+
+
+def split_pipeline_stages(cmd: str) -> list[str]:
+    """Best-effort split on top-level bash control operators."""
+    return re.split(r"\s*(?:\|\||&&|[|;])\s*", cmd)
+
+
+def looks_like_path_arg(token: str) -> bool:
+    """True if token is a non-flag positional that resolves to repo source."""
+    if not token or token.startswith("-"):
+        return False
+    return is_repo_source_path(token)
+
+
+def check_redirection(stage: str) -> str | None:
+    """Return target path if stage redirects to a repo source path, else None."""
+    # Match `> path` or `>> path` (path is the next non-whitespace token)
+    for match in re.finditer(r">{1,2}\s*([^\s|;&]+)", stage):
+        target = match.group(1).strip("\"'")
+        if is_repo_source_path(target):
+            return target
+    return None
+
+
+def handle_bash(tool_input: dict[str, object]) -> None:
+    cmd = str(tool_input.get("command", ""))
+    if not cmd:
+        return
+    for stage in split_pipeline_stages(cmd):
+        # Redirection check (any leader, including echo/printf)
+        redir_target = check_redirection(stage)
+        if redir_target is not None:
+            deny(
+                f"Blocked: shell redirection writing to repo source `{redir_target}`. "
+                f"Use mcp__serena__create_text_file or replace_symbol_body instead."
+            )
+        try:
+            tokens = shlex.split(stage, comments=True, posix=True)
+        except ValueError:
+            continue
+        if not tokens:
+            continue
+        # Skip leading ENV=value assignments (e.g. `RANCHER_X=1 cmd ...`)
+        idx = 0
+        while idx < len(tokens) and re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*=.*", tokens[idx]):
+            idx += 1
+        if idx >= len(tokens):
+            continue
+        leader = os.path.basename(tokens[idx])
+        reason = BLOCKED_BASH_LEADERS.get(leader)
+        if reason is None:
+            continue
+        for arg in tokens[idx + 1 :]:
+            if looks_like_path_arg(arg):
+                deny(
+                    f"Blocked: `{leader}` on repo source path `{arg}`. {reason} "
+                    f"(.venv reads still allowed via mcp__serena__execute_shell_command.)"
+                )
+
+
+def handle_read(tool_input: dict[str, object]) -> None:
+    fp = str(tool_input.get("file_path", ""))
+    if is_repo_source_path(fp):
+        deny(
+            f"Use mcp__serena__read_file (or find_symbol with include_body=True) "
+            f"instead of Read for `{fp}`. Serena's symbolic tools are the "
+            f"default substrate per .claude/rules/serena.md."
+        )
+
+
+def handle_edit(tool_name: str, tool_input: dict[str, object]) -> None:
+    fp = str(tool_input.get("file_path", ""))
+    if is_repo_source_path(fp):
+        deny(
+            f"Use mcp__serena__replace_symbol_body, replace_content, "
+            f"insert_before_symbol, or insert_after_symbol instead of "
+            f"{tool_name} for `{fp}`."
+        )
+
+
+def handle_write(tool_input: dict[str, object]) -> None:
+    fp = str(tool_input.get("file_path", ""))
+    if is_repo_source_path(fp):
+        deny(
+            f"Use mcp__serena__create_text_file (new files) or "
+            f"replace_symbol_body (full rewrite) instead of Write for `{fp}`."
+        )
+
+
+def handle_glob(tool_input: dict[str, object]) -> None:
+    path = str(tool_input.get("path", "") or str(REPO_ROOT))
+    if is_repo_root_or_source(path):
+        deny(
+            "Use mcp__serena__find_file or mcp__serena__list_dir instead of "
+            "Glob for repo path discovery. For paths outside the repo or in "
+            ".venv/, use mcp__serena__execute_shell_command."
+        )
+
+
+def handle_grep(tool_input: dict[str, object]) -> None:
+    path = str(tool_input.get("path", "") or str(REPO_ROOT))
+    if is_repo_root_or_source(path):
+        deny(
+            "Use mcp__serena__search_for_pattern instead of Grep. For .venv/ "
+            "or other gitignored content (which Serena refuses), use "
+            "mcp__serena__execute_shell_command 'grep ...'."
+        )
+
+
+def main() -> None:
+    try:
+        payload = json.load(sys.stdin)
+    except (json.JSONDecodeError, ValueError):
+        return
+    tool_name = str(payload.get("tool_name", ""))
+    tool_input = payload.get("tool_input") or {}
+    if not isinstance(tool_input, dict):
+        return
+
+    handlers = {
+        "Bash": handle_bash,
+        "Read": handle_read,
+        "Edit": lambda ti: handle_edit("Edit", ti),
+        "MultiEdit": lambda ti: handle_edit("MultiEdit", ti),
+        "Write": handle_write,
+        "Glob": handle_glob,
+        "Grep": handle_grep,
+    }
+    handler = handlers.get(tool_name)
+    if handler is not None:
+        handler(tool_input)
+
+
+if __name__ == "__main__":
+    main()
