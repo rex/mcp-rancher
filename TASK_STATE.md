@@ -19,8 +19,9 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 ## Repo Snapshot
 
 - Canonical plan: `PERFECT_RANCHER_MCP_IMPLEMENTATION_PLAN.md`
+- Operational roadmap (track-level work breakdown): `ROADMAP.md`
 - Primary compatibility target: Rancher `2.6.5`
-- Public tool surface: 100 tools
+- Public tool surface: 110 tools
 - Completion gate: `make check-if-the-agent-can-consider-this-task-completed`
 - Active quality gates:
   `make check-architecture`
@@ -28,8 +29,24 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
   `make typecheck`
   `make test`
 
+## Where Work Is Tracked
+
+- **Strategic intent and phase definitions** → `PERFECT_RANCHER_MCP_IMPLEMENTATION_PLAN.md`
+- **Track-level work items, with check-state** → `ROADMAP.md` (Tracks A-I,
+  plus a generation-potential appendix). Update ROADMAP when items land.
+- **Session resume state** → this file (latest logical step, current
+  risks, active phase slices).
+- **User-visible changes** → `CHANGELOG.md`
+
 ## Latest Logical Step
 
+- Captured the full track-level operational roadmap in `ROADMAP.md`
+  (Tracks A-I plus a generation-potential appendix discussing
+  codegen vs hand-written tradeoff). Future agents should read
+  `ROADMAP.md` for what to do next instead of re-deriving it from
+  the canonical plan + changelog + codebase.
+- Public tool surface corrected to 110 (was stale at 100; live probe
+  reports 110 registered).
 - Reverted the Phase 0 stdlib fast-path in
   `src/rancher_mcp/__main__.py` (commit `b8e8f76`). Phase 0's
   stdin/stdout reshuffling plus FastMCP `stateless=True` was
@@ -114,10 +131,33 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 
 ## Next Queue
 
-1. **Phase 5 is COMPLETE** — all 7 slices (P5-1 through P5-7) are done and pushed.
-2. Fix `rancher_project_health_summary` bug — calls `/v3/namespaces?projectId=...` (Norman) which 404s on downstream clusters; must switch to Steve path `/k8s/clusters/{cluster_id}/v1/namespaces?labelSelector=field.cattle.io/projectId={short_id}` (live-validated 2025-05-03).
-3. Produce live validation and compatibility matrix for the newer Phase 4 packs to formally close Phase 4.
-4. Start Phase 6 safe-write packs only after explicit user instruction is received (Phase 5 gate is clear).
+The granular work breakdown lives in `ROADMAP.md` (Tracks A-I).
+High-level priority order:
+
+1. **Phase 5 core slices are COMPLETE** (P5-1..P5-7). Phase 5 *stretch*
+   items (elicitation, OAuth, metrics, audit-trail) live in ROADMAP
+   Track C and remain open.
+2. **Track A** (open bugs / quick fixes) — pick up as touched.
+   - A-1 `rancher_project_health_summary` Norman→Steve fix.
+   - A-2 mutation-guard error-shape fix (string-as-JSON tripping
+     Pydantic at the MCP boundary).
+   - A-3 `cancellable=` → `abandon_on_cancel=` deprecation.
+   - A-4 server-identity env-var config.
+3. **Track B** (close Phase 4 read coverage) — five domains lack a
+   curated read pack: provisioning, networking-beyond-services,
+   config-and-secrets, certificates; plus deepening of monitoring,
+   logging, compliance, backup-restore.
+4. **Track G** (live validation + compatibility matrix) needed to
+   formally close Phase 4 / Phase 9.
+5. **Track D** (Phase 6 safe writes) blocked-historically on Phase 5;
+   gate is now clear but explicit user instruction recommended before
+   starting because of the safety surface.
+6. Tracks E, F, H, I follow the canonical phase order (P7, P8, P10, P11).
+
+**Pre-decision items** in ROADMAP that need user direction before any
+agent acts on them:
+- Whether to pursue codegen substrate (ROADMAP "Generation potential"
+  appendix). Would become a new Track J inserted before Tracks B/D/E/F.
 
 ## Captured Future Requests (not started)
 

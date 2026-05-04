@@ -2,6 +2,31 @@
 
 ## [2026-05-04] - Agent: Claude Sonnet 4.6
 ### Added
+- `ROADMAP.md` — track-level operational roadmap (Tracks A-I) so
+  agents do not re-derive remaining work from the canonical plan +
+  changelog + a fresh codebase audit each session. Includes:
+  - Track A open bugs / quick fixes (4 items including the known
+    `rancher_project_health_summary` Norman-vs-Steve bug and the
+    mutation-guard error-shape bug)
+  - Track B close Phase 4 read coverage (8 items spanning the 5
+    catalog domains with no curated pack and 4 packs that need
+    deepening)
+  - Track C Phase 5 stretch items (elicitation, OAuth, metrics,
+    audit-trail) not part of the closed P5-1..P5-7 slices
+  - Track D Phase 6 safe writes (5 areas)
+  - Track E Phase 7 destructive writes (6 areas)
+  - Track F Phase 8 subsystem depth (4 subsystems)
+  - Track G Phase 9 live validation + compatibility matrix (4 items)
+  - Track H Phase 10 hardening completion (5 items required by
+    `VIBE.yaml` security section)
+  - Track I Phase 11 catalog completion + gap closure (2 items)
+  - Generation-potential appendix analyzing what fraction of the
+    curated tool surface is amenable to build-time codegen from
+    Norman/Steve schemas plus a per-type descriptor file. Conclusion:
+    ~40-60% of Tracks B/D/E/F per-type boilerplate is mechanically
+    generable; tool naming, descriptions, field selection, and risk
+    classification stay editorial. Decision to pursue is open, would
+    become a new Track J inserted before Tracks B/D/E/F.
 - `.claude/hooks/serena-gate.py` PreToolUse hook that hard-blocks
   built-in `Read`/`Edit`/`MultiEdit`/`Write`/`Glob`/`Grep` on repo
   source paths (`src/`, `devtools/`, `scripts/`, `tests/`) and Bash
