@@ -67,6 +67,12 @@ QP_TYPES: Mapping[str, str] = {
     "group_principal_id": "str",
     "namespace_id": "str",
     "service_account": "str",
+    # logging_backups
+    "enable_json_parsing": "bool",
+    "include_system_component": "bool",
+    "output_flush_interval": "int",
+    "manual": "bool",
+    "filename": "str",
 }
 
 QP_KWARGS: Mapping[str, str] = {
@@ -118,6 +124,12 @@ QP_KWARGS: Mapping[str, str] = {
     "group_principal_id": "group_principal_id",
     "namespace_id": "namespace_id",
     "service_account": "service_account",
+    # logging_backups
+    "enable_json_parsing": "enable_json_parsing",
+    "include_system_component": "include_system_component",
+    "output_flush_interval": "output_flush_interval",
+    "manual": "manual",
+    "filename": "filename",
 }
 
 

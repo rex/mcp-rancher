@@ -2,6 +2,20 @@
 
 ## [2026-05-04] - Agent: Claude Sonnet 4.6
 ### Added
+- **Track J slice J-1 continuation**: `logging_backups` pack
+  migrated (3 types: cluster_loggings, project_loggings,
+  etcd_backups). Total now 31 of ~30 expected types across 12 of
+  ~14 packs.
+  - Refactored `tools/logging_backups/shared.py` from generic
+    `**values` to 3 typed builders. Added `status_keys(payload)`
+    helper. Existing `target_types(payload)` and `action_keys`/
+    `link_keys` helpers retained.
+  - **Schema additions**: `enable_json_parsing` (bool),
+    `include_system_component` (bool), `output_flush_interval`
+    (int), `manual` (bool), `filename` (str). First int-type
+    query kwarg beyond `limit`.
+  - `_CODEGEN_PACKS` extended with `logging_backups`.
+
 - **Track J slice J-1 continuation**: `fleet_registration` pack
   migrated (2 types: fleet_workspaces,
   cluster_registration_tokens). Total now 28 of ~30 types across

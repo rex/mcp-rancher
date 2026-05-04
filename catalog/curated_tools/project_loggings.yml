@@ -1,0 +1,79 @@
+schema_version: 1
+
+id: project_loggings
+pack: logging_backups
+display_name_singular: project_logging
+display_name_plural: project_loggings
+
+plane: norman
+transport: norman
+namespaced: false
+cluster_id_required: false
+pagination: false
+
+list_path: /v3/projectloggings
+detail_path: /v3/projectloggings/{project_logging_id}
+
+list_response_model: rancher_mcp.models.logging_backups.RancherProjectLoggingList
+detail_response_model: rancher_mcp.models.logging_backups.RancherProjectLoggingDetail
+
+shared_imports:
+  - data_items
+  - link_keys
+  - project_logging_summary_from_payload
+  - status_keys
+  - target_types
+summary_function: project_logging_summary_from_payload
+query_builder_function: build_project_logging_query_params
+query_builder_in_shared: true
+
+operations: [list, get]
+
+list:
+  query_params:
+    - limit
+    - project_id
+    - name
+    - state
+    - enable_json_parsing
+    - output_flush_interval
+    - sort_by
+    - reverse
+  filters: []
+  count_field: project_logging_count
+  collection_field: project_loggings
+  next_steps:
+    - rancher_project_logging_get
+    - rancher_cluster_loggings_list
+
+get:
+  arg_name: project_logging_id
+  summary_copy_fields: []
+  locals:
+    - name: status
+      expression: 'mapping_value(payload, "status") or {}'
+  extras:
+    - field: status
+      expression: dict(status)
+    - field: status_keys
+      expression: status_keys(payload)
+    - field: target_types
+      expression: target_types(payload)
+    - field: link_keys
+      expression: link_keys(payload)
+  include_action_keys: true
+  include_link_keys: false
+  include_payload: true
+  next_steps:
+    - rancher_project_loggings_list
+    - rancher_cluster_loggings_list
+
+tools:
+  list:
+    name: rancher_project_loggings_list
+    description: List Rancher project logging configs via the Norman /v3 API. Filter by project id, name, state, or other logging settings.
+    annotation_set: READ_ONLY
+  get:
+    name: rancher_project_logging_get
+    description: Fetch one Rancher project logging config by id via the Norman /v3 API. Returns the curated summary plus status, target types, and link keys.
+    annotation_set: READ_ONLY

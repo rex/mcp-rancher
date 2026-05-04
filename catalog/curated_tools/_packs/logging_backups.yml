@@ -1,0 +1,5 @@
+schema_version: 1
+id: logging_backups
+register_function: register_logging_backup_tools
+docstring: Curated Rancher logging and backup tool facade.
+register_docstring: Register curated logging and backup tools with the FastMCP server.

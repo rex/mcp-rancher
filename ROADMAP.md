@@ -122,6 +122,13 @@ B/D/E/F locks in technical debt the migration would later remove.
       `shared.py` from generic `**values` to 2 typed builders;
       added `status_keys(payload)` helper for fleet_workspaces
       detail)
+    - [x] `logging_backups` — cluster_loggings, project_loggings,
+      etcd_backups (3 Norman types; refactored `shared.py` from
+      generic `**values` to 3 typed builders; added
+      `enable_json_parsing` (bool), `include_system_component`
+      (bool), `output_flush_interval` (int — first int qparam
+      beyond limit), `manual` (bool), `filename` (str) query
+      kwargs)
   - **Schema extensions added during J-1** (kept descriptor schema
     flexible without bloating it):
     - `transport: steve | k8s-proxy` — picks client class, items
@@ -139,16 +146,15 @@ B/D/E/F locks in technical debt the migration would later remove.
       activates
     - `support_value_imports` — extra imports from
       `tools.support.values` (e.g. `string_dict`)
-  - **Remaining packs** (~3 of ~14 packs, all read-only):
+  - **Remaining packs** (~2 of ~14 packs, all read-only):
     - `projects_namespaces` — projects (Norman), namespaces (Steve)
       (cluster_id filter now supported — only `marker` pagination
       remains as a blocker; namespaces side is hybrid Steve+
       pack-local builder)
     - `clusters_nodes` — clusters (Norman), nodes (Steve)
-    - `logging_backups` — cluster_loggings, project_loggings,
-      etcd_backups (uses generic `build_query_params(**values)`
-      with HTTP-name kwargs; needs shared.py refactor to typed
-      builders matching the rbac/fleet pattern)
+    - `monitoring` (`monitoring_status` only — single capability
+      detection tool; may not fit per-type pattern, evaluate
+      during migration)
     - `fleet_registration` — fleet_workspaces, registration_tokens
     - `logging_backups` — cluster_loggings, project_loggings,
       etcd_backups

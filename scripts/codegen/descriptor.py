@@ -128,6 +128,12 @@ class ListConfig(BaseModel):
             "group_principal_id",
             "namespace_id",
             "service_account",
+            # logging_backups
+            "enable_json_parsing",
+            "include_system_component",
+            "output_flush_interval",
+            "manual",
+            "filename",
         ]
     ]
     """Query-builder kwargs to pass through. Type for each is registered in
