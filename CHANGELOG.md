@@ -1,5 +1,33 @@
 # Changelog
 
+## [2026-05-04] - Agent: Claude Sonnet 4.6
+### Fixed
+- Reverted Phase 0 stdlib fast-path in `src/rancher_mcp/__main__.py`
+  (commit `b8e8f76`). The fast-path's stdin/stdout reshuffling
+  combined with FastMCP's `stateless=True` mode caused `tools/list`
+  responses to fail with `anyio.ClosedResourceError` — the server's
+  write stream was torn down inside `ServerSession._receive_loop`
+  before the in-flight lazy-list-tools handler could send its
+  response, leaving Claude connected but with zero tools registered.
+  Without Phase 0, initialize completes in ~272 ms (well under the
+  3 s MCP timeout that motivated the optimization), so the
+  optimization was unnecessary on this machine. `MCP_TIMEOUT=60000`
+  should be set in the user's MCP server env entry as
+  belt-and-suspenders for slower startups.
+
+### Added
+- `scripts/mcp_probe.py`: manual stdio harness that drives
+  rancher-mcp through `initialize` + `notifications/initialized` +
+  `tools/list`, reporting handshake latency, tool count, and the
+  last 15 stderr lines. Reads launch spec from `~/.claude.json` so
+  it tests exactly what Claude executes. Use whenever Claude
+  reports the server failed to connect or shows zero tools.
+
+### Verified
+- `make validate` passes (208 tests, 85.57% coverage)
+- `scripts/mcp_probe.py` reports 110 tools registered, initialize
+  in ~322 ms, tools/list in ~162 ms
+
 ## [2026-05-03] - Agent: Claude Sonnet 4.6
 ### Added
 - Alerting and notifier tools (Rancher legacy v1 alert system):

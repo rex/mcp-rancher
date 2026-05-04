@@ -30,16 +30,31 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 
 ## Latest Logical Step
 
-- Phase 3 generic fallback coverage is now complete:
-  Norman and Steve list/get/create/apply/patch/delete
-  generic action invocation
-  generic link following
-  Steve watch support
-  schema query and capability discovery
+- Reverted the Phase 0 stdlib fast-path in
+  `src/rancher_mcp/__main__.py` (commit `b8e8f76`). Phase 0's
+  stdin/stdout reshuffling plus FastMCP `stateless=True` was
+  closing the write stream before the lazy `tools/list` handler
+  could send its response, so Claude showed the server connected
+  but with zero tools loaded.
+- The reverted (a79de38) version is verified working via
+  `scripts/mcp_probe.py`: 110 tools registered, initialize ~322 ms,
+  tools/list ~162 ms.
+- New diagnostic harness landed at `scripts/mcp_probe.py`. Use it
+  whenever Claude reports the server failed to connect or shows
+  zero tools — it reads the launch spec from `~/.claude.json` so
+  it tests exactly what Claude itself executes.
+- Phase 3 generic fallback coverage remains complete (Norman and
+  Steve list/get/create/apply/patch/delete, generic action
+  invocation, generic link following, Steve watch support, schema
+  query and capability discovery).
 - Live Rancher `2.6.5` validation succeeded for:
   Norman project create/apply/patch/delete
   Steve ConfigMap create/apply/patch/delete
-- Steve generic mutations are validated through Rancher's Kubernetes proxy paths under `/k8s/clusters/.../api` and `/k8s/clusters/.../apis`, not by assuming direct Steve write paths are reliable on `2.6.5`.
+- Steve generic mutations are validated through Rancher's
+  Kubernetes proxy paths under `/k8s/clusters/.../api` and
+  `/k8s/clusters/.../apis`, not by assuming direct Steve write
+  paths are reliable on `2.6.5`.
+
 
 ## Architecture Gate Semantics
 
