@@ -124,6 +124,7 @@ _CODEGEN_PACKS = frozenset(
         "auth_identity",
         "compliance",
         "disruption",
+        "fleet_registration",
         "pods_services",
         "rbac",
         "settings_features",

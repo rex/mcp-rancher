@@ -117,6 +117,11 @@ B/D/E/F locks in technical debt the migration would later remove.
       `namespace_id`, `service_account`); demonstrates tuple-unpack
       extras via `subject = binding_subject(payload)` local +
       `subject_kind: subject[0]`, `subject_id: subject[1]`)
+    - [x] `fleet_registration` — fleet_workspaces,
+      cluster_registration_tokens (2 Norman types; refactored
+      `shared.py` from generic `**values` to 2 typed builders;
+      added `status_keys(payload)` helper for fleet_workspaces
+      detail)
   - **Schema extensions added during J-1** (kept descriptor schema
     flexible without bloating it):
     - `transport: steve | k8s-proxy` — picks client class, items
@@ -134,7 +139,7 @@ B/D/E/F locks in technical debt the migration would later remove.
       activates
     - `support_value_imports` — extra imports from
       `tools.support.values` (e.g. `string_dict`)
-  - **Remaining packs** (~4 of ~14 packs, all read-only):
+  - **Remaining packs** (~3 of ~14 packs, all read-only):
     - `projects_namespaces` — projects (Norman), namespaces (Steve)
       (cluster_id filter now supported — only `marker` pagination
       remains as a blocker; namespaces side is hybrid Steve+
@@ -143,10 +148,7 @@ B/D/E/F locks in technical debt the migration would later remove.
     - `logging_backups` — cluster_loggings, project_loggings,
       etcd_backups (uses generic `build_query_params(**values)`
       with HTTP-name kwargs; needs shared.py refactor to typed
-      builders matching the rbac pattern)
-    - `fleet_registration` — fleet_workspaces,
-      cluster_registration_tokens (same shared.py refactor needed
-      as logging_backups)
+      builders matching the rbac/fleet pattern)
     - `fleet_registration` — fleet_workspaces, registration_tokens
     - `logging_backups` — cluster_loggings, project_loggings,
       etcd_backups

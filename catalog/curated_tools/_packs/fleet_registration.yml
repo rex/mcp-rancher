@@ -1,0 +1,5 @@
+schema_version: 1
+id: fleet_registration
+register_function: register_fleet_registration_tools
+docstring: Curated Rancher Fleet and registration tool facade.
+register_docstring: Register curated Fleet and registration tools with the FastMCP server.

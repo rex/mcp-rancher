@@ -12,13 +12,54 @@ from rancher_mcp.tools.support.collections import object_items
 from rancher_mcp.tools.support.values import mapping_value
 
 
-def _build_query_params(**values: str | int | bool | None) -> dict[str, str | int | bool]:
-    """Drop unset query params while preserving typed scalar values."""
+def _build_fleet_workspace_query_params(
+    *,
+    limit: int | None,
+    name: str | None,
+    sort_by: str | None,
+    reverse: bool | None,
+) -> dict[str, str | int | bool]:
+    """Build typed query params for the Rancher Fleet workspaces collection."""
 
     params: dict[str, str | int | bool] = {}
-    for key, value in values.items():
-        if value is not None:
-            params[key] = value
+    if limit is not None:
+        params["limit"] = limit
+    if name is not None:
+        params["name"] = name
+    if sort_by is not None:
+        params["sort"] = sort_by
+    if reverse is not None:
+        params["reverse"] = reverse
+    return params
+
+
+def _build_cluster_registration_token_query_params(
+    *,
+    limit: int | None,
+    cluster_id: str | None,
+    name: str | None,
+    state: str | None,
+    namespace_id: str | None,
+    sort_by: str | None,
+    reverse: bool | None,
+) -> dict[str, str | int | bool]:
+    """Build typed query params for the cluster-registration-tokens collection."""
+
+    params: dict[str, str | int | bool] = {}
+    if limit is not None:
+        params["limit"] = limit
+    if cluster_id is not None:
+        params["clusterId"] = cluster_id
+    if name is not None:
+        params["name"] = name
+    if state is not None:
+        params["state"] = state
+    if namespace_id is not None:
+        params["namespaceId"] = namespace_id
+    if sort_by is not None:
+        params["sort"] = sort_by
+    if reverse is not None:
+        params["reverse"] = reverse
     return params
 
 
@@ -40,6 +81,12 @@ def _link_keys(payload: Mapping[str, object]) -> list[str]:
     return sorted(mapping_value(payload, "links") or {})
 
 
+def _status_keys(payload: Mapping[str, object]) -> list[str]:
+    """Return sorted status field names from a Rancher payload."""
+
+    return sorted((mapping_value(payload, "status") or {}).keys())
+
+
 def _fleet_workspace_summary_from_payload(
     payload: Mapping[str, object],
 ) -> RancherFleetWorkspaceSummary:
@@ -56,9 +103,11 @@ def _cluster_registration_token_summary_from_payload(
     return RancherClusterRegistrationTokenSummary.model_validate(payload)
 
 
-build_query_params = _build_query_params
-data_items = _data_items
 action_keys = _action_keys
-link_keys = _link_keys
-fleet_workspace_summary_from_payload = _fleet_workspace_summary_from_payload
+build_cluster_registration_token_query_params = _build_cluster_registration_token_query_params
+build_fleet_workspace_query_params = _build_fleet_workspace_query_params
 cluster_registration_token_summary_from_payload = _cluster_registration_token_summary_from_payload
+data_items = _data_items
+fleet_workspace_summary_from_payload = _fleet_workspace_summary_from_payload
+link_keys = _link_keys
+status_keys = _status_keys

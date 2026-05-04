@@ -1,0 +1,67 @@
+schema_version: 1
+
+id: fleet_workspaces
+pack: fleet_registration
+display_name_singular: fleet_workspace
+display_name_plural: fleet_workspaces
+
+plane: norman
+transport: norman
+namespaced: false
+cluster_id_required: false
+pagination: false
+
+list_path: /v3/fleetworkspaces
+detail_path: /v3/fleetworkspaces/{fleet_workspace_id}
+
+list_response_model: rancher_mcp.models.fleet_registration.RancherFleetWorkspaceList
+detail_response_model: rancher_mcp.models.fleet_registration.RancherFleetWorkspaceDetail
+
+shared_imports:
+  - action_keys
+  - data_items
+  - fleet_workspace_summary_from_payload
+  - link_keys
+  - status_keys
+summary_function: fleet_workspace_summary_from_payload
+query_builder_function: build_fleet_workspace_query_params
+query_builder_in_shared: true
+
+operations: [list, get]
+
+list:
+  query_params: [limit, name, sort_by, reverse]
+  filters: []
+  count_field: fleet_workspace_count
+  collection_field: fleet_workspaces
+  next_steps:
+    - rancher_fleet_workspace_get
+    - rancher_cluster_registration_tokens_list
+
+get:
+  arg_name: fleet_workspace_id
+  summary_copy_fields: []
+  locals: []
+  extras:
+    - field: status_keys
+      expression: status_keys(payload)
+    - field: action_keys
+      expression: action_keys(payload)
+    - field: link_keys
+      expression: link_keys(payload)
+  include_action_keys: false
+  include_link_keys: false
+  include_payload: true
+  next_steps:
+    - rancher_fleet_workspaces_list
+    - rancher_cluster_registration_tokens_list
+
+tools:
+  list:
+    name: rancher_fleet_workspaces_list
+    description: List Rancher Fleet workspaces via the Norman /v3 API. Filter by name or sort by any field.
+    annotation_set: READ_ONLY
+  get:
+    name: rancher_fleet_workspace_get
+    description: Fetch one Rancher Fleet workspace by id via the Norman /v3 API. Returns the curated summary plus status/action/link keys and the full payload.
+    annotation_set: READ_ONLY

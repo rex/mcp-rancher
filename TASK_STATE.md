@@ -45,8 +45,8 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
   `tasks/track_j_codegen_resume` re-read. Continuing J-1 with the
   `disruption` pack per the recommended order; `projects_namespaces`
   next (introduces the Norman plane schema extension).
-- **J-1 in progress.** Migrated 10 of ~14 read-only packs into
-  descriptors (26 of ~30 resource types):
+- **J-1 in progress.** Migrated 11 of ~14 read-only packs into
+  descriptors (28 of ~30 resource types):
   - `pods_services` (J-0 + verified)
   - `workloads` (deployments, daemonsets, statefulsets) — added
     k8s-proxy transport support
@@ -87,6 +87,11 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
     `shared.py` from generic `**values` to 5 typed builders.
     Added 17 new query kwargs to schema. Demonstrates tuple-unpack
     extras via `binding_subject(payload)` returning `(kind, id)`
+  - `fleet_registration` (fleet_workspaces,
+    cluster_registration_tokens) — 2 Norman types. Refactored
+    `shared.py` from generic `**values` to 2 typed builders.
+    Added `status_keys(payload)` helper for the fleet_workspaces
+    detail.
 - Schema extensions during J-1 (descriptor.py, plan.py,
   tool_module.py.j2): `transport` (steve | k8s-proxy | norman),
   `path_helper` with optional `resource_kind`, `namespaced` toggle,

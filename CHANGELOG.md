@@ -2,6 +2,18 @@
 
 ## [2026-05-04] - Agent: Claude Sonnet 4.6
 ### Added
+- **Track J slice J-1 continuation**: `fleet_registration` pack
+  migrated (2 types: fleet_workspaces,
+  cluster_registration_tokens). Total now 28 of ~30 types across
+  11 of ~14 packs.
+  - `catalog/curated_tools/{fleet_workspaces,cluster_registration_tokens}.yml`
+    plus `_packs/fleet_registration.yml`. Both Norman.
+  - **Refactored `tools/fleet_registration/shared.py`** from
+    generic `**values` builder to 2 typed builders, matching the
+    rbac pattern. Added a `status_keys(payload)` helper used by
+    fleet_workspaces' detail extras.
+  - `_CODEGEN_PACKS` extended with `fleet_registration`.
+
 - **Track J slice J-1 continuation**: `rbac` pack migrated (5 types:
   global_roles, role_templates, global_role_bindings,
   cluster_role_template_bindings, project_role_template_bindings).
