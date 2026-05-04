@@ -84,7 +84,8 @@ async def _fetch_feature_get(
 
     payload = await client.get_json(f"/v3/features/{feature_id}")
 
-    return RancherFeatureDetail.model_validate(payload).model_copy(
+    detail = RancherFeatureDetail.model_validate(payload)
+    return detail.model_copy(
         update={
             "payload": dict(payload),
             "suggested_next_steps": ["rancher_features_list", "rancher_settings_list"],

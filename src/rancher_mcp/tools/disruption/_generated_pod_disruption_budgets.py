@@ -104,7 +104,8 @@ async def _fetch_pod_disruption_budget_get(
     summary = pdb_summary_from_payload(payload)
 
     metadata = mapping_value(payload, "metadata") or {}
-    return RancherPodDisruptionBudgetDetail.model_validate(payload).model_copy(
+    detail = RancherPodDisruptionBudgetDetail.model_validate(payload)
+    return detail.model_copy(
         update={
             "id": summary.id,
             "disruption_allowed": summary.disruption_allowed,

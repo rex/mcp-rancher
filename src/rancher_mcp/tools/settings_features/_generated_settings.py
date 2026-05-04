@@ -94,7 +94,8 @@ async def _fetch_setting_get(
 
     payload = await client.get_json(f"/v3/settings/{setting_id}")
 
-    return RancherSettingDetail.model_validate(payload).model_copy(
+    detail = RancherSettingDetail.model_validate(payload)
+    return detail.model_copy(
         update={
             "payload": dict(payload),
             "suggested_next_steps": ["rancher_settings_list", "rancher_features_list"],

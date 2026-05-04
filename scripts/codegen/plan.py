@@ -35,6 +35,10 @@ QP_TYPES: Mapping[str, str] = {
     "reverse": "bool",
     "marker": "str",
     "cluster_id_filter": "str",
+    "me": "bool",
+    "name": "str",
+    "provider_type": "str",
+    "access_mode": "str",
 }
 
 QP_KWARGS: Mapping[str, str] = {
@@ -54,6 +58,10 @@ QP_KWARGS: Mapping[str, str] = {
     "reverse": "reverse",
     "marker": "marker",
     "cluster_id_filter": "cluster_id",
+    "me": "me",
+    "name": "name",
+    "provider_type": "provider_type",
+    "access_mode": "access_mode",
 }
 
 

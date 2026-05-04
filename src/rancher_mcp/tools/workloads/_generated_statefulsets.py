@@ -119,7 +119,8 @@ async def _fetch_statefulset_get(
 
     metadata = mapping_value(payload, "metadata") or {}
     annotations = mapping_value(metadata, "annotations") or {}
-    return RancherStatefulSetDetail.model_validate(payload).model_copy(
+    detail = RancherStatefulSetDetail.model_validate(payload)
+    return detail.model_copy(
         update={
             "id": summary.id,
             "ready": summary.ready,

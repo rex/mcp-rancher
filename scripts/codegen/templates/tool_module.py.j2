@@ -223,7 +223,8 @@ async def _fetch_{{ display_name_singular }}_get(
     {%- for local in get.locals %}
     {{ local.name }} = {{ local.expression }}
     {%- endfor %}
-    return {{ detail_model_name }}.model_validate(payload).model_copy(
+    detail = {{ detail_model_name }}.model_validate(payload)
+    return detail.model_copy(
         update={
             {%- for field in get.summary_copy_fields %}
             "{{ field }}": summary.{{ field }},
@@ -231,6 +232,9 @@ async def _fetch_{{ display_name_singular }}_get(
             {%- for extra in get.extras %}
             "{{ extra.field }}": {{ extra.expression }},
             {%- endfor %}
+            {%- if get.include_action_keys %}
+            "action_keys": sorted(mapping_value(payload, "actions") or {}),
+            {%- endif %}
             {%- if get.include_link_keys %}
             "link_keys": sorted(mapping_value(payload, "links") or {}),
             {%- endif %}

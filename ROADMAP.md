@@ -84,6 +84,11 @@ B/D/E/F locks in technical debt the migration would later remove.
       PACK; introduced `transport: norman`, `cluster_id_required:
       false`, `pagination: false`, bool query params, custom
       Norman query builders via `query_builder_in_shared`)
+    - [x] `auth_identity` — users, groups, auth_configs (3 Norman
+      types; introduced `me`, `name`, `provider_type`,
+      `access_mode` query kwargs and `include_action_keys: bool`
+      on GetConfig; refactored template to expose `detail` as a
+      local variable so extras can reference `detail.X`)
   - **Schema extensions added during J-1** (kept descriptor schema
     flexible without bloating it):
     - `transport: steve | k8s-proxy` — picks client class, items
@@ -101,15 +106,13 @@ B/D/E/F locks in technical debt the migration would later remove.
       activates
     - `support_value_imports` — extra imports from
       `tools.support.values` (e.g. `string_dict`)
-  - **Remaining packs** (~9 of ~14 packs, all read-only):
+  - **Remaining packs** (~8 of ~14 packs, all read-only):
     - `projects_namespaces` — projects (Norman), namespaces (Steve)
       (DEFERRED — needs additional schema for `cluster_id` filter
-      semantics on Norman + `marker`-based pagination + Norman
-      detail `actions` field for `action_keys`)
+      semantics on Norman + `marker`-based pagination)
     - `clusters_nodes` — clusters (Norman), nodes (Steve)
     - `apps_catalogs` — catalogs, templates, template_versions
       (Norman)
-    - `auth_identity` — users, groups, auth_configs (Norman)
     - `rbac` — global_roles, role_templates, three binding types
       (Norman)
     - `fleet_registration` — fleet_workspaces, registration_tokens

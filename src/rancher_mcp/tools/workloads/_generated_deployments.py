@@ -120,7 +120,8 @@ async def _fetch_deployment_get(
 
     metadata = mapping_value(payload, "metadata") or {}
     annotations = mapping_value(metadata, "annotations") or {}
-    return RancherDeploymentDetail.model_validate(payload).model_copy(
+    detail = RancherDeploymentDetail.model_validate(payload)
+    return detail.model_copy(
         update={
             "id": summary.id,
             "ready": summary.ready,

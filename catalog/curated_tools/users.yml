@@ -1,0 +1,61 @@
+schema_version: 1
+
+id: users
+pack: auth_identity
+display_name_singular: user
+display_name_plural: users
+
+plane: norman
+transport: norman
+namespaced: false
+cluster_id_required: false
+pagination: false
+
+list_path: /v3/users
+detail_path: /v3/users/{user_id}
+
+list_response_model: rancher_mcp.models.auth_identity.RancherUserList
+detail_response_model: rancher_mcp.models.auth_identity.RancherUserDetail
+
+shared_imports:
+  - condition_types_true_sorted
+  - data_items
+  - user_summary_from_payload
+summary_function: user_summary_from_payload
+query_builder_function: build_user_query_params
+query_builder_in_shared: true
+
+operations: [list, get]
+
+list:
+  query_params: [limit, state, enabled, me, sort_by, reverse]
+  filters: []
+  count_field: user_count
+  collection_field: users
+  next_steps:
+    - rancher_user_get
+    - rancher_groups_list
+
+get:
+  arg_name: user_id
+  summary_copy_fields: []
+  locals: []
+  extras:
+    - field: condition_types_true
+      expression: condition_types_true_sorted(detail.conditions)
+  include_action_keys: true
+  include_link_keys: true
+  include_payload: true
+  next_steps:
+    - rancher_users_list
+    - rancher_groups_list
+
+tools:
+  list:
+    name: rancher_users_list
+    description: List Rancher users via the Norman /v3 API. Filter by state, enabled, me, or sort by any field.
+    annotation_set: READ_ONLY
+  get:
+    name: rancher_user_get
+    description: Fetch one Rancher user by id via the Norman /v3 API. Returns the curated summary plus condition states, action/link keys, and the full payload.
+    annotation_set: READ_ONLY

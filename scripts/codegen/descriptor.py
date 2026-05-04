@@ -97,6 +97,10 @@ class ListConfig(BaseModel):
             "reverse",
             "marker",
             "cluster_id_filter",
+            "me",
+            "name",
+            "provider_type",
+            "access_mode",
         ]
     ]
     """Query-builder kwargs to pass through. Type for each is registered in
@@ -163,6 +167,12 @@ class GetConfig(BaseModel):
 
     include_link_keys: bool = True
     """Add `link_keys: sorted(mapping_value(payload, "links") or {})`."""
+
+    include_action_keys: bool = False
+    """Add `action_keys: sorted(mapping_value(payload, "actions") or {})`.
+    Norman responses include an `actions` field for invokable resource actions
+    (e.g. `setpassword` on user, `disable` on auth_config); leave False for
+    Steve / k8s-proxy resources where this field is absent."""
 
     include_payload: bool = True
     """Add `payload: dict(payload)`."""

@@ -131,7 +131,8 @@ async def _fetch_persistent_volume_claim_get(
     summary = persistent_volume_claim_summary_from_payload(payload)
 
     metadata = mapping_value(payload, "metadata") or {}
-    return RancherPersistentVolumeClaimDetail.model_validate(payload).model_copy(
+    detail = RancherPersistentVolumeClaimDetail.model_validate(payload)
+    return detail.model_copy(
         update={
             "id": summary.id,
             "annotation_keys": sorted(string_dict(mapping_value(metadata, "annotations") or {})),

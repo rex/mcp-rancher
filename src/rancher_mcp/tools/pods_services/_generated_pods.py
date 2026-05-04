@@ -116,7 +116,8 @@ async def _fetch_pod_get(
     payload = await client.get_json(f"/pods/{namespace}/{pod_name}")
     summary = pod_summary_from_payload(payload)
 
-    return RancherPodDetail.model_validate(payload).model_copy(
+    detail = RancherPodDetail.model_validate(payload)
+    return detail.model_copy(
         update={
             "id": summary.id,
             "ready": summary.ready,

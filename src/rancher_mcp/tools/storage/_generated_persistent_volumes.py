@@ -117,7 +117,8 @@ async def _fetch_persistent_volume_get(
     payload = await client.get_json(persistent_volume_resource_path(cluster_id, volume_name))
     summary = persistent_volume_summary_from_payload(payload)
 
-    return RancherPersistentVolumeDetail.model_validate(payload).model_copy(
+    detail = RancherPersistentVolumeDetail.model_validate(payload)
+    return detail.model_copy(
         update={
             "volume_source_type": summary.volume_source_type,
             "node_hostnames": persistent_volume_node_hostnames(payload),

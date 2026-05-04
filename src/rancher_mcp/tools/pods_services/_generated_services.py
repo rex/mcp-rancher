@@ -107,7 +107,8 @@ async def _fetch_service_get(
     summary = service_summary_from_payload(payload)
 
     metadata = mapping_value(payload, "metadata") or {}
-    return RancherServiceDetail.model_validate(payload).model_copy(
+    detail = RancherServiceDetail.model_validate(payload)
+    return detail.model_copy(
         update={
             "id": summary.id,
             "relationship_types": relationship_types(metadata),

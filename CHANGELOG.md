@@ -2,6 +2,39 @@
 
 ## [2026-05-04] - Agent: Claude Sonnet 4.6
 ### Added
+- **Track J slice J-1 continuation**: `auth_identity` pack migrated
+  (users, groups, auth_configs). Total now 14 of ~30 types across
+  6 of ~14 packs.
+  - `catalog/curated_tools/{users,groups,auth_configs}.yml` plus
+    `_packs/auth_identity.yml`. All 3 Norman types share the global
+    Norman config (`transport: norman`, `cluster_id_required:
+    false`, `pagination: false`).
+  - **Schema extension**: `GetConfig.include_action_keys: bool =
+    False`. When True, the generator emits `"action_keys":
+    sorted(mapping_value(payload, "actions") or {})` in the detail
+    update — the standard Norman pattern for surfacing the resource
+    actions map (`setpassword` on users, `disable` on auth configs,
+    etc.). Defaults False so Steve / k8s-proxy resources skip it.
+  - **Schema extension**: `qp_type` / `qp_kwarg` extended with
+    `me` (bool), `name` (str), `provider_type` (str), `access_mode`
+    (str) for the new auth-identity query kwargs. Pack-local
+    builder owns the kwarg→HTTP mapping (e.g. `provider_type` →
+    `type`, `access_mode` → `accessMode`).
+  - **Template refactor**: the get path now always emits
+    `detail = {{ detail_model_name }}.model_validate(payload)` as
+    a local before `detail.model_copy(update={...})`. This allows
+    descriptor extras to reference `detail.X` directly (e.g.
+    `condition_types_true_sorted(detail.conditions)` for users).
+    All previously-migrated packs regenerated identically (same
+    behavior, one-line added internally).
+  - `src/rancher_mcp/tools/auth_identity/{_generated_users.py,_generated_groups.py,_generated_auth_configs.py,__init__.py}` regenerated.
+  - Hand-rolled `auth_identity/{users,groups,auth_configs}.py`
+    deleted; `shared.py` retained.
+  - `.claude/hooks/serena-gate.py` `_CODEGEN_PACKS` extended with
+    `auth_identity`.
+  - Existing `tests/unit/test_auth_identity_tools.py` (7 tests)
+    passes against the generated module without modification.
+
 - **Track J slice J-1 continuation**: Norman plane support landed,
   `settings_features` pack migrated (settings + features). Total now
   11 of ~30 types across 5 of ~14 packs.

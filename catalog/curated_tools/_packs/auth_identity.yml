@@ -1,0 +1,5 @@
+schema_version: 1
+id: auth_identity
+register_function: register_auth_identity_tools
+docstring: Curated auth and identity tool facade.
+register_docstring: Register curated auth and identity tools with the FastMCP server.

@@ -109,7 +109,8 @@ async def _fetch_storage_class_get(
     summary = storage_class_summary_from_payload(payload)
 
     metadata = mapping_value(payload, "metadata") or {}
-    return RancherStorageClassDetail.model_validate(payload).model_copy(
+    detail = RancherStorageClassDetail.model_validate(payload)
+    return detail.model_copy(
         update={
             "default_class": summary.default_class,
             "parameter_keys": summary.parameter_keys,
