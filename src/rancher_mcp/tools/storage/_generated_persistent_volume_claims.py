@@ -129,6 +129,7 @@ async def _fetch_persistent_volume_claim_get(
         persistent_volume_claim_resource_path(cluster_id, namespace, claim_name)
     )
     summary = persistent_volume_claim_summary_from_payload(payload)
+
     metadata = mapping_value(payload, "metadata") or {}
     return RancherPersistentVolumeClaimDetail.model_validate(payload).model_copy(
         update={

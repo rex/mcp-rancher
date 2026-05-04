@@ -21,17 +21,39 @@ from dataclasses import dataclass, field
 from scripts.codegen.descriptor import Descriptor, PackDescriptor, ToolMeta
 
 QP_TYPES: Mapping[str, str] = {
+    # Steve / k8s-proxy
     "limit": "int",
     "label_selector": "str",
     "field_selector": "str",
     "continue_token": "str",
+    # Norman
+    "state": "str",
+    "source": "str",
+    "customized": "bool",
+    "enabled": "bool",
+    "sort_by": "str",
+    "reverse": "bool",
+    "marker": "str",
+    "cluster_id_filter": "str",
 }
 
 QP_KWARGS: Mapping[str, str] = {
+    # Steve / k8s-proxy
     "limit": "limit",
     "label_selector": "label_selector",
     "field_selector": "field_selector",
     "continue_token": "continue_token",
+    # Norman: kwarg names match the descriptor names; the pack-local builder
+    # is responsible for mapping kwargs to HTTP query param names (e.g.
+    # `sort_by` → `sort`, `enabled` → `value`).
+    "state": "state",
+    "source": "source",
+    "customized": "customized",
+    "enabled": "enabled",
+    "sort_by": "sort_by",
+    "reverse": "reverse",
+    "marker": "marker",
+    "cluster_id_filter": "cluster_id",
 }
 
 
@@ -70,6 +92,8 @@ class ModuleContext:
             fetch_docstring_phrase = (
                 f"{descriptor.display_name_plural} through Rancher's raw Kubernetes proxy"
             )
+        elif descriptor.transport == "norman":
+            fetch_docstring_phrase = f"the Rancher {descriptor.display_name_plural} collection"
         elif descriptor.namespaced:
             fetch_docstring_phrase = (
                 f"the {descriptor.display_name_plural} collection for one namespace"
@@ -84,6 +108,8 @@ class ModuleContext:
             "plane": descriptor.plane,
             "transport": descriptor.transport,
             "namespaced": descriptor.namespaced,
+            "cluster_id_required": descriptor.cluster_id_required,
+            "pagination": descriptor.pagination,
             "list_path": descriptor.list_path,
             "detail_path": descriptor.detail_path,
             "path_helper": descriptor.path_helper,

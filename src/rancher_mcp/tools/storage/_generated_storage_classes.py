@@ -107,6 +107,7 @@ async def _fetch_storage_class_get(
 
     payload = await client.get_json(storage_class_resource_path(cluster_id, storage_class_name))
     summary = storage_class_summary_from_payload(payload)
+
     metadata = mapping_value(payload, "metadata") or {}
     return RancherStorageClassDetail.model_validate(payload).model_copy(
         update={

@@ -116,6 +116,7 @@ async def _fetch_statefulset_get(
         workload_resource_path(cluster_id, namespace, "statefulsets", statefulset_name)
     )
     summary = statefulset_summary_from_payload(payload)
+
     metadata = mapping_value(payload, "metadata") or {}
     annotations = mapping_value(metadata, "annotations") or {}
     return RancherStatefulSetDetail.model_validate(payload).model_copy(

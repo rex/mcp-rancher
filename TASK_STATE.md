@@ -45,8 +45,8 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
   `tasks/track_j_codegen_resume` re-read. Continuing J-1 with the
   `disruption` pack per the recommended order; `projects_namespaces`
   next (introduces the Norman plane schema extension).
-- **J-1 in progress.** Migrated 4 of ~14 read-only packs into
-  descriptors (9 of ~30 resource types):
+- **J-1 in progress.** Migrated 5 of ~14 read-only packs into
+  descriptors (11 of ~30 resource types):
   - `pods_services` (J-0 + verified)
   - `workloads` (deployments, daemonsets, statefulsets) — added
     k8s-proxy transport support
@@ -57,22 +57,31 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
     `tools/disruption.py` + `tools/disruption_support.py` into a
     directory pack (`paths.py` + `shared.py`); gained cursor
     pagination + suggested_next_steps via codegen
+  - `settings_features` (settings, features) — FIRST NORMAN PACK.
+    Introduced `transport: norman`, `cluster_id_required: false`,
+    `pagination: false`, bool query params, Norman-style query
+    kwarg names (`state`, `source`, `customized`, `enabled`,
+    `sort_by`, `reverse`)
 - Schema extensions during J-1 (descriptor.py, plan.py,
-  tool_module.py.j2): `transport`, `path_helper` with optional
-  `resource_kind`, `namespaced` toggle, `query_builder_function`/
-  `query_builder_in_shared`, `FilterSpec.type` (str | bool),
-  `FilterSpec.predicate` (is_provided | is_true),
-  `support_value_imports`. See `ROADMAP.md` Track J entry for full
-  list and remaining packs.
+  tool_module.py.j2): `transport` (steve | k8s-proxy | norman),
+  `path_helper` with optional `resource_kind`, `namespaced` toggle,
+  `cluster_id_required` (default true), `pagination` (default
+  true), `query_builder_function`/`query_builder_in_shared`,
+  `FilterSpec.type` (str | bool), `FilterSpec.predicate`
+  (is_provided | is_true), `support_value_imports`,
+  `ListConfig.query_params` widened to include Norman kwargs.
+  See `ROADMAP.md` Track J entry for full list and remaining packs.
 - `make validate` green: 210 tests, 85.59% coverage.
 - Per `default_slice_completion_behavior: continue-until-blocked`,
-  J-1 continues. Next packs (in order):
-  `projects_namespaces` (introduces Norman plane — biggest
-  remaining schema extension), `clusters_nodes`, then the
-  Norman-only packs (`settings_features`, `apps_catalogs`,
-  `auth_identity`, `rbac`, `fleet_registration`, `logging_backups`,
-  `alerts`, `compliance`). `monitoring` and `ops` are last (may not
-  fit per-type pattern; evaluate during migration).
+  J-1 continues. `projects_namespaces` is DEFERRED until after the
+  simpler Norman packs land — it needs additional schema for
+  Norman cluster_id filter semantics, marker-pagination, and the
+  Norman detail `actions` field. Next packs (in order):
+  `auth_identity`, `rbac`, `apps_catalogs`, `fleet_registration`,
+  `logging_backups`, `alerts`, `compliance`, then return to
+  `projects_namespaces` and `clusters_nodes`. `monitoring` and
+  `ops` are last (may not fit per-type pattern; evaluate during
+  migration).
 - **J-0 complete.** Built-time codegen substrate landed:
   `scripts/codegen/` (descriptor + plan + emitter + formatter +
   drift-check + Jinja templates), `catalog/curated_tools/` with

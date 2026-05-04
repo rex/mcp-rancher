@@ -116,6 +116,7 @@ async def _fetch_daemonset_get(
         workload_resource_path(cluster_id, namespace, "daemonsets", daemonset_name)
     )
     summary = daemonset_summary_from_payload(payload)
+
     metadata = mapping_value(payload, "metadata") or {}
     annotations = mapping_value(metadata, "annotations") or {}
     return RancherDaemonSetDetail.model_validate(payload).model_copy(

@@ -105,6 +105,7 @@ async def _fetch_service_get(
 
     payload = await client.get_json(f"/services/{namespace}/{service_name}")
     summary = service_summary_from_payload(payload)
+
     metadata = mapping_value(payload, "metadata") or {}
     return RancherServiceDetail.model_validate(payload).model_copy(
         update={

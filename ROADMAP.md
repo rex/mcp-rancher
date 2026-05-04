@@ -80,6 +80,10 @@ B/D/E/F locks in technical debt the migration would later remove.
       `tools/disruption_support.py` into a directory pack with
       `paths.py` + `shared.py` to match storage/workloads layout;
       gained pagination + suggested_next_steps via codegen)
+    - [x] `settings_features` — settings, features (FIRST NORMAN
+      PACK; introduced `transport: norman`, `cluster_id_required:
+      false`, `pagination: false`, bool query params, custom
+      Norman query builders via `query_builder_in_shared`)
   - **Schema extensions added during J-1** (kept descriptor schema
     flexible without bloating it):
     - `transport: steve | k8s-proxy` — picks client class, items
@@ -97,10 +101,12 @@ B/D/E/F locks in technical debt the migration would later remove.
       activates
     - `support_value_imports` — extra imports from
       `tools.support.values` (e.g. `string_dict`)
-  - **Remaining packs** (~10 of ~14 packs, all read-only):
+  - **Remaining packs** (~9 of ~14 packs, all read-only):
     - `projects_namespaces` — projects (Norman), namespaces (Steve)
+      (DEFERRED — needs additional schema for `cluster_id` filter
+      semantics on Norman + `marker`-based pagination + Norman
+      detail `actions` field for `action_keys`)
     - `clusters_nodes` — clusters (Norman), nodes (Steve)
-    - `settings_features` — settings, features (Norman)
     - `apps_catalogs` — catalogs, templates, template_versions
       (Norman)
     - `auth_identity` — users, groups, auth_configs (Norman)
@@ -121,6 +127,25 @@ B/D/E/F locks in technical debt the migration would later remove.
       payload shape `{type:collection, data:[...]}` vs Steve's,
       different query builder). 9 of 11 remaining packs use Norman.
     - Possibly more shared-helper or detail-extras patterns.
+  - **Schema extensions landed during settings_features migration**:
+    - `transport: norman` — picks `RancherManagementClient` +
+      `data_items` payload extractor + `/v3` URL templates.
+    - `cluster_id_required: bool = True` — when False, omits
+      `cluster_id` from public signatures (true global Norman
+      resources like settings/features).
+    - `pagination: bool = True` — when False, omits the
+      `page_token` parameter, `next_page_token` field, and
+      `next_page_token_from_payload` import (legacy Norman packs
+      without pagination).
+    - `ListConfig.query_params` widened to include Norman-style
+      kwargs: `state`, `source`, `customized` (bool), `enabled`
+      (bool), `sort_by`, `reverse` (bool), `marker`,
+      `cluster_id_filter`. Custom Norman builders own the
+      kwarg→HTTP-param mapping (e.g. `sort_by`→`sort`,
+      `enabled`→`value`).
+    - Template makes `summary = ...` conditional on
+      summary_copy_fields being non-empty (avoids ruff F841 for
+      packs whose detail get just adds payload).
 - [ ] **J-2** Track B new read tools via descriptors only
   - Provisioning (B-1), networking expansion (B-2),
     config-and-secrets (B-3), certificates (B-4), and the

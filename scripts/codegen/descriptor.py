@@ -20,7 +20,7 @@ import yaml
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 Plane = Literal["norman", "steve"]
-Transport = Literal["steve", "k8s-proxy"]
+Transport = Literal["steve", "k8s-proxy", "norman"]
 Operation = Literal["list", "get", "create", "apply", "patch", "delete"]
 AnnotationSet = Literal[
     "READ_ONLY",
@@ -81,8 +81,26 @@ class ListConfig(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    query_params: list[Literal["limit", "label_selector", "field_selector", "continue_token"]]
-    """Steve query-builder kwargs to pass through."""
+    query_params: list[
+        Literal[
+            # Steve / k8s-proxy params
+            "limit",
+            "label_selector",
+            "field_selector",
+            "continue_token",
+            # Norman params
+            "state",
+            "source",
+            "customized",
+            "enabled",
+            "sort_by",
+            "reverse",
+            "marker",
+            "cluster_id_filter",
+        ]
+    ]
+    """Query-builder kwargs to pass through. Type for each is registered in
+    `scripts/codegen/plan.QP_TYPES` and the kwarg name in `QP_KWARGS`."""
 
     filters: list[FilterSpec] = []
     """Post-fetch filters applied client-side after fetch."""
@@ -211,10 +229,22 @@ class Descriptor(BaseModel):
     """Which client + path style. `steve` = SteveDiscoveryClient + URL templates.
     `k8s-proxy` = ManagementDiscoveryClient + path-helper functions (used for
     workload controllers on Rancher 2.6.5 where Steve write paths are unreliable).
+    `norman` = ManagementDiscoveryClient + Norman /v3 URL templates with `data_items`
+    payload extractor.
     """
 
     namespaced: bool = True
     """Whether the resource is namespaced. Affects path templating."""
+
+    cluster_id_required: bool = True
+    """If True (default), the public list/get signatures take `cluster_id: str = "local"`
+    and the fetch helpers/clients receive it. Set False for Rancher-global Norman
+    resources (e.g. settings, features, RBAC roles) that have no cluster context."""
+
+    pagination: bool = True
+    """If True (default), generate cursor pagination plumbing (`page_token` parameter,
+    `next_page_token` field on the list model, `next_page_token_from_payload` import).
+    Set False for legacy Norman packs without pagination support."""
 
     list_path: str = ""
     """List path template (e.g. `/pods/{namespace}`). Required when transport=steve.
@@ -308,6 +338,13 @@ class Descriptor(BaseModel):
                     "transport=k8s-proxy must not set list_path/detail_path; "
                     "use path_helper instead"
                 )
+        elif self.transport == "norman":
+            if not self.list_path:
+                raise ValueError("transport=norman requires list_path")
+            if not self.detail_path:
+                raise ValueError("transport=norman requires detail_path")
+            if self.path_helper is not None:
+                raise ValueError("transport=norman must not set path_helper")
         return self
 
 

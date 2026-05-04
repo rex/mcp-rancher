@@ -102,6 +102,7 @@ async def _fetch_pod_disruption_budget_get(
 
     payload = await client.get_json(pdb_resource_path(cluster_id, namespace, budget_name))
     summary = pdb_summary_from_payload(payload)
+
     metadata = mapping_value(payload, "metadata") or {}
     return RancherPodDisruptionBudgetDetail.model_validate(payload).model_copy(
         update={

@@ -1,0 +1,5 @@
+schema_version: 1
+id: settings_features
+register_function: register_settings_feature_tools
+docstring: Curated settings/features tool facade.
+register_docstring: Register curated settings/features tools with the FastMCP server.

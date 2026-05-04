@@ -2,6 +2,46 @@
 
 ## [2026-05-04] - Agent: Claude Sonnet 4.6
 ### Added
+- **Track J slice J-1 continuation**: Norman plane support landed,
+  `settings_features` pack migrated (settings + features). Total now
+  11 of ~30 types across 5 of ~14 packs.
+  - `catalog/curated_tools/{settings,features}.yml` plus
+    `_packs/settings_features.yml`. Both use the new `transport:
+    norman` (`/v3` URL templates with the management client and
+    `data_items` extractor), `cluster_id_required: false` (no
+    cluster context), `pagination: false` (legacy non-paginated
+    Norman API), and pack-local query builders
+    (`build_settings_query_params`, `build_feature_query_params`)
+    via `query_builder_in_shared: true`.
+  - **Schema extensions** for Norman support:
+    - `Transport` literal extended with `norman`. Validation
+      requires `list_path` + `detail_path`, forbids `path_helper`.
+    - `Descriptor.cluster_id_required: bool = True` — when False,
+      the public list/get/tool signatures and the fetch helpers
+      omit `cluster_id` entirely.
+    - `Descriptor.pagination: bool = True` — when False, the
+      generator drops the `page_token` parameter,
+      `next_page_token` field on the list model, and the
+      `next_page_token_from_payload` import.
+    - `ListConfig.query_params` widened to include Norman-style
+      kwargs: `state`, `source`, `customized` (bool), `enabled`
+      (bool), `sort_by`, `reverse` (bool), `marker`,
+      `cluster_id_filter`. The pack-local Norman builder owns the
+      kwarg→HTTP mapping (e.g. `sort_by`→`sort`,
+      `enabled`→`value`).
+    - `qp_type` / `qp_kwarg` extended with the new param names.
+    - Template now generates `summary = ...` only when
+      `summary_copy_fields` is non-empty (avoids ruff F841 for
+      packs whose detail get just adds payload).
+  - `src/rancher_mcp/tools/settings_features/{_generated_settings.py,_generated_features.py,__init__.py}` regenerated.
+  - Hand-rolled `settings_features/{settings,features}.py`
+    deleted; `shared.py` (hand-written normalizers + builders)
+    retained.
+  - `.claude/hooks/serena-gate.py` `_CODEGEN_PACKS` extended with
+    `settings_features`.
+  - Existing `tests/unit/test_settings_feature_tools.py` (5 tests)
+    passes against the generated module without modification.
+
 - **Track J slice J-1 continuation**: `disruption` pack migrated
   to descriptors (1 type: `pod_disruption_budgets`; total now 9 of
   ~30 types across 4 of ~14 packs).

@@ -117,6 +117,7 @@ async def _fetch_deployment_get(
         workload_resource_path(cluster_id, namespace, "deployments", deployment_name)
     )
     summary = deployment_summary_from_payload(payload)
+
     metadata = mapping_value(payload, "metadata") or {}
     annotations = mapping_value(metadata, "annotations") or {}
     return RancherDeploymentDetail.model_validate(payload).model_copy(
