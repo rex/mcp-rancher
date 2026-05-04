@@ -1,0 +1,80 @@
+schema_version: 1
+
+id: namespaces
+pack: projects_namespaces
+display_name_singular: namespace
+display_name_plural: namespaces
+
+plane: steve
+transport: steve
+namespaced: false
+cluster_id_required: true
+pagination: true
+
+list_path: /namespaces
+detail_path: /namespaces/{namespace}
+
+list_response_model: rancher_mcp.models.projects_namespaces.RancherNamespaceList
+detail_response_model: rancher_mcp.models.projects_namespaces.RancherNamespaceDetail
+
+shared_imports:
+  - data_items
+  - namespace_cattle_conditions
+  - namespace_summary_from_payload
+  - string_dict
+summary_function: namespace_summary_from_payload
+query_builder_function: build_namespace_query_params
+query_builder_in_shared: true
+
+operations: [list, get]
+
+list:
+  query_params: [project_id, limit, label_selector, field_selector, continue_token]
+  filters:
+    - name: phase
+      summary_field: phase
+  count_field: namespace_count
+  collection_field: namespaces
+  next_steps:
+    - rancher_namespace_get
+    - rancher_pods_list
+    - rancher_deployments_list
+
+get:
+  arg_name: namespace
+  summary_copy_fields:
+    - id
+    - finalizer_count
+  locals:
+    - name: metadata
+      expression: 'mapping_value(payload, "metadata") or {}'
+    - name: annotations
+      expression: 'mapping_value(metadata, "annotations") or {}'
+    - name: labels
+      expression: 'mapping_value(metadata, "labels") or {}'
+  extras:
+    - field: cluster_id
+      expression: cluster_id
+    - field: label_keys
+      expression: sorted(string_dict(labels))
+    - field: annotation_keys
+      expression: sorted(string_dict(annotations))
+    - field: cattle_conditions
+      expression: namespace_cattle_conditions(metadata)
+  include_action_keys: false
+  include_link_keys: true
+  include_payload: true
+  next_steps:
+    - rancher_namespaces_list
+    - rancher_pods_list
+    - rancher_deployments_list
+
+tools:
+  list:
+    name: rancher_namespaces_list
+    description: List downstream namespaces via the Rancher Steve API. Filter by phase, project id (merged into label selector), or arbitrary label/field selectors. Supports cursor pagination.
+    annotation_set: READ_ONLY
+  get:
+    name: rancher_namespace_get
+    description: Fetch one downstream namespace by name via the Rancher Steve API. Returns the curated summary, label/annotation keys, cattle conditions, link keys, and full payload.
+    annotation_set: READ_ONLY

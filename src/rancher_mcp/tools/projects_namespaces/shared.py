@@ -100,16 +100,19 @@ def _project_summary_from_payload(payload: Mapping[str, object]) -> RancherProje
 
 
 def _namespace_summary_from_payload(
-    cluster_id: str,
     payload: Mapping[str, object],
 ) -> RancherNamespaceSummary:
-    """Normalize one downstream namespace payload."""
+    """Normalize one downstream namespace payload.
+
+    The cluster_id field on the summary is left at its default; it is
+    set by the caller (list response sets it once at the list level,
+    detail sets it from the fetch helper's cluster_id arg).
+    """
 
     summary = RancherNamespaceSummary.model_validate(payload)
     metadata = _mapping_value(payload, "metadata") or {}
     return summary.model_copy(
         update={
-            "cluster_id": cluster_id,
             "finalizer_count": len(_string_list(metadata.get("finalizers"))),
         }
     )

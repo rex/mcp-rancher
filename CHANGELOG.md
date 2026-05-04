@@ -2,6 +2,46 @@
 
 ## [2026-05-04] - Agent: Claude Sonnet 4.6
 ### Added
+- **Track J slice J-1 COMPLETE**: `projects_namespaces` pack
+  migrated (2 types: projects, namespaces). Total now **35 of 35
+  applicable types across 14 of 15 packs**.
+  - `catalog/curated_tools/{projects,namespaces}.yml` plus
+    `_packs/projects_namespaces.yml`. First **hybrid pack**:
+    projects is Norman with marker pagination + cluster_id filter,
+    namespaces is Steve with cluster_id_required=true and
+    project_id-merged label selector.
+  - **Refactored `_namespace_summary_from_payload(cluster_id,
+    payload)` to single-arg `(payload)`** — the codegen template
+    expects single-arg summaries. cluster_id field on the summary
+    now defaults to None; the namespace detail descriptor populates
+    it via an extras expression `cluster_id: cluster_id` (path arg
+    variable). The list-level `cluster_id` is set from the path
+    arg by the standard cluster_id_required=true template branch.
+  - Tests pass without modification (all assertions are at the
+    list-level `cluster_id` or detail-level `cluster_id`, both of
+    which are still populated correctly).
+  - `_CODEGEN_PACKS` extended with `projects_namespaces`.
+
+- **Track J slice J-1 — monitoring decision**: The `monitoring`
+  pack remains **hand-written**. It contains a single tool
+  (`rancher_monitoring_status`) that does capability detection
+  from a cluster payload — not a list/get per-resource pattern.
+  Per the spec (`docs/codegen-curated-tools.md` Section 9
+  non-goals), capability detection helpers stay hand-written.
+  Added a comment to `tools/monitoring/__init__.py` documenting
+  the decision.
+
+### Track J slice J-1 SUMMARY
+With `projects_namespaces` landing, **J-1 is complete**:
+- 14 of 15 directory packs migrated to descriptors
+  (`monitoring` excluded by design)
+- 35 resource types migrated
+- `tools/ops/*.py` operator-intent rollups stay hand-written per
+  spec non-goals
+- All 210 tests pass against the regenerated modules without
+  modification — perfect behavioral equivalence
+- `make validate` green: 85.45% coverage
+
 - **Track J slice J-1 continuation**: `clusters_nodes` pack
   migrated (2 types: clusters, nodes — both Norman). Total now
   33 types across 13 of ~14 packs.

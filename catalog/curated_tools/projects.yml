@@ -1,0 +1,63 @@
+schema_version: 1
+
+id: projects
+pack: projects_namespaces
+display_name_singular: project
+display_name_plural: projects
+
+plane: norman
+transport: norman
+namespaced: false
+cluster_id_required: false
+pagination: true
+
+list_path: /v3/projects
+detail_path: /v3/projects/{project_id}
+
+list_response_model: rancher_mcp.models.projects_namespaces.RancherProjectList
+detail_response_model: rancher_mcp.models.projects_namespaces.RancherProjectDetail
+
+shared_imports:
+  - data_items
+  - project_summary_from_payload
+summary_function: project_summary_from_payload
+query_builder_function: build_project_query_params
+query_builder_in_shared: true
+
+operations: [list, get]
+
+list:
+  query_params: [cluster_id, state, limit, sort_by, reverse, marker]
+  filters: []
+  count_field: project_count
+  collection_field: projects
+  next_steps:
+    - rancher_project_get
+    - rancher_namespaces_list
+    - rancher_project_health_summary
+
+get:
+  arg_name: project_id
+  summary_copy_fields:
+    - default_project
+    - system_project
+    - condition_types_true
+  locals: []
+  extras: []
+  include_action_keys: true
+  include_link_keys: true
+  include_payload: true
+  next_steps:
+    - rancher_projects_list
+    - rancher_namespaces_list
+    - rancher_project_health_summary
+
+tools:
+  list:
+    name: rancher_projects_list
+    description: List Rancher projects via the Norman /v3 API. Filter by cluster id or state. Supports cursor pagination via `marker`.
+    annotation_set: READ_ONLY
+  get:
+    name: rancher_project_get
+    description: Fetch one Rancher project by id via the Norman /v3 API. Returns the curated summary plus default/system flags, condition types, action/link keys, and full payload.
+    annotation_set: READ_ONLY

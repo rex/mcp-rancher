@@ -60,7 +60,9 @@ B/D/E/F locks in technical debt the migration would later remove.
   - Added `_generated_*.py` and descriptor-driven `__init__.py`
     paths to `.claude/hooks/serena-gate.py` codegen-output denylist.
     Edits route the agent back to the descriptor.
-- [~] **J-1** Migrate existing read-only packs (~30 resource types)
+- [x] **J-1** Migrate existing read-only packs (35 resource types
+  across 14 of 15 packs; `monitoring` and `ops` stay hand-written
+  per spec non-goals)
   - One descriptor per resource type under
     `catalog/curated_tools/`. Pack the migrations into ~5-10 commits
     grouped by package.
@@ -134,6 +136,12 @@ B/D/E/F locks in technical debt the migration would later remove.
       shared.py reused as-is; added `role` (str), `unschedulable`
       (bool) query kwargs; first descriptor using
       `string_value` via support_value_imports)
+    - [x] `projects_namespaces` — projects (Norman, paginated),
+      namespaces (Steve, paginated). First HYBRID pack.
+      Refactored `_namespace_summary_from_payload` from 2-arg to
+      single-arg; namespace detail descriptor populates cluster_id
+      via `extras: [{field: cluster_id, expression: cluster_id}]`
+      (path arg variable). All 6 tests pass without modification.
   - **Schema extensions added during J-1** (kept descriptor schema
     flexible without bloating it):
     - `transport: steve | k8s-proxy` — picks client class, items
@@ -151,13 +159,14 @@ B/D/E/F locks in technical debt the migration would later remove.
       activates
     - `support_value_imports` — extra imports from
       `tools.support.values` (e.g. `string_dict`)
-  - **Remaining packs** (1 of ~14 packs):
-    - `projects_namespaces` — projects (Norman with marker
-      pagination + cluster_id filter), namespaces (Steve with
-      project_id label-selector merge). Hybrid pack.
-    - `monitoring` (`monitoring_status` only — single capability
-      detection tool; may not fit per-type pattern, evaluate
-      during migration)
+  - **All packs migrated. `monitoring` stays hand-written by
+    decision**: contains a single capability-detection tool
+    (`rancher_monitoring_status`) that does not match the list/get
+    per-resource pattern. Per spec non-goals (Section 9 of
+    `docs/codegen-curated-tools.md`), capability detection
+    helpers stay hand-written. The `ops` pack (operator-intent
+    rollups like `cluster_health_check`, `find_failing_pods`)
+    likewise stays hand-written.
     - `fleet_registration` — fleet_workspaces, registration_tokens
     - `logging_backups` — cluster_loggings, project_loggings,
       etcd_backups

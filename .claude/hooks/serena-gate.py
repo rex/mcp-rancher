@@ -128,6 +128,7 @@ _CODEGEN_PACKS = frozenset(
         "fleet_registration",
         "logging_backups",
         "pods_services",
+        "projects_namespaces",
         "rbac",
         "settings_features",
         "storage",
