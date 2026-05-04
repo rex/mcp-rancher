@@ -2,6 +2,56 @@
 
 ## [2026-05-04] - Agent: Claude Sonnet 4.6
 ### Added
+- **Track J slice J-0**: build-time codegen substrate.
+  - `scripts/codegen/` — descriptor schema (Pydantic, validates every
+    YAML at load time), plan (turns descriptors into Jinja-ready
+    contexts), emitter (renders `tool_module.py.j2` + `pack_init.py.j2`
+    via Jinja2), formatter (`ruff format` + `ruff check --fix` pass),
+    drift check (`make check-codegen` regenerates into tmp dir and
+    diffs against working tree, independent of git state), `main.py`
+    entry point invoked by `make codegen`.
+  - Jinja2 added as a dev dependency.
+  - `catalog/curated_tools/` — first descriptor authorship: `pods.yml`,
+    `services.yml`, and `_packs/pods_services.yml`. The descriptor
+    schema captures plane (norman/steve), schema_id, namespaced flag,
+    URL templates, model imports, shared-helper imports, summary
+    function, operations to generate, per-operation filters and query
+    params, MCP tool name/description/annotations, and per-pack
+    register-function metadata.
+  - `src/rancher_mcp/tools/pods_services/` now contains
+    `_generated_pods.py`, `_generated_services.py`, and a regenerated
+    `__init__.py`. The hand-rolled `pods.py` and `services.py` are
+    deleted; their content lives entirely in descriptors plus the
+    `shared.py` normalization helpers (which stay hand-written).
+  - `tests/unit/test_codegen.py` — two tests: every descriptor
+    validates against the schema, and the full snapshot regen matches
+    the working tree byte-for-byte.
+  - `make codegen` and `make check-codegen` Makefile targets.
+    `make validate` now runs `make check-codegen` ahead of
+    architecture/lint/typecheck/test, so descriptor-vs-generated drift
+    is a pre-commit blocker.
+  - `.claude/hooks/serena-gate.py` learns a codegen-output denylist
+    (`is_codegen_output`) — direct edits to `_generated_*.py` and
+    descriptor-driven pack `__init__.py` are rejected with a
+    "regenerate from descriptor" message.
+
+### Verified
+- `make validate` passes (210 tests, 85.57% coverage). Existing
+  `tests/unit/test_pods_services_tools.py` (6 tests covering pod list
+  filter, pod detail, service list/get, empty service collection)
+  passes against the generated module without modification —
+  byte-or-behavioral identity proven.
+- `serena-gate.py` correctly denies Edit/Write on `_generated_pods.py`
+  and the regenerated `pods_services/__init__.py`, while still
+  passing through to the regular Serena rule for other pack
+  `__init__.py` files (verified live).
+
+### Documented
+- `ROADMAP.md` — J-0 marked complete; J-1..J-6 remain.
+- `TASK_STATE.md` — Latest Logical Step updated; J-1 is now next.
+
+## [2026-05-04] - Agent: Claude Sonnet 4.6
+### Added
 - `docs/codegen-curated-tools.md` — design + implementation spec for
   Track J (build-time codegen of curated tool plumbing). Defines
   per-resource YAML descriptor schema (`catalog/curated_tools/`),

@@ -1,0 +1,28 @@
+"""{{ pack.docstring }}"""
+
+from mcp.server.fastmcp import FastMCP
+
+{% for entry in import_blocks -%}
+from rancher_mcp.tools.{{ pack.id }}._generated_{{ entry.id }} import (
+{%- for name in entry.names %}
+    {{ name }},
+{%- endfor %}
+)
+{% endfor -%}
+from rancher_mcp.tools.support.annotations import {{ annotation_imports }}
+
+__all__ = [
+{%- for name in all_public_names %}
+    "{{ name }}",
+{%- endfor %}
+    "{{ pack.register_function }}",
+]
+
+
+def {{ pack.register_function }}(mcp: FastMCP) -> None:
+    """{{ pack.register_docstring }}"""
+
+{% for reg in registrations %}
+    mcp.tool(name="{{ reg.tool_name }}", annotations={{ reg.annotation }})({{ reg.callable }})
+{%- endfor %}
+

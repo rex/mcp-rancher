@@ -1,0 +1,258 @@
+"""Curated Rancher {{ display_name_singular }} tools."""
+
+from __future__ import annotations
+
+{% if plane == 'steve' -%}
+from rancher_mcp.clients.steve import RancherSteveClient, SteveDiscoveryClient
+{% endif -%}
+from rancher_mcp.config import AppSettings, get_settings
+from rancher_mcp.models.{{ pack }} import {{ list_model_name }}, {{ detail_model_name }}
+from rancher_mcp.services.instances import resolve_instance
+{% if plane == 'steve' -%}
+from rancher_mcp.services.resource_queries import build_steve_list_query_params
+{% endif -%}
+from rancher_mcp.services.resources.builders_pagination import next_page_token_from_payload
+from rancher_mcp.tools.{{ pack }}.shared import (
+{%- for name in shared_imports %}
+    {{ name }},
+{%- endfor %}
+)
+from rancher_mcp.tools.support.values import mapping_value
+
+
+{# ===================== LIST OPERATION ===================== #}
+{% if 'list' in operations -%}
+async def _fetch_{{ display_name_plural }}_list(
+    instance_name: str,
+    cluster_id: str,
+    {% if namespaced -%}
+    namespace: str,
+    {% endif -%}
+    {%- for filter in list.filters %}
+    {{ filter.name }}: str | None,
+    {%- endfor %}
+    {%- for qp in list.query_params if qp != 'continue_token' %}
+    {{ qp }}: {{ qp_type(qp) }} | None,
+    {%- endfor %}
+    client: SteveDiscoveryClient,
+    page_token: str | None = None,
+) -> {{ list_model_name }}:
+    """Fetch and normalize the {{ display_name_plural }} collection for one namespace."""
+
+    query_params = build_steve_list_query_params(
+        {%- for qp in list.query_params %}
+        {%- if qp == 'continue_token' %}
+        continue_token=page_token,
+        {%- else %}
+        {{ qp_kwarg(qp) }}={{ qp }},
+        {%- endif %}
+        {%- endfor %}
+    )
+    payload = await client.get_json(f"{{ list_path }}", params=query_params or None)
+    {{ display_name_plural }} = [{{ summary_function }}(item) for item in data_items(payload)]
+    {%- for filter in list.filters %}
+    if {{ filter.name }} is not None:
+        {{ display_name_plural }} = [{{ display_name_singular }} for {{ display_name_singular }} in {{ display_name_plural }} if {{ display_name_singular }}.{{ filter.summary_field }} == {{ filter.name }}]
+    {%- endfor %}
+    return {{ list_model_name }}(
+        instance=instance_name,
+        cluster_id=cluster_id,
+        {% if namespaced -%}
+        namespace=namespace,
+        {% endif -%}
+        {{ list.count_field }}=len({{ display_name_plural }}),
+        next_page_token=next_page_token_from_payload(payload),
+        applied_query_params=query_params,
+        {{ list.collection_field }}={{ display_name_plural }},
+        suggested_next_steps=[
+            {%- for step in list.next_steps %}
+            "{{ step }}",
+            {%- endfor %}
+        ],
+    )
+
+
+async def rancher_{{ display_name_plural }}_list(
+    {% if namespaced -%}
+    namespace: str,
+    {% endif -%}
+    cluster_id: str = "local",
+    {%- for filter in list.filters %}
+    {{ filter.name }}: str | None = None,
+    {%- endfor %}
+    {%- for qp in list.query_params if qp != 'continue_token' %}
+    {{ qp }}: {{ qp_type(qp) }} | None = None,
+    {%- endfor %}
+    page_token: str | None = None,
+    instance: str | None = None,
+    settings: AppSettings | None = None,
+    client: SteveDiscoveryClient | None = None,
+) -> {{ list_model_name }}:
+    """List {{ display_name_plural }} in one namespace with typed summaries."""
+
+    resolved_settings = settings or get_settings()
+    instance_name, instance_config = resolve_instance(resolved_settings, instance)
+    if client is not None:
+        return await _fetch_{{ display_name_plural }}_list(
+            instance_name,
+            cluster_id,
+            {% if namespaced -%}
+            namespace,
+            {% endif -%}
+            {%- for filter in list.filters %}
+            {{ filter.name }},
+            {%- endfor %}
+            {%- for qp in list.query_params if qp != 'continue_token' %}
+            {{ qp }},
+            {%- endfor %}
+            client,
+            page_token,
+        )
+    async with RancherSteveClient(
+        instance_name,
+        instance_config,
+        cluster_id=cluster_id,
+    ) as steve_client:
+        return await _fetch_{{ display_name_plural }}_list(
+            instance_name,
+            cluster_id,
+            {% if namespaced -%}
+            namespace,
+            {% endif -%}
+            {%- for filter in list.filters %}
+            {{ filter.name }},
+            {%- endfor %}
+            {%- for qp in list.query_params if qp != 'continue_token' %}
+            {{ qp }},
+            {%- endfor %}
+            steve_client,
+            page_token,
+        )
+
+
+{% endif -%}
+{# ===================== GET OPERATION ===================== #}
+{% if 'get' in operations -%}
+async def _fetch_{{ display_name_singular }}_get(
+    instance_name: str,
+    cluster_id: str,
+    {% if namespaced -%}
+    namespace: str,
+    {% endif -%}
+    {{ get.arg_name }}: str,
+    client: SteveDiscoveryClient,
+) -> {{ detail_model_name }}:
+    """Fetch and normalize one {{ display_name_singular }}."""
+
+    payload = await client.get_json(f"{{ detail_path }}")
+    summary = {{ summary_function }}(payload)
+    {%- for local in get.locals %}
+    {{ local.name }} = {{ local.expression }}
+    {%- endfor %}
+    return {{ detail_model_name }}.model_validate(payload).model_copy(
+        update={
+            {%- for field in get.summary_copy_fields %}
+            "{{ field }}": summary.{{ field }},
+            {%- endfor %}
+            {%- for extra in get.extras %}
+            "{{ extra.field }}": {{ extra.expression }},
+            {%- endfor %}
+            {%- if get.include_link_keys %}
+            "link_keys": sorted(mapping_value(payload, "links") or {}),
+            {%- endif %}
+            {%- if get.include_payload %}
+            "payload": dict(payload),
+            {%- endif %}
+            "suggested_next_steps": [{% for step in get.next_steps %}"{{ step }}"{% if not loop.last %}, {% endif %}{% endfor %}],
+        }
+    )
+
+
+async def rancher_{{ display_name_singular }}_get(
+    {% if namespaced -%}
+    namespace: str,
+    {% endif -%}
+    {{ get.arg_name }}: str,
+    cluster_id: str = "local",
+    instance: str | None = None,
+    settings: AppSettings | None = None,
+    client: SteveDiscoveryClient | None = None,
+) -> {{ detail_model_name }}:
+    """Fetch one {{ display_name_singular }} by namespace and name."""
+
+    resolved_settings = settings or get_settings()
+    instance_name, instance_config = resolve_instance(resolved_settings, instance)
+    if client is not None:
+        return await _fetch_{{ display_name_singular }}_get(instance_name, cluster_id, {% if namespaced %}namespace, {% endif %}{{ get.arg_name }}, client)
+    async with RancherSteveClient(
+        instance_name,
+        instance_config,
+        cluster_id=cluster_id,
+    ) as steve_client:
+        return await _fetch_{{ display_name_singular }}_get(
+            instance_name,
+            cluster_id,
+            {% if namespaced -%}
+            namespace,
+            {% endif -%}
+            {{ get.arg_name }},
+            steve_client,
+        )
+
+
+{% endif -%}
+{# ===================== TOOL WRAPPERS ===================== #}
+{% if 'list' in operations -%}
+async def rancher_{{ display_name_plural }}_list_tool(
+    {% if namespaced -%}
+    namespace: str,
+    {% endif -%}
+    cluster_id: str = "local",
+    {%- for filter in list.filters %}
+    {{ filter.name }}: str | None = None,
+    {%- endfor %}
+    {%- for qp in list.query_params if qp != 'continue_token' %}
+    {{ qp }}: {{ qp_type(qp) }} | None = None,
+    {%- endfor %}
+    page_token: str | None = None,
+    instance: str | None = None,
+) -> {{ list_model_name }}:
+    """Public MCP wrapper for curated {{ display_name_singular }} list."""
+
+    return await rancher_{{ display_name_plural }}_list(
+        {% if namespaced -%}
+        namespace=namespace,
+        {% endif -%}
+        cluster_id=cluster_id,
+        {%- for filter in list.filters %}
+        {{ filter.name }}={{ filter.name }},
+        {%- endfor %}
+        {%- for qp in list.query_params if qp != 'continue_token' %}
+        {{ qp }}={{ qp }},
+        {%- endfor %}
+        page_token=page_token,
+        instance=instance,
+    )
+
+
+{% endif -%}
+{% if 'get' in operations -%}
+async def rancher_{{ display_name_singular }}_get_tool(
+    {% if namespaced -%}
+    namespace: str,
+    {% endif -%}
+    {{ get.arg_name }}: str,
+    cluster_id: str = "local",
+    instance: str | None = None,
+) -> {{ detail_model_name }}:
+    """Public MCP wrapper for curated {{ display_name_singular }} detail."""
+
+    return await rancher_{{ display_name_singular }}_get(
+        {% if namespaced -%}
+        namespace=namespace,
+        {% endif -%}
+        {{ get.arg_name }}={{ get.arg_name }},
+        cluster_id=cluster_id,
+        instance=instance,
+    )
+{% endif -%}

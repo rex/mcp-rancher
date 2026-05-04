@@ -42,21 +42,24 @@ those tracks ship via descriptor authorship instead of hand-rolling
 ~250 LOC per resource type. Failing to land J-0 before resuming
 B/D/E/F locks in technical debt the migration would later remove.
 
-- [ ] **J-0** Scaffolding and proof of equivalence
-  - Build `scripts/codegen/` (descriptor schema, plan, emitter,
-    Jinja templates, formatter pass).
-  - Write `catalog/curated_tools/pods.yml` describing the existing
-    pods pack.
-  - Generate `_generated_pods.py`. Prove it passes the existing
-    `tests/unit/test_pods_services_tools.py` suite without
-    modification.
-  - Add `make codegen` and `make check-codegen`. Wire into
-    pre-commit and `make validate`.
-  - Add `tests/unit/test_codegen.py` snapshot test (regen + diff
-    against working tree).
-  - Add `_generated_*.py` to `serena-gate.py` denylist so accidental
-    direct edits are rejected with a "regenerate from descriptor"
-    message.
+- [x] **J-0** Scaffolding and proof of equivalence (commit upcoming)
+  - Built `scripts/codegen/` — descriptor (Pydantic), plan, emitter,
+    formatter, drift-check, Jinja templates.
+  - Wrote `catalog/curated_tools/{pods,services}.yml` plus
+    `catalog/curated_tools/_packs/pods_services.yml`.
+  - Generated `_generated_pods.py` + `_generated_services.py` +
+    regenerated `__init__.py`. Existing
+    `tests/unit/test_pods_services_tools.py` (6 tests) passes
+    against the generated module without modification.
+  - Added `make codegen` and `make check-codegen` (uses
+    `scripts/codegen/check.py`, regenerates into a tmp dir and diffs
+    against the working tree — independent of git state). Wired
+    into `make validate` ahead of architecture/lint/typecheck/test.
+  - Added `tests/unit/test_codegen.py` — descriptor schema validation
+    plus full-tree snapshot diff. **210 tests pass** (was 208).
+  - Added `_generated_*.py` and descriptor-driven `__init__.py`
+    paths to `.claude/hooks/serena-gate.py` codegen-output denylist.
+    Edits route the agent back to the descriptor.
 - [ ] **J-1** Migrate existing read-only packs (~30 resource types)
   - One descriptor per resource type under
     `catalog/curated_tools/`. Pack the migrations into ~5-10 commits

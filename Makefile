@@ -5,7 +5,8 @@ SHELL := /opt/homebrew/bin/zsh
         build clean clean-all info update validate check-architecture \
         check-if-the-agent-can-consider-this-task-completed capture-fixtures \
         lab-up lab-down lab-reset lab-status lab-logs lab-tools lab-rancher-up \
-        lab-rancher-down lab-kind-up lab-kind-down mock-rancher
+        lab-rancher-down lab-kind-up lab-kind-down mock-rancher \
+        codegen check-codegen
 
 # ─── Configuration ────────────────────────────────────────────────────────────
 PYTHON       := uv run python
@@ -52,7 +53,9 @@ help:
 	@echo "  \033[32mfix\033[0m            Run ruff check --fix and format"
 	@echo "  \033[32mtest\033[0m           Run the full test suite"
 	@echo "  \033[32mtest-unit\033[0m      Run unit tests only"
-	@echo "  \033[32mvalidate\033[0m       Run architecture, lint, typecheck, and tests"
+	@echo "  \033[32mcodegen\033[0m        Regenerate curated tool plumbing from descriptors"
+	@echo "  \033[32mcheck-codegen\033[0m  Verify codegen output matches descriptors (CI gate)"
+	@echo "  \033[32mvalidate\033[0m       Run codegen, architecture, lint, typecheck, and tests"
 	@echo ""
 	@echo "\033[1;36mMaintenance\033[0m"
 	@echo "  \033[32minfo\033[0m           Show project state"
@@ -167,8 +170,16 @@ test:
 test-unit:
 	$(PYTEST) tests/unit/ -q
 
+## Regenerate curated tool plumbing from catalog/curated_tools/ descriptors
+codegen:
+	$(PYTHON) -m scripts.codegen.main
+
+## Verify codegen output matches descriptors (CI gate)
+check-codegen:
+	$(PYTHON) -m scripts.codegen.check
+
 ## Run all repo validation gates
-validate: check-architecture lint typecheck test
+validate: check-codegen check-architecture lint typecheck test
 
 ## Run the full completion verification contract
 check-if-the-agent-can-consider-this-task-completed: validate

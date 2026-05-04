@@ -1,0 +1,64 @@
+schema_version: 1
+
+# Identity
+id: pods
+pack: pods_services
+display_name_singular: pod
+display_name_plural: pods
+
+# API plane and paths
+plane: steve
+namespaced: true
+list_path: /pods/{namespace}
+detail_path: /pods/{namespace}/{pod_name}
+
+# Models
+list_response_model: rancher_mcp.models.pods_services.RancherPodList
+detail_response_model: rancher_mcp.models.pods_services.RancherPodDetail
+
+# Imports from tools/<pack>/shared.py
+shared_imports:
+  - data_items
+  - pod_summary_from_payload
+summary_function: pod_summary_from_payload
+
+# Operations
+operations: [list, get]
+
+list:
+  query_params: [limit, continue_token, label_selector, field_selector]
+  filters:
+    - name: phase
+      summary_field: phase
+  count_field: pod_count
+  collection_field: pods
+  next_steps:
+    - rancher_pod_get
+    - rancher_services_list
+    - rancher_deployments_list
+
+get:
+  arg_name: pod_name
+  summary_copy_fields:
+    - id
+    - ready
+    - ready_containers
+    - total_containers
+    - restart_count
+  locals: []
+  extras: []
+  include_link_keys: true
+  include_payload: true
+  next_steps:
+    - rancher_pods_list
+    - rancher_services_list
+
+tools:
+  list:
+    name: rancher_pods_list
+    description: List pods filtered by phase, namespace, or label selector. Returns a curated summary plus pagination metadata.
+    annotation_set: READ_ONLY
+  get:
+    name: rancher_pod_get
+    description: Fetch one pod by namespace and name. Returns the curated summary plus full payload and link keys.
+    annotation_set: READ_ONLY

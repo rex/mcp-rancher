@@ -40,10 +40,21 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 
 ## Latest Logical Step
 
+- **J-0 complete.** Built-time codegen substrate landed:
+  `scripts/codegen/` (descriptor + plan + emitter + formatter +
+  drift-check + Jinja templates), `catalog/curated_tools/` with
+  pods + services + pack metadata, `tests/unit/test_codegen.py`
+  snapshot test, `make codegen` + `make check-codegen` wired into
+  `make validate`, `serena-gate.py` denylists generated files.
+  Existing pod/service tests pass against the generated module
+  without modification. Total tests: 210 (was 208).
+- Default slice-completion policy is now `continue-until-blocked`
+  (per `VIBE.yaml`), so J-1 (migrate the remaining ~28 read-only
+  resource types into descriptors) starts immediately on J-0 push.
 - Approved Track J (build-time codegen for curated tool plumbing).
   Spec landed at `docs/codegen-curated-tools.md`. Track J inserted
-  in `ROADMAP.md` ahead of Tracks B/D/E/F. Next action is J-0
-  (scaffold + pods proof of equivalence).
+  in `ROADMAP.md` ahead of Tracks B/D/E/F. Next action after J-0
+  is J-1.
 - Captured the full track-level operational roadmap in `ROADMAP.md`
   (Tracks A-I plus a generation-potential appendix discussing
   codegen vs hand-written tradeoff). Future agents should read

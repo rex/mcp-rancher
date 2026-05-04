@@ -1,0 +1,63 @@
+schema_version: 1
+
+# Identity
+id: services
+pack: pods_services
+display_name_singular: service
+display_name_plural: services
+
+# API plane and paths
+plane: steve
+namespaced: true
+list_path: /services/{namespace}
+detail_path: /services/{namespace}/{service_name}
+
+# Models
+list_response_model: rancher_mcp.models.pods_services.RancherServiceList
+detail_response_model: rancher_mcp.models.pods_services.RancherServiceDetail
+
+# Imports from tools/<pack>/shared.py
+shared_imports:
+  - data_items
+  - relationship_types
+  - service_summary_from_payload
+summary_function: service_summary_from_payload
+
+# Operations
+operations: [list, get]
+
+list:
+  query_params: [limit, continue_token, label_selector]
+  filters: []
+  count_field: service_count
+  collection_field: services
+  next_steps:
+    - rancher_service_get
+    - rancher_pods_list
+    - rancher_deployments_list
+
+get:
+  arg_name: service_name
+  summary_copy_fields:
+    - id
+  locals:
+    - name: metadata
+      expression: 'mapping_value(payload, "metadata") or {}'
+  extras:
+    - field: relationship_types
+      expression: relationship_types(metadata)
+  include_link_keys: true
+  include_payload: true
+  next_steps:
+    - rancher_services_list
+    - rancher_pods_list
+
+tools:
+  list:
+    name: rancher_services_list
+    description: List services in one namespace. Returns curated summaries plus pagination metadata.
+    annotation_set: READ_ONLY
+  get:
+    name: rancher_service_get
+    description: Fetch one service by namespace and name. Returns the curated summary plus relationships, ports, link keys, and full payload.
+    annotation_set: READ_ONLY
