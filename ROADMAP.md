@@ -89,6 +89,11 @@ B/D/E/F locks in technical debt the migration would later remove.
       `access_mode` query kwargs and `include_action_keys: bool`
       on GetConfig; refactored template to expose `detail` as a
       local variable so extras can reference `detail.X`)
+    - [x] `alerts` — notifiers, cluster_alert_rules (2 Norman types;
+      introduced `cluster_id` filter (replaces `cluster_id_filter`),
+      `severity` query kwarg; pack-local `notifier_types(payload)`
+      helper used in detail extras; new pack-level `shared.py`
+      extracted from inline `notifiers.py` + `alert_rules.py`)
   - **Schema extensions added during J-1** (kept descriptor schema
     flexible without bloating it):
     - `transport: steve | k8s-proxy` — picks client class, items
@@ -106,10 +111,10 @@ B/D/E/F locks in technical debt the migration would later remove.
       activates
     - `support_value_imports` — extra imports from
       `tools.support.values` (e.g. `string_dict`)
-  - **Remaining packs** (~8 of ~14 packs, all read-only):
+  - **Remaining packs** (~7 of ~14 packs, all read-only):
     - `projects_namespaces` — projects (Norman), namespaces (Steve)
-      (DEFERRED — needs additional schema for `cluster_id` filter
-      semantics on Norman + `marker`-based pagination)
+      (cluster_id filter now supported — only `marker` pagination
+      remains as a blocker)
     - `clusters_nodes` — clusters (Norman), nodes (Steve)
     - `apps_catalogs` — catalogs, templates, template_versions
       (Norman)

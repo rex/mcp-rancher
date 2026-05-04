@@ -1,0 +1,62 @@
+schema_version: 1
+
+id: cluster_alert_rules
+pack: alerts
+display_name_singular: cluster_alert_rule
+display_name_plural: cluster_alert_rules
+
+plane: norman
+transport: norman
+namespaced: false
+cluster_id_required: false
+pagination: false
+
+list_path: /v3/clusteralertrules
+detail_path: /v3/clusteralertrules/{rule_id}
+
+list_response_model: rancher_mcp.models.alerts.RancherAlertRuleList
+detail_response_model: rancher_mcp.models.alerts.RancherAlertRuleDetail
+
+shared_imports:
+  - alert_rule_summary_from_payload
+  - data_items
+summary_function: alert_rule_summary_from_payload
+query_builder_function: build_alert_rule_query_params
+query_builder_in_shared: true
+
+operations: [list, get]
+
+list:
+  query_params: [limit, cluster_id, severity, state]
+  filters: []
+  count_field: alert_rule_count
+  collection_field: alert_rules
+  next_steps:
+    - rancher_cluster_alert_rule_get
+    - rancher_notifiers_list
+
+get:
+  arg_name: rule_id
+  summary_copy_fields: []
+  locals:
+    - name: status
+      expression: 'mapping_value(payload, "status") or {}'
+  extras:
+    - field: status
+      expression: dict(status)
+  include_action_keys: false
+  include_link_keys: false
+  include_payload: true
+  next_steps:
+    - rancher_cluster_alert_rules_list
+    - rancher_notifiers_list
+
+tools:
+  list:
+    name: rancher_cluster_alert_rules_list
+    description: List Rancher cluster alert rules (critical, warning, info) via the Norman /v3 API. Filter by cluster, severity, or state.
+    annotation_set: READ_ONLY
+  get:
+    name: rancher_cluster_alert_rule_get
+    description: Fetch one Rancher cluster alert rule by id via the Norman /v3 API. Returns the curated summary plus status and full payload.
+    annotation_set: READ_ONLY

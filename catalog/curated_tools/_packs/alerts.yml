@@ -1,0 +1,5 @@
+schema_version: 1
+id: alerts
+register_function: register_alerts_tools
+docstring: Curated Rancher alerting and notifier tool facade.
+register_docstring: Register curated alerting and notifier tools with the FastMCP server.

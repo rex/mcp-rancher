@@ -96,11 +96,12 @@ class ListConfig(BaseModel):
             "sort_by",
             "reverse",
             "marker",
-            "cluster_id_filter",
+            "cluster_id",
             "me",
             "name",
             "provider_type",
             "access_mode",
+            "severity",
         ]
     ]
     """Query-builder kwargs to pass through. Type for each is registered in
@@ -355,6 +356,17 @@ class Descriptor(BaseModel):
                 raise ValueError("transport=norman requires detail_path")
             if self.path_helper is not None:
                 raise ValueError("transport=norman must not set path_helper")
+        if (
+            self.cluster_id_required
+            and self.list_ is not None
+            and "cluster_id" in self.list_.query_params
+        ):
+            raise ValueError(
+                "cluster_id_required=true conflicts with cluster_id in "
+                "list.query_params (would generate two parameters named cluster_id). "
+                "Set cluster_id_required=false (Norman global resources with cluster filter) "
+                "or remove cluster_id from query_params (Steve/k8s-proxy with path arg)."
+            )
         return self
 
 

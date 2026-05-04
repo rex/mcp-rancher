@@ -2,6 +2,32 @@
 
 ## [2026-05-04] - Agent: Claude Sonnet 4.6
 ### Added
+- **Track J slice J-1 continuation**: `alerts` pack migrated
+  (notifiers, cluster_alert_rules). Total now 16 of ~30 types
+  across 7 of ~14 packs.
+  - `catalog/curated_tools/{notifiers,cluster_alert_rules}.yml`
+    plus `_packs/alerts.yml`. Both Norman; `notifiers` exercises
+    a pack-local helper (`notifier_types(payload)`) referenced
+    from a descriptor `extras` expression.
+  - **Schema rename**: `cluster_id_filter` → `cluster_id` in the
+    descriptor's `list.query_params` Literal. Cleaner naming for
+    Norman global-resource filters where the public param should
+    read `cluster_id` (not `cluster_id_filter`). Validation now
+    enforces that `cluster_id_required=true` cannot coexist with
+    `cluster_id` in query_params (would generate two parameters
+    with the same name).
+  - **Schema extension**: `severity: str` query kwarg added.
+  - New `src/rancher_mcp/tools/alerts/shared.py` extracted from
+    inline `notifiers.py` and `alert_rules.py` (the alerts pack
+    didn't previously have a shared module).
+  - `src/rancher_mcp/tools/alerts/{_generated_notifiers.py,_generated_cluster_alert_rules.py,__init__.py}` regenerated.
+  - Hand-rolled `alerts/{notifiers,alert_rules}.py` deleted.
+  - `.claude/hooks/serena-gate.py` `_CODEGEN_PACKS` extended with
+    `alerts`.
+  - Existing `tests/unit/test_alerts_tools.py` (4 tests) passes
+    against the generated module without modification. `make
+    validate` green: 210 tests, 85.66% coverage.
+
 - **Track J slice J-1 continuation**: `auth_identity` pack migrated
   (users, groups, auth_configs). Total now 14 of ~30 types across
   6 of ~14 packs.

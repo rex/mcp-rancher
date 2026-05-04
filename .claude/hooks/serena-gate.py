@@ -119,6 +119,7 @@ def is_codegen_output(path_str: str) -> bool:
 # pack adopts descriptors (J-1, J-2, etc.).
 _CODEGEN_PACKS = frozenset(
     {
+        "alerts",
         "auth_identity",
         "disruption",
         "pods_services",
