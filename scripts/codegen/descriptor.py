@@ -102,6 +102,14 @@ class ListConfig(BaseModel):
             "provider_type",
             "access_mode",
             "severity",
+            "kind",
+            "helm_version",
+            "catalog_id",
+            "category",
+            "project_id",
+            "external_id",
+            "version",
+            "version_name",
         ]
     ]
     """Query-builder kwargs to pass through. Type for each is registered in

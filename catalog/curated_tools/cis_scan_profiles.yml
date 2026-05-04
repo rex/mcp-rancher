@@ -1,0 +1,61 @@
+schema_version: 1
+
+id: cis_scan_profiles
+pack: compliance
+display_name_singular: cis_scan_profile
+display_name_plural: cis_scan_profiles
+
+plane: norman
+transport: norman
+namespaced: false
+cluster_id_required: false
+pagination: false
+
+list_path: /v3/cisscanprofiles
+detail_path: /v3/cisscanprofiles/{profile_id}
+
+list_response_model: rancher_mcp.models.compliance.RancherCisScanProfileList
+detail_response_model: rancher_mcp.models.compliance.RancherCisScanProfileDetail
+
+shared_imports:
+  - cis_scan_profile_summary_from_payload
+  - data_items
+  - tests_from_payload
+summary_function: cis_scan_profile_summary_from_payload
+query_builder_function: build_cis_scan_profile_query_params
+query_builder_in_shared: true
+
+operations: [list, get]
+
+list:
+  query_params: [limit, cluster_id]
+  filters: []
+  count_field: profile_count
+  collection_field: profiles
+  next_steps:
+    - rancher_cis_scan_profile_get
+    - rancher_cis_scans_list
+
+get:
+  arg_name: profile_id
+  summary_copy_fields: []
+  locals: []
+  extras:
+    - field: tests
+      expression: tests_from_payload(payload)
+  include_action_keys: false
+  include_link_keys: false
+  include_payload: true
+  next_steps:
+    - rancher_cis_scan_profiles_list
+    - rancher_cis_scans_list
+
+tools:
+  list:
+    name: rancher_cis_scan_profiles_list
+    description: List Rancher CIS scan profiles via the Norman /v3 API. Filter by cluster id. Requires the CIS Benchmark app to be installed.
+    annotation_set: READ_ONLY
+  get:
+    name: rancher_cis_scan_profile_get
+    description: Fetch one Rancher CIS scan profile by id via the Norman /v3 API. Returns the curated summary plus the list of tests and the full payload.
+    annotation_set: READ_ONLY

@@ -1,0 +1,5 @@
+schema_version: 1
+id: compliance
+register_function: register_compliance_tools
+docstring: Curated Rancher CIS compliance tool facade.
+register_docstring: Register curated CIS compliance tools with the FastMCP server.

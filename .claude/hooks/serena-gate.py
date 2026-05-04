@@ -120,7 +120,9 @@ def is_codegen_output(path_str: str) -> bool:
 _CODEGEN_PACKS = frozenset(
     {
         "alerts",
+        "apps_catalogs",
         "auth_identity",
+        "compliance",
         "disruption",
         "pods_services",
         "settings_features",

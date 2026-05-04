@@ -94,6 +94,17 @@ B/D/E/F locks in technical debt the migration would later remove.
       `severity` query kwarg; pack-local `notifier_types(payload)`
       helper used in detail extras; new pack-level `shared.py`
       extracted from inline `notifiers.py` + `alert_rules.py`)
+    - [x] `compliance` — cis_scan_profiles, cis_scans (2 Norman
+      types; introduced `tests_from_payload(payload)` helper for
+      the profile detail's tests-array extra; new pack-level
+      `shared.py` extracted from inline modules)
+    - [x] `apps_catalogs` — catalogs, templates, template_versions
+      (3 Norman types; introduced `kind`, `helm_version`,
+      `catalog_id`, `category`, `project_id`, `external_id`,
+      `version`, `version_name` query kwargs; demonstrates extras
+      using both pack-local helpers (`file_names_from_value`),
+      summary-copy fields (`condition_types_true`), and computed
+      locals (`version_link_count`))
   - **Schema extensions added during J-1** (kept descriptor schema
     flexible without bloating it):
     - `transport: steve | k8s-proxy` — picks client class, items
@@ -111,15 +122,21 @@ B/D/E/F locks in technical debt the migration would later remove.
       activates
     - `support_value_imports` — extra imports from
       `tools.support.values` (e.g. `string_dict`)
-  - **Remaining packs** (~7 of ~14 packs, all read-only):
+  - **Remaining packs** (~5 of ~14 packs, all read-only):
     - `projects_namespaces` — projects (Norman), namespaces (Steve)
       (cluster_id filter now supported — only `marker` pagination
       remains as a blocker)
     - `clusters_nodes` — clusters (Norman), nodes (Steve)
-    - `apps_catalogs` — catalogs, templates, template_versions
-      (Norman)
     - `rbac` — global_roles, role_templates, three binding types
       (Norman)
+    - `logging_backups` — cluster_loggings, project_loggings,
+      etcd_backups (DEFERRED — uses generic `build_query_params(
+      **values)` with HTTP-name kwargs like `clusterId`,
+      `enableJSONParsing`; needs shared.py refactor to use
+      snake_case kwarg names + builder mapping)
+    - `fleet_registration` — fleet_workspaces,
+      cluster_registration_tokens (DEFERRED — same shared.py
+      pattern as logging_backups)
     - `fleet_registration` — fleet_workspaces, registration_tokens
     - `logging_backups` — cluster_loggings, project_loggings,
       etcd_backups

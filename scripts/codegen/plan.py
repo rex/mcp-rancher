@@ -40,6 +40,15 @@ QP_TYPES: Mapping[str, str] = {
     "name": "str",
     "provider_type": "str",
     "access_mode": "str",
+    # apps_catalogs
+    "kind": "str",
+    "helm_version": "str",
+    "catalog_id": "str",
+    "category": "str",
+    "project_id": "str",
+    "external_id": "str",
+    "version": "str",
+    "version_name": "str",
 }
 
 QP_KWARGS: Mapping[str, str] = {
@@ -64,6 +73,15 @@ QP_KWARGS: Mapping[str, str] = {
     "name": "name",
     "provider_type": "provider_type",
     "access_mode": "access_mode",
+    # apps_catalogs
+    "kind": "kind",
+    "helm_version": "helm_version",
+    "catalog_id": "catalog_id",
+    "category": "category",
+    "project_id": "project_id",
+    "external_id": "external_id",
+    "version": "version",
+    "version_name": "version_name",
 }
 
 

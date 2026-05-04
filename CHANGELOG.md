@@ -2,6 +2,40 @@
 
 ## [2026-05-04] - Agent: Claude Sonnet 4.6
 ### Added
+- **Track J slice J-1 continuation**: `compliance` and
+  `apps_catalogs` packs migrated. Total now 21 of ~30 types
+  across 9 of ~14 packs.
+  - `catalog/curated_tools/{cis_scan_profiles,cis_scans}.yml`
+    plus `_packs/compliance.yml`. New
+    `src/rancher_mcp/tools/compliance/shared.py` extracted from
+    inline modules with `build_cis_scan_profile_query_params`,
+    `build_cis_scan_query_params`, `tests_from_payload`,
+    `data_items`, and the summary normalizers.
+  - `catalog/curated_tools/{catalogs,templates,template_versions}.yml`
+    plus `_packs/apps_catalogs.yml`. Existing pack-level
+    `shared.py` reused (was already idiomatic). The
+    `template_versions` descriptor exercises a richer
+    `extras` block with computed locals
+    (`file_names = file_names_from_value(payload.get("files"))`)
+    referenced from multiple extras (`file_names`, `file_count`,
+    `question_count` from `len(detail.questions)`).
+  - **Schema additions**: 8 new query kwargs registered in
+    `qp_type` / `qp_kwarg`: `kind`, `helm_version`, `catalog_id`,
+    `category`, `project_id`, `external_id`, `version`,
+    `version_name`. All str. Pack-local builders own the kwarg→
+    HTTP mapping (e.g. `helm_version` → `helmVersion`).
+  - `src/rancher_mcp/tools/compliance/{_generated_cis_scan_profiles.py,_generated_cis_scans.py,__init__.py}` regenerated.
+  - `src/rancher_mcp/tools/apps_catalogs/{_generated_catalogs.py,_generated_templates.py,_generated_template_versions.py,__init__.py}` regenerated.
+  - Hand-rolled `compliance/{cis_profiles,cis_scans}.py` and
+    `apps_catalogs/{catalogs,templates,template_versions}.py`
+    deleted.
+  - `.claude/hooks/serena-gate.py` `_CODEGEN_PACKS` extended with
+    `compliance` and `apps_catalogs`.
+  - Existing `tests/unit/test_compliance_tools.py` (3 tests) and
+    `tests/unit/test_apps_catalogs_tools.py` (8 tests) pass
+    against the generated modules without modification. `make
+    validate` green: 210 tests, 85.71% coverage.
+
 - **Track J slice J-1 continuation**: `alerts` pack migrated
   (notifiers, cluster_alert_rules). Total now 16 of ~30 types
   across 7 of ~14 packs.

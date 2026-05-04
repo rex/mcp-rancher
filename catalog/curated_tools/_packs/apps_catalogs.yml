@@ -1,0 +1,5 @@
+schema_version: 1
+id: apps_catalogs
+register_function: register_app_catalog_tools
+docstring: Curated app catalog tool facade.
+register_docstring: Register curated app catalog tools with the FastMCP server.

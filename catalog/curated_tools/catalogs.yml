@@ -1,0 +1,59 @@
+schema_version: 1
+
+id: catalogs
+pack: apps_catalogs
+display_name_singular: catalog
+display_name_plural: catalogs
+
+plane: norman
+transport: norman
+namespaced: false
+cluster_id_required: false
+pagination: false
+
+list_path: /v3/catalogs
+detail_path: /v3/catalogs/{catalog_id}
+
+list_response_model: rancher_mcp.models.apps_catalogs.RancherCatalogList
+detail_response_model: rancher_mcp.models.apps_catalogs.RancherCatalogDetail
+
+shared_imports:
+  - catalog_summary_from_payload
+  - data_items
+summary_function: catalog_summary_from_payload
+query_builder_function: build_catalog_query_params
+query_builder_in_shared: true
+
+operations: [list, get]
+
+list:
+  query_params: [limit, state, kind, helm_version, sort_by, reverse]
+  filters: []
+  count_field: catalog_count
+  collection_field: catalogs
+  next_steps:
+    - rancher_catalog_get
+    - rancher_templates_list
+
+get:
+  arg_name: catalog_id
+  summary_copy_fields:
+    - condition_types_true
+  locals: []
+  extras: []
+  include_action_keys: true
+  include_link_keys: true
+  include_payload: true
+  next_steps:
+    - rancher_catalogs_list
+    - rancher_templates_list
+
+tools:
+  list:
+    name: rancher_catalogs_list
+    description: List Rancher app catalogs via the Norman /v3 API. Filter by state, kind (helm/git), or helm version.
+    annotation_set: READ_ONLY
+  get:
+    name: rancher_catalog_get
+    description: Fetch one Rancher catalog by id via the Norman /v3 API. Returns the curated summary plus condition states, action/link keys, and full payload.
+    annotation_set: READ_ONLY
