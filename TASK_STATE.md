@@ -6,7 +6,15 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 
 ## Standing User Directives
 
-- Most recent standing directive: none active. Awaiting user instruction before starting Phase 5 work.
+- **`default_slice_completion_behavior: continue-until-blocked`**
+  is set in `VIBE.yaml` — this means: keep working on the active
+  track until either explicitly blocked by missing information or
+  the active slice is fully complete and net-new scope would
+  require user direction.
+- **J-1 is fully complete as of commit `5ed93f5`.** Net-new tracks
+  (J-2 Track B via descriptors, Track A quick fixes, Track C
+  Phase 5 stretch, Track G live validation) are all candidate
+  next-steps but require explicit user instruction to begin.
 
 ## Phase Discipline
 
@@ -40,11 +48,20 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 
 ## Latest Logical Step
 
+- **BLOCKED: J-1 complete; awaiting user direction on next track.**
+  All 14 directory packs migrated to descriptors (35 of 35
+  applicable resource types). `monitoring` stays hand-written by
+  design (single capability-detection tool). `ops` stays
+  hand-written per spec non-goals. The next slice (J-2: Track B
+  new read tools via descriptors) is net-new feature scope and
+  shouldn't begin without explicit user instruction. Other
+  candidate next tracks: Track A quick fixes (4 small bugs),
+  Track C Phase 5 stretch items (elicitation/OAuth/metrics/audit),
+  Track G live-validation matrix.
 - **Resumed post-compaction (2026-05-04).** Bootstrap done:
   Serena activated, onboarding confirmed, hand-off memory
-  `tasks/track_j_codegen_resume` re-read. Continuing J-1 with the
-  `disruption` pack per the recommended order; `projects_namespaces`
-  next (introduces the Norman plane schema extension).
+  `tasks/track_j_codegen_resume` re-read. Continued J-1 through
+  every applicable pack to completion in this session.
 - **J-1 COMPLETE.** Migrated 14 of 15 directory packs into
   descriptors (35 of 35 applicable resource types). The
   `monitoring` pack stays hand-written by design (single
