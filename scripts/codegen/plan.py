@@ -49,6 +49,24 @@ QP_TYPES: Mapping[str, str] = {
     "external_id": "str",
     "version": "str",
     "version_name": "str",
+    # rbac
+    "builtin": "bool",
+    "new_user_default": "bool",
+    "context": "str",
+    "administrative": "bool",
+    "cluster_creator_default": "bool",
+    "project_creator_default": "bool",
+    "external": "bool",
+    "hidden": "bool",
+    "locked": "bool",
+    "global_role_id": "str",
+    "role_template_id": "str",
+    "user_id": "str",
+    "user_principal_id": "str",
+    "group_id": "str",
+    "group_principal_id": "str",
+    "namespace_id": "str",
+    "service_account": "str",
 }
 
 QP_KWARGS: Mapping[str, str] = {
@@ -82,6 +100,24 @@ QP_KWARGS: Mapping[str, str] = {
     "external_id": "external_id",
     "version": "version",
     "version_name": "version_name",
+    # rbac
+    "builtin": "builtin",
+    "new_user_default": "new_user_default",
+    "context": "context",
+    "administrative": "administrative",
+    "cluster_creator_default": "cluster_creator_default",
+    "project_creator_default": "project_creator_default",
+    "external": "external",
+    "hidden": "hidden",
+    "locked": "locked",
+    "global_role_id": "global_role_id",
+    "role_template_id": "role_template_id",
+    "user_id": "user_id",
+    "user_principal_id": "user_principal_id",
+    "group_id": "group_id",
+    "group_principal_id": "group_principal_id",
+    "namespace_id": "namespace_id",
+    "service_account": "service_account",
 }
 
 

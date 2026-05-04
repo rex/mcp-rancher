@@ -125,6 +125,7 @@ _CODEGEN_PACKS = frozenset(
         "compliance",
         "disruption",
         "pods_services",
+        "rbac",
         "settings_features",
         "storage",
         "workloads",

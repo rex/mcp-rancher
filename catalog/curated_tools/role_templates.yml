@@ -1,0 +1,82 @@
+schema_version: 1
+
+id: role_templates
+pack: rbac
+display_name_singular: role_template
+display_name_plural: role_templates
+
+plane: norman
+transport: norman
+namespaced: false
+cluster_id_required: false
+pagination: false
+
+list_path: /v3/roletemplates
+detail_path: /v3/roletemplates/{role_template_id}
+
+list_response_model: rancher_mcp.models.rbac.RancherRoleTemplateList
+detail_response_model: rancher_mcp.models.rbac.RancherRoleTemplateDetail
+
+shared_imports:
+  - action_keys
+  - data_items
+  - link_keys
+  - role_template_summary_from_payload
+summary_function: role_template_summary_from_payload
+query_builder_function: build_role_template_query_params
+query_builder_in_shared: true
+
+operations: [list, get]
+
+list:
+  query_params:
+    - limit
+    - builtin
+    - context
+    - administrative
+    - cluster_creator_default
+    - project_creator_default
+    - external
+    - hidden
+    - locked
+    - name
+    - sort_by
+    - reverse
+  filters: []
+  count_field: role_template_count
+  collection_field: role_templates
+  next_steps:
+    - rancher_role_template_get
+    - rancher_cluster_role_template_bindings_list
+    - rancher_project_role_template_bindings_list
+
+get:
+  arg_name: role_template_id
+  summary_copy_fields: []
+  locals: []
+  extras:
+    - field: rule_count
+      expression: len(detail.rules)
+    - field: inherited_role_template_count
+      expression: len(detail.inherited_role_template_ids)
+    - field: action_keys
+      expression: action_keys(payload)
+    - field: link_keys
+      expression: link_keys(payload)
+  include_action_keys: false
+  include_link_keys: false
+  include_payload: true
+  next_steps:
+    - rancher_role_templates_list
+    - rancher_cluster_role_template_bindings_list
+    - rancher_project_role_template_bindings_list
+
+tools:
+  list:
+    name: rancher_role_templates_list
+    description: List Rancher role templates via the Norman /v3 API. Filter by context, builtin, administrative, hidden, locked, etc.
+    annotation_set: READ_ONLY
+  get:
+    name: rancher_role_template_get
+    description: Fetch one Rancher role template by id via the Norman /v3 API. Returns the curated summary plus rule count, inherited template count, action/link keys, and full payload.
+    annotation_set: READ_ONLY

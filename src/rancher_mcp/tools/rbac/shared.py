@@ -15,13 +15,192 @@ from rancher_mcp.tools.support.collections import object_items
 from rancher_mcp.tools.support.values import mapping_value
 
 
-def _build_query_params(**values: str | int | bool | None) -> dict[str, str | int | bool]:
-    """Drop unset query params while preserving typed scalar values."""
+def _build_global_role_query_params(
+    *,
+    limit: int | None,
+    builtin: bool | None,
+    name: str | None,
+    new_user_default: bool | None,
+    sort_by: str | None,
+    reverse: bool | None,
+) -> dict[str, str | int | bool]:
+    """Build typed query params for the Rancher global-roles collection."""
 
     params: dict[str, str | int | bool] = {}
-    for key, value in values.items():
-        if value is not None:
-            params[key] = value
+    if limit is not None:
+        params["limit"] = limit
+    if builtin is not None:
+        params["builtin"] = builtin
+    if name is not None:
+        params["name"] = name
+    if new_user_default is not None:
+        params["newUserDefault"] = new_user_default
+    if sort_by is not None:
+        params["sort"] = sort_by
+    if reverse is not None:
+        params["reverse"] = reverse
+    return params
+
+
+def _build_role_template_query_params(
+    *,
+    limit: int | None,
+    builtin: bool | None,
+    context: str | None,
+    administrative: bool | None,
+    cluster_creator_default: bool | None,
+    project_creator_default: bool | None,
+    external: bool | None,
+    hidden: bool | None,
+    locked: bool | None,
+    name: str | None,
+    sort_by: str | None,
+    reverse: bool | None,
+) -> dict[str, str | int | bool]:
+    """Build typed query params for the Rancher role-templates collection."""
+
+    params: dict[str, str | int | bool] = {}
+    if limit is not None:
+        params["limit"] = limit
+    if builtin is not None:
+        params["builtin"] = builtin
+    if context is not None:
+        params["context"] = context
+    if administrative is not None:
+        params["administrative"] = administrative
+    if cluster_creator_default is not None:
+        params["clusterCreatorDefault"] = cluster_creator_default
+    if project_creator_default is not None:
+        params["projectCreatorDefault"] = project_creator_default
+    if external is not None:
+        params["external"] = external
+    if hidden is not None:
+        params["hidden"] = hidden
+    if locked is not None:
+        params["locked"] = locked
+    if name is not None:
+        params["name"] = name
+    if sort_by is not None:
+        params["sort"] = sort_by
+    if reverse is not None:
+        params["reverse"] = reverse
+    return params
+
+
+def _build_global_role_binding_query_params(
+    *,
+    limit: int | None,
+    global_role_id: str | None,
+    user_id: str | None,
+    group_principal_id: str | None,
+    name: str | None,
+    sort_by: str | None,
+    reverse: bool | None,
+) -> dict[str, str | int | bool]:
+    """Build typed query params for the Rancher global-role-bindings collection."""
+
+    params: dict[str, str | int | bool] = {}
+    if limit is not None:
+        params["limit"] = limit
+    if global_role_id is not None:
+        params["globalRoleId"] = global_role_id
+    if user_id is not None:
+        params["userId"] = user_id
+    if group_principal_id is not None:
+        params["groupPrincipalId"] = group_principal_id
+    if name is not None:
+        params["name"] = name
+    if sort_by is not None:
+        params["sort"] = sort_by
+    if reverse is not None:
+        params["reverse"] = reverse
+    return params
+
+
+def _build_cluster_role_template_binding_query_params(
+    *,
+    limit: int | None,
+    cluster_id: str | None,
+    role_template_id: str | None,
+    user_id: str | None,
+    user_principal_id: str | None,
+    group_id: str | None,
+    group_principal_id: str | None,
+    namespace_id: str | None,
+    name: str | None,
+    sort_by: str | None,
+    reverse: bool | None,
+) -> dict[str, str | int | bool]:
+    """Build typed query params for the cluster role-template-bindings collection."""
+
+    params: dict[str, str | int | bool] = {}
+    if limit is not None:
+        params["limit"] = limit
+    if cluster_id is not None:
+        params["clusterId"] = cluster_id
+    if role_template_id is not None:
+        params["roleTemplateId"] = role_template_id
+    if user_id is not None:
+        params["userId"] = user_id
+    if user_principal_id is not None:
+        params["userPrincipalId"] = user_principal_id
+    if group_id is not None:
+        params["groupId"] = group_id
+    if group_principal_id is not None:
+        params["groupPrincipalId"] = group_principal_id
+    if namespace_id is not None:
+        params["namespaceId"] = namespace_id
+    if name is not None:
+        params["name"] = name
+    if sort_by is not None:
+        params["sort"] = sort_by
+    if reverse is not None:
+        params["reverse"] = reverse
+    return params
+
+
+def _build_project_role_template_binding_query_params(
+    *,
+    limit: int | None,
+    project_id: str | None,
+    role_template_id: str | None,
+    user_id: str | None,
+    user_principal_id: str | None,
+    group_id: str | None,
+    group_principal_id: str | None,
+    namespace_id: str | None,
+    service_account: str | None,
+    name: str | None,
+    sort_by: str | None,
+    reverse: bool | None,
+) -> dict[str, str | int | bool]:
+    """Build typed query params for the project role-template-bindings collection."""
+
+    params: dict[str, str | int | bool] = {}
+    if limit is not None:
+        params["limit"] = limit
+    if project_id is not None:
+        params["projectId"] = project_id
+    if role_template_id is not None:
+        params["roleTemplateId"] = role_template_id
+    if user_id is not None:
+        params["userId"] = user_id
+    if user_principal_id is not None:
+        params["userPrincipalId"] = user_principal_id
+    if group_id is not None:
+        params["groupId"] = group_id
+    if group_principal_id is not None:
+        params["groupPrincipalId"] = group_principal_id
+    if namespace_id is not None:
+        params["namespaceId"] = namespace_id
+    if service_account is not None:
+        params["serviceAccount"] = service_account
+    if name is not None:
+        params["name"] = name
+    if sort_by is not None:
+        params["sort"] = sort_by
+    if reverse is not None:
+        params["reverse"] = reverse
     return params
 
 
@@ -97,17 +276,21 @@ def _binding_subject(payload: Mapping[str, object]) -> tuple[str, str | None]:
     return "unknown", None
 
 
-build_query_params = _build_query_params
-data_items = _data_items
 action_keys = _action_keys
-link_keys = _link_keys
 binding_subject = _binding_subject
-global_role_summary_from_payload = _global_role_summary_from_payload
-role_template_summary_from_payload = _role_template_summary_from_payload
-global_role_binding_summary_from_payload = _global_role_binding_summary_from_payload
+build_cluster_role_template_binding_query_params = _build_cluster_role_template_binding_query_params
+build_global_role_binding_query_params = _build_global_role_binding_query_params
+build_global_role_query_params = _build_global_role_query_params
+build_project_role_template_binding_query_params = _build_project_role_template_binding_query_params
+build_role_template_query_params = _build_role_template_query_params
 cluster_role_template_binding_summary_from_payload = (
     _cluster_role_template_binding_summary_from_payload
 )
+data_items = _data_items
+global_role_binding_summary_from_payload = _global_role_binding_summary_from_payload
+global_role_summary_from_payload = _global_role_summary_from_payload
+link_keys = _link_keys
 project_role_template_binding_summary_from_payload = (
     _project_role_template_binding_summary_from_payload
 )
+role_template_summary_from_payload = _role_template_summary_from_payload

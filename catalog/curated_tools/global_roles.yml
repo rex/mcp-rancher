@@ -1,0 +1,66 @@
+schema_version: 1
+
+id: global_roles
+pack: rbac
+display_name_singular: global_role
+display_name_plural: global_roles
+
+plane: norman
+transport: norman
+namespaced: false
+cluster_id_required: false
+pagination: false
+
+list_path: /v3/globalroles
+detail_path: /v3/globalroles/{global_role_id}
+
+list_response_model: rancher_mcp.models.rbac.RancherGlobalRoleList
+detail_response_model: rancher_mcp.models.rbac.RancherGlobalRoleDetail
+
+shared_imports:
+  - action_keys
+  - data_items
+  - global_role_summary_from_payload
+  - link_keys
+summary_function: global_role_summary_from_payload
+query_builder_function: build_global_role_query_params
+query_builder_in_shared: true
+
+operations: [list, get]
+
+list:
+  query_params: [limit, builtin, name, new_user_default, sort_by, reverse]
+  filters: []
+  count_field: global_role_count
+  collection_field: global_roles
+  next_steps:
+    - rancher_global_role_get
+    - rancher_global_role_bindings_list
+
+get:
+  arg_name: global_role_id
+  summary_copy_fields: []
+  locals: []
+  extras:
+    - field: rule_count
+      expression: len(detail.rules)
+    - field: action_keys
+      expression: action_keys(payload)
+    - field: link_keys
+      expression: link_keys(payload)
+  include_action_keys: false
+  include_link_keys: false
+  include_payload: true
+  next_steps:
+    - rancher_global_roles_list
+    - rancher_global_role_bindings_list
+
+tools:
+  list:
+    name: rancher_global_roles_list
+    description: List Rancher global roles via the Norman /v3 API. Filter by builtin, name, new_user_default, or sort by any field.
+    annotation_set: READ_ONLY
+  get:
+    name: rancher_global_role_get
+    description: Fetch one Rancher global role by id via the Norman /v3 API. Returns the curated summary plus rule count, action/link keys, and full payload.
+    annotation_set: READ_ONLY

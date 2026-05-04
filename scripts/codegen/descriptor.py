@@ -110,6 +110,24 @@ class ListConfig(BaseModel):
             "external_id",
             "version",
             "version_name",
+            # rbac
+            "builtin",
+            "new_user_default",
+            "context",
+            "administrative",
+            "cluster_creator_default",
+            "project_creator_default",
+            "external",
+            "hidden",
+            "locked",
+            "global_role_id",
+            "role_template_id",
+            "user_id",
+            "user_principal_id",
+            "group_id",
+            "group_principal_id",
+            "namespace_id",
+            "service_account",
         ]
     ]
     """Query-builder kwargs to pass through. Type for each is registered in

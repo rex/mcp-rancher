@@ -1,0 +1,5 @@
+schema_version: 1
+id: rbac
+register_function: register_rbac_tools
+docstring: Curated Rancher RBAC tool facade.
+register_docstring: Register curated RBAC tools with the FastMCP server.

@@ -1,0 +1,80 @@
+schema_version: 1
+
+id: project_role_template_bindings
+pack: rbac
+display_name_singular: project_role_template_binding
+display_name_plural: project_role_template_bindings
+
+plane: norman
+transport: norman
+namespaced: false
+cluster_id_required: false
+pagination: false
+
+list_path: /v3/projectroletemplatebindings
+detail_path: /v3/projectroletemplatebindings/{project_role_template_binding_id}
+
+list_response_model: rancher_mcp.models.rbac.RancherProjectRoleTemplateBindingList
+detail_response_model: rancher_mcp.models.rbac.RancherProjectRoleTemplateBindingDetail
+
+shared_imports:
+  - binding_subject
+  - data_items
+  - link_keys
+  - project_role_template_binding_summary_from_payload
+summary_function: project_role_template_binding_summary_from_payload
+query_builder_function: build_project_role_template_binding_query_params
+query_builder_in_shared: true
+
+operations: [list, get]
+
+list:
+  query_params:
+    - limit
+    - project_id
+    - role_template_id
+    - user_id
+    - user_principal_id
+    - group_id
+    - group_principal_id
+    - namespace_id
+    - service_account
+    - name
+    - sort_by
+    - reverse
+  filters: []
+  count_field: project_role_template_binding_count
+  collection_field: project_role_template_bindings
+  next_steps:
+    - rancher_project_role_template_binding_get
+    - rancher_role_templates_list
+
+get:
+  arg_name: project_role_template_binding_id
+  summary_copy_fields: []
+  locals:
+    - name: subject
+      expression: binding_subject(payload)
+  extras:
+    - field: subject_kind
+      expression: subject[0]
+    - field: subject_id
+      expression: subject[1]
+    - field: link_keys
+      expression: link_keys(payload)
+  include_action_keys: false
+  include_link_keys: false
+  include_payload: true
+  next_steps:
+    - rancher_project_role_template_bindings_list
+    - rancher_role_templates_list
+
+tools:
+  list:
+    name: rancher_project_role_template_bindings_list
+    description: List Rancher project role-template bindings via the Norman /v3 API. Filter by project id, role template id, user/group, namespace, or service account.
+    annotation_set: READ_ONLY
+  get:
+    name: rancher_project_role_template_binding_get
+    description: Fetch one Rancher project role-template binding by id via the Norman /v3 API. Returns the curated summary plus the derived subject (kind + id) and link keys.
+    annotation_set: READ_ONLY

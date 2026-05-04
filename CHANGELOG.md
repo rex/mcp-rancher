@@ -2,6 +2,37 @@
 
 ## [2026-05-04] - Agent: Claude Sonnet 4.6
 ### Added
+- **Track J slice J-1 continuation**: `rbac` pack migrated (5 types:
+  global_roles, role_templates, global_role_bindings,
+  cluster_role_template_bindings, project_role_template_bindings).
+  Total now 26 of ~30 types across 10 of ~14 packs.
+  - `catalog/curated_tools/{global_roles,role_templates,global_role_bindings,cluster_role_template_bindings,project_role_template_bindings}.yml`
+    plus `_packs/rbac.yml`. All Norman.
+  - **Refactored `src/rancher_mcp/tools/rbac/shared.py`** from
+    generic `build_query_params(**values)` (HTTP-case kwargs) to
+    5 typed builders with snake_case kwargs that map to HTTP-case
+    internally. Each binding's get uses a tuple-returning
+    `binding_subject(payload)` helper which descriptors expose as
+    `subject = binding_subject(payload)` local plus
+    `subject_kind: subject[0]` / `subject_id: subject[1]` extras.
+  - **Schema additions**: 17 new query kwargs registered in
+    `qp_type` / `qp_kwarg`: `builtin` (bool), `new_user_default`
+    (bool), `context` (str), `administrative` (bool),
+    `cluster_creator_default` (bool), `project_creator_default`
+    (bool), `external` (bool), `hidden` (bool), `locked` (bool),
+    `global_role_id` (str), `role_template_id` (str), `user_id`
+    (str), `user_principal_id` (str), `group_id` (str),
+    `group_principal_id` (str), `namespace_id` (str),
+    `service_account` (str).
+  - `src/rancher_mcp/tools/rbac/{_generated_global_roles.py,_generated_role_templates.py,_generated_global_role_bindings.py,_generated_cluster_role_template_bindings.py,_generated_project_role_template_bindings.py,__init__.py}` regenerated.
+  - Hand-rolled rbac per-resource modules deleted.
+  - `.claude/hooks/serena-gate.py` `_CODEGEN_PACKS` extended with
+    `rbac`.
+  - Existing `tests/unit/test_rbac_roles_tools.py` (4 tests) and
+    `tests/unit/test_rbac_bindings_tools.py` (6 tests) pass against
+    the generated modules without modification. `make validate`
+    green: 210 tests, 85.57% coverage.
+
 - **Track J slice J-1 continuation**: `compliance` and
   `apps_catalogs` packs migrated. Total now 21 of ~30 types
   across 9 of ~14 packs.

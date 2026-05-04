@@ -105,6 +105,18 @@ B/D/E/F locks in technical debt the migration would later remove.
       using both pack-local helpers (`file_names_from_value`),
       summary-copy fields (`condition_types_true`), and computed
       locals (`version_link_count`))
+    - [x] `rbac` — global_roles, role_templates,
+      global_role_bindings, cluster_role_template_bindings,
+      project_role_template_bindings (5 Norman types; refactored
+      `shared.py` from generic `**values` to 5 typed builders;
+      added 17 new query kwargs (`builtin`, `new_user_default`,
+      `context`, `administrative`, `cluster_creator_default`,
+      `project_creator_default`, `external`, `hidden`, `locked`,
+      `global_role_id`, `role_template_id`, `user_id`,
+      `user_principal_id`, `group_id`, `group_principal_id`,
+      `namespace_id`, `service_account`); demonstrates tuple-unpack
+      extras via `subject = binding_subject(payload)` local +
+      `subject_kind: subject[0]`, `subject_id: subject[1]`)
   - **Schema extensions added during J-1** (kept descriptor schema
     flexible without bloating it):
     - `transport: steve | k8s-proxy` — picks client class, items
@@ -122,21 +134,19 @@ B/D/E/F locks in technical debt the migration would later remove.
       activates
     - `support_value_imports` — extra imports from
       `tools.support.values` (e.g. `string_dict`)
-  - **Remaining packs** (~5 of ~14 packs, all read-only):
+  - **Remaining packs** (~4 of ~14 packs, all read-only):
     - `projects_namespaces` — projects (Norman), namespaces (Steve)
       (cluster_id filter now supported — only `marker` pagination
-      remains as a blocker)
+      remains as a blocker; namespaces side is hybrid Steve+
+      pack-local builder)
     - `clusters_nodes` — clusters (Norman), nodes (Steve)
-    - `rbac` — global_roles, role_templates, three binding types
-      (Norman)
     - `logging_backups` — cluster_loggings, project_loggings,
-      etcd_backups (DEFERRED — uses generic `build_query_params(
-      **values)` with HTTP-name kwargs like `clusterId`,
-      `enableJSONParsing`; needs shared.py refactor to use
-      snake_case kwarg names + builder mapping)
+      etcd_backups (uses generic `build_query_params(**values)`
+      with HTTP-name kwargs; needs shared.py refactor to typed
+      builders matching the rbac pattern)
     - `fleet_registration` — fleet_workspaces,
-      cluster_registration_tokens (DEFERRED — same shared.py
-      pattern as logging_backups)
+      cluster_registration_tokens (same shared.py refactor needed
+      as logging_backups)
     - `fleet_registration` — fleet_workspaces, registration_tokens
     - `logging_backups` — cluster_loggings, project_loggings,
       etcd_backups
