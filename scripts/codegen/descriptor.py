@@ -134,6 +134,9 @@ class ListConfig(BaseModel):
             "output_flush_interval",
             "manual",
             "filename",
+            # clusters_nodes
+            "role",
+            "unschedulable",
         ]
     ]
     """Query-builder kwargs to pass through. Type for each is registered in

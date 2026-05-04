@@ -1,0 +1,5 @@
+schema_version: 1
+id: clusters_nodes
+register_function: register_cluster_node_tools
+docstring: Curated Rancher cluster and node tools.
+register_docstring: Register curated cluster/node tools with the FastMCP server.

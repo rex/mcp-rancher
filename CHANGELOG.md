@@ -2,6 +2,26 @@
 
 ## [2026-05-04] - Agent: Claude Sonnet 4.6
 ### Added
+- **Track J slice J-1 continuation**: `clusters_nodes` pack
+  migrated (2 types: clusters, nodes — both Norman). Total now
+  33 types across 13 of ~14 packs.
+  - First successful use of Norman `marker`-based pagination
+    (codegen template special-cases `marker` like `continue_token`
+    for page_token plumbing). Both clusters and nodes are
+    paginated.
+  - Existing `tools/clusters_nodes/shared.py` reused as-is — was
+    already idiomatic with typed builders. Pack-local
+    `build_node_query_params` does custom routing for the `role`
+    string param (control-plane → controlPlane=True etc.).
+  - **Schema additions**: `role: str`, `unschedulable: bool`.
+  - The cluster detail uses `string_value(payload, "apiEndpoint")`
+    via support_value_imports — first descriptor demonstrating
+    `string_value` in extras.
+  - The cluster detail's `component_statuses` field is auto-populated
+    via Pydantic `validation_alias="componentStatuses"` — no
+    descriptor extra needed.
+  - `_CODEGEN_PACKS` extended with `clusters_nodes`.
+
 - **Track J slice J-1 continuation**: `logging_backups` pack
   migrated (3 types: cluster_loggings, project_loggings,
   etcd_backups). Total now 31 of ~30 expected types across 12 of

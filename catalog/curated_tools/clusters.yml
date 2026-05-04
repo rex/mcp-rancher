@@ -1,0 +1,69 @@
+schema_version: 1
+
+id: clusters
+pack: clusters_nodes
+display_name_singular: cluster
+display_name_plural: clusters
+
+plane: norman
+transport: norman
+namespaced: false
+cluster_id_required: false
+pagination: true
+
+list_path: /v3/clusters
+detail_path: /v3/clusters/{cluster_id}
+
+list_response_model: rancher_mcp.models.clusters_nodes.RancherClusterList
+detail_response_model: rancher_mcp.models.clusters_nodes.RancherClusterDetail
+
+shared_imports:
+  - cluster_summary_from_payload
+  - data_items
+support_value_imports:
+  - string_value
+summary_function: cluster_summary_from_payload
+query_builder_function: build_cluster_query_params
+query_builder_in_shared: true
+
+operations: [list, get]
+
+list:
+  query_params: [limit, state, sort_by, reverse, marker]
+  filters: []
+  count_field: cluster_count
+  collection_field: clusters
+  next_steps:
+    - rancher_cluster_get
+    - rancher_nodes_list
+    - rancher_cluster_health_check
+
+get:
+  arg_name: cluster_id
+  summary_copy_fields:
+    - id
+    - name
+    - ready
+    - condition_types_true
+  locals: []
+  extras:
+    - field: api_endpoint
+      expression: 'string_value(payload, "apiEndpoint")'
+  include_action_keys: true
+  include_link_keys: false
+  include_payload: true
+  next_steps:
+    - rancher_nodes_list
+    - rancher_cluster_health_check
+    - rancher_projects_list
+    - rancher_pods_list
+
+tools:
+  list:
+    name: rancher_clusters_list
+    description: List Rancher clusters via the Norman /v3 API. Filter by state or sort by any field. Supports cursor pagination via `marker`.
+    annotation_set: READ_ONLY
+  get:
+    name: rancher_cluster_get
+    description: Fetch one Rancher cluster by id via the Norman /v3 API. Returns the curated summary, API endpoint, action keys, component statuses, and full payload.
+    annotation_set: READ_ONLY

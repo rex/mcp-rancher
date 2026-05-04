@@ -129,6 +129,11 @@ B/D/E/F locks in technical debt the migration would later remove.
       (bool), `output_flush_interval` (int — first int qparam
       beyond limit), `manual` (bool), `filename` (str) query
       kwargs)
+    - [x] `clusters_nodes` — clusters, nodes (2 Norman types;
+      first use of `marker`-based pagination; existing pack
+      shared.py reused as-is; added `role` (str), `unschedulable`
+      (bool) query kwargs; first descriptor using
+      `string_value` via support_value_imports)
   - **Schema extensions added during J-1** (kept descriptor schema
     flexible without bloating it):
     - `transport: steve | k8s-proxy` — picks client class, items
@@ -146,12 +151,10 @@ B/D/E/F locks in technical debt the migration would later remove.
       activates
     - `support_value_imports` — extra imports from
       `tools.support.values` (e.g. `string_dict`)
-  - **Remaining packs** (~2 of ~14 packs, all read-only):
-    - `projects_namespaces` — projects (Norman), namespaces (Steve)
-      (cluster_id filter now supported — only `marker` pagination
-      remains as a blocker; namespaces side is hybrid Steve+
-      pack-local builder)
-    - `clusters_nodes` — clusters (Norman), nodes (Steve)
+  - **Remaining packs** (1 of ~14 packs):
+    - `projects_namespaces` — projects (Norman with marker
+      pagination + cluster_id filter), namespaces (Steve with
+      project_id label-selector merge). Hybrid pack.
     - `monitoring` (`monitoring_status` only — single capability
       detection tool; may not fit per-type pattern, evaluate
       during migration)

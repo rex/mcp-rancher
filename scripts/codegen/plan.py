@@ -73,6 +73,9 @@ QP_TYPES: Mapping[str, str] = {
     "output_flush_interval": "int",
     "manual": "bool",
     "filename": "str",
+    # clusters_nodes
+    "role": "str",
+    "unschedulable": "bool",
 }
 
 QP_KWARGS: Mapping[str, str] = {
@@ -130,6 +133,9 @@ QP_KWARGS: Mapping[str, str] = {
     "output_flush_interval": "output_flush_interval",
     "manual": "manual",
     "filename": "filename",
+    # clusters_nodes
+    "role": "role",
+    "unschedulable": "unschedulable",
 }
 
 
