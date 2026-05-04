@@ -1,0 +1,697 @@
+# Track J — Build-Time Codegen for Curated Tool Wrappers
+
+**Status:** approved, awaiting J-0 implementation
+**Date:** 2026-05-04
+**Owner:** to be assigned by user
+
+This document is the design + implementation specification for replacing
+hand-rolled per-resource curated tool wrappers with build-time-generated
+code driven by a per-type YAML descriptor file. It supersedes the
+"Generation potential" appendix in `ROADMAP.md` and becomes the basis
+for `Track J` in that file.
+
+---
+
+## 1. Decision in one paragraph
+
+Introduce a build-time code generator (`scripts/codegen/`) that consumes
+a per-resource YAML descriptor (`catalog/curated_tools/<id>.yml`) and
+emits the mechanical Python plumbing for a curated tool pack
+(list/get/create/apply/patch/delete functions, MCP wrapper functions,
+client setup, query-param building, pagination plumbing, registration
+hooks). Pydantic output models, normalization helpers, and operator-
+intent compositions stay hand-written. The generator runs through `make
+codegen`; CI gates on `make check-codegen` (regen + `git diff
+--exit-code`) so descriptors and generated code never drift. Migrate
+existing curated packs descriptor-by-descriptor with a snapshot test
+proving generated output is behaviorally identical to the hand-rolled
+version. Use the same generator for every Track B/D/E/F per-type
+addition going forward.
+
+## 2. Motivation
+
+### Current cost
+
+Every curated per-resource pack file follows a near-identical six-part
+shape:
+
+1. `_fetch_X_list` private async helper (build query, fetch, normalize).
+2. `rancher_X_list` public function (resolve instance, manage client).
+3. `_fetch_X_get` private async helper (fetch single, normalize).
+4. `rancher_X_get` public function.
+5. `rancher_X_list_tool` MCP wrapper.
+6. `rancher_X_get_tool` MCP wrapper.
+
+Concrete: `src/rancher_mcp/tools/pods_services/pods.py` is **183 lines**.
+About **30 lines** of that is editorially distinct — output-model field
+selection happens in `models/pods_services` and summary normalization
+happens in `shared.py`. The remaining **~150 lines** of `pods.py` is
+mechanical wrapping repeated identically across services, deployments,
+daemonsets, statefulsets, projects, namespaces, storage classes, PVs,
+PVCs, etc.
+
+The repo currently has roughly **30 curated resource types** at
+~150 mechanical LOC each = ~4,500 LOC of plumbing.
+
+### Forward cost
+
+Tracks B/D/E/F as currently scoped add roughly **50+ more resource
+types** at the same per-type shape. Hand-rolled, that's another
+~7,500 LOC. With write operations (Phase 6/7), each type also adds
+create/apply/patch/delete wrappers — call it ~250 LOC for full CRUD
+per resource type.
+
+Codegen replaces the mechanical portion with ~30 lines of YAML per
+type and a ~600-line generator. Net LOC reduction is significant; net
+review cost reduction is larger because the YAML diff for adding a new
+resource is ~30 lines instead of ~250.
+
+### Architectural fit
+
+The plan's three-layer model already calls this out:
+
+- **Layer 1 (Discovery and Schema)** — capability-driven, runtime.
+- **Layer 2 (Generic CRUD/Action/Watch)** — capability-driven, runtime.
+- **Layer 3 (Curated Operator Tools)** — currently hand-rolled per type.
+
+Layer 2 demonstrates that a capability-driven approach works in this
+codebase. Layer 3 is the only layer that grew per-type and the only one
+where adding a resource requires net-new code instead of net-new data.
+Codegen fixes the asymmetry without changing the runtime layering.
+
+## 3. Scope
+
+### What gets generated
+
+For each resource descriptor:
+
+- private `_fetch_X_list` async helper (with query-param building,
+  pagination plumbing, normalization call-out)
+- public `rancher_X_list` function (instance resolution, client
+  management, optional client-injection for tests)
+- private `_fetch_X_get` async helper
+- public `rancher_X_get` function
+- (when `operations` includes writes) `_fetch_X_create`,
+  `rancher_X_create`, etc.
+- (when `operations` includes deletes) delete with confirmation phrase
+- public `rancher_X_*_tool` MCP wrappers
+- a per-pack `register_X_tools(mcp)` function that wires the wrappers
+  with FastMCP annotations (`readOnly`, `destructive`, `idempotent`)
+  and tool descriptions
+
+### What stays hand-written
+
+- **Pydantic output models** in `src/rancher_mcp/models/<pack>/`. These
+  hold the editorial decision of which fields the operator needs.
+- **Normalization helpers** in `src/rancher_mcp/tools/<pack>/shared.py`
+  (e.g., container-status interpretation, condition aggregation,
+  readiness derivation). These are domain logic, not plumbing.
+- **Operator-intent compositions** — `ops/` aggregates
+  (`cluster_health_check`, `namespace_workloads_summary`,
+  `find_failing_pods`), capability detection (`monitoring_status`),
+  action workflows (drain, restore). Each encodes operator judgment.
+- **Subsystem-specific helpers** that don't fit a generic CRUD shape
+  (Longhorn volume operations against the Longhorn CRDs, Fleet sync
+  triggers, etcd backup polling).
+- **Tool descriptions and `suggested_next_steps` lists** — these go in
+  the descriptor (so they can be edited without code changes), but
+  they are explicitly editorial content, not derived from schemas.
+
+The split is: codegen handles **shape**, humans handle **editorial
+content**.
+
+## 4. Descriptor schema
+
+### File layout
+
+```
+catalog/
+  capabilities.yaml             # existing: domain catalog
+  curated_tools/                # new: per-type descriptors
+    pods.yml
+    services.yml
+    deployments.yml
+    daemonsets.yml
+    statefulsets.yml
+    namespaces.yml
+    projects.yml
+    storage_classes.yml
+    persistent_volumes.yml
+    persistent_volume_claims.yml
+    ...
+```
+
+One descriptor per resource type. The pack grouping
+(e.g. `pods_services`) is captured inside each descriptor so the
+generator can emit files into the right package.
+
+### Schema (YAML, validated by Pydantic)
+
+```yaml
+# catalog/curated_tools/pods.yml
+schema_version: 1
+
+# --- Identity --------------------------------------------------------
+
+id: pods                          # descriptor id, used in filenames
+pack: pods_services               # target package under tools/
+display_name: pod                 # singular display, for prose
+
+# --- Rancher API plane -----------------------------------------------
+
+plane: steve                      # one of: norman, steve
+schema_id: pod                    # Rancher schema ID
+namespaced: true                  # if true, list path is /{kind}/{namespace}
+cluster_scoped_path: /pods        # for cluster-scoped or fallback usage
+namespaced_path: /pods/{namespace}     # used when namespaced=true
+detail_path: /pods/{namespace}/{name}  # for get; {name} resolves from get arg
+
+# --- Output models ---------------------------------------------------
+# These reference existing hand-written Pydantic models.
+# Generator does not emit models; it imports them.
+
+models:
+  list_response: rancher_mcp.models.pods_services.RancherPodList
+  detail_response: rancher_mcp.models.pods_services.RancherPodDetail
+  summary: rancher_mcp.models.pods_services.RancherPodSummary
+
+# --- Normalization helper --------------------------------------------
+# Function that converts one raw payload to a summary model.
+# Lives in tools/<pack>/shared.py, hand-written.
+
+summary_normalizer: rancher_mcp.tools.pods_services.shared.pod_summary_from_payload
+
+# --- Operations to generate ------------------------------------------
+
+operations:
+  - list
+  - get
+  # add: create, apply, patch, delete (Phase 6/7)
+
+# --- Per-operation overrides -----------------------------------------
+
+list:
+  filters:                        # post-fetch filters applied client-side
+    - name: phase                 # tool argument name
+      summary_field: phase        # field on summary model
+      type: string
+  query_params:                   # passed through to Rancher
+    - limit
+    - label_selector
+    - field_selector
+    - continue_token
+  pagination: cursor              # cursor | none
+  next_steps:                     # added to suggested_next_steps in response
+    - rancher_pod_get
+    - rancher_services_list
+    - rancher_deployments_list
+
+get:
+  next_steps:
+    - rancher_pods_list
+    - rancher_services_list
+  include_payload: true           # whether to include raw payload in detail
+  include_link_keys: true         # whether to surface link keys
+
+# --- MCP tool surface ------------------------------------------------
+
+tools:
+  list:
+    name: rancher_pods_list
+    description: |
+      List pods in one namespace. Returns a curated summary
+      (name, phase, node, container readiness, restart count) plus
+      pagination metadata. Filter client-side by phase if specified.
+    annotations:
+      readOnly: true
+      destructive: false
+      idempotent: true
+  get:
+    name: rancher_pod_get
+    description: |
+      Fetch one pod by namespace and name. Returns the curated
+      summary plus full Rancher payload and link keys.
+    annotations:
+      readOnly: true
+      destructive: false
+      idempotent: true
+
+# --- Test fixtures (for snapshot tests) ------------------------------
+
+fixtures:
+  list: tests/fixtures/pods_list.json
+  get: tests/fixtures/pods_get.json
+```
+
+### Schema for write operations (Phase 6/7)
+
+```yaml
+# Adds to the same descriptor
+
+operations: [list, get, create, apply, patch, delete]
+
+create:
+  payload_shape: full              # full | spec-only
+  next_steps: [rancher_pod_get]
+
+delete:
+  confirmation_phrase: "delete steve pod {namespace} {name}"
+  next_steps: [rancher_pods_list]
+
+tools:
+  # ... list/get as before
+  create:
+    name: rancher_pod_create
+    description: |
+      Create a pod from a YAML/JSON payload. Returns the created
+      resource summary.
+    annotations:
+      readOnly: false
+      destructive: false
+      idempotent: false
+    risk_tier: 1
+  delete:
+    name: rancher_pod_delete
+    description: |
+      Delete a pod. Requires the confirmation phrase
+      "delete steve pod NAMESPACE NAME" to execute.
+    annotations:
+      readOnly: false
+      destructive: true
+      idempotent: true
+    risk_tier: 2
+    confirmation_required: true
+```
+
+### Validation rules
+
+The descriptor schema is itself validated by a Pydantic model in
+`scripts/codegen/descriptor.py`. Validation enforces:
+
+- `plane` is `norman` or `steve`
+- `pack` matches an existing or newly-created package directory
+- Referenced model paths import-resolve at generator runtime
+- Referenced normalizer paths import-resolve
+- If `namespaced=true`, `namespaced_path` is required
+- If `delete` operation is included, `confirmation_phrase` is required
+- Annotations are consistent with the operation kind (e.g. `readOnly`
+  must be true for list/get)
+- All filter `summary_field` references exist on the summary model
+- `next_steps` reference tool names that exist (validated against the
+  full descriptor set, not individual files)
+
+## 5. Generator architecture
+
+### File layout
+
+```
+scripts/
+  codegen/
+    __init__.py
+    main.py                    # entry point: `make codegen`
+    descriptor.py              # Pydantic schema + loader + validator
+    plan.py                    # builds emission plan from descriptors
+    emitter.py                 # Jinja-driven file emission
+    formatter.py               # ruff-formats emitted files
+    templates/
+      pack_init.py.j2          # __init__.py with register_X_tools
+      tool_list.py.j2          # private + public list functions
+      tool_get.py.j2
+      tool_create.py.j2
+      tool_apply.py.j2
+      tool_patch.py.j2
+      tool_delete.py.j2
+      tool_register.py.j2      # MCP wrappers + register block
+```
+
+### Flow
+
+```
+make codegen
+  -> scripts/codegen/main.py
+       -> load every catalog/curated_tools/*.yml
+       -> validate via descriptor.py (Pydantic)
+       -> cross-reference (next-step targets exist)
+       -> emit per-descriptor plan
+       -> render templates via emitter.py
+       -> write to src/rancher_mcp/tools/<pack>/_generated_<id>.py
+       -> run ruff format on each emitted file
+       -> rewrite tools/<pack>/__init__.py (register block)
+```
+
+### Output file convention
+
+```
+src/rancher_mcp/tools/pods_services/
+  __init__.py                     # generated; register_pod_service_tools()
+  _generated_pods.py              # generated; rancher_pods_list, rancher_pod_get, etc.
+  _generated_services.py          # generated
+  shared.py                       # hand-written; normalization helpers
+  overrides_pods.py               # hand-written, OPTIONAL
+```
+
+Every generated file has a header:
+
+```python
+# This file is generated by scripts/codegen from
+# catalog/curated_tools/pods.yml. Do not edit by hand.
+# Regenerate with: make codegen
+```
+
+### Override mechanism
+
+For per-type quirks the descriptor schema cannot express (e.g., the
+known Steve `apps.*` 500 issue requiring a fallback to the raw K8s
+proxy), an `overrides_<id>.py` file in the pack can:
+
+1. **Replace** a generated function: define a function with the same
+   public name; the descriptor sets `tools.list.override: true` and
+   the generator emits a re-export from the override module instead
+   of generating the function body.
+2. **Hook** before/after a generated function: the descriptor sets
+   `list.before_hook: rancher_mcp.tools.pods_services.overrides_pods.before_list`
+   and the generator wires the call.
+3. **Extend** the public surface: hand-written tools in the override
+   file are appended to the registration block via a manual import in
+   the descriptor's `tools.extra: [...]` list.
+
+For migration purposes, mechanism #1 lets us flag any per-type quirk as
+"override" with zero behavior change while still benefiting from
+generated registration boilerplate.
+
+## 6. Verification strategy
+
+### Slice 0 gate (the key one)
+
+Pick **pods** as the first migration target (180 LOC, two operations,
+the most complex post-fetch filter, namespaced). Write the descriptor
+and the templates. Generate `_generated_pods.py`. The generated file
+must produce **byte-for-byte identical** output to a normalized version
+of the existing `pods.py` after both pass through `ruff format`. If
+not byte-identical, then **behaviorally identical**: the existing
+`tests/unit/test_pods_services_tools.py` suite must pass against the
+generated module without modification.
+
+A pre-existing snapshot test compares behavior across hand-rolled vs
+generated by importing both and asserting their MCP wrapper outputs
+match for a fixture-driven set of inputs.
+
+### Per-pack migration gate
+
+After J-0, every subsequent pack migration is a PR that:
+
+1. Adds the descriptor.
+2. Runs `make codegen`.
+3. Deletes the hand-rolled file (or stubs it to import from
+   `_generated_<id>`).
+4. Confirms `make validate` still passes.
+5. Confirms the pack's existing unit tests still pass.
+
+If any pack's existing tests fail, the descriptor or generator is
+wrong (assuming the existing tests were correct). Investigation
+required, do not just "fix" the tests to match generator output.
+
+### CI integration
+
+```makefile
+codegen:
+	uv run python scripts/codegen/main.py
+
+check-codegen:
+	uv run python scripts/codegen/main.py
+	git diff --exit-code -- 'src/rancher_mcp/tools/**/_generated_*.py' \
+	                       'src/rancher_mcp/tools/**/__init__.py'
+```
+
+`make check-codegen` is added to the pre-commit hook chain and the
+GitHub Actions workflow gate. If a descriptor changes without
+regenerating, CI fails.
+
+`make validate` is updated to run `make check-codegen` before lint.
+
+## 7. Slice breakdown
+
+### J-0 — Scaffolding and proof of equivalence (1-2 sessions)
+
+**Goal:** prove the generator can reproduce one existing pack
+behaviorally identically.
+
+Tasks:
+
+1. Define descriptor schema in `scripts/codegen/descriptor.py`
+   (Pydantic).
+2. Implement `scripts/codegen/main.py` with arg parsing
+   (`--check-only`, `--verbose`).
+3. Implement `scripts/codegen/plan.py`
+   (descriptor → emission plan).
+4. Implement `scripts/codegen/emitter.py` with Jinja templates for
+   `tool_list.py.j2`, `tool_get.py.j2`, `tool_register.py.j2`,
+   `pack_init.py.j2`.
+5. Write `catalog/curated_tools/pods.yml` describing the existing
+   pods pack.
+6. Run generator. Compare `_generated_pods.py` to existing `pods.py`
+   after both pass through ruff format. Iterate until byte-identical
+   or behaviorally identical.
+7. Snapshot test in `tests/unit/test_codegen.py`:
+   - Loads every descriptor.
+   - Validates against the descriptor schema.
+   - Runs the generator into a temp dir.
+   - Diffs generated output against the working tree.
+8. Add `make codegen` and `make check-codegen` targets.
+9. Add `make check-codegen` to pre-commit hooks.
+10. Add `make check-codegen` to `make validate` (run before lint).
+
+**Acceptance criteria:**
+
+- Descriptor schema validates the pods.yml file.
+- Generator produces a `_generated_pods.py` that, when imported in
+  place of `pods.py`, makes the existing
+  `tests/unit/test_pods_services_tools.py` suite pass without
+  modification.
+- `make codegen` is idempotent: running it twice produces no changes.
+- `make check-codegen` passes after `make codegen`.
+- `make validate` passes overall.
+
+**Decision after J-0:**
+
+If equivalence is proven, J-1 starts. If the generator can't easily
+match the existing handwritten output, the descriptor schema is
+either too restrictive (extend it) or too permissive (some hand-
+written nuance is editorial — flag it for the override mechanism).
+Either outcome is fine; the gate is "we know what's mechanical and
+what's editorial."
+
+### J-1 — Migrate existing read-only packs (3-5 sessions, parallelizable)
+
+**Goal:** every existing curated read-only pack is descriptor-driven.
+
+For each of the ~30 existing resource types:
+
+- Write `catalog/curated_tools/<id>.yml`.
+- Run `make codegen`.
+- Replace the existing pack file with a re-export stub:
+  `from rancher_mcp.tools.<pack>._generated_<id> import *`
+  or delete the existing file and update `__init__.py`.
+- Run pack-specific tests.
+- Commit.
+
+Pack the migrations into ~5-10 commits grouped by package
+(pods+services in one commit, workloads in another, RBAC in another,
+etc.) so review stays manageable.
+
+**Acceptance criteria:**
+
+- All existing curated read tools are descriptor-driven.
+- Total tool count unchanged.
+- `make validate` passes.
+- Live `mcp_probe.py` reports 110 tools (or whatever the current
+  count is at the time).
+
+### J-2 — Track B (close Phase 4 read coverage) using descriptors (1-2 sessions)
+
+**Goal:** new Track B tools (provisioning, networking expansion,
+config-and-secrets, certificates) ship as descriptors only.
+
+For each new resource type in Track B:
+
+- Write descriptor.
+- Write/extend output models if needed.
+- Write/extend normalization helper if needed.
+- Run `make codegen`.
+- Add unit test.
+
+**Acceptance criteria:**
+
+- All Track B items B-1..B-8 land via descriptors.
+- Hand-written code per new resource is limited to the Pydantic
+  model, the normalization helper (if any), and the descriptor.
+- No new mechanical-plumbing files.
+
+### J-3 — Extend descriptor schema for write operations (1-2 sessions)
+
+**Goal:** descriptor schema supports `create`, `apply`, `patch`,
+`delete` with proper safety annotations and confirmation phrases.
+
+Tasks:
+
+1. Extend Pydantic schema in `scripts/codegen/descriptor.py`.
+2. Add `tool_create.py.j2`, `tool_apply.py.j2`, `tool_patch.py.j2`,
+   `tool_delete.py.j2` templates.
+3. Wire the read-only-instance guard and confirmation guard into the
+   generated functions (these are existing services in
+   `services/safety.py` and similar).
+4. Migrate the existing **generic** mutation tools' patterns into a
+   shared template helper so generated curated mutations and the
+   generic mutation tools share the same guard plumbing.
+5. Add one example: descriptor for namespaces with `create`/`delete`,
+   prove the resulting tool behaves identically to a hand-written
+   version per existing patterns.
+
+**Acceptance criteria:**
+
+- Descriptor with `operations: [list, get, create, delete]` produces
+  a working pack.
+- Read-only-instance guard fires correctly on writes.
+- Delete confirmation phrase fires correctly.
+- After J-3, Track A-2 (mutation-guard error-shape fix) becomes a
+  single-template change instead of N hand-rolled fixes.
+
+### J-4 — Track D (Phase 6 safe writes) using descriptors (3-5 sessions)
+
+**Goal:** all Phase 6 safe writes ship via descriptors.
+
+Per Track D-1..D-5: extend the relevant existing descriptors with
+write `operations` and the corresponding write annotations.
+Generate. Test.
+
+**Acceptance criteria:**
+
+- All Track D items D-1..D-5 land via descriptors.
+- No hand-written write tools in `tools/<pack>/_generated_*.py`.
+
+### J-5 — Track E (Phase 7 destructive writes) using descriptors (3-5 sessions)
+
+**Goal:** Phase 7 destructive writes ship via descriptors with proper
+risk-tier annotations and (if Track C-1 elicitation lands) elicitation
+hooks.
+
+Same pattern as J-4. Hand-written code is limited to actual workflow
+state machines (drain, restore — these stay in `tools/ops/` or a new
+`tools/workflows/` package, NOT generated).
+
+**Acceptance criteria:**
+
+- All Track E destructive resource-level operations land via
+  descriptors.
+- Workflow-level state-machine operations stay hand-written but live
+  alongside generated code in their respective packs.
+
+### J-6 — Track F subsystem packs and Track B remaining (concurrent with J-4/J-5)
+
+Apply the same pattern to Longhorn (F-1), Rancher backup operator
+(F-2), UI extensions (F-3), and compliance-beyond-CIS (F-4).
+
+**Acceptance criteria:**
+
+- All catalog-driven subsystem reads/writes go through descriptors.
+- Subsystem-specific composition (e.g., Longhorn volume expand
+  workflow polling) stays hand-written in the appropriate `ops/` or
+  `workflows/` package.
+
+## 8. Risks and mitigations
+
+### Risk: Generator complexity outpaces savings
+
+**Mitigation:** start tiny. J-0 produces a working generator from one
+descriptor. If the generator is already 1,500 lines to handle pods,
+that's a signal the descriptor schema is wrong — back off and
+simplify. Target: generator under 1,000 lines for J-0+J-1 scope.
+
+### Risk: Hand-written quirks don't fit the descriptor schema
+
+**Mitigation:** the override mechanism (Section 5) lets any function
+be replaced or hooked without breaking the generator. If a quirk
+appears 3+ times, extend the descriptor schema; if it's a one-off,
+leave it as an override. Don't shoehorn one-offs into the schema.
+
+### Risk: Generated code is ugly or hard to read
+
+**Mitigation:** ruff-format every emitted file. Templates are
+hand-tuned for the formatter; any deviation surfaces immediately in
+the byte-identity check during J-0.
+
+### Risk: Drift between descriptor and generated code
+
+**Mitigation:** `make check-codegen` runs in pre-commit and CI; the
+serena-gate hook also blocks direct edits to `_generated_*.py` files
+(add `_generated_*.py` to a denylist in `serena-gate.py` so accidental
+edits are rejected with a "regenerate from descriptor instead" message).
+
+### Risk: Tying generation to live Rancher schemas creates moving target
+
+**Mitigation:** v1 of the generator does NOT consume live schemas. The
+descriptor is fully self-contained. The output models, normalizers,
+and field selections stay editorially curated. Future versions could
+optionally enrich descriptors from live schemas, but that's J-N, not
+J-0.
+
+### Risk: Generated function signatures regress when descriptor evolves
+
+**Mitigation:** the snapshot tests in `tests/unit/test_codegen.py`
+compare generated output to the working tree. Any signature change
+appears as a diff; CI rejects unless explicitly committed.
+
+### Risk: Migration churn mid-J-1 disrupts other in-flight work
+
+**Mitigation:** J-1 commits are tiny (one descriptor + one stub
+deletion + tests). They land alongside any other work without
+conflicting. If someone is mid-edit on a hand-rolled pack file,
+their PR rebases trivially because the migration commit is a clean
+delete + descriptor add.
+
+## 9. Non-goals (explicit)
+
+- **Not generating Pydantic models.** Field selection is editorial.
+- **Not generating normalization helpers.** Domain logic is editorial.
+- **Not generating ops aggregates** (`cluster_health_check`,
+  `find_failing_pods`, etc.). These are operator intent and stay
+  hand-written.
+- **Not generating action workflows** (drain, restore, etc.).
+  State-machine logic is editorial.
+- **Not generating from live schemas in v1.** Descriptors are static.
+- **Not auto-discovering new descriptors at runtime.** Generation is
+  build-time; the resulting code is committed.
+- **Not replacing the generic Layer 2 tools.** Those exist for the
+  long tail of types nobody curates and remain runtime-driven.
+
+## 10. What changes in ROADMAP after this lands
+
+J-0 inserts a new track in `ROADMAP.md`:
+
+```
+## Track J — Codegen substrate
+
+- [ ] J-0 Scaffolding + pods proof of equivalence
+- [ ] J-1 Migrate existing read-only packs (~30 resource types)
+- [ ] J-2 Track B new tools via descriptors
+- [ ] J-3 Descriptor schema for write ops
+- [ ] J-4 Track D safe writes via descriptors
+- [ ] J-5 Track E destructive writes via descriptors
+- [ ] J-6 Track F subsystem depth via descriptors
+```
+
+Tracks B/D/E/F retain their items but each closes via descriptor
+authorship instead of hand-rolling. The estimated unit of work per
+new resource drops from ~250 LOC + tests to ~30 LOC YAML + tests.
+
+## 11. First action
+
+Implement **J-0** as the next slice. Prerequisites: none. Blocking:
+nothing else should ship to Tracks B/D/E/F until J-0 lands or is
+explicitly abandoned, because shipping to those tracks via hand-rolled
+code locks in technical debt the migration would later remove.
+
+If J-0 fails (descriptor cannot reproduce existing pods.py
+behaviorally), the failure mode is informative: it tells us exactly
+where the editorial line is between mechanical and curated. Either
+outcome justifies the J-0 investment.

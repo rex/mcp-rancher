@@ -2,6 +2,22 @@
 
 ## [2026-05-04] - Agent: Claude Sonnet 4.6
 ### Added
+- `docs/codegen-curated-tools.md` — design + implementation spec for
+  Track J (build-time codegen of curated tool plumbing). Defines
+  per-resource YAML descriptor schema (`catalog/curated_tools/`),
+  generator architecture (`scripts/codegen/`), output file
+  conventions (`_generated_*.py` per pack), override mechanism for
+  per-type quirks, verification strategy (behavioral identity to
+  existing hand-rolled packs proven on pods first), CI integration
+  (`make codegen` + `make check-codegen` + pre-commit gate), and a
+  six-slice migration plan (J-0 scaffold → J-1 migrate existing
+  packs → J-2 Track B → J-3 write operations → J-4 Track D safe
+  writes → J-5 Track E destructive → J-6 Track F subsystem depth).
+  Non-goals explicit: not generating Pydantic models, not generating
+  normalization helpers, not generating ops aggregates or workflows,
+  not live-schema-driven in v1. Track J inserted in `ROADMAP.md`
+  ahead of Tracks B/D/E/F so those tracks ship via descriptor
+  authorship instead of hand-rolling ~250 LOC per resource type.
 - `ROADMAP.md` — track-level operational roadmap (Tracks A-I) so
   agents do not re-derive remaining work from the canonical plan +
   changelog + a fresh codebase audit each session. Includes:

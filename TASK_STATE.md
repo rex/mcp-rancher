@@ -40,6 +40,10 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 
 ## Latest Logical Step
 
+- Approved Track J (build-time codegen for curated tool plumbing).
+  Spec landed at `docs/codegen-curated-tools.md`. Track J inserted
+  in `ROADMAP.md` ahead of Tracks B/D/E/F. Next action is J-0
+  (scaffold + pods proof of equivalence).
 - Captured the full track-level operational roadmap in `ROADMAP.md`
   (Tracks A-I plus a generation-potential appendix discussing
   codegen vs hand-written tradeoff). Future agents should read
@@ -154,10 +158,14 @@ High-level priority order:
    starting because of the safety surface.
 6. Tracks E, F, H, I follow the canonical phase order (P7, P8, P10, P11).
 
-**Pre-decision items** in ROADMAP that need user direction before any
-agent acts on them:
-- Whether to pursue codegen substrate (ROADMAP "Generation potential"
-  appendix). Would become a new Track J inserted before Tracks B/D/E/F.
+**Track J (codegen substrate) is approved.** Spec lives in
+`docs/codegen-curated-tools.md`. It now precedes Tracks B/D/E/F in
+priority — those should not ship hand-rolled code until J-0 lands or
+is explicitly abandoned.
+
+**Next action: J-0** — scaffold the generator, write the pods
+descriptor, prove behavioral identity to the existing hand-rolled
+pods.py.
 
 ## Captured Future Requests (not started)
 

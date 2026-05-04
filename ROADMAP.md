@@ -34,6 +34,58 @@ Phases referenced:
 
 ---
 
+## Track J — Codegen substrate (build-time generation of curated tool plumbing)
+
+**Status:** approved 2026-05-04. Spec lives in
+`docs/codegen-curated-tools.md`. Inserts before Tracks B/D/E/F so
+those tracks ship via descriptor authorship instead of hand-rolling
+~250 LOC per resource type. Failing to land J-0 before resuming
+B/D/E/F locks in technical debt the migration would later remove.
+
+- [ ] **J-0** Scaffolding and proof of equivalence
+  - Build `scripts/codegen/` (descriptor schema, plan, emitter,
+    Jinja templates, formatter pass).
+  - Write `catalog/curated_tools/pods.yml` describing the existing
+    pods pack.
+  - Generate `_generated_pods.py`. Prove it passes the existing
+    `tests/unit/test_pods_services_tools.py` suite without
+    modification.
+  - Add `make codegen` and `make check-codegen`. Wire into
+    pre-commit and `make validate`.
+  - Add `tests/unit/test_codegen.py` snapshot test (regen + diff
+    against working tree).
+  - Add `_generated_*.py` to `serena-gate.py` denylist so accidental
+    direct edits are rejected with a "regenerate from descriptor"
+    message.
+- [ ] **J-1** Migrate existing read-only packs (~30 resource types)
+  - One descriptor per resource type under
+    `catalog/curated_tools/`. Pack the migrations into ~5-10 commits
+    grouped by package.
+  - Each migration: descriptor + regen + delete hand-rolled file +
+    pack tests pass.
+  - Acceptance: tool count unchanged, `make validate` green, live
+    `mcp_probe.py` reports the same tool count as before.
+- [ ] **J-2** Track B new read tools via descriptors only
+  - Provisioning (B-1), networking expansion (B-2),
+    config-and-secrets (B-3), certificates (B-4), and the
+    deepenings (B-5..B-8) all land via descriptor authorship.
+  - No new mechanical-plumbing files.
+- [ ] **J-3** Extend descriptor schema for write operations
+  - Add `create`, `apply`, `patch`, `delete` template support.
+  - Wire read-only-instance guard and confirmation guard via
+    shared services.
+  - Migrate generic mutation tools' guard plumbing into the shared
+    template helper (resolves Track A-2 once, fixes everywhere).
+- [ ] **J-4** Track D safe writes via descriptors
+- [ ] **J-5** Track E destructive writes via descriptors
+- [ ] **J-6** Track F subsystem packs via descriptors
+
+Non-goals (per spec): no generation of Pydantic output models, no
+generation of normalization helpers, no generation of ops aggregates
+or action workflows, no live-schema-driven generation in v1.
+
+---
+
 ## Track A — Open bugs and quick fixes
 
 Should be taken as soon as touched, regardless of which larger track is
