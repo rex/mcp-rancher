@@ -104,6 +104,7 @@ workflow:
   validation_command: make validate
   final_verification_command: make check-if-the-agent-can-consider-this-task-completed
   ask_before_dockerizing: true
+  default_slice_completion_behavior: continue-until-blocked
 
 reporting:
   completion_report:
