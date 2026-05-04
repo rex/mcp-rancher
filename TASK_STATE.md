@@ -40,22 +40,23 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 
 ## Latest Logical Step
 
-- **BLOCKED: awaiting user-initiated context compaction.** Pierce
-  asked me to prepare for compaction at the J-1-partial checkpoint
-  and stop. Resume J-1 with the `disruption` pack after compaction.
-  Bootstrap on resume: `mcp__serena__activate_project` →
-  `mcp__serena__check_onboarding_performed` →
-  `mcp__serena__read_memory("tasks/track_j_codegen_resume")` for
-  the full hand-off (schema state, migration recipe, remaining-pack
-  order, Norman-plane TODO, gotchas).
-- **J-1 in progress.** Migrated 3 of ~14 read-only packs into
-  descriptors (8 of ~30 resource types):
+- **Resumed post-compaction (2026-05-04).** Bootstrap done:
+  Serena activated, onboarding confirmed, hand-off memory
+  `tasks/track_j_codegen_resume` re-read. Continuing J-1 with the
+  `disruption` pack per the recommended order; `projects_namespaces`
+  next (introduces the Norman plane schema extension).
+- **J-1 in progress.** Migrated 4 of ~14 read-only packs into
+  descriptors (9 of ~30 resource types):
   - `pods_services` (J-0 + verified)
   - `workloads` (deployments, daemonsets, statefulsets) — added
     k8s-proxy transport support
   - `storage` (storage_classes, persistent_volumes,
     persistent_volume_claims) — added cluster-scoped support,
     custom query builder, `is_true` filter predicate
+  - `disruption` (pod_disruption_budgets) — restructured from flat
+    `tools/disruption.py` + `tools/disruption_support.py` into a
+    directory pack (`paths.py` + `shared.py`); gained cursor
+    pagination + suggested_next_steps via codegen
 - Schema extensions during J-1 (descriptor.py, plan.py,
   tool_module.py.j2): `transport`, `path_helper` with optional
   `resource_kind`, `namespaced` toggle, `query_builder_function`/
@@ -63,11 +64,11 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
   `FilterSpec.predicate` (is_provided | is_true),
   `support_value_imports`. See `ROADMAP.md` Track J entry for full
   list and remaining packs.
-- `make validate` green: 210 tests, 85.57% coverage.
+- `make validate` green: 210 tests, 85.59% coverage.
 - Per `default_slice_completion_behavior: continue-until-blocked`,
-  J-1 continues immediately on resume. Next packs (in order):
-  `disruption`, `projects_namespaces`, `clusters_nodes` (introduces
-  Norman plane — biggest remaining schema extension), then the
+  J-1 continues. Next packs (in order):
+  `projects_namespaces` (introduces Norman plane — biggest
+  remaining schema extension), `clusters_nodes`, then the
   Norman-only packs (`settings_features`, `apps_catalogs`,
   `auth_identity`, `rbac`, `fleet_registration`, `logging_backups`,
   `alerts`, `compliance`). `monitoring` and `ops` are last (may not

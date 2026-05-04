@@ -1,0 +1,67 @@
+schema_version: 1
+
+id: pod_disruption_budgets
+pack: disruption
+display_name_singular: pod_disruption_budget
+display_name_plural: pod_disruption_budgets
+
+plane: steve
+transport: k8s-proxy
+namespaced: true
+
+path_helper:
+  module: rancher_mcp.tools.disruption.paths
+  list_function: pdb_collection_path
+  detail_function: pdb_resource_path
+
+list_response_model: rancher_mcp.models.disruption.RancherPodDisruptionBudgetList
+detail_response_model: rancher_mcp.models.disruption.RancherPodDisruptionBudgetDetail
+
+shared_imports:
+  - items
+  - pdb_summary_from_payload
+support_value_imports:
+  - string_dict
+summary_function: pdb_summary_from_payload
+query_builder_function: build_list_query_params
+query_builder_in_shared: true
+
+operations: [list, get]
+
+list:
+  query_params: [limit, continue_token]
+  filters: []
+  count_field: budget_count
+  collection_field: pod_disruption_budgets
+  next_steps:
+    - rancher_pod_disruption_budget_get
+    - rancher_pods_list
+    - rancher_deployments_list
+
+get:
+  arg_name: budget_name
+  summary_copy_fields:
+    - id
+    - disruption_allowed
+  locals:
+    - name: metadata
+      expression: 'mapping_value(payload, "metadata") or {}'
+  extras:
+    - field: annotation_keys
+      expression: 'sorted(string_dict(mapping_value(metadata, "annotations") or {}))'
+  include_link_keys: false
+  include_payload: true
+  next_steps:
+    - rancher_pod_disruption_budgets_list
+    - rancher_pods_list
+    - rancher_deployments_list
+
+tools:
+  list:
+    name: rancher_pod_disruption_budgets_list
+    description: List pod disruption budgets in one namespace via Rancher's raw Kubernetes proxy. Returns curated summaries with min/max availability and disruption status.
+    annotation_set: READ_ONLY
+  get:
+    name: rancher_pod_disruption_budget_get
+    description: Fetch one pod disruption budget by namespace and name via Rancher's raw Kubernetes proxy. Returns the curated summary plus full payload, conditions, and annotation keys.
+    annotation_set: READ_ONLY

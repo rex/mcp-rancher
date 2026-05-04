@@ -1,9 +1,8 @@
-"""Normalization helpers for curated pod disruption budget tools."""
+"""Shared normalization helpers for curated disruption tools."""
 
 from __future__ import annotations
 
 from collections.abc import Mapping
-from urllib.parse import quote
 
 from rancher_mcp.models.disruption import RancherPodDisruptionBudgetSummary
 from rancher_mcp.tools.support.collections import object_items
@@ -16,30 +15,20 @@ from rancher_mcp.tools.support.values import (
 )
 
 
-def build_list_query_params(*, limit: int | None) -> dict[str, str | int | bool]:
+def _build_list_query_params(
+    *, limit: int | None, continue_token: str | None = None
+) -> dict[str, str | int | bool]:
     """Build typed list query params for raw Kubernetes proxy PDB list calls."""
 
-    if limit is None:
-        return {}
-    return {"limit": limit}
+    params: dict[str, str | int | bool] = {}
+    if limit is not None:
+        params["limit"] = limit
+    if continue_token is not None:
+        params["continue"] = continue_token
+    return params
 
 
-def pdb_collection_path(cluster_id: str, namespace: str) -> str:
-    """Build the raw Kubernetes proxy collection path for namespaced PDBs."""
-
-    return (
-        f"/k8s/clusters/{quote(cluster_id, safe='')}/apis/policy/v1/namespaces/"
-        f"{quote(namespace, safe='')}/poddisruptionbudgets"
-    )
-
-
-def pdb_resource_path(cluster_id: str, namespace: str, budget_name: str) -> str:
-    """Build the raw Kubernetes proxy resource path for one PDB."""
-
-    return f"{pdb_collection_path(cluster_id, namespace)}/{quote(budget_name, safe='')}"
-
-
-def pdb_summary_from_payload(
+def _pdb_summary_from_payload(
     payload: Mapping[str, object],
 ) -> RancherPodDisruptionBudgetSummary:
     """Normalize one pod disruption budget payload."""
@@ -68,19 +57,12 @@ def pdb_summary_from_payload(
     )
 
 
-__all__ = [
-    "build_list_query_params",
-    "conditions_from_payload",
-    "items",
-    "mapping_value",
-    "pdb_collection_path",
-    "pdb_resource_path",
-    "pdb_summary_from_payload",
-    "string_dict",
-]
-
-
-def items(payload: Mapping[str, object]) -> list[dict[str, object]]:
+def _items(payload: Mapping[str, object]) -> list[dict[str, object]]:
     """Extract typed list items from a raw Kubernetes list payload."""
 
     return object_items(payload, field="items")
+
+
+build_list_query_params = _build_list_query_params
+items = _items
+pdb_summary_from_payload = _pdb_summary_from_payload

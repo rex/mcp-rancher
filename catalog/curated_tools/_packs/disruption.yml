@@ -1,0 +1,5 @@
+schema_version: 1
+id: disruption
+register_function: register_disruption_tools
+docstring: Curated Rancher disruption-management read-only tools.
+register_docstring: Register curated disruption-management tools with the FastMCP server.

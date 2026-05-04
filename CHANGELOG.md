@@ -2,6 +2,31 @@
 
 ## [2026-05-04] - Agent: Claude Sonnet 4.6
 ### Added
+- **Track J slice J-1 continuation**: `disruption` pack migrated
+  to descriptors (1 type: `pod_disruption_budgets`; total now 9 of
+  ~30 types across 4 of ~14 packs).
+  - `catalog/curated_tools/pod_disruption_budgets.yml` plus
+    `_packs/disruption.yml`. k8s-proxy namespaced; uses a pack-local
+    `build_list_query_params(*, limit, continue_token=None)` so
+    pagination and suggested_next_steps come for free via codegen
+    (the hand-rolled tool had neither).
+  - **Restructured from flat layout to a directory pack** to match
+    `storage/` and `workloads/`. Old: `tools/disruption.py` +
+    `tools/disruption_support.py`. New:
+    `tools/disruption/{paths,shared,_generated_pod_disruption_budgets,__init__}.py`.
+    Public import path `rancher_mcp.tools.disruption.<symbol>` is
+    preserved (server.py and tests unchanged).
+  - `src/rancher_mcp/models/disruption.py`:
+    `RancherPodDisruptionBudgetList` gains `next_page_token: str |
+    None = None` for pagination parity with other Phase 5 list
+    models. `suggested_next_steps` was already inherited from
+    `RancherModel`.
+  - `.claude/hooks/serena-gate.py` `_CODEGEN_PACKS` extended with
+    `disruption`.
+  - Existing `tests/unit/test_disruption_tools.py` (2 tests) passes
+    against the generated module without modification. `make
+    validate` green: 210 tests, 85.59% coverage.
+
 - **Track J slice J-1 partial**: 2 more read-only packs migrated
   to descriptors. Total tools migrated: pods, services,
   deployments, daemonsets, statefulsets, storage_classes,

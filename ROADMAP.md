@@ -68,13 +68,18 @@ B/D/E/F locks in technical debt the migration would later remove.
     pack tests pass.
   - Acceptance: tool count unchanged, `make validate` green, live
     `mcp_probe.py` reports the same tool count as before.
-  - **Migrated so far** (3 of ~14 packs, 8 of ~30 resource types):
+  - **Migrated so far** (4 of ~14 packs, 9 of ~30 resource types):
     - [x] `pods_services` — pods, services (Steve namespaced)
     - [x] `workloads` — deployments, daemonsets, statefulsets
       (k8s-proxy namespaced, bool filters, custom annotation extras)
     - [x] `storage` — storage_classes, persistent_volumes,
       persistent_volume_claims (k8s-proxy with cluster-scoped +
       namespaced mix, custom query builder, is_true predicate)
+    - [x] `disruption` — pod_disruption_budgets (k8s-proxy
+      namespaced; restructured from flat `tools/disruption.py` +
+      `tools/disruption_support.py` into a directory pack with
+      `paths.py` + `shared.py` to match storage/workloads layout;
+      gained pagination + suggested_next_steps via codegen)
   - **Schema extensions added during J-1** (kept descriptor schema
     flexible without bloating it):
     - `transport: steve | k8s-proxy` — picks client class, items
@@ -92,8 +97,7 @@ B/D/E/F locks in technical debt the migration would later remove.
       activates
     - `support_value_imports` — extra imports from
       `tools.support.values` (e.g. `string_dict`)
-  - **Remaining packs** (~11 of ~14 packs, all read-only):
-    - `disruption` — pod_disruption_budgets (likely steve-style)
+  - **Remaining packs** (~10 of ~14 packs, all read-only):
     - `projects_namespaces` — projects (Norman), namespaces (Steve)
     - `clusters_nodes` — clusters (Norman), nodes (Steve)
     - `settings_features` — settings, features (Norman)
