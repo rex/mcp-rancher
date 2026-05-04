@@ -40,6 +40,14 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 
 ## Latest Logical Step
 
+- **BLOCKED: awaiting user-initiated context compaction.** Pierce
+  asked me to prepare for compaction at the J-1-partial checkpoint
+  and stop. Resume J-1 with the `disruption` pack after compaction.
+  Bootstrap on resume: `mcp__serena__activate_project` →
+  `mcp__serena__check_onboarding_performed` →
+  `mcp__serena__read_memory("tasks/track_j_codegen_resume")` for
+  the full hand-off (schema state, migration recipe, remaining-pack
+  order, Norman-plane TODO, gotchas).
 - **J-1 in progress.** Migrated 3 of ~14 read-only packs into
   descriptors (8 of ~30 resource types):
   - `pods_services` (J-0 + verified)
