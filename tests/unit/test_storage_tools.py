@@ -1094,11 +1094,9 @@ async def test_rancher_persistent_volume_claim_set_size_round_trip() -> None:
     assert client.last_patch_path == (
         "/k8s/clusters/local/api/v1/namespaces/storage-validation/persistentvolumeclaims/demo-claim"
     )
-    # Body: codegen wraps args under the literal target_path key (dotted paths are not nested).
-    # NOTE: The template treats target_path as a single string key, so "spec.resources.requests"
-    # becomes a literal dict key. The intent (nested spec→resources→requests→{storage}) requires
-    # a template enhancement; the generated body here reflects actual codegen output.
-    assert client.last_patch_payload == {"spec.resources.requests": {"storage": "10Gi"}}
+    # Body: codegen nests dotted target_path keys (substrate evolution).
+    # target_path "spec.resources.requests" -> nested {spec: {resources: {requests: {...}}}}.
+    assert client.last_patch_payload == {"spec": {"resources": {"requests": {"storage": "10Gi"}}}}
 
     # Response is parsed through the get pipeline.
     assert result.name == "demo-claim"

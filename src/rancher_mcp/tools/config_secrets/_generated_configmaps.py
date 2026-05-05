@@ -438,7 +438,9 @@ async def _patch_config_map_set_labels(
         raise RancherCapabilityError(
             "No patch fields provided; every arg was None. Pass at least one field to update."
         )
-    request_payload: dict[str, object] = {"metadata": patch_subtree}
+    request_payload: dict[str, object] = patch_subtree
+    request_payload = {"metadata": request_payload}
+
     payload = await client.patch_json(
         core_v1_resource_path(cluster_id, namespace, "configmaps", config_map_name),
         payload=request_payload,
@@ -516,7 +518,9 @@ async def _patch_config_map_set_annotations(
         raise RancherCapabilityError(
             "No patch fields provided; every arg was None. Pass at least one field to update."
         )
-    request_payload: dict[str, object] = {"metadata": patch_subtree}
+    request_payload: dict[str, object] = patch_subtree
+    request_payload = {"metadata": request_payload}
+
     payload = await client.patch_json(
         core_v1_resource_path(cluster_id, namespace, "configmaps", config_map_name),
         payload=request_payload,

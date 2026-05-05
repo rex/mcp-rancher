@@ -198,7 +198,9 @@ async def _patch_cert_manager_certificate_set_labels(
         raise RancherCapabilityError(
             "No patch fields provided; every arg was None. Pass at least one field to update."
         )
-    request_payload: dict[str, object] = {"metadata": patch_subtree}
+    request_payload: dict[str, object] = patch_subtree
+    request_payload = {"metadata": request_payload}
+
     payload = await client.patch_json(
         cert_manager_namespaced_resource_path(
             cluster_id, namespace, "certificates", certificate_name
@@ -276,7 +278,9 @@ async def _patch_cert_manager_certificate_set_annotations(
         raise RancherCapabilityError(
             "No patch fields provided; every arg was None. Pass at least one field to update."
         )
-    request_payload: dict[str, object] = {"metadata": patch_subtree}
+    request_payload: dict[str, object] = patch_subtree
+    request_payload = {"metadata": request_payload}
+
     payload = await client.patch_json(
         cert_manager_namespaced_resource_path(
             cluster_id, namespace, "certificates", certificate_name

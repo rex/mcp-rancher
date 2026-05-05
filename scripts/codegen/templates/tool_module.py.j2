@@ -721,7 +721,10 @@ async def _patch_{{ display_name_singular }}_{{ patch.verb }}(
             "No patch fields provided; every arg was None. Pass at least one field to update."
         )
     {% if patch.target_path -%}
-    request_payload: dict[str, object] = {"{{ patch.target_path }}": patch_subtree}
+    request_payload: dict[str, object] = patch_subtree
+    {% for key in patch.target_path.split('.') | reverse -%}
+    request_payload = {"{{ key }}": request_payload}
+    {% endfor -%}
     {%- else -%}
     request_payload: dict[str, object] = patch_subtree
     {%- endif %}

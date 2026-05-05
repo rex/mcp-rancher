@@ -180,7 +180,9 @@ async def _patch_priority_class_set_labels(
         raise RancherCapabilityError(
             "No patch fields provided; every arg was None. Pass at least one field to update."
         )
-    request_payload: dict[str, object] = {"metadata": patch_subtree}
+    request_payload: dict[str, object] = patch_subtree
+    request_payload = {"metadata": request_payload}
+
     payload = await client.patch_json(
         scheduling_v1_resource_path(cluster_id, "priorityclasses", priority_class_name),
         payload=request_payload,
@@ -249,7 +251,9 @@ async def _patch_priority_class_set_annotations(
         raise RancherCapabilityError(
             "No patch fields provided; every arg was None. Pass at least one field to update."
         )
-    request_payload: dict[str, object] = {"metadata": patch_subtree}
+    request_payload: dict[str, object] = patch_subtree
+    request_payload = {"metadata": request_payload}
+
     payload = await client.patch_json(
         scheduling_v1_resource_path(cluster_id, "priorityclasses", priority_class_name),
         payload=request_payload,

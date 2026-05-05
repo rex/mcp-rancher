@@ -253,7 +253,9 @@ async def _patch_deployment_scale(
         raise RancherCapabilityError(
             "No patch fields provided; every arg was None. Pass at least one field to update."
         )
-    request_payload: dict[str, object] = {"spec": patch_subtree}
+    request_payload: dict[str, object] = patch_subtree
+    request_payload = {"spec": request_payload}
+
     payload = await client.patch_json(
         workload_resource_path(cluster_id, namespace, "deployments", deployment_name),
         payload=request_payload,
@@ -328,7 +330,9 @@ async def _patch_deployment_set_labels(
         raise RancherCapabilityError(
             "No patch fields provided; every arg was None. Pass at least one field to update."
         )
-    request_payload: dict[str, object] = {"metadata": patch_subtree}
+    request_payload: dict[str, object] = patch_subtree
+    request_payload = {"metadata": request_payload}
+
     payload = await client.patch_json(
         workload_resource_path(cluster_id, namespace, "deployments", deployment_name),
         payload=request_payload,
@@ -403,7 +407,9 @@ async def _patch_deployment_set_annotations(
         raise RancherCapabilityError(
             "No patch fields provided; every arg was None. Pass at least one field to update."
         )
-    request_payload: dict[str, object] = {"metadata": patch_subtree}
+    request_payload: dict[str, object] = patch_subtree
+    request_payload = {"metadata": request_payload}
+
     payload = await client.patch_json(
         workload_resource_path(cluster_id, namespace, "deployments", deployment_name),
         payload=request_payload,
