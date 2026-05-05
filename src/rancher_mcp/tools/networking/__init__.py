@@ -18,6 +18,8 @@ from rancher_mcp.tools.networking._generated_endpoint_slices import (
     rancher_endpoint_slices_list_tool,
 )
 from rancher_mcp.tools.networking._generated_ingresses import (
+    rancher_ingress_delete,
+    rancher_ingress_delete_tool,
     rancher_ingress_get,
     rancher_ingress_get_tool,
     rancher_ingress_set_annotations,
@@ -46,6 +48,7 @@ __all__ = [
     "rancher_endpoint_slice_set_annotations",
     "rancher_endpoint_slice_set_labels",
     "rancher_endpoint_slices_list",
+    "rancher_ingress_delete",
     "rancher_ingress_get",
     "rancher_ingress_set_annotations",
     "rancher_ingress_set_labels",
@@ -76,6 +79,7 @@ def register_networking_tools(mcp: FastMCP) -> None:
     )
     mcp.tool(name="rancher_ingresses_list", annotations=READ_ONLY)(rancher_ingresses_list_tool)
     mcp.tool(name="rancher_ingress_get", annotations=READ_ONLY)(rancher_ingress_get_tool)
+    mcp.tool(name="rancher_ingress_delete", annotations=DESTRUCTIVE)(rancher_ingress_delete_tool)
     mcp.tool(name="rancher_ingress_set_labels", annotations=IDEMPOTENT_WRITE)(
         rancher_ingress_set_labels_tool
     )
