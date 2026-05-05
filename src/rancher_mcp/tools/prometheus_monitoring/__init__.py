@@ -22,6 +22,8 @@ from rancher_mcp.tools.prometheus_monitoring._generated_prometheus_rules import 
 from rancher_mcp.tools.prometheus_monitoring._generated_service_monitors import (
     rancher_service_monitor_get,
     rancher_service_monitor_get_tool,
+    rancher_service_monitor_set_annotations,
+    rancher_service_monitor_set_annotations_tool,
     rancher_service_monitor_set_labels,
     rancher_service_monitor_set_labels_tool,
     rancher_service_monitors_list,
@@ -35,6 +37,7 @@ __all__ = [
     "rancher_prometheus_rule_get",
     "rancher_prometheus_rules_list",
     "rancher_service_monitor_get",
+    "rancher_service_monitor_set_annotations",
     "rancher_service_monitor_set_labels",
     "rancher_service_monitors_list",
     "register_prometheus_monitoring_tools",
@@ -62,4 +65,7 @@ def register_prometheus_monitoring_tools(mcp: FastMCP) -> None:
     )
     mcp.tool(name="rancher_service_monitor_set_labels", annotations=IDEMPOTENT_WRITE)(
         rancher_service_monitor_set_labels_tool
+    )
+    mcp.tool(name="rancher_service_monitor_set_annotations", annotations=IDEMPOTENT_WRITE)(
+        rancher_service_monitor_set_annotations_tool
     )
