@@ -68,6 +68,16 @@ patches:
     next_steps:
       - rancher_pod_disruption_budget_get
       - rancher_pod_disruption_budgets_list
+  - verb: set_annotations
+    target_path: metadata
+    audit_operation: pod_disruption_budget_set_annotations
+    args:
+      - name: annotations
+        type: dict_str_str
+        required: true
+        description: Replacement metadata.annotations map (merge-patch semantics).
+    next_steps:
+      - rancher_pod_disruption_budget_get
 
 tools:
   list:
@@ -81,4 +91,7 @@ tools:
   patches:
     - name: rancher_pod_disruption_budget_set_labels
       description: Replace metadata.labels on one PodDisruptionBudget via JSON merge-patch. The `labels` arg is a complete replacement map. Returns the curated detail.
+      annotation_set: IDEMPOTENT_WRITE
+    - name: rancher_pod_disruption_budget_set_annotations
+      description: Replace metadata.annotations on one Kubernetes PodDisruptionBudget via JSON merge-patch. Returns the curated detail.
       annotation_set: IDEMPOTENT_WRITE

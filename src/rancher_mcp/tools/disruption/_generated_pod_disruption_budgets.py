@@ -225,6 +225,78 @@ async def rancher_pod_disruption_budget_set_labels(
         )
 
 
+async def _patch_pod_disruption_budget_set_annotations(
+    instance_name: str,
+    cluster_id: str,
+    namespace: str,
+    budget_name: str,
+    annotations: dict[str, str],
+    client: ManagementDiscoveryClient,
+) -> RancherPodDisruptionBudgetDetail:
+    """Set_annotations one pod_disruption_budget via JSON merge-patch; returns the curated detail."""
+
+    patch_subtree: dict[str, object] = {}
+    patch_subtree["annotations"] = annotations
+    if not patch_subtree:
+        raise RancherCapabilityError(
+            "No patch fields provided; every arg was None. Pass at least one field to update."
+        )
+    request_payload: dict[str, object] = {"metadata": patch_subtree}
+    payload = await client.patch_json(
+        pdb_resource_path(cluster_id, namespace, budget_name),
+        payload=request_payload,
+    )
+    summary = pdb_summary_from_payload(payload)
+
+    metadata = mapping_value(payload, "metadata") or {}
+    detail = RancherPodDisruptionBudgetDetail.model_validate(payload)
+    return detail.model_copy(
+        update={
+            "id": summary.id,
+            "disruption_allowed": summary.disruption_allowed,
+            "annotation_keys": sorted(string_dict(mapping_value(metadata, "annotations") or {})),
+            "payload": dict(payload),
+            "suggested_next_steps": ["rancher_pod_disruption_budget_get"],
+        }
+    )
+
+
+@audit_mutation(operation="pod_disruption_budget_set_annotations", plane="steve")
+@rate_limit_writes
+async def rancher_pod_disruption_budget_set_annotations(
+    namespace: str,
+    budget_name: str,
+    annotations: dict[str, str],
+    cluster_id: str = "local",
+    instance: str | None = None,
+    settings: AppSettings | None = None,
+    client: ManagementDiscoveryClient | None = None,
+) -> RancherPodDisruptionBudgetDetail:
+    """Set_annotations one pod_disruption_budget via JSON merge-patch."""
+
+    resolved_settings = settings or get_settings()
+    instance_name, instance_config = resolve_instance(resolved_settings, instance)
+    ensure_instance_writable(instance_name, instance_config)
+    if client is not None:
+        return await _patch_pod_disruption_budget_set_annotations(
+            instance_name,
+            cluster_id,
+            namespace,
+            budget_name,
+            annotations,
+            client,
+        )
+    async with RancherManagementClient(instance_name, instance_config) as managed_client:
+        return await _patch_pod_disruption_budget_set_annotations(
+            instance_name,
+            cluster_id,
+            namespace,
+            budget_name,
+            annotations,
+            managed_client,
+        )
+
+
 async def rancher_pod_disruption_budgets_list_tool(
     namespace: str,
     cluster_id: str = "local",
@@ -272,6 +344,24 @@ async def rancher_pod_disruption_budget_set_labels_tool(
         namespace=namespace,
         budget_name=budget_name,
         labels=labels,
+        cluster_id=cluster_id,
+        instance=instance,
+    )
+
+
+async def rancher_pod_disruption_budget_set_annotations_tool(
+    namespace: str,
+    budget_name: str,
+    annotations: dict[str, str],
+    cluster_id: str = "local",
+    instance: str | None = None,
+) -> RancherPodDisruptionBudgetDetail:
+    """Public MCP wrapper for curated pod_disruption_budget set_annotations."""
+
+    return await rancher_pod_disruption_budget_set_annotations(
+        namespace=namespace,
+        budget_name=budget_name,
+        annotations=annotations,
         cluster_id=cluster_id,
         instance=instance,
     )
