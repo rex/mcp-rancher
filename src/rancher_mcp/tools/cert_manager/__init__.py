@@ -10,6 +10,8 @@ from mcp.server.fastmcp import FastMCP
 from rancher_mcp.tools.cert_manager._generated_cert_manager_certificates import (
     rancher_cert_manager_certificate_get,
     rancher_cert_manager_certificate_get_tool,
+    rancher_cert_manager_certificate_set_annotations,
+    rancher_cert_manager_certificate_set_annotations_tool,
     rancher_cert_manager_certificate_set_labels,
     rancher_cert_manager_certificate_set_labels_tool,
     rancher_cert_manager_certificates_list,
@@ -31,6 +33,7 @@ from rancher_mcp.tools.support.annotations import IDEMPOTENT_WRITE, READ_ONLY
 
 __all__ = [
     "rancher_cert_manager_certificate_get",
+    "rancher_cert_manager_certificate_set_annotations",
     "rancher_cert_manager_certificate_set_labels",
     "rancher_cert_manager_certificates_list",
     "rancher_cert_manager_cluster_issuer_get",
@@ -52,6 +55,9 @@ def register_cert_manager_tools(mcp: FastMCP) -> None:
     )
     mcp.tool(name="rancher_cert_manager_certificate_set_labels", annotations=IDEMPOTENT_WRITE)(
         rancher_cert_manager_certificate_set_labels_tool
+    )
+    mcp.tool(name="rancher_cert_manager_certificate_set_annotations", annotations=IDEMPOTENT_WRITE)(
+        rancher_cert_manager_certificate_set_annotations_tool
     )
     mcp.tool(name="rancher_cert_manager_cluster_issuers_list", annotations=READ_ONLY)(
         rancher_cert_manager_cluster_issuers_list_tool
