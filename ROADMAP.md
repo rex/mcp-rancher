@@ -320,10 +320,21 @@ domain at the depth defined in the plan.
     Rancher's legacy Norman cluster_loggings / project_loggings.
   - Banzai chart is optional — tools 404 if chart not installed.
     Capability-detection is a future enhancement.
-- [ ] **B-7** Deepen compliance pack (P4 / overlap P8)
-  - Currently: CIS scan profiles + scans.
-  - Add: scheduled-scan visibility, Kubewarden detection (where
-    installed), policy-report reads.
+- [x] **B-7** Compliance deepening (P4 / overlap P8) — landed via J-2 (partial)
+  - New pack `policy_reports` for the standardized
+    `wgpolicyk8s.io/v1alpha2` API. PolicyReport (namespaced) and
+    ClusterPolicyReport (cluster-scoped). Multiple policy engines
+    emit this format (Kyverno, Kubewarden, Falco).
+  - Curated summaries expose pass/fail/warn/error/skip counts,
+    result_count, and top_failing_policies.
+  - **Deferred from B-7**:
+    - **Kubewarden** CRDs (`policies.kubewarden.io/v1` —
+      AdmissionPolicy, ClusterAdmissionPolicy). Chart-specific;
+      deferred for a dedicated subsystem track.
+    - **Scheduled-scan visibility** — a property on the existing
+      `clusterScan` Norman type. Can be exposed by extending
+      the `compliance` pack's existing summary model. Deferred
+      as a follow-up.
 - [x] **B-8** Backup operator pack (P4 / overlap P8) — landed via J-2
   - New pack `backup_operator`. 2 CRDs:
     - Backup (`resources.cattle.io/v1`, cluster-scoped) —

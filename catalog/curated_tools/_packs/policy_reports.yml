@@ -1,0 +1,5 @@
+schema_version: 1
+id: policy_reports
+register_function: register_policy_reports_tools
+docstring: Curated PolicyReport tools (wgpolicyk8s.io/v1alpha2 — Kyverno, Kubewarden, Falco).
+register_docstring: Register curated PolicyReport tools with the FastMCP server.

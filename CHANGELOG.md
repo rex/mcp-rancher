@@ -2,6 +2,37 @@
 
 ## [2026-05-04] - Agent: Claude Opus 4.7
 
+### Added (J-2 / B-7 — policy_reports pack via descriptors)
+- New **`policy_reports`** pack with 4 tools across 2 standardized
+  CRDs in `wgpolicyk8s.io/v1alpha2`:
+  - `rancher_policy_reports_list` / `rancher_policy_report_get`
+    (namespaced)
+  - `rancher_cluster_policy_reports_list` /
+    `rancher_cluster_policy_report_get` (cluster-scoped)
+- Multiple policy engines emit this format (Kyverno, Kubewarden,
+  Falco). Curated summary exposes `pass_count`, `fail_count`,
+  `warn_count`, `error_count`, `skip_count` (auto-aliased from
+  `summary.{pass,fail,warn,error,skip}`), `result_count`, and
+  `top_failing_policies` (sorted unique policy names with at
+  least one `fail` result).
+- New path helpers: `policy_namespaced_collection_path` /
+  `policy_namespaced_resource_path` and
+  `policy_cluster_collection_path` /
+  `policy_cluster_resource_path`.
+- 4 new unit tests covering list+get for both types with
+  realistic fixtures (namespaced report with mixed pass/fail/warn,
+  cluster-scoped clean report).
+- 253 tests pass, 85.54% coverage. Codegen: 76 files match
+  descriptors. Public tool surface 146 → 150.
+- B-7 ROADMAP also lists Kubewarden detection and scheduled-scan
+  visibility:
+  - **Kubewarden** is chart-specific (`policies.kubewarden.io/v1`);
+    deferred for a dedicated subsystem track.
+  - **Scheduled-scan visibility** is a property on the existing
+    `clusterScan` Norman type; it can be exposed by extending
+    the `compliance` pack's existing model. Deferred as a
+    follow-up.
+
 ### Added (J-2 / B-6 — logging_pipeline pack via descriptors)
 - New **`logging_pipeline`** pack with 8 tools across 4 Banzai
   Logging Operator CRDs in `logging.banzaicloud.io/v1beta1`:

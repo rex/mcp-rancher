@@ -29,7 +29,7 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 - Canonical plan: `PERFECT_RANCHER_MCP_IMPLEMENTATION_PLAN.md`
 - Operational roadmap (track-level work breakdown): `ROADMAP.md`
 - Primary compatibility target: Rancher `2.6.5`
-- Public tool surface: 146 tools
+- Public tool surface: 150 tools
 - Completion gate: `make check-if-the-agent-can-consider-this-task-completed`
 - Active quality gates:
   `make check-architecture`
@@ -48,6 +48,13 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 
 ## Latest Logical Step
 
+- **J-2 / B-7 policy_reports pack landed (partial).** 4 new
+  tools for the standardized PolicyReport API at
+  `wgpolicyk8s.io/v1alpha2` (Kyverno, Kubewarden, Falco emit
+  this format). Tool surface 146 → 150. 253 tests pass, 85.54%
+  coverage. **Deferred from B-7**: Kubewarden CRDs (chart-specific)
+  and scheduled-scan visibility (extension of existing
+  compliance pack).
 - **J-2 / B-6 logging_pipeline pack landed.** 8 new tools for
   Banzai Logging Operator CRDs (Output/ClusterOutput/Flow/ClusterFlow)
   at `logging.banzaicloud.io/v1beta1`. Tool surface 138 → 146.

@@ -1,0 +1,68 @@
+schema_version: 1
+
+id: policy_reports
+pack: policy_reports
+display_name_singular: policy_report
+display_name_plural: policy_reports
+
+plane: steve
+transport: k8s-proxy
+namespaced: true
+
+path_helper:
+  module: rancher_mcp.tools.policy_reports.paths
+  list_function: policy_namespaced_collection_path
+  detail_function: policy_namespaced_resource_path
+  resource_kind: policyreports
+
+list_response_model: rancher_mcp.models.policy_reports.RancherPolicyReportList
+detail_response_model: rancher_mcp.models.policy_reports.RancherPolicyReportDetail
+
+shared_imports:
+  - items
+  - policy_report_summary_from_payload
+support_value_imports:
+  - string_dict
+summary_function: policy_report_summary_from_payload
+query_builder_function: build_list_query_params
+query_builder_in_shared: true
+
+operations: [list, get]
+
+list:
+  query_params: [limit, continue_token, label_selector]
+  filters: []
+  count_field: policy_report_count
+  collection_field: policy_reports
+  next_steps:
+    - rancher_policy_report_get
+    - rancher_cluster_policy_reports_list
+
+get:
+  arg_name: report_name
+  summary_copy_fields:
+    - result_count
+    - top_failing_policies
+  locals:
+    - name: metadata
+      expression: 'mapping_value(payload, "metadata") or {}'
+    - name: annotations
+      expression: 'mapping_value(metadata, "annotations") or {}'
+  extras:
+    - field: annotation_keys
+      expression: sorted(string_dict(annotations))
+  include_link_keys: false
+  include_payload: true
+  next_steps:
+    - rancher_policy_reports_list
+    - rancher_cluster_policy_reports_list
+
+tools:
+  list:
+    name: rancher_policy_reports_list
+    description: List PolicyReport resources (wgpolicyk8s.io/v1alpha2) in one namespace via Rancher's raw Kubernetes proxy. Returns curated summaries with pass/fail/warn/error/skip counts and top failing policies.
+    annotation_set: READ_ONLY
+  get:
+    name: rancher_policy_report_get
+    description: Fetch one PolicyReport by namespace and name. Returns the curated summary plus full payload (with all results).
+    annotation_set: READ_ONLY
