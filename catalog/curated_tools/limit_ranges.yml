@@ -27,7 +27,7 @@ summary_function: limit_range_summary_from_payload
 query_builder_function: build_list_query_params
 query_builder_in_shared: true
 
-operations: [list, get, patch]
+operations: [list, get, delete, patch]
 
 list:
   query_params: [limit, continue_token, label_selector, field_selector]
@@ -56,6 +56,12 @@ get:
   next_steps:
     - rancher_limit_ranges_list
     - rancher_resource_quotas_list
+
+delete:
+  audit_operation: limit_range_delete
+  confirmation_phrase: "delete limit_range {limit_range_name} in namespace {namespace}"
+  next_steps:
+    - rancher_limit_ranges_list
 
 patches:
   - verb: set_labels
@@ -96,3 +102,7 @@ tools:
     - name: rancher_limit_range_set_annotations
       description: Replace metadata.annotations on one Kubernetes LimitRange via JSON merge-patch. Returns the curated detail.
       annotation_set: IDEMPOTENT_WRITE
+  delete:
+    name: rancher_limit_range_delete
+    description: Delete one LimitRange. The `confirmation` arg must equal the exact phrase "delete limit_range LIMIT_RANGE_NAME in namespace NS" (substituting the actual values). Returns a typed delete result with the rendered confirmation phrase. Subject to write rate limiting and audit logging.
+    annotation_set: DESTRUCTIVE
