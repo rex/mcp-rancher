@@ -1673,6 +1673,143 @@ Each row maps to one Sonnet implementer subagent in the
 parallel batch. Eight rows = eight agents = eight commits.
 After cherry-picking, tool surface +8.
 
+### Shared brief — Narrow annotation-set patch (`D-1-*-set-annotations`)
+
+Covers any slice that adds a narrow patch tool replacing
+`metadata.annotations` on one resource via JSON merge-patch.
+**Structurally identical to the label-set brief** above; only
+the arg name (`annotations` vs `labels`) and audit operation
+suffix differ. Each slice in this batch ADDS a second
+`patches:` entry alongside the existing `set_labels` patch
+shipped in Batch 2 — exercises the multi-patch substrate
+(`J-3-extension-multi-patch`, commit `517d098`).
+
+#### Common pattern (every slice in this family)
+
+- `verb: set_annotations`
+- `target_path: metadata`
+- One required arg: `name: annotations, type: dict_str_str, required: true`
+- Annotation tier: `IDEMPOTENT_WRITE`
+- Tool name: `rancher_<display_name_singular>_set_annotations`
+- HTTP shape: PATCH on resource detail path with body
+  `{"metadata": {"annotations": <map>}}`
+
+#### Files to read first (one-time, applies to all slices)
+
+1. **`catalog/curated_tools/deployments.yml`** — see the
+   `patches:` block with TWO entries (scale + set_labels).
+   This is the canonical multi-patch example landed in
+   commit `517d098`. Note how each entry has its own verb,
+   target_path, args, and audit_operation, and how
+   `tools.patches:` is a list paired by index.
+2. **`catalog/curated_tools/<your descriptor>.yml`** — your
+   target descriptor already has ONE patches entry
+   (`set_labels` from Batch 2). You're ADDING a second entry.
+3. **`tests/unit/test_workloads_tools.py`** —
+   `StubDeploymentSetLabelsClient` + the
+   `test_rancher_deployment_set_labels_*` tests are the
+   pattern. Note also the
+   `test_deployment_scale_and_set_labels_coexist_on_same_descriptor`
+   smoke test for multi-patch coexistence.
+4. **`docs/codegen-curated-tools.md` Section 12 "Patch
+   operation" → "Multi-patch per descriptor"** — the
+   canonical recipe.
+
+#### Files to modify (per slice)
+
+1. **`catalog/curated_tools/<descriptor_filename>.yml`**:
+   - In the existing top-level `patches:` block, ADD a
+     SECOND list entry (after the existing `set_labels`
+     entry):
+
+     ```yaml
+     patches:
+       - verb: set_labels
+         # ... existing block, leave untouched ...
+       - verb: set_annotations         # <-- new
+         target_path: metadata
+         audit_operation: <descriptor_id>_set_annotations
+         args:
+           - name: annotations
+             type: dict_str_str
+             required: true
+             description: Replacement metadata.annotations map (merge-patch semantics).
+         next_steps:
+           - rancher_<singular>_get
+     ```
+
+   - In the existing `tools.patches:` block, ADD a SECOND
+     list entry (matching by index):
+
+     ```yaml
+     tools:
+       # ... list/get blocks ...
+       patches:
+         - name: rancher_<singular>_set_labels
+           # ... existing block ...
+         - name: rancher_<singular>_set_annotations  # <-- new
+           description: Replace metadata.annotations on one Kubernetes <Resource> via JSON merge-patch. Returns the curated detail.
+           annotation_set: IDEMPOTENT_WRITE
+     ```
+
+   `operations:` already includes `patch` from Batch 2 — no
+   change there.
+
+2. **Run `make codegen`**. The generated file regenerates
+   with both `_patch_<singular>_set_labels` AND
+   `_patch_<singular>_set_annotations` private helpers, both
+   public functions, and both tool wrappers.
+
+3. **`tests/unit/test_<pack>_tools.py`** — add a
+   `Stub<Resource>SetAnnotationsClient` class and 2 tests:
+   - Round-trip: PATCH path is the resource detail path;
+     body is exactly `{"metadata": {"annotations": {<dict>}}}`.
+   - Audit: `operation == "<descriptor_id>_set_annotations"`,
+     outcome success.
+
+#### Common pitfalls
+
+- **Adding to existing patches list, not replacing**. Read
+  the current descriptor before editing — there's already a
+  `set_labels` entry. You ADD a second list element; you do
+  not overwrite.
+- **`tools.patches[i]` order must match `patches[i]`** by
+  index. If your new patch is the second entry in `patches`
+  (index 1), it's the second entry in `tools.patches` too.
+  Validators enforce this.
+- **`annotations` arg name does NOT collide with `metadata_annotations`
+  or `annotations` as locals**. Verify the descriptor's
+  `get.locals`. If a `get.locals` entry is named exactly
+  `annotations`, pyright will flag the new arg as a shadow.
+  In that case, defensively rename the local to
+  `metadata_annotations` (matches the pattern from
+  `secrets.yml`, `replicasets.yml`).
+- **Same target_path semantic**: `metadata` (NOT
+  `metadata.annotations`).
+
+#### Acceptance / commit / stop conditions
+
+Same as the label-set brief — `make validate` green, +1 tool
+per slice, no-orchestrator-doc-touching, return summary,
+do not push.
+
+#### Slice-specific rows — Batch 3 (post-compaction-ready)
+
+| Slice ID | Descriptor file | Pack | display_name_singular | audit_operation | Resource | Notes |
+|---|---|---|---|---|---|---|
+| `D-1-ingress-set-annotations` | `ingresses.yml` | networking | ingress | ingress_set_annotations | Ingress | namespaced |
+| `D-1-hpa-set-annotations` | `horizontal_pod_autoscalers.yml` | governance | horizontal_pod_autoscaler | hpa_set_annotations | HorizontalPodAutoscaler | namespaced |
+| `D-1-backup-set-annotations` | `backups.yml` | backup_operator | backup | backup_set_annotations | Backup | cluster-scoped |
+| `D-1-longhorn-volume-set-annotations` | `longhorn_volumes.yml` | longhorn | longhorn_volume | longhorn_volume_set_annotations | Volume | namespaced; optional Longhorn chart |
+| `D-1-service-monitor-set-annotations` | `service_monitors.yml` | prometheus_monitoring | service_monitor | service_monitor_set_annotations | ServiceMonitor | namespaced; optional kube-prometheus-stack |
+| `D-1-cert-manager-certificate-set-annotations` | `cert_manager_certificates.yml` | cert_manager | cert_manager_certificate | cert_manager_certificate_set_annotations | Certificate | namespaced; optional cert-manager chart |
+| `D-1-flow-set-annotations` | `flows.yml` | logging_pipeline | flow | flow_set_annotations | Flow | namespaced; optional Banzai chart |
+| `D-1-runtime-class-set-annotations` | `runtime_classes.yml` | scheduling | runtime_class | runtime_class_set_annotations | RuntimeClass | cluster-scoped |
+
+Eight different packs, all multi-patch additions on
+descriptors that already have a `set_labels` entry from
+Batch 2. Predicted Tool surface delta: 204 → 212 (+8).
+
 ---
 
 ## Recently shipped (running log)

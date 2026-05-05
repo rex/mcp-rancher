@@ -49,6 +49,27 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
   risks, active phase slices).
 - **User-visible changes** → `CHANGELOG.md`
 
+## Next Slice (post-compaction-ready)
+
+**Read this first if you just rehydrated.**
+
+- **Slice**: Batch 3 — narrow annotation-set patches across 8
+  packs via parallel Sonnet subagents.
+- **Status**: shared brief is fully written and pushed at HEAD
+  (commit `517d098`). Catalog ready. Just launch the 8 agents.
+- **Resume memo (full handoff)**:
+  Serena memory `tasks/post_compaction_resume_2026_05_05` —
+  load with `mcp__serena__read_memory`. Contains the agent
+  prompt template, the launch sequence, the merge protocol,
+  and the post-Batch-3 roadmap.
+- **Quick verify before launch**: `git rev-parse HEAD` should
+  match `517d098` (or whatever commit the resume memo
+  references); `make validate` should pass; tool surface
+  should be 204.
+- **Predicted outcome**: 8 agents, ~4-5 min wall-clock, +8
+  tools, +16 tests. Each adds a SECOND patches entry to a
+  Batch-2 descriptor, exercising the multi-patch substrate.
+
 ## Latest Logical Step
 
 - **J-3-extension-multi-patch landed (substrate evolution).**
