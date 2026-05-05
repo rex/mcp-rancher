@@ -29,7 +29,7 @@ summary_function: prometheus_rule_summary_from_payload
 query_builder_function: build_list_query_params
 query_builder_in_shared: true
 
-operations: [list, get, patch]
+operations: [list, get, delete, patch]
 
 list:
   query_params: [limit, continue_token, label_selector]
@@ -65,6 +65,12 @@ get:
     - rancher_prometheus_rules_list
     - rancher_service_monitors_list
 
+delete:
+  audit_operation: prometheus_rule_delete
+  confirmation_phrase: "delete prometheus_rule {rule_name} in namespace {namespace}"
+  next_steps:
+    - rancher_prometheus_rules_list
+
 patches:
   - verb: set_labels
     target_path: metadata
@@ -97,6 +103,10 @@ tools:
     name: rancher_prometheus_rule_get
     description: Fetch one PrometheusRule by namespace and name. Returns the curated summary plus group_names and alert_names lists, annotation keys, and full payload.
     annotation_set: READ_ONLY
+  delete:
+    name: rancher_prometheus_rule_delete
+    description: Delete one PrometheusRule (monitoring.coreos.com/v1). The `confirmation` arg must equal the exact phrase "delete prometheus_rule NAME in namespace NS" (substituting the actual values). Returns a typed delete result. Subject to write rate limiting and audit logging.
+    annotation_set: DESTRUCTIVE
   patches:
     - name: rancher_prometheus_rule_set_labels
       description: Replace metadata.labels on one PrometheusRule via JSON merge-patch. Returns the curated detail.
