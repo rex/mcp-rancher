@@ -1548,30 +1548,41 @@ differ.
 
 #### Files to read first (one-time, applies to all slices)
 
-1. **`catalog/curated_tools/ingresses.yml`** — see the `patch:`
-   block (verb=set_labels, target_path=metadata, single labels
-   arg). This is the canonical example landed via parallel
-   batch 1.
+1. **`catalog/curated_tools/ingresses.yml`** — see the `patches:`
+   list (TWO entries: set_labels + set_annotations from Batches
+   2 and 3). Canonical multi-patch reference. The `tools.patches:`
+   list is paired by index with the descriptor's `patches:` list.
 2. **`tests/unit/test_networking_tools.py`** — find
    `StubIngressSetLabelsClient` + `test_rancher_ingress_set_labels_*`
    tests. Copy this stub-client + test pattern, adapting
    paths and resource names to your slice's resource.
 3. **`docs/codegen-curated-tools.md` Section 12 "Patch
-   operation"** — the canonical recipe for write substrate
-   semantics.
+   operation" → "Multi-patch per descriptor"** — the canonical
+   recipe for write substrate semantics.
 4. **The descriptor file you'll modify** (per the slice row).
+   READ IT FIRST. If it already has a `patches:` list, you
+   APPEND a new entry (multi-patch). If it has no `patches:`
+   block, you CREATE one with a single entry (single-patch).
 
 #### Files to modify (per slice)
 
 1. **`catalog/curated_tools/<descriptor_filename>.yml`**:
-   - Update `operations:` to include `patch` (e.g.
-     `[list, get, patch]`).
-   - Add a `patch:` block with the common-pattern values
-     above. Use the slice row's `audit_operation` string.
-   - Add a `tools.patch:` block with `name:
-     rancher_<display_name_singular>_set_labels`,
-     `annotation_set: IDEMPOTENT_WRITE`, and a description
-     under 100 characters describing the merge-patch shape.
+   - Update `operations:` to include `patch` if not already
+     there (e.g. `[list, get, patch]`).
+   - **Single-patch case** (descriptor has no `patches:` today):
+     ADD a top-level `patches:` list with ONE entry containing
+     the common-pattern values above.
+   - **Multi-patch case** (descriptor already has `patches:`):
+     APPEND a new entry to the existing `patches:` list.
+   - Use the slice row's `audit_operation` string.
+   - Update `tools.patches:` symmetrically:
+     - **Single-patch case**: ADD a `tools.patches:` list with
+       one entry (`name: rancher_<display_name_singular>_set_labels`,
+       `annotation_set: IDEMPOTENT_WRITE`, description under
+       100 chars).
+     - **Multi-patch case**: APPEND a new entry to the existing
+       `tools.patches:` list. Order MUST match `patches:` by
+       index (the codegen validator enforces this).
 
 2. **Run `make codegen`**. The `_generated_<descriptor>.py`
    file and the pack `__init__.py` regenerate. **Do NOT
@@ -1672,6 +1683,21 @@ update `docs/tool-catalog.md`, `TASK_STATE.md`, or
 Each row maps to one Sonnet implementer subagent in the
 parallel batch. Eight rows = eight agents = eight commits.
 After cherry-picking, tool surface +8.
+
+#### Slice-specific rows — Batch 4 set_labels (2026-05-05, post-Batch-3)
+
+Mix of **single-patch virgin descriptors** (no `patches:` block
+today) and **multi-patch additions** (descriptor already has a
+`patches:` list — append, don't replace).
+
+| Slice ID | Descriptor file | Pack | display_name_singular | audit_operation | Resource | Notes |
+|---|---|---|---|---|---|---|
+| `D-1-cron-job-set-labels` | `cron_jobs.yml` | batch_workloads | cron_job | cron_job_set_labels | CronJob | namespaced; multi-patch (existing `patches:` has `suspend` — APPEND) |
+| `D-1-resource-quota-set-labels` | `resource_quotas.yml` | governance | resource_quota | resource_quota_set_labels | ResourceQuota | namespaced; single-patch virgin (no patches today) |
+| `D-1-pod-disruption-budget-set-labels` | `pod_disruption_budgets.yml` | disruption | pod_disruption_budget | pod_disruption_budget_set_labels | PodDisruptionBudget | namespaced; single-patch virgin |
+| `D-1-network-policy-set-labels` | `network_policies.yml` | networking | network_policy | network_policy_set_labels | NetworkPolicy | namespaced; single-patch virgin |
+| `D-1-prometheus-rule-set-labels` | `prometheus_rules.yml` | prometheus_monitoring | prometheus_rule | prometheus_rule_set_labels | PrometheusRule | namespaced; single-patch virgin; optional kube-prometheus-stack |
+| `D-1-namespaced-certificate-set-labels` | `namespaced_certificates.yml` | certificates | namespaced_certificate | namespaced_certificate_set_labels | NamespacedCertificate (Norman type) | project-scoped; single-patch virgin |
 
 ### Shared brief — Narrow annotation-set patch (`D-1-*-set-annotations`)
 
@@ -1809,6 +1835,18 @@ do not push.
 Eight different packs, all multi-patch additions on
 descriptors that already have a `set_labels` entry from
 Batch 2. Predicted Tool surface delta: 204 → 212 (+8).
+**LANDED 2026-05-05 — see Recently shipped log.**
+
+#### Slice-specific rows — Batch 4 set_annotations (2026-05-05, post-Batch-3)
+
+Two multi-patch additions adding `set_annotations` as the
+SECOND or THIRD entry on descriptors that already have at
+least one patch from prior batches.
+
+| Slice ID | Descriptor file | Pack | display_name_singular | audit_operation | Resource | Notes |
+|---|---|---|---|---|---|---|
+| `D-1-priority-class-set-annotations` | `priority_classes.yml` | scheduling | priority_class | priority_class_set_annotations | PriorityClass | cluster-scoped; multi-patch (existing has `set_labels` — APPEND) |
+| `D-1-deployment-set-annotations` | `deployments.yml` | workloads | deployment | deployment_set_annotations | Deployment | namespaced; multi-patch (existing has `scale + set_labels` — APPEND as 3rd entry; 3-patch coexistence proof) |
 
 ---
 
