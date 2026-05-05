@@ -71,6 +71,17 @@ patches:
     next_steps:
       - rancher_statefulset_get
       - rancher_pods_list
+  - verb: set_labels
+    target_path: metadata
+    audit_operation: statefulset_set_labels
+    args:
+      - name: labels
+        type: dict_str_str
+        required: true
+        description: Replacement metadata.labels map (merge-patch semantics — passing this REPLACES the labels map; pass an empty dict to remove all labels).
+    next_steps:
+      - rancher_statefulset_get
+      - rancher_pods_list
 
 tools:
   list:
@@ -84,4 +95,7 @@ tools:
   patches:
     - name: rancher_statefulset_scale
       description: Scale one Kubernetes StatefulSet to a target `replicas` count via JSON merge-patch on `spec.replicas`. Returns the curated detail of the patched resource. Subject to write rate limiting and audit logging.
+      annotation_set: IDEMPOTENT_WRITE
+    - name: rancher_statefulset_set_labels
+      description: Replace metadata.labels on one Kubernetes StatefulSet via JSON merge-patch. The `labels` arg is a complete replacement map. Returns the curated detail.
       annotation_set: IDEMPOTENT_WRITE
