@@ -2,6 +2,43 @@
 
 ## [2026-05-04] - Agent: Claude Opus 4.7
 
+### Added (J-2 / B-4 — certificates pack via descriptors, partial)
+- New **`certificates`** pack with 4 tools across 2 Norman
+  resource types:
+  - `rancher_certificates_list` / `rancher_certificate_get`
+    — project-scoped Rancher certificates (`/v3/certificates`).
+  - `rancher_namespaced_certificates_list` /
+    `rancher_namespaced_certificate_get`
+    — namespace-scoped (`/v3/namespacedcertificates`).
+- **Cert payload masking by design**: both Detail models omit
+  the `payload` field entirely. The Norman certificate type
+  carries the private-key PEM in its `key` field; the curated
+  tool exposes only parsed metadata
+  (cn, sans, issuer, expiresAt, issuedAt, fingerprints sha1+sha256,
+  algorithm, keySize, version, cnList, projectId/namespaceId)
+  via the typed Detail model. Reveal opt-in: agents needing the
+  raw cert chain or private key call
+  `rancher_norman_resource_get(schema_id="certificate", ...)` /
+  `schema_id="namespacedCertificate"`; curated tools' next_steps
+  direct the agent there.
+- Filter on list: `name`, `state`, `project_id` (and
+  `namespace_id` for the namespaced variant). All Norman query
+  params; no schema extension needed.
+- 4 new unit tests in `tests/unit/test_certificates_tools.py`
+  covering list+get for both types with defensive masking checks
+  (no `payload` field, no `certs`/`key` keys, no raw PEM bytes
+  in serialized output).
+- 237 tests pass, 85.45% coverage. Codegen: 65 files match
+  descriptors. Public tool surface 130 → 134.
+- **B-4 partial completion**: ROADMAP B-4 also lists "cluster
+  certificate expiry inspection" and "TLS-secret expiry parsing".
+  - Cluster cert expiry is already accessible via
+    `rancher_cluster_get` (the Rancher cluster status carries
+    `certificatesExpiration`). No new tool needed.
+  - TLS-secret X.509 parsing requires the `cryptography`
+    library and bypassing B-3's secret masking. Defer to a
+    later iteration as a dedicated hand-written tool.
+
 ### Added (J-2 / B-1 — provisioning pack via descriptors)
 - New **`provisioning`** pack with 8 tools across 4 Norman
   resource types:

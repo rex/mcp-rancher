@@ -288,10 +288,21 @@ domain at the depth defined in the plan.
   - Reveal opt-in: agents needing unmasked secrets call the
     existing `rancher_steve_resource_get(schema_id="secret", ...)`
     generic tool. Curated tools' next_steps guide to it.
-- [ ] **B-4** Certificates pack (P4)
-  - Cluster certificate expiry inspection
-  - TLS-secret expiry parsing
-  - Rancher-managed certificate inventory
+- [x] **B-4** Certificates pack (P4) — landed via J-2 (partial)
+  - Pack: `src/rancher_mcp/tools/certificates/`. 2 Norman types:
+    certificates (project-scoped), namespaced_certificates.
+  - Both detail models omit `payload` to mask the private-key
+    PEM (the Norman cert type carries `key`). Detail exposes
+    parsed metadata (cn, sans, issuer, expiresAt, fingerprints,
+    algorithm, keySize) only.
+  - **Deferred / partial**:
+    - **Cluster certificate expiry inspection** — already
+      accessible via `rancher_cluster_get` (the Rancher cluster
+      payload carries `status.certificatesExpiration`). No new
+      tool needed.
+    - **TLS-secret expiry parsing** — needs the `cryptography`
+      library and bypasses B-3's secret masking. Defer to a
+      future hand-written tool.
 - [ ] **B-5** Deepen monitoring pack (P4 / overlap P8)
   - Currently: `monitoring_status` + `cluster_alert_rule_*` reads.
   - Add: notifier reads beyond bare list/get (state, last-trigger),

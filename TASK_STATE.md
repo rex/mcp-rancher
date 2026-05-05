@@ -29,7 +29,7 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 - Canonical plan: `PERFECT_RANCHER_MCP_IMPLEMENTATION_PLAN.md`
 - Operational roadmap (track-level work breakdown): `ROADMAP.md`
 - Primary compatibility target: Rancher `2.6.5`
-- Public tool surface: 130 tools
+- Public tool surface: 134 tools
 - Completion gate: `make check-if-the-agent-can-consider-this-task-completed`
 - Active quality gates:
   `make check-architecture`
@@ -48,6 +48,14 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 
 ## Latest Logical Step
 
+- **J-2 / B-4 certificates pack landed (partial).** 4 new tools
+  for project-scoped and namespaced Rancher certificate
+  inventory. Both Detail models omit payload (the Norman cert
+  type carries the private-key PEM). Tool surface 130 → 134.
+  237 tests pass, 85.45% coverage. **Deferred from B-4**:
+  TLS-secret X.509 parsing tool (needs cryptography library
+  + secret-data access). Cluster cert expiry already accessible
+  via existing rancher_cluster_get.
 - **J-2 / B-1 provisioning pack landed.** 8 new tools across
   cluster_drivers, node_drivers, cloud_credentials (always-masked),
   node_templates. Cloud credential detail omits payload field

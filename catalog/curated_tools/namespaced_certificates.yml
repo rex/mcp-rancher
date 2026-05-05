@@ -1,0 +1,66 @@
+schema_version: 1
+
+id: namespaced_certificates
+pack: certificates
+display_name_singular: namespaced_certificate
+display_name_plural: namespaced_certificates
+
+plane: norman
+transport: norman
+namespaced: false
+cluster_id_required: false
+pagination: false
+
+list_path: /v3/namespacedcertificates
+detail_path: /v3/namespacedcertificates/{certificate_id}
+
+list_response_model: rancher_mcp.models.certificates.RancherNamespacedCertificateList
+detail_response_model: rancher_mcp.models.certificates.RancherNamespacedCertificateDetail
+
+shared_imports:
+  - data_items
+  - namespaced_certificate_summary_from_payload
+support_value_imports:
+  - string_dict
+summary_function: namespaced_certificate_summary_from_payload
+query_builder_function: build_namespaced_certificate_query_params
+query_builder_in_shared: true
+
+operations: [list, get]
+
+list:
+  query_params: [limit, name, state, namespace_id, project_id, sort_by, reverse]
+  filters: []
+  count_field: namespaced_certificate_count
+  collection_field: namespaced_certificates
+  next_steps:
+    - rancher_namespaced_certificate_get
+    - rancher_certificates_list
+
+get:
+  arg_name: certificate_id
+  summary_copy_fields: []
+  locals:
+    - name: metadata
+      expression: 'mapping_value(payload, "metadata") or {}'
+    - name: annotations
+      expression: 'mapping_value(metadata, "annotations") or {}'
+  extras:
+    - field: annotation_keys
+      expression: sorted(string_dict(annotations))
+  include_action_keys: true
+  include_link_keys: true
+  include_payload: false
+  next_steps:
+    - rancher_namespaced_certificates_list
+    - rancher_norman_resource_get
+
+tools:
+  list:
+    name: rancher_namespaced_certificates_list
+    description: List Rancher namespace-scoped certificates via the Norman /v3 API. Filter by name, state, namespaceId, or projectId.
+    annotation_set: READ_ONLY
+  get:
+    name: rancher_namespaced_certificate_get
+    description: Fetch one Rancher namespaced certificate by id via the Norman /v3 API. Returns parsed cert metadata without raw cert/key PEM. Use rancher_norman_resource_get with schema_id='namespacedCertificate' for the unmasked payload.
+    annotation_set: READ_ONLY
