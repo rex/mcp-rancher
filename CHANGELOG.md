@@ -2,6 +2,46 @@
 
 ## [2026-05-04] - Agent: Claude Opus 4.7
 
+### Added (cert_manager pack — cert-manager.io/v1 CRDs)
+- New **`cert_manager`** pack with 6 tools across 3 cert-manager
+  CRDs at `cert-manager.io/v1`:
+  - `rancher_cert_manager_certificates_list` /
+    `rancher_cert_manager_certificate_get` — Certificate CRD
+    with commonName, dnsNames, secretName, issuerRef
+    (kind+name), validity dates (notAfter / notBefore /
+    renewalTime), and a derived `ready` boolean from
+    status.conditions[Ready]. Filters: ready (bool),
+    issuer_kind.
+  - `rancher_cert_manager_issuers_list` /
+    `rancher_cert_manager_issuer_get` — Issuer (namespaced)
+    with auto-detected issuer-type subkey
+    (`acme` / `ca` / `vault` / `selfSigned` / `venafi`),
+    ACME server + email when configured, derived ready
+    boolean. Filters: ready, issuer_kind_used.
+  - `rancher_cert_manager_cluster_issuers_list` /
+    `rancher_cert_manager_cluster_issuer_get` — ClusterIssuer
+    (cluster-scoped). Same field set as Issuer.
+- Distinct from the existing `certificates` pack — that pack
+  covers Rancher's Norman `certificate` /
+  `namespacedCertificate` types (Rancher's legacy cert
+  inventory). This pack covers the Kubernetes-native
+  cert-manager CRDs widely used for ACME / Let's Encrypt /
+  internal-CA automation.
+- New path helpers: `cert_manager_namespaced_collection_path`
+  / `cert_manager_namespaced_resource_path` and
+  `cert_manager_cluster_collection_path` /
+  `cert_manager_cluster_resource_path`.
+- 6 new unit tests covering list+get for all 3 types with
+  realistic ACME-style payloads (Certificate referencing a
+  ClusterIssuer; Issuer / ClusterIssuer using ACME Let's
+  Encrypt config).
+- 295 tests pass, 85.92% coverage. Codegen: 89 files match
+  descriptors. Public tool surface 164 → 170.
+- cert-manager is an OPTIONAL chart on Rancher clusters; tools
+  404 if it's not installed (same convention as
+  prometheus_monitoring, longhorn, backup_operator,
+  logging_pipeline, policy_reports).
+
 ### Added (prometheus_monitoring pack — kube-prometheus-stack CRDs)
 - New **`prometheus_monitoring`** pack with 6 tools across 3
   Prometheus Operator CRDs at `monitoring.coreos.com/v1`:

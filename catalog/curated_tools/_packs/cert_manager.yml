@@ -1,0 +1,5 @@
+schema_version: 1
+id: cert_manager
+register_function: register_cert_manager_tools
+docstring: Curated cert-manager tools (Certificate, Issuer, ClusterIssuer at cert-manager.io/v1).
+register_docstring: Register curated cert-manager tools with the FastMCP server.

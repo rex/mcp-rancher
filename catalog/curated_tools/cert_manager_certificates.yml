@@ -1,0 +1,75 @@
+schema_version: 1
+
+id: cert_manager_certificates
+pack: cert_manager
+display_name_singular: cert_manager_certificate
+display_name_plural: cert_manager_certificates
+
+plane: steve
+transport: k8s-proxy
+namespaced: true
+
+path_helper:
+  module: rancher_mcp.tools.cert_manager.paths
+  list_function: cert_manager_namespaced_collection_path
+  detail_function: cert_manager_namespaced_resource_path
+  resource_kind: certificates
+
+list_response_model: rancher_mcp.models.cert_manager.RancherCertManagerCertificateList
+detail_response_model: rancher_mcp.models.cert_manager.RancherCertManagerCertificateDetail
+
+shared_imports:
+  - certificate_summary_from_payload
+  - condition_types_true_from_payload
+  - items
+support_value_imports:
+  - string_dict
+summary_function: certificate_summary_from_payload
+query_builder_function: build_list_query_params
+query_builder_in_shared: true
+
+operations: [list, get]
+
+list:
+  query_params: [limit, continue_token, label_selector]
+  filters:
+    - name: ready
+      summary_field: ready
+      type: bool
+    - name: issuer_kind
+      summary_field: issuer_kind
+  count_field: cert_manager_certificate_count
+  collection_field: cert_manager_certificates
+  next_steps:
+    - rancher_cert_manager_certificate_get
+    - rancher_cert_manager_issuers_list
+
+get:
+  arg_name: certificate_name
+  summary_copy_fields:
+    - ready
+  locals:
+    - name: metadata
+      expression: 'mapping_value(payload, "metadata") or {}'
+    - name: annotations
+      expression: 'mapping_value(metadata, "annotations") or {}'
+  extras:
+    - field: annotation_keys
+      expression: sorted(string_dict(annotations))
+    - field: condition_types_true
+      expression: condition_types_true_from_payload(payload)
+  include_link_keys: false
+  include_payload: true
+  next_steps:
+    - rancher_cert_manager_certificates_list
+    - rancher_cert_manager_issuers_list
+
+tools:
+  list:
+    name: rancher_cert_manager_certificates_list
+    description: List cert-manager Certificate CRDs (cert-manager.io/v1) in one namespace via Rancher's raw Kubernetes proxy. Returns curated summaries with commonName, dnsNames, secretName, issuerRef, validity dates, renewalTime, and a derived ready boolean. Filter by ready (bool) or issuer_kind (e.g. ClusterIssuer / Issuer).
+    annotation_set: READ_ONLY
+  get:
+    name: rancher_cert_manager_certificate_get
+    description: Fetch one cert-manager Certificate by namespace and name. Returns the curated summary plus condition_types_true (sorted list of condition types whose status is True), annotation keys, and full payload.
+    annotation_set: READ_ONLY

@@ -1,0 +1,76 @@
+schema_version: 1
+
+id: cert_manager_cluster_issuers
+pack: cert_manager
+display_name_singular: cert_manager_cluster_issuer
+display_name_plural: cert_manager_cluster_issuers
+
+plane: steve
+transport: k8s-proxy
+namespaced: false
+
+path_helper:
+  module: rancher_mcp.tools.cert_manager.paths
+  list_function: cert_manager_cluster_collection_path
+  detail_function: cert_manager_cluster_resource_path
+  resource_kind: clusterissuers
+
+list_response_model: rancher_mcp.models.cert_manager.RancherCertManagerClusterIssuerList
+detail_response_model: rancher_mcp.models.cert_manager.RancherCertManagerClusterIssuerDetail
+
+shared_imports:
+  - cluster_issuer_summary_from_payload
+  - condition_types_true_from_payload
+  - items
+support_value_imports:
+  - string_dict
+summary_function: cluster_issuer_summary_from_payload
+query_builder_function: build_list_query_params
+query_builder_in_shared: true
+
+operations: [list, get]
+
+list:
+  query_params: [limit, continue_token, label_selector]
+  filters:
+    - name: ready
+      summary_field: ready
+      type: bool
+    - name: issuer_kind_used
+      summary_field: issuer_kind_used
+  count_field: cert_manager_cluster_issuer_count
+  collection_field: cert_manager_cluster_issuers
+  next_steps:
+    - rancher_cert_manager_cluster_issuer_get
+    - rancher_cert_manager_certificates_list
+
+get:
+  arg_name: cluster_issuer_name
+  summary_copy_fields:
+    - ready
+    - issuer_kind_used
+  locals:
+    - name: metadata
+      expression: 'mapping_value(payload, "metadata") or {}'
+    - name: annotations
+      expression: 'mapping_value(metadata, "annotations") or {}'
+  extras:
+    - field: annotation_keys
+      expression: sorted(string_dict(annotations))
+    - field: condition_types_true
+      expression: condition_types_true_from_payload(payload)
+  include_link_keys: false
+  include_payload: true
+  next_steps:
+    - rancher_cert_manager_cluster_issuers_list
+    - rancher_cert_manager_certificates_list
+
+tools:
+  list:
+    name: rancher_cert_manager_cluster_issuers_list
+    description: List cert-manager ClusterIssuer CRDs (cert-manager.io/v1, cluster-scoped) via Rancher's raw Kubernetes proxy. Same shape as Issuer but cluster-scoped — usable from any namespace.
+    annotation_set: READ_ONLY
+  get:
+    name: rancher_cert_manager_cluster_issuer_get
+    description: Fetch one cert-manager ClusterIssuer by name. Returns the curated summary plus condition_types_true, annotation keys, and full payload.
+    annotation_set: READ_ONLY

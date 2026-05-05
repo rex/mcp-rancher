@@ -29,7 +29,7 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 - Canonical plan: `PERFECT_RANCHER_MCP_IMPLEMENTATION_PLAN.md`
 - Operational roadmap (track-level work breakdown): `ROADMAP.md`
 - Primary compatibility target: Rancher `2.6.5`
-- Public tool surface: 164 tools
+- Public tool surface: 170 tools
 - Completion gate: `make check-if-the-agent-can-consider-this-task-completed`
 - Active quality gates:
   `make check-architecture`
@@ -57,6 +57,13 @@ E destructive writes, H-3 broader confirmation, H-5 streaming
 under load). See "Tracks ticked this session" and "NEXT
 options" below.
 
+- **cert_manager pack landed.** 6 new tools across Certificate
+  (namespaced), Issuer (namespaced), ClusterIssuer
+  (cluster-scoped) at `cert-manager.io/v1`. Certificate
+  summary auto-derives `ready` from status.conditions[Ready];
+  Issuer / ClusterIssuer summaries auto-detect
+  `issuer_kind_used` (acme/ca/vault/selfSigned/venafi). Tool
+  surface 164 → 170. 295 tests pass, 85.92% coverage.
 - **prometheus_monitoring pack landed.** 6 new tools across
   PrometheusRule, ServiceMonitor, PodMonitor (kube-prometheus-stack
   CRDs at `monitoring.coreos.com/v1`). PrometheusRule summary

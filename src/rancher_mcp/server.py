@@ -19,6 +19,7 @@ def register_all_tools(mcp: FastMCP) -> None:
     from rancher_mcp.tools.apps_catalogs import register_app_catalog_tools
     from rancher_mcp.tools.auth_identity import register_auth_identity_tools
     from rancher_mcp.tools.backup_operator import register_backup_operator_tools
+    from rancher_mcp.tools.cert_manager import register_cert_manager_tools
     from rancher_mcp.tools.certificates import register_certificates_tools
     from rancher_mcp.tools.clusters_nodes import register_cluster_node_tools
     from rancher_mcp.tools.compliance import register_compliance_tools
@@ -75,6 +76,7 @@ def register_all_tools(mcp: FastMCP) -> None:
     register_policy_reports_tools(mcp)
     register_longhorn_tools(mcp)
     register_prometheus_monitoring_tools(mcp)
+    register_cert_manager_tools(mcp)
     register_mcp_resources(mcp)
     register_mcp_prompts(mcp)
     # Order: metrics is INNER so it sees the original RancherMCPError;
