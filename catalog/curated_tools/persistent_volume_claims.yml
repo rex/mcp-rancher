@@ -26,7 +26,13 @@ summary_function: persistent_volume_claim_summary_from_payload
 query_builder_function: build_list_query_params
 query_builder_in_shared: true
 
-operations: [list, get, patch]
+operations: [list, get, delete, patch]
+
+delete:
+  audit_operation: persistent_volume_claim_delete
+  confirmation_phrase: "delete persistent_volume_claim {claim_name} in namespace {namespace}"
+  next_steps:
+    - rancher_persistent_volume_claims_list
 
 patches:
   - verb: set_labels
@@ -90,6 +96,14 @@ tools:
     name: rancher_persistent_volume_claim_get
     description: Fetch one persistent volume claim by namespace and name via Rancher's raw Kubernetes proxy. Returns the curated summary plus full payload and annotation keys.
     annotation_set: READ_ONLY
+  delete:
+    name: rancher_persistent_volume_claim_delete
+    description: >-
+      Delete one Kubernetes PersistentVolumeClaim. The `confirmation` arg must equal the exact
+      phrase "delete persistent_volume_claim NAME in namespace NS" (substituting the actual values).
+      Storage may be retained or deleted depending on the reclaim policy. Returns a typed delete
+      result. Subject to write rate limiting and audit logging.
+    annotation_set: DESTRUCTIVE
   patches:
     - name: rancher_persistent_volume_claim_set_labels
       description: Replace metadata.labels on one PersistentVolumeClaim via JSON merge-patch. The `labels` arg is a complete replacement map. Returns the curated detail.

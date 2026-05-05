@@ -10,6 +10,7 @@ from rancher_mcp.audit import audit_mutation
 from rancher_mcp.clients.management import ManagementDiscoveryClient, RancherManagementClient
 from rancher_mcp.config import AppSettings, get_settings
 from rancher_mcp.exceptions import RancherCapabilityError
+from rancher_mcp.models.resources import RancherCuratedDeleteResult
 from rancher_mcp.models.storage import (
     RancherPersistentVolumeClaimDetail,
     RancherPersistentVolumeClaimList,
@@ -172,6 +173,74 @@ async def rancher_persistent_volume_claim_get(
             cluster_id,
             namespace,
             claim_name,
+            managed_client,
+        )
+
+
+async def _delete_persistent_volume_claim(
+    instance_name: str,
+    cluster_id: str,
+    namespace: str,
+    claim_name: str,
+    confirmation_phrase_used: str,
+    client: ManagementDiscoveryClient,
+) -> RancherCuratedDeleteResult:
+    """Delete one persistent_volume_claim; returns a typed delete result."""
+
+    response_payload = await client.delete_json(
+        persistent_volume_claim_resource_path(cluster_id, namespace, claim_name),
+    )
+    return RancherCuratedDeleteResult(
+        instance=instance_name,
+        plane="steve",
+        resource_kind="persistent_volume_claim",
+        resource_name=claim_name,
+        namespace=namespace,
+        cluster_id=cluster_id,
+        deleted=True,
+        confirmation_phrase_used=confirmation_phrase_used,
+        response_payload=dict(response_payload),
+        suggested_next_steps=["rancher_persistent_volume_claims_list"],
+    )
+
+
+@audit_mutation(operation="persistent_volume_claim_delete", plane="steve")
+@rate_limit_writes
+async def rancher_persistent_volume_claim_delete(
+    namespace: str,
+    claim_name: str,
+    confirmation: str,
+    cluster_id: str = "local",
+    instance: str | None = None,
+    settings: AppSettings | None = None,
+    client: ManagementDiscoveryClient | None = None,
+) -> RancherCuratedDeleteResult:
+    """Delete one persistent_volume_claim after the agent echoes the required confirmation phrase."""
+
+    expected_phrase = f"delete persistent_volume_claim {claim_name} in namespace {namespace}"
+    if confirmation != expected_phrase:
+        raise RancherCapabilityError(
+            f"Delete confirmation did not match the required phrase: {expected_phrase!r}"
+        )
+    resolved_settings = settings or get_settings()
+    instance_name, instance_config = resolve_instance(resolved_settings, instance)
+    ensure_instance_writable(instance_name, instance_config)
+    if client is not None:
+        return await _delete_persistent_volume_claim(
+            instance_name,
+            cluster_id,
+            namespace,
+            claim_name,
+            expected_phrase,
+            client,
+        )
+    async with RancherManagementClient(instance_name, instance_config) as managed_client:
+        return await _delete_persistent_volume_claim(
+            instance_name,
+            cluster_id,
+            namespace,
+            claim_name,
+            expected_phrase,
             managed_client,
         )
 
@@ -351,6 +420,24 @@ async def rancher_persistent_volume_claim_get_tool(
     return await rancher_persistent_volume_claim_get(
         namespace=namespace,
         claim_name=claim_name,
+        cluster_id=cluster_id,
+        instance=instance,
+    )
+
+
+async def rancher_persistent_volume_claim_delete_tool(
+    namespace: str,
+    claim_name: str,
+    confirmation: str,
+    cluster_id: str = "local",
+    instance: str | None = None,
+) -> RancherCuratedDeleteResult:
+    """Public MCP wrapper for curated persistent_volume_claim delete."""
+
+    return await rancher_persistent_volume_claim_delete(
+        namespace=namespace,
+        claim_name=claim_name,
+        confirmation=confirmation,
         cluster_id=cluster_id,
         instance=instance,
     )
