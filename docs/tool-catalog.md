@@ -66,7 +66,7 @@ table. The [Status legend](#status-legend) explains the icons.
 
 ## Quick start
 
-- **Tool surface today: 191 registered.** See
+- **Tool surface today: 196 registered.** See
   [Tool registry](#tool-registry).
 - **Estimated target: ~380 tools** at "perfect" coverage of
   the 25-domain canonical plan. We're roughly 50% of the way.
@@ -121,7 +121,7 @@ descriptor migration commit). That's fine — Slice IDs map
 
 | Bucket | Count |
 |---|---|
-| ✅ Built (registered tools) | **191** |
+| ✅ Built (registered tools) | **196** |
 | 🟡 Planned (gap from plan) | ~190 |
 | 🟠 Partial (documented limitations) | ~10 |
 | 🔴 Blocked (external dep / design) | ~12 |
@@ -263,6 +263,8 @@ the source module (hand-written).
 | ✅ | rancher_statefulsets_list | k8s-proxy | list | `catalog/curated_tools/statefulsets.yml` |
 | ✅ | rancher_statefulset_get | k8s-proxy | get | `catalog/curated_tools/statefulsets.yml` |
 | ✅ | rancher_statefulset_scale | k8s-proxy | patch | `catalog/curated_tools/statefulsets.yml` (J-3) |
+| ✅ | rancher_replica_sets_list | k8s-proxy | list | `catalog/curated_tools/replicasets.yml` (B-9) |
+| ✅ | rancher_replica_set_get | k8s-proxy | get | `catalog/curated_tools/replicasets.yml` (B-9) |
 
 ### Batch workloads — Job, CronJob (4 tools — Phase 4 / Track B)
 
@@ -272,6 +274,7 @@ the source module (hand-written).
 | ✅ | rancher_job_get | k8s-proxy | get | `catalog/curated_tools/jobs.yml` |
 | ✅ | rancher_cron_jobs_list | k8s-proxy | list | `catalog/curated_tools/cron_jobs.yml` |
 | ✅ | rancher_cron_job_get | k8s-proxy | get | `catalog/curated_tools/cron_jobs.yml` |
+| ✅ | rancher_cron_job_suspend | k8s-proxy | patch | `catalog/curated_tools/cron_jobs.yml` (D-4) |
 
 ### Pods and services (5 tools — Phase 4)
 
@@ -291,6 +294,7 @@ the source module (hand-written).
 |---|---|---|---|---|
 | ✅ | rancher_ingresses_list | k8s-proxy | list | `catalog/curated_tools/ingresses.yml` |
 | ✅ | rancher_ingress_get | k8s-proxy | get | `catalog/curated_tools/ingresses.yml` |
+| ✅ | rancher_ingress_set_labels | k8s-proxy | patch | `catalog/curated_tools/ingresses.yml` (D-1) |
 | ✅ | rancher_network_policies_list | k8s-proxy | list | `catalog/curated_tools/network_policies.yml` |
 | ✅ | rancher_network_policy_get | k8s-proxy | get | `catalog/curated_tools/network_policies.yml` |
 | ✅ | rancher_endpoint_slices_list | k8s-proxy | list | `catalog/curated_tools/endpoint_slices.yml` |
@@ -474,6 +478,7 @@ Note: optional Longhorn chart — tools 404 if chart isn't installed.
 |---|---|---|---|---|
 | ✅ | rancher_priority_classes_list | k8s-proxy | list | `catalog/curated_tools/priority_classes.yml` |
 | ✅ | rancher_priority_class_get | k8s-proxy | get | `catalog/curated_tools/priority_classes.yml` |
+| ✅ | rancher_priority_class_set_labels | k8s-proxy | patch | `catalog/curated_tools/priority_classes.yml` (D-1) |
 | ✅ | rancher_runtime_classes_list | k8s-proxy | list | `catalog/curated_tools/runtime_classes.yml` |
 | ✅ | rancher_runtime_class_get | k8s-proxy | get | `catalog/curated_tools/runtime_classes.yml` |
 
@@ -1513,3 +1518,8 @@ Same as previous slices.
 | 2026-05-05 | J-3 fourth slice (masked-payload proof) | `85cfdbc` | secret_create |
 | 2026-05-05 | J-3 fifth slice (Track-D launchers) | `c802c35` | statefulset_scale + deployment_delete |
 | 2026-05-05 | catalog: tool inventory + slice queue | `34e46be` | this file |
+| 2026-05-05 | catalog: cross-harness section + 4 demo briefs | `0b72690` | parallel-orchestration prep |
+| 2026-05-05 | D-1-ingress-set-labels (parallel batch agent 1) | `8ad113b` | Sonnet, 2.8 min |
+| 2026-05-05 | D-4-cronjob-suspend (parallel batch agent 2) | `ea2bcf1` | Sonnet, 3.5 min |
+| 2026-05-05 | D-1-priority-class-set-labels (parallel batch agent 3) | `2f0aeea` | Sonnet, 3.3 min — cluster-scoped substrate proof |
+| 2026-05-05 | B-9-replicasets (parallel batch agent 4) | `54a60d0` | Sonnet, 3.9 min — judgment-tier (new Pydantic models) |
