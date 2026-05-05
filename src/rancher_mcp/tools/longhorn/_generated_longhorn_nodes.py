@@ -133,7 +133,7 @@ async def _fetch_longhorn_node_get(
     summary = node_summary_from_payload(payload)
 
     metadata = mapping_value(payload, "metadata") or {}
-    annotations = mapping_value(metadata, "annotations") or {}
+    metadata_annotations = mapping_value(metadata, "annotations") or {}
     storage_totals = node_storage_totals(payload)
     detail = RancherLonghornNodeDetail.model_validate(payload)
     return detail.model_copy(
@@ -141,7 +141,7 @@ async def _fetch_longhorn_node_get(
             "ready": summary.ready,
             "schedulable": summary.schedulable,
             "disk_count": summary.disk_count,
-            "annotation_keys": sorted(string_dict(annotations)),
+            "annotation_keys": sorted(string_dict(metadata_annotations)),
             "storage_available_total": storage_totals[0],
             "storage_maximum_total": storage_totals[1],
             "payload": dict(payload),
@@ -203,7 +203,7 @@ async def _patch_longhorn_node_set_labels(
     summary = node_summary_from_payload(payload)
 
     metadata = mapping_value(payload, "metadata") or {}
-    annotations = mapping_value(metadata, "annotations") or {}
+    metadata_annotations = mapping_value(metadata, "annotations") or {}
     storage_totals = node_storage_totals(payload)
     detail = RancherLonghornNodeDetail.model_validate(payload)
     return detail.model_copy(
@@ -211,7 +211,7 @@ async def _patch_longhorn_node_set_labels(
             "ready": summary.ready,
             "schedulable": summary.schedulable,
             "disk_count": summary.disk_count,
-            "annotation_keys": sorted(string_dict(annotations)),
+            "annotation_keys": sorted(string_dict(metadata_annotations)),
             "storage_available_total": storage_totals[0],
             "storage_maximum_total": storage_totals[1],
             "payload": dict(payload),
@@ -252,6 +252,83 @@ async def rancher_longhorn_node_set_labels(
             namespace,
             node_name,
             labels,
+            managed_client,
+        )
+
+
+async def _patch_longhorn_node_set_annotations(
+    instance_name: str,
+    cluster_id: str,
+    namespace: str,
+    node_name: str,
+    annotations: dict[str, str],
+    client: ManagementDiscoveryClient,
+) -> RancherLonghornNodeDetail:
+    """Set_annotations one longhorn_node via JSON merge-patch; returns the curated detail."""
+
+    patch_subtree: dict[str, object] = {}
+    patch_subtree["annotations"] = annotations
+    if not patch_subtree:
+        raise RancherCapabilityError(
+            "No patch fields provided; every arg was None. Pass at least one field to update."
+        )
+    request_payload: dict[str, object] = {"metadata": patch_subtree}
+    payload = await client.patch_json(
+        longhorn_namespaced_resource_path(cluster_id, namespace, "nodes", node_name),
+        payload=request_payload,
+    )
+    summary = node_summary_from_payload(payload)
+
+    metadata = mapping_value(payload, "metadata") or {}
+    metadata_annotations = mapping_value(metadata, "annotations") or {}
+    storage_totals = node_storage_totals(payload)
+    detail = RancherLonghornNodeDetail.model_validate(payload)
+    return detail.model_copy(
+        update={
+            "ready": summary.ready,
+            "schedulable": summary.schedulable,
+            "disk_count": summary.disk_count,
+            "annotation_keys": sorted(string_dict(metadata_annotations)),
+            "storage_available_total": storage_totals[0],
+            "storage_maximum_total": storage_totals[1],
+            "payload": dict(payload),
+            "suggested_next_steps": ["rancher_longhorn_node_get"],
+        }
+    )
+
+
+@audit_mutation(operation="longhorn_node_set_annotations", plane="steve")
+@rate_limit_writes
+async def rancher_longhorn_node_set_annotations(
+    namespace: str,
+    node_name: str,
+    annotations: dict[str, str],
+    cluster_id: str = "local",
+    instance: str | None = None,
+    settings: AppSettings | None = None,
+    client: ManagementDiscoveryClient | None = None,
+) -> RancherLonghornNodeDetail:
+    """Set_annotations one longhorn_node via JSON merge-patch."""
+
+    resolved_settings = settings or get_settings()
+    instance_name, instance_config = resolve_instance(resolved_settings, instance)
+    ensure_instance_writable(instance_name, instance_config)
+    if client is not None:
+        return await _patch_longhorn_node_set_annotations(
+            instance_name,
+            cluster_id,
+            namespace,
+            node_name,
+            annotations,
+            client,
+        )
+    async with RancherManagementClient(instance_name, instance_config) as managed_client:
+        return await _patch_longhorn_node_set_annotations(
+            instance_name,
+            cluster_id,
+            namespace,
+            node_name,
+            annotations,
             managed_client,
         )
 
@@ -309,6 +386,24 @@ async def rancher_longhorn_node_set_labels_tool(
         namespace=namespace,
         node_name=node_name,
         labels=labels,
+        cluster_id=cluster_id,
+        instance=instance,
+    )
+
+
+async def rancher_longhorn_node_set_annotations_tool(
+    namespace: str,
+    node_name: str,
+    annotations: dict[str, str],
+    cluster_id: str = "local",
+    instance: str | None = None,
+) -> RancherLonghornNodeDetail:
+    """Public MCP wrapper for curated longhorn_node set_annotations."""
+
+    return await rancher_longhorn_node_set_annotations(
+        namespace=namespace,
+        node_name=node_name,
+        annotations=annotations,
         cluster_id=cluster_id,
         instance=instance,
     )

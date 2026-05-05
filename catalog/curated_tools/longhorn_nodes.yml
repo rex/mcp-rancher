@@ -54,13 +54,13 @@ get:
   locals:
     - name: metadata
       expression: 'mapping_value(payload, "metadata") or {}'
-    - name: annotations
+    - name: metadata_annotations
       expression: 'mapping_value(metadata, "annotations") or {}'
     - name: storage_totals
       expression: node_storage_totals(payload)
   extras:
     - field: annotation_keys
-      expression: sorted(string_dict(annotations))
+      expression: sorted(string_dict(metadata_annotations))
     - field: storage_available_total
       expression: storage_totals[0]
     - field: storage_maximum_total
@@ -83,6 +83,16 @@ patches:
     next_steps:
       - rancher_longhorn_node_get
       - rancher_longhorn_nodes_list
+  - verb: set_annotations
+    target_path: metadata
+    audit_operation: longhorn_node_set_annotations
+    args:
+      - name: annotations
+        type: dict_str_str
+        required: true
+        description: Replacement metadata.annotations map (merge-patch semantics).
+    next_steps:
+      - rancher_longhorn_node_get
 
 tools:
   list:
@@ -96,4 +106,7 @@ tools:
   patches:
     - name: rancher_longhorn_node_set_labels
       description: Replace metadata.labels on one Longhorn Node via JSON merge-patch. The `labels` arg is a complete replacement map. Returns the curated detail.
+      annotation_set: IDEMPOTENT_WRITE
+    - name: rancher_longhorn_node_set_annotations
+      description: Replace metadata.annotations on one Longhorn Node via JSON merge-patch. Returns the curated detail.
       annotation_set: IDEMPOTENT_WRITE
