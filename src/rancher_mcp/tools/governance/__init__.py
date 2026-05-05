@@ -20,6 +20,8 @@ from rancher_mcp.tools.governance._generated_horizontal_pod_autoscalers import (
 from rancher_mcp.tools.governance._generated_limit_ranges import (
     rancher_limit_range_get,
     rancher_limit_range_get_tool,
+    rancher_limit_range_set_labels,
+    rancher_limit_range_set_labels_tool,
     rancher_limit_ranges_list,
     rancher_limit_ranges_list_tool,
 )
@@ -41,6 +43,7 @@ __all__ = [
     "rancher_horizontal_pod_autoscaler_set_labels",
     "rancher_horizontal_pod_autoscalers_list",
     "rancher_limit_range_get",
+    "rancher_limit_range_set_labels",
     "rancher_limit_ranges_list",
     "rancher_resource_quota_get",
     "rancher_resource_quota_set_annotations",
@@ -69,6 +72,9 @@ def register_governance_tools(mcp: FastMCP) -> None:
         rancher_limit_ranges_list_tool
     )
     mcp.tool(name="rancher_limit_range_get", annotations=READ_ONLY)(rancher_limit_range_get_tool)
+    mcp.tool(name="rancher_limit_range_set_labels", annotations=IDEMPOTENT_WRITE)(
+        rancher_limit_range_set_labels_tool
+    )
     mcp.tool(name="rancher_resource_quotas_list", annotations=READ_ONLY)(
         rancher_resource_quotas_list_tool
     )
