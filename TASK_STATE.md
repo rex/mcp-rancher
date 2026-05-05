@@ -158,19 +158,30 @@ options" below.
   a single read pack. Defer to a dedicated Alertmanager-integration
   track (Track F subsystem candidate).
 
-- **Tracks ticked this session** (18 feature/test/doc commits):
+- **Tracks ticked this session** (~30 feature/test/doc commits):
   - Track A all 4 quick fixes
   - J-2 sub-tracks B-1, B-2, B-3, B-4, B-6, B-7, B-8 (B-5
     blocked on Alertmanager API design)
-  - C-3 metrics-as-log-lines
-  - C-4 audit-trail log
-  - H-2 token-bucket rate limiting
-  - H-4 pagination boundary verification
+  - C-3 metrics-as-log-lines, C-4 audit-trail
+  - H-2 token-bucket rate limiting, H-4 pagination boundary
   - I-2 known-gaps documentation
-  - B-7 follow-up: scheduled-scan visibility
-  - Tool surface: 110 → 150 (+40)
-  - Tests: 210 → 275 (+65)
-  - Coverage: ~85.5% maintained throughout
+  - B-7 follow-up: scheduled-scan visibility on CIS scans
+  - F-1 Longhorn pack (Volume/Node/Backup/Snapshot at
+    longhorn.io/v1beta2)
+  - **prometheus_monitoring** pack (PrometheusRule /
+    ServiceMonitor / PodMonitor at monitoring.coreos.com/v1)
+  - **cert_manager** pack (Certificate / Issuer / ClusterIssuer
+    at cert-manager.io/v1)
+  - **batch_workloads** pack (Job / CronJob at batch/v1)
+  - **governance** pack (HorizontalPodAutoscaler at
+    autoscaling/v2 + ResourceQuota / LimitRange at core/v1)
+  - **scheduling** pack (PriorityClass at scheduling.k8s.io/v1
+    + RuntimeClass at node.k8s.io/v1)
+  - Tool surface: 110 → 184 (+74 net new)
+  - Tests: 210 → 309 (+99 new)
+  - Coverage: ~85.5%–85.95% maintained throughout
+  - Codegen: 49 → 99 files match descriptors (+50)
+  - 13 new descriptor-driven packs total
 
 - **NEXT options (each requires either external dep, refactor,
   or design)**:
