@@ -48,6 +48,9 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 
 ## Latest Logical Step
 
+**Status: blocked** (B-5 monitoring deepening — Alertmanager API
+access requires architectural decision; see ROADMAP B-5).
+
 - **BLOCKED: J-2 effectively complete (7 of 8 sub-tracks);
   B-5 monitoring deepening blocked on Alertmanager API access
   design.** This session landed 9 commits totalling +40 net new
