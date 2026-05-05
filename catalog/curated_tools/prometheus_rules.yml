@@ -29,7 +29,7 @@ summary_function: prometheus_rule_summary_from_payload
 query_builder_function: build_list_query_params
 query_builder_in_shared: true
 
-operations: [list, get]
+operations: [list, get, patch]
 
 list:
   query_params: [limit, continue_token, label_selector]
@@ -65,6 +65,19 @@ get:
     - rancher_prometheus_rules_list
     - rancher_service_monitors_list
 
+patches:
+  - verb: set_labels
+    target_path: metadata
+    audit_operation: prometheus_rule_set_labels
+    args:
+      - name: labels
+        type: dict_str_str
+        required: true
+        description: Replacement metadata.labels map (merge-patch semantics — passing this REPLACES the labels map; pass an empty dict to remove all labels).
+    next_steps:
+      - rancher_prometheus_rule_get
+      - rancher_prometheus_rules_list
+
 tools:
   list:
     name: rancher_prometheus_rules_list
@@ -74,3 +87,7 @@ tools:
     name: rancher_prometheus_rule_get
     description: Fetch one PrometheusRule by namespace and name. Returns the curated summary plus group_names and alert_names lists, annotation keys, and full payload.
     annotation_set: READ_ONLY
+  patches:
+    - name: rancher_prometheus_rule_set_labels
+      description: Replace metadata.labels on one PrometheusRule via JSON merge-patch. Returns the curated detail.
+      annotation_set: IDEMPOTENT_WRITE
