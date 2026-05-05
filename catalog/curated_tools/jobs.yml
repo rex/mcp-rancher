@@ -53,11 +53,11 @@ get:
   locals:
     - name: metadata
       expression: 'mapping_value(payload, "metadata") or {}'
-    - name: annotations
+    - name: metadata_annotations
       expression: 'mapping_value(metadata, "annotations") or {}'
   extras:
     - field: annotation_keys
-      expression: sorted(string_dict(annotations))
+      expression: sorted(string_dict(metadata_annotations))
     - field: container_images
       expression: container_images_from_template(payload)
   include_link_keys: false
@@ -77,6 +77,16 @@ patches:
         description: Replacement metadata.labels map (merge-patch semantics — passing this REPLACES the labels map; pass an empty dict to remove all labels).
     next_steps:
       - rancher_job_get
+  - verb: set_annotations
+    target_path: metadata
+    audit_operation: job_set_annotations
+    args:
+      - name: annotations
+        type: dict_str_str
+        required: true
+        description: Replacement metadata.annotations map (merge-patch semantics — passing this REPLACES the annotations map; pass an empty dict to remove all annotations).
+    next_steps:
+      - rancher_job_get
 
 tools:
   list:
@@ -90,4 +100,7 @@ tools:
   patches:
     - name: rancher_job_set_labels
       description: Replace metadata.labels on one Kubernetes Job via JSON merge-patch. The `labels` arg is a complete replacement map. Returns the curated detail.
+      annotation_set: IDEMPOTENT_WRITE
+    - name: rancher_job_set_annotations
+      description: Replace metadata.annotations on one Kubernetes Job via JSON merge-patch. The `annotations` arg is a complete replacement map. Returns the curated detail.
       annotation_set: IDEMPOTENT_WRITE
