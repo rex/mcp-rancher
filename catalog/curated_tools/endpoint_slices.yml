@@ -27,7 +27,7 @@ summary_function: endpoint_slice_summary_from_payload
 query_builder_function: build_list_query_params
 query_builder_in_shared: true
 
-operations: [list, get, patch]
+operations: [list, get, delete, patch]
 
 list:
   query_params: [limit, continue_token, label_selector, field_selector]
@@ -63,6 +63,12 @@ get:
     - rancher_endpoint_slices_list
     - rancher_services_list
 
+delete:
+  audit_operation: endpoint_slice_delete
+  confirmation_phrase: "delete endpoint_slice {endpoint_slice_name} in namespace {namespace}"
+  next_steps:
+    - rancher_endpoint_slices_list
+
 patches:
   - verb: set_labels
     target_path: metadata
@@ -95,6 +101,10 @@ tools:
     name: rancher_endpoint_slice_get
     description: Fetch one Kubernetes EndpointSlice by namespace and name via Rancher's raw Kubernetes proxy. Returns the curated summary plus full payload and annotation keys.
     annotation_set: READ_ONLY
+  delete:
+    name: rancher_endpoint_slice_delete
+    description: Delete one Kubernetes EndpointSlice. The `confirmation` arg must equal the exact phrase "delete endpoint_slice NAME in namespace NS" (substituting the actual values). Returns a typed delete result with the rendered confirmation phrase. Subject to write rate limiting and audit logging.
+    annotation_set: DESTRUCTIVE
   patches:
     - name: rancher_endpoint_slice_set_labels
       description: Replace metadata.labels on one Kubernetes EndpointSlice via JSON merge-patch. The `labels` arg is a complete replacement map. Returns the curated detail.

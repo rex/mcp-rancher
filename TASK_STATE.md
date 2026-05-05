@@ -77,6 +77,10 @@ Batch 3"):
   `namespace_delete`, `project_delete`, `statefulset_delete`,
   etc.
 
+## Notes
+
+- [x] `D-3-endpoint-slice-delete` shipped: added `delete` block to `endpoint_slices.yml`, ran `make codegen`, added 3 delete tests to `test_networking_tools.py`. `make validate` green (468 tests, 85% coverage).
+
 Tool surface 212; substrate proven across narrow patches
 (`set_labels`, `set_annotations`, `scale`, `suspend`),
 single-narrow-arg multi-patch coexistence (deployments has
