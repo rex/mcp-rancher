@@ -32,6 +32,8 @@ from rancher_mcp.tools.governance._generated_limit_ranges import (
     rancher_limit_ranges_list_tool,
 )
 from rancher_mcp.tools.governance._generated_resource_quotas import (
+    rancher_resource_quota_delete,
+    rancher_resource_quota_delete_tool,
     rancher_resource_quota_get,
     rancher_resource_quota_get_tool,
     rancher_resource_quota_set_annotations,
@@ -54,6 +56,7 @@ __all__ = [
     "rancher_limit_range_set_annotations",
     "rancher_limit_range_set_labels",
     "rancher_limit_ranges_list",
+    "rancher_resource_quota_delete",
     "rancher_resource_quota_get",
     "rancher_resource_quota_set_annotations",
     "rancher_resource_quota_set_labels",
@@ -98,6 +101,9 @@ def register_governance_tools(mcp: FastMCP) -> None:
     )
     mcp.tool(name="rancher_resource_quota_get", annotations=READ_ONLY)(
         rancher_resource_quota_get_tool
+    )
+    mcp.tool(name="rancher_resource_quota_delete", annotations=DESTRUCTIVE)(
+        rancher_resource_quota_delete_tool
     )
     mcp.tool(name="rancher_resource_quota_set_labels", annotations=IDEMPOTENT_WRITE)(
         rancher_resource_quota_set_labels_tool
