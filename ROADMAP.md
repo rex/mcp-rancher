@@ -262,13 +262,19 @@ The catalog defines 25 domains; curated packs cover 20 (some shallowly).
 Closing Phase 4 means landing a curated read pack for every catalog
 domain at the depth defined in the plan.
 
-- [ ] **B-1** Provisioning pack (P4)
-  - Cluster drivers list/get
-  - Node drivers list/get
-  - Cloud credentials list/get (with secret masking)
-  - Node templates list/get
-  - Machine configs list/get
-  - Machine pools list/get
+- [x] **B-1** Provisioning pack (P4) — landed via J-2 (partial)
+  - Pack: `src/rancher_mcp/tools/provisioning/`. 4 Norman types:
+    cluster_drivers, node_drivers, cloud_credentials,
+    node_templates.
+  - Cloud credentials are always masked: detail omits `payload`,
+    exposes `config_field_keys`. Driver auto-detected from
+    `*credentialConfig` key prefix.
+  - **Deferred**: machine_configs and machine_pools. These are
+    CAPI / driver-specific CRDs (e.g.
+    `rke-machine-config.cattle.io/v1`, `provisioning.cattle.io
+    /v1/clusters` machinePools) — they don't fit per-type Norman
+    pattern; access via `rancher_steve_resource_*` until a
+    CAPI-specific subsystem pack lands (Track F candidate).
 - [x] **B-2** Networking pack expansion (P4) — landed via J-2
   - Pack: `src/rancher_mcp/tools/networking/`. 3 types:
     ingresses, network_policies, endpoint_slices.

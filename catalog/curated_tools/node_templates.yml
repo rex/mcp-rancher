@@ -1,0 +1,66 @@
+schema_version: 1
+
+id: node_templates
+pack: provisioning
+display_name_singular: node_template
+display_name_plural: node_templates
+
+plane: norman
+transport: norman
+namespaced: false
+cluster_id_required: false
+pagination: false
+
+list_path: /v3/nodetemplates
+detail_path: /v3/nodetemplates/{template_id}
+
+list_response_model: rancher_mcp.models.provisioning.RancherNodeTemplateList
+detail_response_model: rancher_mcp.models.provisioning.RancherNodeTemplateDetail
+
+shared_imports:
+  - data_items
+  - node_template_summary_from_payload
+support_value_imports:
+  - string_dict
+summary_function: node_template_summary_from_payload
+query_builder_function: build_node_template_query_params
+query_builder_in_shared: true
+
+operations: [list, get]
+
+list:
+  query_params: [limit, driver, cloud_credential_id, name, state, sort_by, reverse]
+  filters: []
+  count_field: node_template_count
+  collection_field: node_templates
+  next_steps:
+    - rancher_node_template_get
+    - rancher_cloud_credentials_list
+
+get:
+  arg_name: template_id
+  summary_copy_fields: []
+  locals:
+    - name: metadata
+      expression: 'mapping_value(payload, "metadata") or {}'
+    - name: annotations
+      expression: 'mapping_value(metadata, "annotations") or {}'
+  extras:
+    - field: annotation_keys
+      expression: sorted(string_dict(annotations))
+  include_action_keys: true
+  include_link_keys: true
+  include_payload: true
+  next_steps:
+    - rancher_node_templates_list
+    - rancher_cloud_credentials_list
+
+tools:
+  list:
+    name: rancher_node_templates_list
+    description: List Rancher node templates via the Norman /v3 API. Filter by driver, cloud_credential_id, name, or state.
+    annotation_set: READ_ONLY
+  get:
+    name: rancher_node_template_get
+    description: Fetch one Rancher node template by id via the Norman /v3 API. Returns the curated summary plus action/link keys, annotation keys, and full payload.
+    annotation_set: READ_ONLY

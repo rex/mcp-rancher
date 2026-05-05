@@ -31,6 +31,7 @@ def register_all_tools(mcp: FastMCP) -> None:
     from rancher_mcp.tools.ops import register_ops_tools
     from rancher_mcp.tools.pods_services import register_pod_service_tools
     from rancher_mcp.tools.projects_namespaces import register_project_namespace_tools
+    from rancher_mcp.tools.provisioning import register_provisioning_tools
     from rancher_mcp.tools.rbac import register_rbac_tools
     from rancher_mcp.tools.resources import register_resource_tools
     from rancher_mcp.tools.settings_features import register_settings_feature_tools
@@ -58,6 +59,7 @@ def register_all_tools(mcp: FastMCP) -> None:
     register_workload_tools(mcp)
     register_networking_tools(mcp)
     register_config_secrets_tools(mcp)
+    register_provisioning_tools(mcp)
     register_mcp_resources(mcp)
     register_mcp_prompts(mcp)
     apply_structured_errors_to_all_tools(mcp)

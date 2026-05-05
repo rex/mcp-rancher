@@ -29,7 +29,7 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 - Canonical plan: `PERFECT_RANCHER_MCP_IMPLEMENTATION_PLAN.md`
 - Operational roadmap (track-level work breakdown): `ROADMAP.md`
 - Primary compatibility target: Rancher `2.6.5`
-- Public tool surface: 122 tools
+- Public tool surface: 130 tools
 - Completion gate: `make check-if-the-agent-can-consider-this-task-completed`
 - Active quality gates:
   `make check-architecture`
@@ -48,6 +48,15 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 
 ## Latest Logical Step
 
+- **J-2 / B-1 provisioning pack landed.** 8 new tools across
+  cluster_drivers, node_drivers, cloud_credentials (always-masked),
+  node_templates. Cloud credential detail omits payload field
+  and exposes `config_field_keys`; defensive tests verify no
+  credential leak. Schema extended with `active`, `driver`,
+  `cloud_credential_id` query kwargs. Tool surface 122 → 130.
+  233 tests pass, 85.52% coverage, 62 files match descriptors.
+  Note: machine_configs / machine_pools (CAPI surface)
+  intentionally NOT migrated — users access via generic Steve.
 - **J-2 / B-3 config_secrets pack landed.** 6 new tools across
   configmaps, secrets (always-masked), service_accounts. Secret
   detail intentionally omits `payload` field; defensive tests

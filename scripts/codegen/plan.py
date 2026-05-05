@@ -76,6 +76,10 @@ QP_TYPES: Mapping[str, str] = {
     # clusters_nodes
     "role": "str",
     "unschedulable": "bool",
+    # provisioning
+    "active": "bool",
+    "driver": "str",
+    "cloud_credential_id": "str",
 }
 
 QP_KWARGS: Mapping[str, str] = {
@@ -136,6 +140,10 @@ QP_KWARGS: Mapping[str, str] = {
     # clusters_nodes
     "role": "role",
     "unschedulable": "unschedulable",
+    # provisioning
+    "active": "active",
+    "driver": "driver",
+    "cloud_credential_id": "cloud_credential_id",
 }
 
 

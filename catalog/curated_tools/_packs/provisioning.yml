@@ -1,0 +1,5 @@
+schema_version: 1
+id: provisioning
+register_function: register_provisioning_tools
+docstring: Curated Rancher provisioning tools (drivers, credentials, templates).
+register_docstring: Register curated provisioning tools with the FastMCP server.

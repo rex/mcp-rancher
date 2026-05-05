@@ -1,0 +1,66 @@
+schema_version: 1
+
+id: cluster_drivers
+pack: provisioning
+display_name_singular: cluster_driver
+display_name_plural: cluster_drivers
+
+plane: norman
+transport: norman
+namespaced: false
+cluster_id_required: false
+pagination: false
+
+list_path: /v3/clusterdrivers
+detail_path: /v3/clusterdrivers/{driver_id}
+
+list_response_model: rancher_mcp.models.provisioning.RancherClusterDriverList
+detail_response_model: rancher_mcp.models.provisioning.RancherClusterDriverDetail
+
+shared_imports:
+  - cluster_driver_summary_from_payload
+  - data_items
+support_value_imports:
+  - string_dict
+summary_function: cluster_driver_summary_from_payload
+query_builder_function: build_driver_query_params
+query_builder_in_shared: true
+
+operations: [list, get]
+
+list:
+  query_params: [limit, active, name, state, sort_by, reverse]
+  filters: []
+  count_field: cluster_driver_count
+  collection_field: cluster_drivers
+  next_steps:
+    - rancher_cluster_driver_get
+    - rancher_clusters_list
+
+get:
+  arg_name: driver_id
+  summary_copy_fields: []
+  locals:
+    - name: metadata
+      expression: 'mapping_value(payload, "metadata") or {}'
+    - name: annotations
+      expression: 'mapping_value(metadata, "annotations") or {}'
+  extras:
+    - field: annotation_keys
+      expression: sorted(string_dict(annotations))
+  include_action_keys: true
+  include_link_keys: true
+  include_payload: true
+  next_steps:
+    - rancher_cluster_drivers_list
+    - rancher_clusters_list
+
+tools:
+  list:
+    name: rancher_cluster_drivers_list
+    description: List Rancher cluster drivers (kontainerDrivers) via the Norman /v3 API. Filter by name, state, or active flag.
+    annotation_set: READ_ONLY
+  get:
+    name: rancher_cluster_driver_get
+    description: Fetch one Rancher cluster driver by id via the Norman /v3 API. Returns the curated summary plus action/link keys, annotation keys, and full payload.
+    annotation_set: READ_ONLY

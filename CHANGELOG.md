@@ -2,6 +2,49 @@
 
 ## [2026-05-04] - Agent: Claude Opus 4.7
 
+### Added (J-2 / B-1 — provisioning pack via descriptors)
+- New **`provisioning`** pack with 8 tools across 4 Norman
+  resource types:
+  - `rancher_cluster_drivers_list` / `rancher_cluster_driver_get`
+    — kontainerDrivers
+  - `rancher_node_drivers_list` / `rancher_node_driver_get`
+  - `rancher_cloud_credentials_list` /
+    `rancher_cloud_credential_get` (always masked)
+  - `rancher_node_templates_list` / `rancher_node_template_get`
+- All Norman, `pagination: false`. Pack:
+  `src/rancher_mcp/tools/provisioning/shared.py` +
+  `src/rancher_mcp/models/provisioning.py` (hand-written) plus
+  four descriptors + `_packs/provisioning.yml`.
+- **Cloud credential masking by design**:
+  `RancherCloudCredentialDetail` has no `payload` field.
+  Summary auto-detects driver from `*credentialConfig` key
+  prefix (e.g. `amazonec2credentialConfig` → `amazonec2`).
+  Detail exposes `config_field_keys` (sorted unique key names
+  inside `*credentialConfig`) but never the values. Reveal
+  opt-in: agents needing the unmasked credential call
+  `rancher_norman_resource_get(schema_id="cloudCredential", ...)`;
+  `next_steps` direct the agent there. `driver` filter on list
+  is post-fetch (no Norman query mapping).
+- **Schema extensions** (descriptor.py + plan.py):
+  `ListConfig.query_params` Literal extended with `active`
+  (bool), `driver` (str), `cloud_credential_id` (str).
+  These are also added to `QP_TYPES` and `QP_KWARGS`.
+- 9 new unit tests in `tests/unit/test_provisioning_tools.py`
+  covering list+get for all 4 types, the cloud-credential
+  driver post-fetch filter, and defensive masking checks
+  (no `payload` field, no `*credentialConfig` key, no raw
+  test secret values in serialized output).
+- 233 tests pass, 85.52% coverage. Codegen: 62 files match
+  descriptors. Public tool surface 122 → 130.
+- **Note**: ROADMAP B-1 also lists "machine configs list/get" and
+  "machine pools list/get". These are RKE2/CAPI surface in
+  Rancher 2.6.5 — driver-specific CRDs (e.g.
+  `rke-machine-config.cattle.io/v1`) and `provisioning.cattle.io
+  /v1/clusters` machinePools. They don't fit the per-type
+  Norman pattern; users can access them via
+  `rancher_steve_resource_*` until a CAPI-specific subsystem
+  pack lands.
+
 ### Added (J-2 / B-3 — config_secrets pack via descriptors)
 - New **`config_secrets`** pack with 6 tools across 3 resource
   types:

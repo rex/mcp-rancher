@@ -137,6 +137,10 @@ class ListConfig(BaseModel):
             # clusters_nodes
             "role",
             "unschedulable",
+            # provisioning
+            "active",
+            "driver",
+            "cloud_credential_id",
         ]
     ]
     """Query-builder kwargs to pass through. Type for each is registered in
