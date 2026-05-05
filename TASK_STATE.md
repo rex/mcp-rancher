@@ -29,7 +29,7 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 - Canonical plan: `PERFECT_RANCHER_MCP_IMPLEMENTATION_PLAN.md`
 - Operational roadmap (track-level work breakdown): `ROADMAP.md`
 - Primary compatibility target: Rancher `2.6.5`
-- Public tool surface: 228 tools
+- Public tool surface: 236 tools
 - Completion gate: `make check-if-the-agent-can-consider-this-task-completed`
 - Active quality gates:
   `make check-architecture`
@@ -83,6 +83,74 @@ scale + set_labels), and 8 different packs (incl. cluster-scoped
 and optional-chart resources). Substrate is feature-complete.
 
 ## Latest Logical Step
+
+- **Batch 6 landed: 8 parallel Sonnet agents shipped 8
+  cross-pack patches in ~4.8 min wall-clock — ZERO
+  cherry-pick conflicts (FOURTH consecutive clean batch).**
+  Each pack now has 2-3 patched descriptors. The Service
+  agent additionally landed a small substrate fix that
+  enables Steve-transport patches (was previously k8s-proxy
+  only).
+  - **Slices shipped (each single-patch virgin set_labels)**:
+    - `D-1-service-set-labels` (commit `2f5bb91`,
+      pods_services first patch — **first Steve-transport
+      patch ever**; included a substrate fix to wire
+      `SteveMutationClient` instead of `SteveDiscoveryClient`
+      when `has_mutation=true` for Steve transport)
+    - `D-1-daemonset-set-labels` (commit `a60c638`,
+      workloads third)
+    - `D-1-job-set-labels` (commit `5d2ff95`,
+      batch_workloads second)
+    - `D-1-secret-set-labels` (commit `643744f`,
+      config_secrets second — validates **create + patch
+      coexistence** on the same descriptor; secret already
+      had `create` from J-3 fourth slice)
+    - `D-1-limit-range-set-labels` (commit `6a3dbd2`,
+      governance third)
+    - `D-1-endpoint-slice-set-labels` (commit `51ee413`,
+      networking third)
+    - `D-1-persistent-volume-claim-set-labels` (commit
+      `c0ac635`, storage second)
+    - `D-1-longhorn-node-set-labels` (commit `6e469eb`,
+      longhorn second; optional chart)
+  - **Substrate evolution (agent-driven)**: Service agent
+    correctly identified that Steve-transport descriptors
+    with mutations were tripping over a missing
+    `SteveMutationClient` import in the codegen template.
+    Fixed `scripts/codegen/templates/tool_module.py.j2` to
+    select the right client based on `has_mutation`. This
+    unblocks any future Steve-transport patches/creates/
+    deletes — applies to services and any other Steve
+    descriptor that adopts mutations going forward. The
+    agent stayed within the spirit of "STOP-and-report-
+    blocker" by surfacing the deviation explicitly in its
+    return summary.
+  - **Multi-descriptors-per-pack works**: 6 of 8 Batch 6
+    agents added a second/third descriptor to a pack that
+    already had a patched descriptor. Each agent's
+    `__init__.py` regeneration cleanly added new entries
+    at alphabetically distinct positions; cherry-picking
+    them in any order produced ZERO conflicts. The
+    file-disjoint-by-pack constraint can now be relaxed
+    to file-disjoint-by-descriptor.
+  - **Validates create + patch coexistence**: secrets.yml
+    now has `create + patch` on the same descriptor.
+    Combined with configmaps (full create + apply + delete
+    + patch), the substrate handles arbitrary mixes of the
+    five write verbs without descriptor-level constraints.
+  - **Wall-clock leverage**: 8 slices × ~3 min = ~24 min
+    sequential vs ~4.8 min parallel = **~5× speedup**.
+  - **422 tests pass** (was 406 → +16: 8 slices × 2 tests
+    each), 85.56% coverage, 132 files match descriptors,
+    all gates green.
+  - **Tool surface 228 → 236** (+8).
+  - **Cumulative session run rate** through Batch 6:
+    tool surface 184 → 236 (+52), tests 309 → 422 (+113).
+    32 tools shipped via parallel orchestration in this
+    post-compaction Opus turn (4 batches × 8 = 32 + 0
+    blockers + 1 substrate fix). The pattern is now mature
+    enough to relax the strict file-disjoint-by-pack
+    constraint to file-disjoint-by-descriptor.
 
 - **Batch 5 landed: 8 parallel Sonnet agents shipped 8
   cross-pack patches in ~3.2 min wall-clock — ZERO

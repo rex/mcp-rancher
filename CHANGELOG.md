@@ -2,6 +2,65 @@
 
 ## [2026-05-05] - Agent: Claude Opus 4.7
 
+### Added (Batch 6 — 8 parallel Sonnet subagents, fourth consecutive ZERO-conflict batch + small substrate fix)
+
+Tool surface 228 → 236 (+8). 422 tests pass (was 406; +16
+= 8 × 2). Coverage 85.56%. Wall-clock ~4.8 min for the
+longest agent. Pattern now mature: file-disjoint-by-pack
+constraint can be relaxed to file-disjoint-by-descriptor —
+6 of 8 agents added a second/third descriptor to packs that
+already had patched descriptors, all cherry-picks were
+conflict-free.
+
+Slices:
+
+- `rancher_service_set_labels` (pods_services; first patch
+  in pack; **first Steve-transport patch ever** — Service
+  agent landed a small substrate fix wiring
+  `SteveMutationClient` for Steve descriptors with
+  mutations) — `2f5bb91`
+- `rancher_daemonset_set_labels` (workloads; third
+  patched descriptor in pack) — `a60c638`
+- `rancher_job_set_labels` (batch_workloads; second) —
+  `5d2ff95`
+- `rancher_secret_set_labels` (config_secrets; second
+  patched descriptor; validates **create + patch
+  coexistence** since secret already had `create`) —
+  `643744f`
+- `rancher_limit_range_set_labels` (governance; third) —
+  `6a3dbd2`
+- `rancher_endpoint_slice_set_labels` (networking; third) —
+  `51ee413`
+- `rancher_persistent_volume_claim_set_labels` (storage;
+  second) — `c0ac635`
+- `rancher_longhorn_node_set_labels` (longhorn; second;
+  optional chart) — `6e469eb`
+
+### Changed
+
+- `scripts/codegen/templates/tool_module.py.j2`: select
+  `SteveMutationClient` instead of `SteveDiscoveryClient`
+  when emitting code for a Steve-transport descriptor that
+  has mutations. Caught and fixed by the Service slice
+  agent during Batch 6 — was previously latent because no
+  Steve-transport descriptor had mutations.
+
+### Pattern lessons reinforced
+
+- **File-disjoint-by-descriptor is the real parallelism
+  dimension**, not file-disjoint-by-pack. Pack `__init__.py`
+  3-way merge handles distinct alphabetical positions
+  cleanly.
+- **Create + patch coexist on a single descriptor** —
+  secrets is the proof case. The substrate handles mixed
+  verb sets without architectural limits.
+- **Agents can drive substrate evolution responsibly** —
+  Service agent's substrate fix was minimal, well-scoped,
+  and explicitly surfaced as a deviation in the return
+  summary. The "STOP and report" instruction stays useful
+  for major substrate gaps; small fixes can land alongside
+  the slice if surfaced.
+
 ### Added (Batch 5 — 8 parallel Sonnet subagents, third consecutive ZERO-conflict batch)
 
 Tool surface 220 → 228 (+8). 406 tests pass (was 390; +16 =

@@ -66,7 +66,7 @@ table. The [Status legend](#status-legend) explains the icons.
 
 ## Quick start
 
-- **Tool surface today: 228 registered.** See
+- **Tool surface today: 236 registered.** See
   [Tool registry](#tool-registry).
 - **Estimated target: ~380 tools** at "perfect" coverage of
   the 25-domain canonical plan. We're roughly 50% of the way.
@@ -121,7 +121,7 @@ descriptor migration commit). That's fine — Slice IDs map
 
 | Bucket | Count |
 |---|---|
-| ✅ Built (registered tools) | **228** |
+| ✅ Built (registered tools) | **236** |
 | 🟡 Planned (gap from plan) | ~190 |
 | 🟠 Partial (documented limitations) | ~10 |
 | 🔴 Blocked (external dep / design) | ~12 |
@@ -1933,3 +1933,11 @@ Six multi-patch additions following Batch 4 — adds `set_annotations` alongside
 | 2026-05-05 | D-1-statefulset-set-labels (Batch 5) | `4dcfb9e` | Sonnet, 2.8 min — multi-patch (scale + set_labels coexistence); workloads pack |
 | 2026-05-05 | D-1-configmap-set-labels (Batch 5) | `ab0a91e` | Sonnet, 2.9 min — **first patch on descriptor with full create+apply+delete** (validates patch coexistence with full mutation set); config_secrets pack |
 | 2026-05-05 | D-1-storage-class-set-annotations (Batch 5) | `25c2b68` | Sonnet, 3.2 min — multi-patch + cluster-scoped; storage pack |
+| 2026-05-05 | D-1-daemonset-set-labels (Batch 6) | `a60c638` | Sonnet, 2.8 min — workloads pack's third patched descriptor |
+| 2026-05-05 | D-1-job-set-labels (Batch 6) | `5d2ff95` | Sonnet, 2.7 min — batch_workloads pack's second patched descriptor |
+| 2026-05-05 | D-1-limit-range-set-labels (Batch 6) | `6a3dbd2` | Sonnet, 2.8 min — governance pack's third patched descriptor |
+| 2026-05-05 | D-1-secret-set-labels (Batch 6) | `643744f` | Sonnet, 3.2 min — secret already had `create`; validates **create + patch coexistence** |
+| 2026-05-05 | D-1-longhorn-node-set-labels (Batch 6) | `6e469eb` | Sonnet, 2.8 min — longhorn pack's second patched descriptor; optional chart |
+| 2026-05-05 | D-1-persistent-volume-claim-set-labels (Batch 6) | `c0ac635` | Sonnet, 3.2 min — storage pack's second patched descriptor |
+| 2026-05-05 | D-1-endpoint-slice-set-labels (Batch 6) | `51ee413` | Sonnet, 3.6 min — networking pack's third patched descriptor |
+| 2026-05-05 | D-1-service-set-labels (Batch 6) | `2f5bb91` | Sonnet, 4.8 min — pods_services pack's first patch + **substrate fix** (Steve-transport mutation client wiring in `tool_module.py.j2`); first Steve-transport patch ever |
