@@ -1699,6 +1699,13 @@ today) and **multi-patch additions** (descriptor already has a
 | `D-1-prometheus-rule-set-labels` | `prometheus_rules.yml` | prometheus_monitoring | prometheus_rule | prometheus_rule_set_labels | PrometheusRule | namespaced; single-patch virgin; optional kube-prometheus-stack |
 | `D-1-storage-class-set-labels` | `storage_classes.yml` | storage | storage_class | storage_class_set_labels | StorageClass | cluster-scoped (storage.k8s.io/v1); single-patch virgin |
 
+#### Slice-specific rows — Batch 5 set_labels (2026-05-05, post-Batch-4)
+
+| Slice ID | Descriptor file | Pack | display_name_singular | audit_operation | Resource | Notes |
+|---|---|---|---|---|---|---|
+| `D-1-statefulset-set-labels` | `statefulsets.yml` | workloads | statefulset | statefulset_set_labels | StatefulSet | namespaced; multi-patch (existing has `scale` — APPEND) |
+| `D-1-configmap-set-labels` | `configmaps.yml` | config_secrets | config_map | configmap_set_labels | ConfigMap | namespaced; FIRST patch on descriptor that already has create + apply + delete (validates patch coexistence with full mutation set) |
+
 ### Shared brief — Narrow annotation-set patch (`D-1-*-set-annotations`)
 
 Covers any slice that adds a narrow patch tool replacing
@@ -1847,6 +1854,19 @@ least one patch from prior batches.
 |---|---|---|---|---|---|---|
 | `D-1-priority-class-set-annotations` | `priority_classes.yml` | scheduling | priority_class | priority_class_set_annotations | PriorityClass | cluster-scoped; multi-patch (existing has `set_labels` — APPEND) |
 | `D-1-deployment-set-annotations` | `deployments.yml` | workloads | deployment | deployment_set_annotations | Deployment | namespaced; multi-patch (existing has `scale + set_labels` — APPEND as 3rd entry; 3-patch coexistence proof) |
+
+#### Slice-specific rows — Batch 5 set_annotations (2026-05-05, post-Batch-4)
+
+Six multi-patch additions following Batch 4 — adds `set_annotations` alongside the `set_labels` shipped in Batch 4. Pairs governance, disruption, networking, prometheus_monitoring, storage, batch_workloads packs to 2-patch each. cron_jobs becomes 3-patch (suspend + set_labels + set_annotations) — second 3-patch coexistence proof after deployments.
+
+| Slice ID | Descriptor file | Pack | display_name_singular | audit_operation | Resource | Notes |
+|---|---|---|---|---|---|---|
+| `D-1-cron-job-set-annotations` | `cron_jobs.yml` | batch_workloads | cron_job | cron_job_set_annotations | CronJob | namespaced; multi-patch — APPEND as 3rd entry alongside `suspend` + `set_labels` (3-patch coexistence) |
+| `D-1-resource-quota-set-annotations` | `resource_quotas.yml` | governance | resource_quota | resource_quota_set_annotations | ResourceQuota | namespaced; multi-patch (APPEND alongside set_labels) |
+| `D-1-pod-disruption-budget-set-annotations` | `pod_disruption_budgets.yml` | disruption | pod_disruption_budget | pod_disruption_budget_set_annotations | PodDisruptionBudget | namespaced; multi-patch (APPEND) |
+| `D-1-network-policy-set-annotations` | `network_policies.yml` | networking | network_policy | network_policy_set_annotations | NetworkPolicy | namespaced; multi-patch (APPEND) |
+| `D-1-prometheus-rule-set-annotations` | `prometheus_rules.yml` | prometheus_monitoring | prometheus_rule | prometheus_rule_set_annotations | PrometheusRule | namespaced; multi-patch (APPEND); optional kube-prometheus-stack |
+| `D-1-storage-class-set-annotations` | `storage_classes.yml` | storage | storage_class | storage_class_set_annotations | StorageClass | cluster-scoped; multi-patch (APPEND) |
 
 ---
 
