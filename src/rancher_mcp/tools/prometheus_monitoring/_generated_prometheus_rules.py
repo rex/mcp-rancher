@@ -119,7 +119,7 @@ async def _fetch_prometheus_rule_get(
     summary = prometheus_rule_summary_from_payload(payload)
 
     metadata = mapping_value(payload, "metadata") or {}
-    annotations = mapping_value(metadata, "annotations") or {}
+    metadata_annotations = mapping_value(metadata, "annotations") or {}
     detail = RancherPrometheusRuleDetail.model_validate(payload)
     return detail.model_copy(
         update={
@@ -127,7 +127,7 @@ async def _fetch_prometheus_rule_get(
             "rule_count": summary.rule_count,
             "alert_count": summary.alert_count,
             "recording_count": summary.recording_count,
-            "annotation_keys": sorted(string_dict(annotations)),
+            "annotation_keys": sorted(string_dict(metadata_annotations)),
             "group_names": group_names(payload),
             "alert_names": alert_names(payload),
             "payload": dict(payload),
@@ -189,7 +189,7 @@ async def _patch_prometheus_rule_set_labels(
     summary = prometheus_rule_summary_from_payload(payload)
 
     metadata = mapping_value(payload, "metadata") or {}
-    annotations = mapping_value(metadata, "annotations") or {}
+    metadata_annotations = mapping_value(metadata, "annotations") or {}
     detail = RancherPrometheusRuleDetail.model_validate(payload)
     return detail.model_copy(
         update={
@@ -197,7 +197,7 @@ async def _patch_prometheus_rule_set_labels(
             "rule_count": summary.rule_count,
             "alert_count": summary.alert_count,
             "recording_count": summary.recording_count,
-            "annotation_keys": sorted(string_dict(annotations)),
+            "annotation_keys": sorted(string_dict(metadata_annotations)),
             "group_names": group_names(payload),
             "alert_names": alert_names(payload),
             "payload": dict(payload),
@@ -241,6 +241,83 @@ async def rancher_prometheus_rule_set_labels(
             namespace,
             rule_name,
             labels,
+            managed_client,
+        )
+
+
+async def _patch_prometheus_rule_set_annotations(
+    instance_name: str,
+    cluster_id: str,
+    namespace: str,
+    rule_name: str,
+    annotations: dict[str, str],
+    client: ManagementDiscoveryClient,
+) -> RancherPrometheusRuleDetail:
+    """Set_annotations one prometheus_rule via JSON merge-patch; returns the curated detail."""
+
+    patch_subtree: dict[str, object] = {}
+    patch_subtree["annotations"] = annotations
+    if not patch_subtree:
+        raise RancherCapabilityError(
+            "No patch fields provided; every arg was None. Pass at least one field to update."
+        )
+    request_payload: dict[str, object] = {"metadata": patch_subtree}
+    payload = await client.patch_json(
+        monitoring_namespaced_resource_path(cluster_id, namespace, "prometheusrules", rule_name),
+        payload=request_payload,
+    )
+    summary = prometheus_rule_summary_from_payload(payload)
+
+    metadata = mapping_value(payload, "metadata") or {}
+    metadata_annotations = mapping_value(metadata, "annotations") or {}
+    detail = RancherPrometheusRuleDetail.model_validate(payload)
+    return detail.model_copy(
+        update={
+            "group_count": summary.group_count,
+            "rule_count": summary.rule_count,
+            "alert_count": summary.alert_count,
+            "recording_count": summary.recording_count,
+            "annotation_keys": sorted(string_dict(metadata_annotations)),
+            "group_names": group_names(payload),
+            "alert_names": alert_names(payload),
+            "payload": dict(payload),
+            "suggested_next_steps": ["rancher_prometheus_rule_get"],
+        }
+    )
+
+
+@audit_mutation(operation="prometheus_rule_set_annotations", plane="steve")
+@rate_limit_writes
+async def rancher_prometheus_rule_set_annotations(
+    namespace: str,
+    rule_name: str,
+    annotations: dict[str, str],
+    cluster_id: str = "local",
+    instance: str | None = None,
+    settings: AppSettings | None = None,
+    client: ManagementDiscoveryClient | None = None,
+) -> RancherPrometheusRuleDetail:
+    """Set_annotations one prometheus_rule via JSON merge-patch."""
+
+    resolved_settings = settings or get_settings()
+    instance_name, instance_config = resolve_instance(resolved_settings, instance)
+    ensure_instance_writable(instance_name, instance_config)
+    if client is not None:
+        return await _patch_prometheus_rule_set_annotations(
+            instance_name,
+            cluster_id,
+            namespace,
+            rule_name,
+            annotations,
+            client,
+        )
+    async with RancherManagementClient(instance_name, instance_config) as managed_client:
+        return await _patch_prometheus_rule_set_annotations(
+            instance_name,
+            cluster_id,
+            namespace,
+            rule_name,
+            annotations,
             managed_client,
         )
 
@@ -294,6 +371,24 @@ async def rancher_prometheus_rule_set_labels_tool(
         namespace=namespace,
         rule_name=rule_name,
         labels=labels,
+        cluster_id=cluster_id,
+        instance=instance,
+    )
+
+
+async def rancher_prometheus_rule_set_annotations_tool(
+    namespace: str,
+    rule_name: str,
+    annotations: dict[str, str],
+    cluster_id: str = "local",
+    instance: str | None = None,
+) -> RancherPrometheusRuleDetail:
+    """Public MCP wrapper for curated prometheus_rule set_annotations."""
+
+    return await rancher_prometheus_rule_set_annotations(
+        namespace=namespace,
+        rule_name=rule_name,
+        annotations=annotations,
         cluster_id=cluster_id,
         instance=instance,
     )
