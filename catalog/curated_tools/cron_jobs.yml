@@ -50,11 +50,11 @@ get:
   locals:
     - name: metadata
       expression: 'mapping_value(payload, "metadata") or {}'
-    - name: annotations
+    - name: metadata_annotations
       expression: 'mapping_value(metadata, "annotations") or {}'
   extras:
     - field: annotation_keys
-      expression: sorted(string_dict(annotations))
+      expression: sorted(string_dict(metadata_annotations))
     - field: container_images
       expression: cron_job_container_images(payload)
     - field: active_job_names
@@ -77,6 +77,16 @@ patches:
     next_steps:
       - rancher_cron_job_get
       - rancher_jobs_list
+  - verb: set_labels
+    target_path: metadata
+    audit_operation: cron_job_set_labels
+    args:
+      - name: labels
+        type: dict_str_str
+        required: true
+        description: Replacement metadata.labels map (merge-patch semantics — passing this REPLACES the labels map; pass an empty dict to remove all labels).
+    next_steps:
+      - rancher_cron_job_get
 
 tools:
   list:
@@ -90,4 +100,7 @@ tools:
   patches:
     - name: rancher_cron_job_suspend
       description: Pause or resume one Kubernetes CronJob via JSON merge-patch on `spec.suspend`. Pass suspend=True to pause, suspend=False to resume. Returns the curated detail. Subject to write rate limiting and audit logging.
+      annotation_set: IDEMPOTENT_WRITE
+    - name: rancher_cron_job_set_labels
+      description: Replace metadata.labels on one Kubernetes CronJob via JSON merge-patch. The `labels` arg is a complete replacement map. Returns the curated detail.
       annotation_set: IDEMPOTENT_WRITE
