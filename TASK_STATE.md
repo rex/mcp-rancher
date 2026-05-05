@@ -2,7 +2,7 @@
 
 ## Current Objective
 
-Keep the repo clean and fully validated while executing the canonical Rancher MCP implementation plan in phase order against the live Rancher `2.6.5` devlab.
+Keep the repo clean and fully validated while executing the canonical Rancher MCP implementation plan in phase order. **Primary target: Rancher 2.9.3** (production). **Compat floor: 2.6.5** (devlab). Capability detection bridges the gap; never regress 2.6.5 behavior.
 
 ## Standing User Directives
 
@@ -28,7 +28,8 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 
 - Canonical plan: `PERFECT_RANCHER_MCP_IMPLEMENTATION_PLAN.md`
 - Operational roadmap (track-level work breakdown): `ROADMAP.md`
-- Primary compatibility target: Rancher `2.6.5`
+- Primary target: Rancher `2.9.3` (production)
+- Compat floor: Rancher `2.6.5` (devlab; never regress)
 - Public tool surface: 236 tools
 - Completion gate: `make check-if-the-agent-can-consider-this-task-completed`
 - Active quality gates:

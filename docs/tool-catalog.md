@@ -1859,6 +1859,140 @@ descriptors that already have a `set_labels` entry from
 Batch 2. Predicted Tool surface delta: 204 → 212 (+8).
 **LANDED 2026-05-05 — see Recently shipped log.**
 
+#### Slice-specific rows — Batch 7 set_annotations (2026-05-05, post-Batch-6)
+
+Eight multi-patch annotation follow-ups on Batch 6 set_labels descriptors. Each adds `set_annotations` as the SECOND `patches:` entry alongside the existing `set_labels` (or as 2nd entry alongside other existing patches per descriptor).
+
+| Slice ID | Descriptor file | Pack | display_name_singular | audit_operation | Resource | Notes |
+|---|---|---|---|---|---|---|
+| `D-1-service-set-annotations` | `services.yml` | pods_services | service | service_set_annotations | Service | namespaced; multi-patch (APPEND alongside set_labels) |
+| `D-1-daemonset-set-annotations` | `daemonsets.yml` | workloads | daemonset | daemonset_set_annotations | DaemonSet | namespaced; multi-patch |
+| `D-1-job-set-annotations` | `jobs.yml` | batch_workloads | job | job_set_annotations | Job | namespaced; multi-patch |
+| `D-1-secret-set-annotations` | `secrets.yml` | config_secrets | secret | secret_set_annotations | Secret | namespaced; multi-patch (secret has create + set_labels — set_annotations becomes 2nd patch) |
+| `D-1-limit-range-set-annotations` | `limit_ranges.yml` | governance | limit_range | limit_range_set_annotations | LimitRange | namespaced; multi-patch |
+| `D-1-endpoint-slice-set-annotations` | `endpoint_slices.yml` | networking | endpoint_slice | endpoint_slice_set_annotations | EndpointSlice | namespaced; multi-patch |
+| `D-1-persistent-volume-claim-set-annotations` | `persistent_volume_claims.yml` | storage | persistent_volume_claim | persistent_volume_claim_set_annotations | PersistentVolumeClaim | namespaced; multi-patch |
+| `D-1-longhorn-node-set-annotations` | `longhorn_nodes.yml` | longhorn | longhorn_node | longhorn_node_set_annotations | Longhorn Node CR | namespaced; multi-patch; optional Longhorn chart |
+| `D-1-configmap-set-annotations` | `configmaps.yml` | config_secrets | config_map | configmap_set_annotations | ConfigMap | namespaced; multi-patch (APPEND alongside set_labels — configmap will end at create + apply + delete + set_labels + set_annotations); 9th agent — pack-pairs with secret in same batch |
+
+---
+
+### Shared brief — Destructive delete (`D-3-*-delete`)
+
+Covers any slice that adds a `rancher_<singular>_delete` curated tool with a confirmation-phrase guard. Same shape as the landed `configmap_delete` and `deployment_delete` (J-3 second + fifth slices).
+
+#### Common pattern
+
+- Substrate: existing `DeleteConfig` (no descriptor schema work needed).
+- Tool name: `rancher_<display_name_singular>_delete`.
+- Annotation tier: `DESTRUCTIVE`.
+- Required arg: `confirmation: str` — must equal the exact rendered phrase.
+- Phrase template (namespaced): `"delete <singular> {<get.arg_name>} in namespace {namespace}"`
+- Phrase template (cluster-scoped): `"delete <singular> {<get.arg_name>}"`
+- HTTP shape: DELETE on resource detail path; returns `RancherCuratedDeleteResult` typed.
+
+#### Files to read first (one-time)
+
+1. **`catalog/curated_tools/configmaps.yml`** — see the `delete:` block. Canonical reference.
+2. **`tests/unit/test_config_secrets_tools.py`** — find `test_rancher_configmap_delete_*`. Three-test pattern:
+   - `_refuses_wrong_confirmation_before_http`: client.last_delete_path stays None.
+   - `_routes_to_delete_json_on_correct_phrase`: PATH is detail path; result has `deleted=True`.
+   - `_emits_audit_with_outcome_*`: both success and rejection paths emit audit; rejection records `outcome=error`.
+3. **`docs/codegen-curated-tools.md` Section 12 → "Delete operation"** — recipe.
+
+#### Files to modify (per slice)
+
+1. **`catalog/curated_tools/<descriptor>.yml`**:
+   - Update `operations:` to include `delete`.
+   - Add a top-level `delete:` block with `audit_operation`, `confirmation_phrase`, `next_steps`.
+   - Add a `tools.delete:` block with `name: rancher_<singular>_delete`, `annotation_set: DESTRUCTIVE`, and a description that explicitly states the confirmation phrase shape and the rate-limiting/audit guarantee.
+2. **Run `make codegen`**.
+3. **`tests/unit/test_<pack>_tools.py`** — add a `Stub<Resource>DeleteClient` with `last_delete_path` capture, plus the 3 tests above.
+
+#### Common pitfalls
+
+- **Phrase-template substitution**: `{<get.arg_name>}` and `{namespace}` are the canonical interpolations. For cluster-scoped descriptors, omit the `in namespace {namespace}` suffix.
+- **Tool description must mention the literal phrase shape** so an agent calling the tool knows what to pass.
+- **Both success and rejection paths emit audit** — verify both in tests.
+- **Cluster-scoped resources** (descriptor has `namespaced: false`): generated tool has NO `namespace` parameter. The phrase template must NOT reference `{namespace}`.
+
+#### Acceptance / commit / stop conditions
+
+Same as label-set brief.
+
+#### Slice-specific rows — Batch 9 deletes (2026-05-05)
+
+Per Q2 default (b): namespaced "owned" resources only. **Skipped** (use `rancher_steve_resource_delete` escape hatch): namespace, project, storage_class, priority_class, runtime_class, backup, longhorn_volume, cert_manager_certificate.
+
+| Slice ID | Descriptor file | Pack | display_name_singular | audit_operation | Resource | Notes |
+|---|---|---|---|---|---|---|
+| `D-3-statefulset-delete` | `statefulsets.yml` | workloads | statefulset | statefulset_delete | StatefulSet | namespaced |
+| `D-3-daemonset-delete` | `daemonsets.yml` | workloads | daemonset | daemonset_delete | DaemonSet | namespaced |
+| `D-3-cron-job-delete` | `cron_jobs.yml` | batch_workloads | cron_job | cron_job_delete | CronJob | namespaced |
+| `D-3-job-delete` | `jobs.yml` | batch_workloads | job | job_delete | Job | namespaced |
+| `D-3-ingress-delete` | `ingresses.yml` | networking | ingress | ingress_delete | Ingress | namespaced |
+| `D-3-network-policy-delete` | `network_policies.yml` | networking | network_policy | network_policy_delete | NetworkPolicy | namespaced |
+| `D-3-pdb-delete` | `pod_disruption_budgets.yml` | disruption | pod_disruption_budget | pod_disruption_budget_delete | PodDisruptionBudget | namespaced |
+| `D-3-secret-delete` | `secrets.yml` | config_secrets | secret | secret_delete | Secret | namespaced |
+
+#### Slice-specific rows — Batch 10 deletes (2026-05-05)
+
+| Slice ID | Descriptor file | Pack | display_name_singular | audit_operation | Resource | Notes |
+|---|---|---|---|---|---|---|
+| `D-3-hpa-delete` | `horizontal_pod_autoscalers.yml` | governance | horizontal_pod_autoscaler | hpa_delete | HorizontalPodAutoscaler | namespaced |
+| `D-3-pvc-delete` | `persistent_volume_claims.yml` | storage | persistent_volume_claim | persistent_volume_claim_delete | PersistentVolumeClaim | namespaced; storage may be retained or deleted depending on reclaim policy |
+| `D-3-service-delete` | `services.yml` | pods_services | service | service_delete | Service | namespaced |
+| `D-3-resource-quota-delete` | `resource_quotas.yml` | governance | resource_quota | resource_quota_delete | ResourceQuota | namespaced |
+| `D-3-limit-range-delete` | `limit_ranges.yml` | governance | limit_range | limit_range_delete | LimitRange | namespaced |
+| `D-3-prometheus-rule-delete` | `prometheus_rules.yml` | prometheus_monitoring | prometheus_rule | prometheus_rule_delete | PrometheusRule | namespaced; optional kube-prometheus-stack |
+| `D-3-service-monitor-delete` | `service_monitors.yml` | prometheus_monitoring | service_monitor | service_monitor_delete | ServiceMonitor | namespaced; optional kube-prometheus-stack |
+| `D-3-endpoint-slice-delete` | `endpoint_slices.yml` | networking | endpoint_slice | endpoint_slice_delete | EndpointSlice | namespaced |
+
+---
+
+### Shared brief — Narrow specialized patch (`D-4-*`)
+
+Covers narrow patches that are NOT label/annotation patches but follow the same `PatchConfig` substrate. Each slice picks a verb, target_path, and 1-2 typed args. The pattern is structurally identical to label/annotation patches.
+
+#### Reference: cron_job_suspend (commit `ea2bcf1`) and deployment_scale (J-3 third slice).
+
+#### Files to modify (per slice)
+
+1. **`catalog/curated_tools/<descriptor>.yml`**:
+   - Update `operations:` to include `patch` if absent.
+   - APPEND a new entry to `patches:` (or CREATE if list is virgin):
+
+     ```yaml
+     - verb: <slice_verb>
+       target_path: <dot-path>
+       audit_operation: <descriptor_id>_<slice_verb>
+       args:
+         - name: <arg_name>
+           type: <ArgType>            # str | int | bool | dict_str_str
+           required: true              # or false with default-skip semantic
+           description: <one line>
+       next_steps:
+         - rancher_<singular>_get
+     ```
+
+   - APPEND symmetrically to `tools.patches:` with `name: rancher_<singular>_<slice_verb>`, `annotation_set: IDEMPOTENT_WRITE`, and a description that names the spec field touched.
+
+2. **`make codegen`**, run tests, validate.
+
+#### Slice-specific rows — Batch 11 specialized patches (2026-05-05)
+
+Per Q4 default: ship pause/resume/restart, cron_job_resume, service_set_type, pvc_set_size, hpa_set_min_max. **Note**: pause/resume/restart all live on `deployments.yml` — ONE agent ships all 3 in a single descriptor edit (deployments will end with 6 patches: scale + set_labels + set_annotations + pause + resume + restart). Validates the substrate at 6-patch coexistence.
+
+| Slice ID | Descriptor file | Pack | Verb | Args | target_path | audit_operation | Notes |
+|---|---|---|---|---|---|---|---|
+| `D-4-deployment-pause-resume-restart` | `deployments.yml` | workloads | pause + resume + restart (3 verbs in ONE agent) | pause: (none — sets spec.paused=true); resume: (none — sets spec.paused=false); restart: (none — annotation poke `kubectl.kubernetes.io/restartedAt: <ts>`) | spec for pause/resume; spec.template.metadata.annotations for restart | deployment_pause / deployment_resume / deployment_restart | **3-tool slice in ONE commit**. Substrate will need an "argless patch" extension if no `args` is allowed; if substrate requires ≥1 arg, agent should add a no-op required-bool arg or STOP and report. **Implementation note**: pause/resume can use a single bool arg `paused` and dispatch via verb in template; or use 2 separate argless verbs. Agent picks minimal-substrate-touch path. |
+| `D-4-cron-job-resume` | `cron_jobs.yml` | batch_workloads | resume | (argless — sets spec.suspend=false) | spec | cron_job_resume | counterpart to existing `suspend` |
+| `D-4-service-set-type` | `services.yml` | pods_services | set_type | service_type: str (required, one of "ClusterIP" / "NodePort" / "LoadBalancer" / "ExternalName") | spec | service_set_type | namespaced |
+| `D-4-pvc-set-size` | `persistent_volume_claims.yml` | storage | set_size | storage: str (required, e.g. "10Gi") | spec.resources.requests | persistent_volume_claim_set_size | k8s validates only-grow on most StorageClasses |
+| `D-4-hpa-set-min-max` | `horizontal_pod_autoscalers.yml` | governance | set_min_max | min_replicas: int (required), max_replicas: int (required) | spec | hpa_set_min_max | 2-arg patch |
+
+**Note on argless patches**: existing PatchConfig validator requires `≥1 arg per patch`. The substrate's argless verb support is open — for `cron_job_resume` and `deployment_pause`/`deployment_resume`/`deployment_restart` the agent may need a small substrate fix (lift the ≥1 constraint, allow `args: []` with literal `target_value` injection). Per Q8 default: agent makes the substrate fix if ≤30 LOC, else STOPs. Workaround if STOP: introduce a single ignored-bool arg as a placeholder.
+
 #### Slice-specific rows — Batch 4 set_annotations (2026-05-05, post-Batch-3)
 
 Two multi-patch additions adding `set_annotations` as the

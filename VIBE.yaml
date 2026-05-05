@@ -5,12 +5,13 @@ project:
   name: rancher-mcp
   lifecycle: brownfield
   stack: python-fastmcp
-  description: Capability-aware Rancher MCP server with comprehensive Rancher 2.6.5 coverage
+  description: Capability-aware Rancher MCP server, primary 2.9.3 with 2.6.5 as compat floor
   primary_target: kubernetes
   support_policy: maintained
   extensions:
-    rancher_version: "2.6.5"
-    rancher_support: "2.6.5 primary; later versions via capability detection"
+    rancher_version: "2.9.3"
+    rancher_floor: "2.6.5"
+    rancher_support: "2.9.3 primary; 2.6.5 floor preserved via capability detection"
 
 stack:
   language: python
