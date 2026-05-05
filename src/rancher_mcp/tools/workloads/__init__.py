@@ -39,6 +39,8 @@ from rancher_mcp.tools.workloads._generated_replicasets import (
     rancher_replica_sets_list_tool,
 )
 from rancher_mcp.tools.workloads._generated_statefulsets import (
+    rancher_statefulset_delete,
+    rancher_statefulset_delete_tool,
     rancher_statefulset_get,
     rancher_statefulset_get_tool,
     rancher_statefulset_scale,
@@ -62,6 +64,7 @@ __all__ = [
     "rancher_deployments_list",
     "rancher_replica_set_get",
     "rancher_replica_sets_list",
+    "rancher_statefulset_delete",
     "rancher_statefulset_get",
     "rancher_statefulset_scale",
     "rancher_statefulset_set_labels",
@@ -103,6 +106,9 @@ def register_workload_tools(mcp: FastMCP) -> None:
         rancher_statefulsets_list_tool
     )
     mcp.tool(name="rancher_statefulset_get", annotations=READ_ONLY)(rancher_statefulset_get_tool)
+    mcp.tool(name="rancher_statefulset_delete", annotations=DESTRUCTIVE)(
+        rancher_statefulset_delete_tool
+    )
     mcp.tool(name="rancher_statefulset_scale", annotations=IDEMPOTENT_WRITE)(
         rancher_statefulset_scale_tool
     )

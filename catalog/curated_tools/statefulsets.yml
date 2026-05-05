@@ -25,7 +25,7 @@ support_value_imports:
   - string_dict
 summary_function: statefulset_summary_from_payload
 
-operations: [list, get, patch]
+operations: [list, get, delete, patch]
 
 list:
   query_params: [limit, continue_token, label_selector, field_selector]
@@ -58,6 +58,12 @@ get:
   next_steps:
     - rancher_statefulsets_list
     - rancher_pods_list
+
+delete:
+  audit_operation: statefulset_delete
+  confirmation_phrase: "delete statefulset {statefulset_name} in namespace {namespace}"
+  next_steps:
+    - rancher_statefulsets_list
 
 patches:
   - verb: scale
@@ -92,6 +98,10 @@ tools:
     name: rancher_statefulset_get
     description: Fetch one statefulset by namespace and name via Rancher's raw Kubernetes proxy. Returns the curated summary plus full payload and annotation keys.
     annotation_set: READ_ONLY
+  delete:
+    name: rancher_statefulset_delete
+    description: Delete one Kubernetes StatefulSet. The `confirmation` arg must equal the exact phrase "delete statefulset NAME in namespace NS" (substituting the actual values). Returns a typed delete result with the rendered confirmation phrase. Subject to write rate limiting and audit logging.
+    annotation_set: DESTRUCTIVE
   patches:
     - name: rancher_statefulset_scale
       description: Scale one Kubernetes StatefulSet to a target `replicas` count via JSON merge-patch on `spec.replicas`. Returns the curated detail of the patched resource. Subject to write rate limiting and audit logging.

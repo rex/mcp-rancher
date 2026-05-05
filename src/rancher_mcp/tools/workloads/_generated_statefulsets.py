@@ -10,6 +10,7 @@ from rancher_mcp.audit import audit_mutation
 from rancher_mcp.clients.management import ManagementDiscoveryClient, RancherManagementClient
 from rancher_mcp.config import AppSettings, get_settings
 from rancher_mcp.exceptions import RancherCapabilityError
+from rancher_mcp.models.resources import RancherCuratedDeleteResult
 from rancher_mcp.models.workloads import RancherStatefulSetDetail, RancherStatefulSetList
 from rancher_mcp.rate_limit import rate_limit_writes
 from rancher_mcp.services.instances import resolve_instance
@@ -158,6 +159,74 @@ async def rancher_statefulset_get(
             cluster_id,
             namespace,
             statefulset_name,
+            managed_client,
+        )
+
+
+async def _delete_statefulset(
+    instance_name: str,
+    cluster_id: str,
+    namespace: str,
+    statefulset_name: str,
+    confirmation_phrase_used: str,
+    client: ManagementDiscoveryClient,
+) -> RancherCuratedDeleteResult:
+    """Delete one statefulset; returns a typed delete result."""
+
+    response_payload = await client.delete_json(
+        workload_resource_path(cluster_id, namespace, "statefulsets", statefulset_name),
+    )
+    return RancherCuratedDeleteResult(
+        instance=instance_name,
+        plane="steve",
+        resource_kind="statefulset",
+        resource_name=statefulset_name,
+        namespace=namespace,
+        cluster_id=cluster_id,
+        deleted=True,
+        confirmation_phrase_used=confirmation_phrase_used,
+        response_payload=dict(response_payload),
+        suggested_next_steps=["rancher_statefulsets_list"],
+    )
+
+
+@audit_mutation(operation="statefulset_delete", plane="steve")
+@rate_limit_writes
+async def rancher_statefulset_delete(
+    namespace: str,
+    statefulset_name: str,
+    confirmation: str,
+    cluster_id: str = "local",
+    instance: str | None = None,
+    settings: AppSettings | None = None,
+    client: ManagementDiscoveryClient | None = None,
+) -> RancherCuratedDeleteResult:
+    """Delete one statefulset after the agent echoes the required confirmation phrase."""
+
+    expected_phrase = f"delete statefulset {statefulset_name} in namespace {namespace}"
+    if confirmation != expected_phrase:
+        raise RancherCapabilityError(
+            f"Delete confirmation did not match the required phrase: {expected_phrase!r}"
+        )
+    resolved_settings = settings or get_settings()
+    instance_name, instance_config = resolve_instance(resolved_settings, instance)
+    ensure_instance_writable(instance_name, instance_config)
+    if client is not None:
+        return await _delete_statefulset(
+            instance_name,
+            cluster_id,
+            namespace,
+            statefulset_name,
+            expected_phrase,
+            client,
+        )
+    async with RancherManagementClient(instance_name, instance_config) as managed_client:
+        return await _delete_statefulset(
+            instance_name,
+            cluster_id,
+            namespace,
+            statefulset_name,
+            expected_phrase,
             managed_client,
         )
 
@@ -345,6 +414,24 @@ async def rancher_statefulset_get_tool(
     return await rancher_statefulset_get(
         namespace=namespace,
         statefulset_name=statefulset_name,
+        cluster_id=cluster_id,
+        instance=instance,
+    )
+
+
+async def rancher_statefulset_delete_tool(
+    namespace: str,
+    statefulset_name: str,
+    confirmation: str,
+    cluster_id: str = "local",
+    instance: str | None = None,
+) -> RancherCuratedDeleteResult:
+    """Public MCP wrapper for curated statefulset delete."""
+
+    return await rancher_statefulset_delete(
+        namespace=namespace,
+        statefulset_name=statefulset_name,
+        confirmation=confirmation,
         cluster_id=cluster_id,
         instance=instance,
     )
