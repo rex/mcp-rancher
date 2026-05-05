@@ -6,11 +6,15 @@
 
 from __future__ import annotations
 
+from rancher_mcp.audit import audit_mutation
 from rancher_mcp.clients.management import ManagementDiscoveryClient, RancherManagementClient
 from rancher_mcp.config import AppSettings, get_settings
+from rancher_mcp.exceptions import RancherCapabilityError
 from rancher_mcp.models.longhorn import RancherLonghornVolumeDetail, RancherLonghornVolumeList
+from rancher_mcp.rate_limit import rate_limit_writes
 from rancher_mcp.services.instances import resolve_instance
 from rancher_mcp.services.resources.builders_pagination import next_page_token_from_payload
+from rancher_mcp.services.safety import ensure_instance_writable
 from rancher_mcp.tools.longhorn.paths import (
     longhorn_namespaced_collection_path,
     longhorn_namespaced_resource_path,
@@ -169,6 +173,79 @@ async def rancher_longhorn_volume_get(
         )
 
 
+async def _patch_longhorn_volume_set_labels(
+    instance_name: str,
+    cluster_id: str,
+    namespace: str,
+    volume_name: str,
+    labels: dict[str, str],
+    client: ManagementDiscoveryClient,
+) -> RancherLonghornVolumeDetail:
+    """Set_labels one longhorn_volume via JSON merge-patch; returns the curated detail."""
+
+    patch_subtree: dict[str, object] = {}
+    patch_subtree["labels"] = labels
+    if not patch_subtree:
+        raise RancherCapabilityError(
+            "No patch fields provided; every arg was None. Pass at least one field to update."
+        )
+    request_payload: dict[str, object] = {"metadata": patch_subtree}
+    payload = await client.patch_json(
+        longhorn_namespaced_resource_path(cluster_id, namespace, "volumes", volume_name),
+        payload=request_payload,
+    )
+
+    metadata = mapping_value(payload, "metadata") or {}
+    annotations = mapping_value(metadata, "annotations") or {}
+    detail = RancherLonghornVolumeDetail.model_validate(payload)
+    return detail.model_copy(
+        update={
+            "annotation_keys": sorted(string_dict(annotations)),
+            "payload": dict(payload),
+            "suggested_next_steps": [
+                "rancher_longhorn_volume_get",
+                "rancher_longhorn_volumes_list",
+            ],
+        }
+    )
+
+
+@audit_mutation(operation="longhorn_volume_set_labels", plane="steve")
+@rate_limit_writes
+async def rancher_longhorn_volume_set_labels(
+    namespace: str,
+    volume_name: str,
+    labels: dict[str, str],
+    cluster_id: str = "local",
+    instance: str | None = None,
+    settings: AppSettings | None = None,
+    client: ManagementDiscoveryClient | None = None,
+) -> RancherLonghornVolumeDetail:
+    """Set_labels one longhorn_volume via JSON merge-patch."""
+
+    resolved_settings = settings or get_settings()
+    instance_name, instance_config = resolve_instance(resolved_settings, instance)
+    ensure_instance_writable(instance_name, instance_config)
+    if client is not None:
+        return await _patch_longhorn_volume_set_labels(
+            instance_name,
+            cluster_id,
+            namespace,
+            volume_name,
+            labels,
+            client,
+        )
+    async with RancherManagementClient(instance_name, instance_config) as managed_client:
+        return await _patch_longhorn_volume_set_labels(
+            instance_name,
+            cluster_id,
+            namespace,
+            volume_name,
+            labels,
+            managed_client,
+        )
+
+
 async def rancher_longhorn_volumes_list_tool(
     namespace: str,
     cluster_id: str = "local",
@@ -204,6 +281,24 @@ async def rancher_longhorn_volume_get_tool(
     return await rancher_longhorn_volume_get(
         namespace=namespace,
         volume_name=volume_name,
+        cluster_id=cluster_id,
+        instance=instance,
+    )
+
+
+async def rancher_longhorn_volume_set_labels_tool(
+    namespace: str,
+    volume_name: str,
+    labels: dict[str, str],
+    cluster_id: str = "local",
+    instance: str | None = None,
+) -> RancherLonghornVolumeDetail:
+    """Public MCP wrapper for curated longhorn_volume set_labels."""
+
+    return await rancher_longhorn_volume_set_labels(
+        namespace=namespace,
+        volume_name=volume_name,
+        labels=labels,
         cluster_id=cluster_id,
         instance=instance,
     )
