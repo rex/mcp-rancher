@@ -1,0 +1,5 @@
+schema_version: 1
+id: networking
+register_function: register_networking_tools
+docstring: Curated Rancher networking tools.
+register_docstring: Register curated networking tools with the FastMCP server.

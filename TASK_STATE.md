@@ -29,7 +29,7 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 - Canonical plan: `PERFECT_RANCHER_MCP_IMPLEMENTATION_PLAN.md`
 - Operational roadmap (track-level work breakdown): `ROADMAP.md`
 - Primary compatibility target: Rancher `2.6.5`
-- Public tool surface: 110 tools
+- Public tool surface: 116 tools
 - Completion gate: `make check-if-the-agent-can-consider-this-task-completed`
 - Active quality gates:
   `make check-architecture`
@@ -48,6 +48,12 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 
 ## Latest Logical Step
 
+- **J-2 / B-2 networking pack landed.** 6 new tools across
+  ingresses, network_policies, endpoint_slices. All via codegen
+  substrate from J-1: descriptors + hand-written paths.py /
+  shared.py + models + 7 unit tests. Tool surface 110 → 116. All
+  gates green (217 tests, 85.52% coverage, 53 files match
+  descriptors). Continuing J-2 with B-1 provisioning next.
 - **Track A COMPLETE.** All 4 quick fixes landed in one commit:
   - A-1 `rancher_project_health_summary` Norman→Steve fix
   - A-2 mutation-guard error shape (ToolError instead of

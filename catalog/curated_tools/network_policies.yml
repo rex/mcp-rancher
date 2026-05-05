@@ -1,0 +1,68 @@
+schema_version: 1
+
+id: network_policies
+pack: networking
+display_name_singular: network_policy
+display_name_plural: network_policies
+
+plane: steve
+transport: k8s-proxy
+namespaced: true
+
+path_helper:
+  module: rancher_mcp.tools.networking.paths
+  list_function: networking_v1_collection_path
+  detail_function: networking_v1_resource_path
+  resource_kind: networkpolicies
+
+list_response_model: rancher_mcp.models.networking.RancherNetworkPolicyList
+detail_response_model: rancher_mcp.models.networking.RancherNetworkPolicyDetail
+
+shared_imports:
+  - items
+  - network_policy_summary_from_payload
+support_value_imports:
+  - string_dict
+summary_function: network_policy_summary_from_payload
+query_builder_function: build_list_query_params
+query_builder_in_shared: true
+
+operations: [list, get]
+
+list:
+  query_params: [limit, continue_token, label_selector, field_selector]
+  filters: []
+  count_field: network_policy_count
+  collection_field: network_policies
+  next_steps:
+    - rancher_network_policy_get
+    - rancher_pods_list
+
+get:
+  arg_name: network_policy_name
+  summary_copy_fields:
+    - ingress_rule_count
+    - egress_rule_count
+  locals:
+    - name: metadata
+      expression: 'mapping_value(payload, "metadata") or {}'
+    - name: annotations
+      expression: 'mapping_value(metadata, "annotations") or {}'
+  extras:
+    - field: annotation_keys
+      expression: sorted(string_dict(annotations))
+  include_link_keys: false
+  include_payload: true
+  next_steps:
+    - rancher_network_policies_list
+    - rancher_pods_list
+
+tools:
+  list:
+    name: rancher_network_policies_list
+    description: List Kubernetes NetworkPolicy resources in one namespace via Rancher's raw Kubernetes proxy.
+    annotation_set: READ_ONLY
+  get:
+    name: rancher_network_policy_get
+    description: Fetch one Kubernetes NetworkPolicy by namespace and name via Rancher's raw Kubernetes proxy. Returns the curated summary plus full payload and annotation keys.
+    annotation_set: READ_ONLY

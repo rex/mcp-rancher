@@ -269,9 +269,10 @@ domain at the depth defined in the plan.
   - Node templates list/get
   - Machine configs list/get
   - Machine pools list/get
-- [ ] **B-2** Networking pack expansion (P4)
-  - Currently: services only.
-  - Add: ingresses, network policies, endpoint slices.
+- [x] **B-2** Networking pack expansion (P4) — landed via J-2
+  - Pack: `src/rancher_mcp/tools/networking/`. 3 types:
+    ingresses, network_policies, endpoint_slices.
+  - Added via J-1's codegen substrate (descriptors only).
 - [ ] **B-3** Config-and-secrets curated pack (P4)
   - Currently: only generic Steve fallback exists.
   - Add typed configmap/secret/serviceaccount tools with secret masking

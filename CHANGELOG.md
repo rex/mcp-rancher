@@ -2,6 +2,42 @@
 
 ## [2026-05-04] - Agent: Claude Opus 4.7
 
+### Added (J-2 / B-2 — networking pack via descriptors)
+- New **`networking`** pack with 6 tools across 3 resource types:
+  - `rancher_ingresses_list` / `rancher_ingress_get`
+  - `rancher_network_policies_list` / `rancher_network_policy_get`
+  - `rancher_endpoint_slices_list` / `rancher_endpoint_slice_get`
+- All landed via descriptor authorship (J-1's codegen substrate)
+  with no new mechanical-plumbing files. Pack:
+  `src/rancher_mcp/tools/networking/{paths.py,shared.py}` +
+  `src/rancher_mcp/models/networking.py` (hand-written) plus three
+  descriptors `catalog/curated_tools/{ingresses,network_policies,
+  endpoint_slices}.yml` + `_packs/networking.yml` (codegen-driven).
+  Generated: `_generated_ingresses.py`,
+  `_generated_network_policies.py`, `_generated_endpoint_slices.py`,
+  and the pack `__init__.py`.
+- New path helpers in `tools/networking/paths.py`:
+  `networking_v1_collection_path` /
+  `networking_v1_resource_path` (for `apis/networking.k8s.io/v1`)
+  and `discovery_v1_collection_path` /
+  `discovery_v1_resource_path` (for `apis/discovery.k8s.io/v1`).
+- Summaries normalize:
+  - **Ingress**: hosts (sorted unique from spec.rules), load
+    balancer addresses (sorted unique from
+    status.loadBalancer.ingress, prefers ip over hostname),
+    class_name from spec.ingressClassName.
+  - **NetworkPolicy**: pod_selector_match_labels, policy_types,
+    ingress_rule_count, egress_rule_count.
+  - **EndpointSlice**: address_type, target_service (from
+    `kubernetes.io/service-name` label), port_count,
+    endpoint_count, ready_endpoint_count.
+- `_CODEGEN_PACKS` extended with `networking`. Public tool surface
+  rises to **116 tools** (was 110).
+- 7 new unit tests in `tests/unit/test_networking_tools.py` cover
+  list+get for all 3 types plus `class_name` filter on ingresses.
+- 217 tests pass, 85.52% coverage. Codegen drift OK
+  (53 files match descriptors; was 49).
+
 ### Fixed (Track A — quick fixes)
 - **A-1** `rancher_project_health_summary` switched from Norman
   `/v3/namespaces?projectId=...` (which 404s on downstream

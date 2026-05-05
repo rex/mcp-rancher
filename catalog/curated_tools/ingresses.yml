@@ -1,0 +1,70 @@
+schema_version: 1
+
+id: ingresses
+pack: networking
+display_name_singular: ingress
+display_name_plural: ingresses
+
+plane: steve
+transport: k8s-proxy
+namespaced: true
+
+path_helper:
+  module: rancher_mcp.tools.networking.paths
+  list_function: networking_v1_collection_path
+  detail_function: networking_v1_resource_path
+  resource_kind: ingresses
+
+list_response_model: rancher_mcp.models.networking.RancherIngressList
+detail_response_model: rancher_mcp.models.networking.RancherIngressDetail
+
+shared_imports:
+  - ingress_summary_from_payload
+  - items
+support_value_imports:
+  - string_dict
+summary_function: ingress_summary_from_payload
+query_builder_function: build_list_query_params
+query_builder_in_shared: true
+
+operations: [list, get]
+
+list:
+  query_params: [limit, continue_token, label_selector, field_selector]
+  filters:
+    - name: class_name
+      summary_field: class_name
+  count_field: ingress_count
+  collection_field: ingresses
+  next_steps:
+    - rancher_ingress_get
+    - rancher_services_list
+
+get:
+  arg_name: ingress_name
+  summary_copy_fields:
+    - hosts
+    - load_balancer_addresses
+  locals:
+    - name: metadata
+      expression: 'mapping_value(payload, "metadata") or {}'
+    - name: annotations
+      expression: 'mapping_value(metadata, "annotations") or {}'
+  extras:
+    - field: annotation_keys
+      expression: sorted(string_dict(annotations))
+  include_link_keys: false
+  include_payload: true
+  next_steps:
+    - rancher_ingresses_list
+    - rancher_services_list
+
+tools:
+  list:
+    name: rancher_ingresses_list
+    description: List Kubernetes Ingress resources in one namespace via Rancher's raw Kubernetes proxy. Filter by ingress class name.
+    annotation_set: READ_ONLY
+  get:
+    name: rancher_ingress_get
+    description: Fetch one Kubernetes Ingress by namespace and name via Rancher's raw Kubernetes proxy. Returns the curated summary plus full payload and annotation keys.
+    annotation_set: READ_ONLY
