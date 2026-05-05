@@ -66,7 +66,7 @@ table. The [Status legend](#status-legend) explains the icons.
 
 ## Quick start
 
-- **Tool surface today: 212 registered.** See
+- **Tool surface today: 220 registered.** See
   [Tool registry](#tool-registry).
 - **Estimated target: ~380 tools** at "perfect" coverage of
   the 25-domain canonical plan. We're roughly 50% of the way.
@@ -121,7 +121,7 @@ descriptor migration commit). That's fine — Slice IDs map
 
 | Bucket | Count |
 |---|---|
-| ✅ Built (registered tools) | **212** |
+| ✅ Built (registered tools) | **220** |
 | 🟡 Planned (gap from plan) | ~190 |
 | 🟠 Partial (documented limitations) | ~10 |
 | 🔴 Blocked (external dep / design) | ~12 |
@@ -1882,3 +1882,11 @@ least one patch from prior batches.
 | 2026-05-05 | D-1-service-monitor-set-annotations (Batch 3) | `32f8fc6` | Sonnet, 3.6 min — optional kube-prometheus-stack |
 | 2026-05-05 | D-1-cert-manager-certificate-set-annotations (Batch 3) | `c6acd10` | Sonnet, 4.4 min — optional cert-manager; first agent to add E501 ignore for `_generated_*.py` (long names) |
 | 2026-05-05 | D-1-hpa-set-annotations (Batch 3) | `3754c89` | Sonnet, 4.8 min — same E501 fix; merge resolved by orchestrator (kept narrower `src/**` glob) |
+| 2026-05-05 | D-1-resource-quota-set-labels (Batch 4) | `1e585fb` | Sonnet, 2.0 min — single-patch virgin; governance pack |
+| 2026-05-05 | D-1-cron-job-set-labels (Batch 4) | `4e01e9f` | Sonnet, 2.5 min — multi-patch (appends to suspend); batch_workloads pack |
+| 2026-05-05 | D-1-prometheus-rule-set-labels (Batch 4) | `540bfb9` | Sonnet, 2.3 min — single-patch virgin; optional kube-prometheus-stack |
+| 2026-05-05 | D-1-pod-disruption-budget-set-labels (Batch 4) | `ada1e2f` | Sonnet, 2.7 min — single-patch virgin; disruption pack |
+| 2026-05-05 | D-1-priority-class-set-annotations (Batch 4) | `875578b` | Sonnet, 2.2 min — multi-patch + cluster-scoped; scheduling pack |
+| 2026-05-05 | D-1-network-policy-set-labels (Batch 4) | `ee8c72a` | Sonnet, 2.6 min — single-patch virgin; networking pack |
+| 2026-05-05 | D-1-deployment-set-annotations (Batch 4) | `9ad9e79` | Sonnet, 2.5 min — **3-patch coexistence proof** (scale + set_labels + set_annotations); workloads pack |
+| 2026-05-05 | D-1-storage-class-set-labels (Batch 4) | `ec44070` | Sonnet, 3.0 min — single-patch virgin + cluster-scoped (storage.k8s.io/v1); storage pack |
