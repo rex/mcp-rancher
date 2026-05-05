@@ -87,6 +87,16 @@ patches:
         description: Replacement metadata.labels map (merge-patch semantics — passing this REPLACES the labels map; pass an empty dict to remove all labels).
     next_steps:
       - rancher_cron_job_get
+  - verb: set_annotations
+    target_path: metadata
+    audit_operation: cron_job_set_annotations
+    args:
+      - name: annotations
+        type: dict_str_str
+        required: true
+        description: Replacement metadata.annotations map (merge-patch semantics — passing this REPLACES the annotations map; pass an empty dict to remove all annotations).
+    next_steps:
+      - rancher_cron_job_get
 
 tools:
   list:
@@ -103,4 +113,7 @@ tools:
       annotation_set: IDEMPOTENT_WRITE
     - name: rancher_cron_job_set_labels
       description: Replace metadata.labels on one Kubernetes CronJob via JSON merge-patch. The `labels` arg is a complete replacement map. Returns the curated detail.
+      annotation_set: IDEMPOTENT_WRITE
+    - name: rancher_cron_job_set_annotations
+      description: Replace metadata.annotations on one Kubernetes CronJob via JSON merge-patch. The `annotations` arg is a complete replacement map. Returns the curated detail.
       annotation_set: IDEMPOTENT_WRITE
