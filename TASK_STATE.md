@@ -29,7 +29,7 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 - Canonical plan: `PERFECT_RANCHER_MCP_IMPLEMENTATION_PLAN.md`
 - Operational roadmap (track-level work breakdown): `ROADMAP.md`
 - Primary compatibility target: Rancher `2.6.5`
-- Public tool surface: 116 tools
+- Public tool surface: 122 tools
 - Completion gate: `make check-if-the-agent-can-consider-this-task-completed`
 - Active quality gates:
   `make check-architecture`
@@ -48,6 +48,12 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 
 ## Latest Logical Step
 
+- **J-2 / B-3 config_secrets pack landed.** 6 new tools across
+  configmaps, secrets (always-masked), service_accounts. Secret
+  detail intentionally omits `payload` field; defensive tests
+  verify no leak. Filter on list: secret_type. Tool surface 116
+  → 122. 224 tests pass, 85.59% coverage, 57 files match
+  descriptors.
 - **J-2 / B-2 networking pack landed.** 6 new tools across
   ingresses, network_policies, endpoint_slices. All via codegen
   substrate from J-1: descriptors + hand-written paths.py /

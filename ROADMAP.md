@@ -273,10 +273,15 @@ domain at the depth defined in the plan.
   - Pack: `src/rancher_mcp/tools/networking/`. 3 types:
     ingresses, network_policies, endpoint_slices.
   - Added via J-1's codegen substrate (descriptors only).
-- [ ] **B-3** Config-and-secrets curated pack (P4)
-  - Currently: only generic Steve fallback exists.
-  - Add typed configmap/secret/serviceaccount tools with secret masking
-    and explicit reveal opt-in.
+- [x] **B-3** Config-and-secrets curated pack (P4) — landed via J-2
+  - Pack: `src/rancher_mcp/tools/config_secrets/`. 3 types:
+    configmaps, secrets, service_accounts.
+  - Secrets are always masked: `RancherSecretDetail` has no
+    `payload` field, summary exposes only `data_key_count`, detail
+    exposes only `data_keys` (sorted) — values never appear.
+  - Reveal opt-in: agents needing unmasked secrets call the
+    existing `rancher_steve_resource_get(schema_id="secret", ...)`
+    generic tool. Curated tools' next_steps guide to it.
 - [ ] **B-4** Certificates pack (P4)
   - Cluster certificate expiry inspection
   - TLS-secret expiry parsing

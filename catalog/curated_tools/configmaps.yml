@@ -1,0 +1,77 @@
+schema_version: 1
+
+id: configmaps
+pack: config_secrets
+display_name_singular: config_map
+display_name_plural: config_maps
+
+plane: steve
+transport: k8s-proxy
+namespaced: true
+
+path_helper:
+  module: rancher_mcp.tools.config_secrets.paths
+  list_function: core_v1_collection_path
+  detail_function: core_v1_resource_path
+  resource_kind: configmaps
+
+list_response_model: rancher_mcp.models.config_secrets.RancherConfigMapList
+detail_response_model: rancher_mcp.models.config_secrets.RancherConfigMapDetail
+
+shared_imports:
+  - config_map_summary_from_payload
+  - items
+support_value_imports:
+  - string_dict
+summary_function: config_map_summary_from_payload
+query_builder_function: build_list_query_params
+query_builder_in_shared: true
+
+operations: [list, get]
+
+list:
+  query_params: [limit, continue_token, label_selector, field_selector]
+  filters: []
+  count_field: config_map_count
+  collection_field: config_maps
+  next_steps:
+    - rancher_config_map_get
+    - rancher_pods_list
+
+get:
+  arg_name: config_map_name
+  summary_copy_fields:
+    - data_key_count
+    - binary_data_key_count
+    - immutable
+  locals:
+    - name: metadata
+      expression: 'mapping_value(payload, "metadata") or {}'
+    - name: annotations
+      expression: 'mapping_value(metadata, "annotations") or {}'
+    - name: data_dict
+      expression: 'mapping_value(payload, "data") or {}'
+    - name: binary_data_dict
+      expression: 'mapping_value(payload, "binaryData") or {}'
+  extras:
+    - field: annotation_keys
+      expression: sorted(string_dict(annotations))
+    - field: data_keys
+      expression: sorted(string_dict(data_dict))
+    - field: binary_data_keys
+      expression: sorted(string_dict(binary_data_dict))
+  include_link_keys: false
+  include_payload: true
+  next_steps:
+    - rancher_config_maps_list
+    - rancher_pods_list
+
+tools:
+  list:
+    name: rancher_config_maps_list
+    description: List Kubernetes ConfigMaps in one namespace via Rancher's raw Kubernetes proxy. Returns curated summaries with data key counts.
+    annotation_set: READ_ONLY
+  get:
+    name: rancher_config_map_get
+    description: Fetch one Kubernetes ConfigMap by namespace and name via Rancher's raw Kubernetes proxy. Returns the curated summary plus full payload, data keys, binary data keys, and annotation keys.
+    annotation_set: READ_ONLY

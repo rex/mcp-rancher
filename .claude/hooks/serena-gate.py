@@ -124,6 +124,7 @@ _CODEGEN_PACKS = frozenset(
         "auth_identity",
         "clusters_nodes",
         "compliance",
+        "config_secrets",
         "disruption",
         "fleet_registration",
         "logging_backups",

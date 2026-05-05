@@ -2,6 +2,39 @@
 
 ## [2026-05-04] - Agent: Claude Opus 4.7
 
+### Added (J-2 / B-3 — config_secrets pack via descriptors)
+- New **`config_secrets`** pack with 6 tools across 3 resource
+  types:
+  - `rancher_config_maps_list` / `rancher_config_map_get`
+  - `rancher_secrets_list` / `rancher_secret_get`
+  - `rancher_service_accounts_list` / `rancher_service_account_get`
+- All landed via descriptor authorship. Pack:
+  `src/rancher_mcp/tools/config_secrets/{paths.py,shared.py}` +
+  `src/rancher_mcp/models/config_secrets.py` (hand-written) plus
+  three descriptors + `_packs/config_secrets.yml`.
+- New path helpers (core-API namespaced k8s proxy):
+  `core_v1_collection_path`, `core_v1_resource_path`.
+- **Secret masking by design**: Secret models intentionally omit
+  the `payload` field. The summary exposes only `data_key_count`,
+  the detail exposes `data_keys` (sorted) but never values.
+  `RancherSecretSummary.secret_type` aliases the K8s `type` field.
+  Filter on list: `secret_type`. Agents needing the unmasked
+  payload should call `rancher_steve_resource_get(schema_id="secret",
+  ...)` (the existing generic Steve get tool); the curated tools'
+  `next_steps` direct the agent to that path.
+- **ConfigMap detail** exposes `data_keys`, `binary_data_keys`,
+  `annotation_keys`, and full payload (configmaps are not secret).
+- **ServiceAccount detail** exposes `secret_names`,
+  `image_pull_secret_names`, `annotation_keys`, full payload, and
+  the `automount_token` flag (alias for
+  `automountServiceAccountToken`).
+- 7 new unit tests in `tests/unit/test_config_secrets_tools.py`
+  covering list+get for all 3 types, the secret_type filter, and
+  defensive checks that secret detail never serializes a payload
+  field or any base64-encoded values.
+- 224 tests pass, 85.59% coverage. Codegen: 57 files match
+  descriptors. Public tool surface 116 → 122.
+
 ### Added (J-2 / B-2 — networking pack via descriptors)
 - New **`networking`** pack with 6 tools across 3 resource types:
   - `rancher_ingresses_list` / `rancher_ingress_get`
