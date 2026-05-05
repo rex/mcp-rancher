@@ -28,7 +28,7 @@ summary_function: hpa_summary_from_payload
 query_builder_function: build_list_query_params
 query_builder_in_shared: true
 
-operations: [list, get, patch]
+operations: [list, get, delete, patch]
 
 list:
   query_params: [limit, continue_token, label_selector, field_selector]
@@ -65,6 +65,12 @@ get:
     - rancher_horizontal_pod_autoscalers_list
     - rancher_deployments_list
 
+delete:
+  audit_operation: hpa_delete
+  confirmation_phrase: "delete horizontal_pod_autoscaler {hpa_name} in namespace {namespace}"
+  next_steps:
+    - rancher_horizontal_pod_autoscalers_list
+
 patches:
   - verb: set_labels
     target_path: metadata
@@ -97,6 +103,10 @@ tools:
     name: rancher_horizontal_pod_autoscaler_get
     description: Fetch one HorizontalPodAutoscaler by namespace and name. Returns the curated summary plus metric_types (sorted unique types from spec.metrics[].type), annotation keys, and full payload.
     annotation_set: READ_ONLY
+  delete:
+    name: rancher_horizontal_pod_autoscaler_delete
+    description: Delete one HorizontalPodAutoscaler. The `confirmation` arg must equal the exact phrase "delete horizontal_pod_autoscaler HPA_NAME in namespace NS" (substituting the actual values). Returns a typed delete result with the rendered confirmation phrase. Subject to write rate limiting and audit logging.
+    annotation_set: DESTRUCTIVE
   patches:
     - name: rancher_horizontal_pod_autoscaler_set_labels
       description: Replace metadata.labels on one HorizontalPodAutoscaler via JSON merge-patch. The `labels` arg is a complete replacement map. Returns the curated detail.
