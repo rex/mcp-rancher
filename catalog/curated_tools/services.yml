@@ -80,6 +80,16 @@ patches:
         description: Replacement metadata.annotations map (merge-patch semantics — passing this REPLACES the annotations map; pass an empty dict to remove all annotations).
     next_steps:
       - rancher_service_get
+  - verb: set_type
+    target_path: spec
+    audit_operation: service_set_type
+    args:
+      - name: type
+        type: str
+        required: true
+        description: "New spec.type value — one of: ClusterIP, NodePort, LoadBalancer, ExternalName."
+    next_steps:
+      - rancher_service_get
 
 tools:
   list:
@@ -100,4 +110,7 @@ tools:
       annotation_set: IDEMPOTENT_WRITE
     - name: rancher_service_set_annotations
       description: Replace metadata.annotations on one Kubernetes Service via JSON merge-patch. The `annotations` arg is a complete replacement map. Returns the curated detail.
+      annotation_set: IDEMPOTENT_WRITE
+    - name: rancher_service_set_type
+      description: "Set the spec.type on one Kubernetes Service via JSON merge-patch. Body is `{spec: {type: <value>}}`. Returns curated detail."
       annotation_set: IDEMPOTENT_WRITE

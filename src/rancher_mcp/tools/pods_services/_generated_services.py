@@ -372,6 +372,81 @@ async def rancher_service_set_annotations(
         )
 
 
+async def _patch_service_set_type(
+    instance_name: str,
+    cluster_id: str,
+    namespace: str,
+    service_name: str,
+    type: str,
+    client: SteveMutationClient,
+) -> RancherServiceDetail:
+    """Set_type one service via JSON merge-patch; returns the curated detail."""
+
+    patch_subtree: dict[str, object] = {}
+    patch_subtree["type"] = type
+    if not patch_subtree:
+        raise RancherCapabilityError(
+            "No patch fields provided; every arg was None. Pass at least one field to update."
+        )
+    request_payload: dict[str, object] = {"spec": patch_subtree}
+    payload = await client.patch_json(
+        f"/services/{namespace}/{service_name}", payload=request_payload
+    )
+    summary = service_summary_from_payload(payload)
+
+    metadata = mapping_value(payload, "metadata") or {}
+    detail = RancherServiceDetail.model_validate(payload)
+    return detail.model_copy(
+        update={
+            "id": summary.id,
+            "relationship_types": relationship_types(metadata),
+            "link_keys": sorted(mapping_value(payload, "links") or {}),
+            "payload": dict(payload),
+            "suggested_next_steps": ["rancher_service_get"],
+        }
+    )
+
+
+@audit_mutation(operation="service_set_type", plane="steve")
+@rate_limit_writes
+async def rancher_service_set_type(
+    namespace: str,
+    service_name: str,
+    type: str,
+    cluster_id: str = "local",
+    instance: str | None = None,
+    settings: AppSettings | None = None,
+    client: SteveMutationClient | None = None,
+) -> RancherServiceDetail:
+    """Set_type one service via JSON merge-patch."""
+
+    resolved_settings = settings or get_settings()
+    instance_name, instance_config = resolve_instance(resolved_settings, instance)
+    ensure_instance_writable(instance_name, instance_config)
+    if client is not None:
+        return await _patch_service_set_type(
+            instance_name,
+            cluster_id,
+            namespace,
+            service_name,
+            type,
+            client,
+        )
+    async with RancherSteveClient(
+        instance_name,
+        instance_config,
+        cluster_id=cluster_id,
+    ) as steve_client:
+        return await _patch_service_set_type(
+            instance_name,
+            cluster_id,
+            namespace,
+            service_name,
+            type,
+            steve_client,
+        )
+
+
 async def rancher_services_list_tool(
     namespace: str,
     cluster_id: str = "local",
@@ -457,6 +532,24 @@ async def rancher_service_set_annotations_tool(
         namespace=namespace,
         service_name=service_name,
         annotations=annotations,
+        cluster_id=cluster_id,
+        instance=instance,
+    )
+
+
+async def rancher_service_set_type_tool(
+    namespace: str,
+    service_name: str,
+    type: str,
+    cluster_id: str = "local",
+    instance: str | None = None,
+) -> RancherServiceDetail:
+    """Public MCP wrapper for curated service set_type."""
+
+    return await rancher_service_set_type(
+        namespace=namespace,
+        service_name=service_name,
+        type=type,
         cluster_id=cluster_id,
         instance=instance,
     )

@@ -22,6 +22,8 @@ from rancher_mcp.tools.pods_services._generated_services import (
     rancher_service_set_annotations_tool,
     rancher_service_set_labels,
     rancher_service_set_labels_tool,
+    rancher_service_set_type,
+    rancher_service_set_type_tool,
     rancher_services_list,
     rancher_services_list_tool,
 )
@@ -34,6 +36,7 @@ __all__ = [
     "rancher_service_get",
     "rancher_service_set_annotations",
     "rancher_service_set_labels",
+    "rancher_service_set_type",
     "rancher_services_list",
     "register_pod_service_tools",
 ]
@@ -52,4 +55,7 @@ def register_pod_service_tools(mcp: FastMCP) -> None:
     )
     mcp.tool(name="rancher_service_set_annotations", annotations=IDEMPOTENT_WRITE)(
         rancher_service_set_annotations_tool
+    )
+    mcp.tool(name="rancher_service_set_type", annotations=IDEMPOTENT_WRITE)(
+        rancher_service_set_type_tool
     )
