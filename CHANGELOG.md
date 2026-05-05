@@ -2,6 +2,52 @@
 
 ## [2026-05-05] - Agent: Claude Opus 4.7
 
+### Added (J-3 fourth slice — rancher_secret_create with masked-payload pattern)
+
+Second resource adoption on the create substrate. Exercises the
+security-critical masked-payload pattern: plaintext data flows
+through the composer into the HTTP request, but the audit log
+captures only arg NAMES, and the curated detail has
+`include_payload: false` so values never round-trip back to the
+agent. This is the substrate's defining test for secret-grade
+resources.
+
+- **`build_secret_payload`** composer in
+  `src/rancher_mcp/tools/config_secrets/shared.py`. Accepts
+  `string_data` (plaintext — Kubernetes server-side base64
+  encodes) OR `data` (already-base64) — at least one is required,
+  raises `ValueError` otherwise. Optional `secret_type`,
+  `immutable`, `labels`, `annotations`.
+- **`rancher_secret_create`** registered with `SAFE_WRITE`
+  annotation; `audit_operation: secret_create`. Inherits the
+  secrets descriptor's `include_payload: false` from get, so the
+  curated detail never carries a `payload` field.
+- **Tests** (6 new):
+  - 3 composer-in-isolation tests (string_data only; data only
+    with secret_type+immutable; refuses-when-empty)
+  - Round-trip: stringData lands in the request body; response
+    detail has `data_keys` (key names only) and NO `payload`
+    field; plaintext values never appear in the serialized
+    detail
+  - Audit-captures-arg-names-only: a `PLAINTEXT-SENTINEL` passed
+    via `string_data` MUST NOT appear in the audit record's str
+    representation — the substrate's defining security guarantee
+  - Composer dispatches by data-source: passing `data=...`
+    produces a body with `data` key only (no stringData)
+
+### Changed
+
+- **`secrets.yml`** descriptor renamed local `annotations` →
+  `metadata_annotations` to match configmaps (avoids pyright
+  shadowing if create is added; defensive even though current
+  add doesn't strictly need it).
+
+### Stats
+
+- Tool surface 188 → 189 (+1: rancher_secret_create).
+- 330 tests pass (was 324), 85.99% coverage (was 85.97%).
+- 99 files match descriptors. All gates green.
+
 ### Added (J-3 third slice — narrow typed-arg patches via PatchConfig)
 
 Substrate is now **feature-complete for all five write verbs**

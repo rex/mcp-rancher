@@ -20,6 +20,8 @@ from rancher_mcp.tools.config_secrets._generated_configmaps import (
     rancher_config_maps_list_tool,
 )
 from rancher_mcp.tools.config_secrets._generated_secrets import (
+    rancher_secret_create,
+    rancher_secret_create_tool,
     rancher_secret_get,
     rancher_secret_get_tool,
     rancher_secrets_list,
@@ -44,6 +46,7 @@ __all__ = [
     "rancher_config_map_delete",
     "rancher_config_map_get",
     "rancher_config_maps_list",
+    "rancher_secret_create",
     "rancher_secret_get",
     "rancher_secrets_list",
     "rancher_service_account_get",
@@ -68,6 +71,7 @@ def register_config_secrets_tools(mcp: FastMCP) -> None:
     )
     mcp.tool(name="rancher_secrets_list", annotations=READ_ONLY)(rancher_secrets_list_tool)
     mcp.tool(name="rancher_secret_get", annotations=READ_ONLY)(rancher_secret_get_tool)
+    mcp.tool(name="rancher_secret_create", annotations=SAFE_WRITE)(rancher_secret_create_tool)
     mcp.tool(name="rancher_service_accounts_list", annotations=READ_ONLY)(
         rancher_service_accounts_list_tool
     )

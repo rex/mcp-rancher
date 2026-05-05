@@ -29,7 +29,7 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 - Canonical plan: `PERFECT_RANCHER_MCP_IMPLEMENTATION_PLAN.md`
 - Operational roadmap (track-level work breakdown): `ROADMAP.md`
 - Primary compatibility target: Rancher `2.6.5`
-- Public tool surface: 188 tools
+- Public tool surface: 189 tools
 - Completion gate: `make check-if-the-agent-can-consider-this-task-completed`
 - Active quality gates:
   `make check-architecture`
@@ -47,6 +47,48 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 - **User-visible changes** → `CHANGELOG.md`
 
 ## Latest Logical Step
+
+- **J-3 fourth slice: secret_create (substrate generalization
+  proof).** Second resource adoption on the create substrate;
+  exercises the masked-payload pattern. The substrate handles
+  secret values cleanly: plaintext flows through composer →
+  request body, but the audit log captures arg NAMES only and
+  the curated detail has `include_payload: false` so values
+  never round-trip to the agent. This is the substrate's
+  defining test for security-sensitive resources.
+  - **`build_secret_payload` composer** in
+    `src/rancher_mcp/tools/config_secrets/shared.py`. Accepts
+    `string_data` (plaintext, server base64-encodes) OR `data`
+    (already-base64) — at least one required, raises
+    `ValueError` otherwise. Optional `secret_type`,
+    `immutable`, `labels`, `annotations`. Wraps
+    `build_k8s_payload` with `body_overrides={stringData,
+    data, type, immutable}`.
+  - **secrets descriptor**: added `create` op with 6 typed args
+    (string_data + data both optional at descriptor level —
+    composer enforces the at-least-one rule). Renamed local
+    `annotations` → `metadata_annotations` to match
+    configmaps and avoid pyright shadowing if the create
+    substrate is reused for any other resource later.
+  - **Tool**: `rancher_secret_create` (SAFE_WRITE,
+    audit_operation=secret_create). Inherits the descriptor's
+    `include_payload: false` from get, so the curated detail
+    never carries a `payload` field — defensive masking is
+    end-to-end.
+  - **Tests** (6 new):
+    - 3 composer-in-isolation tests (string_data only, data
+      only with secret_type+immutable, refuses-when-empty)
+    - Round-trip: composer routes string_data correctly,
+      response detail has `data_keys` but NO `payload` field,
+      plaintext values never appear in serialized detail
+    - Audit captures arg-NAMES only: a `PLAINTEXT-SENTINEL`
+      passed via `string_data` value MUST NOT appear in the
+      audit record's str representation
+    - Composer dispatches by data-source: `data=...` produces
+      payload with `data` key (no `stringData`)
+  - **Tool surface 188 → 189** (+1: rancher_secret_create).
+  - **330 tests pass, 85.99% coverage**, 99 files match
+    descriptors, all gates green.
 
 - **J-3 third slice landed (narrow typed-arg patches via
   PatchConfig).** Substrate is now feature-complete for ALL

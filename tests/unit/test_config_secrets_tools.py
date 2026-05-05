@@ -18,12 +18,16 @@ from rancher_mcp.tools.config_secrets import (
     rancher_config_map_delete,
     rancher_config_map_get,
     rancher_config_maps_list,
+    rancher_secret_create,
     rancher_secret_get,
     rancher_secrets_list,
     rancher_service_account_get,
     rancher_service_accounts_list,
 )
-from rancher_mcp.tools.config_secrets.shared import build_configmap_payload
+from rancher_mcp.tools.config_secrets.shared import (
+    build_configmap_payload,
+    build_secret_payload,
+)
 
 
 def build_settings() -> AppSettings:
@@ -159,6 +163,33 @@ class StubConfigSecretsClient:
             metadata["uid"] = "test-uid-1234"
             metadata["resourceVersion"] = "42"
             response["metadata"] = metadata
+            return response
+
+        sec_root = "/k8s/clusters/local/api/v1/namespaces/demo/secrets"
+        if path == sec_root:
+            assert params is None
+            # The API server normalizes stringData → data (base64). The
+            # stub mirrors that behavior so curated detail parsing works
+            # against a realistic response shape.
+            response = dict(payload)
+            metadata = dict(response.get("metadata") or {})  # type: ignore[arg-type]
+            metadata["uid"] = "test-secret-uid-5678"
+            metadata["resourceVersion"] = "7"
+            response["metadata"] = metadata
+            string_data = response.pop("stringData", None)
+            if isinstance(string_data, dict):
+                # Naive "encoding" placeholder — what matters for the
+                # test is that the data dict shape is correct, not the
+                # specific base64 encoding.
+                existing_data = response.get("data") or {}
+                merged: dict[str, str] = {}
+                if isinstance(existing_data, dict):
+                    merged.update(existing_data)  # type: ignore[arg-type]
+                # Use a fixed sentinel so tests can assert the response
+                # shape doesn't carry the original plaintext values.
+                for key in string_data:
+                    merged[key] = "<encoded>"
+                response["data"] = merged
             return response
 
         raise AssertionError(f"unexpected post path {path!r}")
@@ -823,3 +854,171 @@ async def test_rancher_config_map_delete_refuses_read_only_instance() -> None:
             settings=read_only_settings,
             client=StubConfigSecretsClient(),
         )
+
+
+# =====================================================================
+# build_secret_payload composer tests
+# =====================================================================
+
+
+def test_build_secret_payload_with_string_data_only() -> None:
+    """Plaintext string_data goes into stringData; data field omitted."""
+
+    payload = build_secret_payload(
+        name="demo-secret",
+        namespace="demo",
+        string_data={"password": "hunter2"},
+    )
+
+    assert payload == {
+        "apiVersion": "v1",
+        "kind": "Secret",
+        "metadata": {"name": "demo-secret", "namespace": "demo"},
+        "stringData": {"password": "hunter2"},
+    }
+    # data field is NOT in the payload when only string_data is given.
+    assert "data" not in payload
+
+
+def test_build_secret_payload_with_data_only_and_secret_type() -> None:
+    """Already-base64 data goes into `data`; stringData omitted."""
+
+    payload = build_secret_payload(
+        name="demo-secret",
+        namespace="demo",
+        data={"password": "aHVudGVyMg=="},
+        secret_type="kubernetes.io/dockerconfigjson",
+        immutable=True,
+    )
+
+    assert payload == {
+        "apiVersion": "v1",
+        "kind": "Secret",
+        "metadata": {"name": "demo-secret", "namespace": "demo"},
+        "data": {"password": "aHVudGVyMg=="},
+        "type": "kubernetes.io/dockerconfigjson",
+        "immutable": True,
+    }
+    assert "stringData" not in payload
+
+
+def test_build_secret_payload_refuses_when_both_data_sources_empty() -> None:
+    """Composer rejects empty payloads — secrets must store at least one entry."""
+
+    with pytest.raises(ValueError, match="non-empty"):
+        build_secret_payload(name="x", namespace="demo")
+
+
+# =====================================================================
+# rancher_secret_create end-to-end tests
+# =====================================================================
+
+
+@pytest.mark.asyncio
+async def test_rancher_secret_create_round_trips_string_data() -> None:
+    """Secret create POSTs the typed payload and returns a masked detail.
+
+    The curated detail must NOT carry a `payload` field — secret values
+    never round-trip back to the agent. data_keys is the only safe
+    surface for what's in the secret.
+    """
+
+    reset_rate_limit_state()
+    client = StubConfigSecretsClient()
+
+    result = await rancher_secret_create(
+        namespace="demo",
+        secret_name="demo-secret",
+        string_data={"password": "hunter2", "api-key": "abc123"},
+        secret_type="Opaque",
+        cluster_id="local",
+        instance="work",
+        settings=build_settings(),
+        client=client,
+    )
+
+    # Request lands at the secrets collection path.
+    assert client.last_post_path == "/k8s/clusters/local/api/v1/namespaces/demo/secrets"
+
+    # Outgoing payload carries stringData (not data) — composer chose
+    # the right path based on which arg the caller provided.
+    sent = client.last_post_payload
+    assert sent is not None
+    assert sent["kind"] == "Secret"
+    assert sent["stringData"] == {"password": "hunter2", "api-key": "abc123"}
+    assert sent["type"] == "Opaque"
+    assert "data" not in sent
+
+    # CRITICAL masking checks — the curated detail must not expose
+    # plaintext values, and must not have a `payload` field at all.
+    assert result.name == "demo-secret"
+    assert result.data_key_count == 2
+    # data_keys lists the key names only (alphabetically).
+    assert result.data_keys == ["api-key", "password"]
+    dumped = result.model_dump()
+    # No payload field on the detail — masked-by-design.
+    assert "payload" not in dumped
+    # And no plaintext values anywhere in the serialized output.
+    assert "hunter2" not in str(dumped)
+    assert "abc123" not in str(dumped)
+
+
+@pytest.mark.asyncio
+async def test_rancher_secret_create_audit_captures_arg_names_only() -> None:
+    """Audit captures string_data as an arg NAME — the value never appears.
+
+    This is the most security-sensitive test for the substrate: even
+    when the agent passes plaintext secret values, the audit log must
+    only carry the arg key (`string_data`), never the dict contents.
+    """
+
+    reset_rate_limit_state()
+
+    sentinel = "PLAINTEXT-SENTINEL-9d8e7f6"
+
+    with capture_logs() as logs:
+        await rancher_secret_create(
+            namespace="demo",
+            secret_name="demo-secret",
+            string_data={"super-secret": sentinel},
+            cluster_id="local",
+            instance="work",
+            settings=build_settings(),
+            client=StubConfigSecretsClient(),
+        )
+
+    audit_records = [r for r in logs if r.get("event") == "audit"]
+    assert len(audit_records) == 1
+    record = audit_records[0]
+    assert record["tool_name"] == "rancher_secret_create"
+    assert record["operation"] == "secret_create"
+    assert record["plane"] == "steve"
+    assert record["outcome"] == "success"
+    # arg_keys contains the parameter NAME but no values.
+    assert "string_data" in record["arg_keys"]
+    assert "secret_name" in record["arg_keys"]
+    # The plaintext sentinel must NOT appear anywhere in the record.
+    assert sentinel not in str(record)
+
+
+@pytest.mark.asyncio
+async def test_rancher_secret_create_with_data_arg_skips_string_data() -> None:
+    """When caller passes `data` (already-base64), composer omits stringData."""
+
+    reset_rate_limit_state()
+    client = StubConfigSecretsClient()
+
+    await rancher_secret_create(
+        namespace="demo",
+        secret_name="demo-secret",
+        data={"password": "aHVudGVyMg=="},
+        cluster_id="local",
+        instance="work",
+        settings=build_settings(),
+        client=client,
+    )
+
+    sent = client.last_post_payload
+    assert sent is not None
+    assert sent["data"] == {"password": "aHVudGVyMg=="}
+    assert "stringData" not in sent

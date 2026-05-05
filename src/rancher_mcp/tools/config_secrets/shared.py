@@ -159,7 +159,58 @@ def _build_configmap_payload(
     )
 
 
+def _build_secret_payload(
+    *,
+    name: str,
+    namespace: str,
+    string_data: dict[str, str] | None = None,
+    data: dict[str, str] | None = None,
+    secret_type: str | None = None,
+    immutable: bool | None = None,
+    labels: dict[str, str] | None = None,
+    annotations: dict[str, str] | None = None,
+) -> dict[str, object]:
+    """Build a Kubernetes Secret creation payload.
+
+    Pass ``string_data`` for plaintext values — Kubernetes server-side
+    base64-encodes them before storage. Pass ``data`` for already-base64
+    values (matches the on-disk Secret shape). At least one of the two
+    must be non-empty; the composer raises ``ValueError`` otherwise.
+
+    Note: the ``data`` arg here is a separate parameter from the
+    ``data_key_count`` field on the curated detail summary (which counts
+    server-stored data entries). The caller's ``data`` is the request
+    payload; the response carries server-encoded values that the curated
+    detail intentionally omits via ``include_payload: false``.
+    """
+
+    if not string_data and not data:
+        raise ValueError(
+            "build_secret_payload requires non-empty `string_data` or `data` — "
+            "secrets must store at least one key/value pair."
+        )
+    body: dict[str, object] = {}
+    if string_data:
+        body["stringData"] = string_data
+    if data:
+        body["data"] = data
+    if secret_type is not None:
+        body["type"] = secret_type
+    if immutable is not None:
+        body["immutable"] = immutable
+    return build_k8s_payload(
+        api_version="v1",
+        kind="Secret",
+        name=name,
+        namespace=namespace,
+        labels=labels,
+        annotations=annotations,
+        body_overrides=body,
+    )
+
+
 build_configmap_payload = _build_configmap_payload
+build_secret_payload = _build_secret_payload
 build_list_query_params = _build_list_query_params
 config_map_summary_from_payload = _config_map_summary_from_payload
 image_pull_secret_names_from_payload = _image_pull_secret_names_from_payload

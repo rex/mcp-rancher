@@ -6,14 +6,18 @@
 
 from __future__ import annotations
 
+from rancher_mcp.audit import audit_mutation
 from rancher_mcp.clients.management import ManagementDiscoveryClient, RancherManagementClient
 from rancher_mcp.config import AppSettings, get_settings
 from rancher_mcp.models.config_secrets import RancherSecretDetail, RancherSecretList
+from rancher_mcp.rate_limit import rate_limit_writes
 from rancher_mcp.services.instances import resolve_instance
 from rancher_mcp.services.resources.builders_pagination import next_page_token_from_payload
+from rancher_mcp.services.safety import ensure_instance_writable
 from rancher_mcp.tools.config_secrets.paths import core_v1_collection_path, core_v1_resource_path
 from rancher_mcp.tools.config_secrets.shared import (
     build_list_query_params,
+    build_secret_payload,
     items,
     secret_summary_from_payload,
 )
@@ -118,14 +122,14 @@ async def _fetch_secret_get(
     summary = secret_summary_from_payload(payload)
 
     metadata = mapping_value(payload, "metadata") or {}
-    annotations = mapping_value(metadata, "annotations") or {}
+    metadata_annotations = mapping_value(metadata, "annotations") or {}
     data_dict = mapping_value(payload, "data") or {}
     detail = RancherSecretDetail.model_validate(payload)
     return detail.model_copy(
         update={
             "data_key_count": summary.data_key_count,
             "immutable": summary.immutable,
-            "annotation_keys": sorted(string_dict(annotations)),
+            "annotation_keys": sorted(string_dict(metadata_annotations)),
             "data_keys": sorted(string_dict(data_dict)),
             "suggested_next_steps": ["rancher_secrets_list", "rancher_steve_resource_get"],
         }
@@ -152,6 +156,103 @@ async def rancher_secret_get(
             cluster_id,
             namespace,
             secret_name,
+            managed_client,
+        )
+
+
+async def _create_secret(
+    instance_name: str,
+    cluster_id: str,
+    namespace: str,
+    secret_name: str,
+    string_data: dict[str, str] | None,
+    data: dict[str, str] | None,
+    secret_type: str | None,
+    immutable: bool | None,
+    labels: dict[str, str] | None,
+    annotations: dict[str, str] | None,
+    client: ManagementDiscoveryClient,
+) -> RancherSecretDetail:
+    """Create one secret and return the curated detail."""
+
+    request_payload = build_secret_payload(
+        name=secret_name,
+        namespace=namespace,
+        string_data=string_data,
+        data=data,
+        secret_type=secret_type,
+        immutable=immutable,
+        labels=labels,
+        annotations=annotations,
+    )
+    payload = await client.post_json(
+        core_v1_collection_path(cluster_id, namespace, "secrets"),
+        payload=request_payload,
+    )
+    summary = secret_summary_from_payload(payload)
+
+    metadata = mapping_value(payload, "metadata") or {}
+    metadata_annotations = mapping_value(metadata, "annotations") or {}
+    data_dict = mapping_value(payload, "data") or {}
+    detail = RancherSecretDetail.model_validate(payload)
+    return detail.model_copy(
+        update={
+            "data_key_count": summary.data_key_count,
+            "immutable": summary.immutable,
+            "annotation_keys": sorted(string_dict(metadata_annotations)),
+            "data_keys": sorted(string_dict(data_dict)),
+            "suggested_next_steps": ["rancher_secret_get", "rancher_steve_resource_get"],
+        }
+    )
+
+
+@audit_mutation(operation="secret_create", plane="steve")
+@rate_limit_writes
+async def rancher_secret_create(
+    namespace: str,
+    secret_name: str,
+    string_data: dict[str, str] | None = None,
+    data: dict[str, str] | None = None,
+    secret_type: str | None = None,
+    immutable: bool | None = None,
+    labels: dict[str, str] | None = None,
+    annotations: dict[str, str] | None = None,
+    cluster_id: str = "local",
+    instance: str | None = None,
+    settings: AppSettings | None = None,
+    client: ManagementDiscoveryClient | None = None,
+) -> RancherSecretDetail:
+    """Create one secret in one namespace and return the curated detail."""
+
+    resolved_settings = settings or get_settings()
+    instance_name, instance_config = resolve_instance(resolved_settings, instance)
+    ensure_instance_writable(instance_name, instance_config)
+    if client is not None:
+        return await _create_secret(
+            instance_name,
+            cluster_id,
+            namespace,
+            secret_name,
+            string_data,
+            data,
+            secret_type,
+            immutable,
+            labels,
+            annotations,
+            client,
+        )
+    async with RancherManagementClient(instance_name, instance_config) as managed_client:
+        return await _create_secret(
+            instance_name,
+            cluster_id,
+            namespace,
+            secret_name,
+            string_data,
+            data,
+            secret_type,
+            immutable,
+            labels,
+            annotations,
             managed_client,
         )
 
@@ -191,6 +292,34 @@ async def rancher_secret_get_tool(
     return await rancher_secret_get(
         namespace=namespace,
         secret_name=secret_name,
+        cluster_id=cluster_id,
+        instance=instance,
+    )
+
+
+async def rancher_secret_create_tool(
+    namespace: str,
+    secret_name: str,
+    string_data: dict[str, str] | None = None,
+    data: dict[str, str] | None = None,
+    secret_type: str | None = None,
+    immutable: bool | None = None,
+    labels: dict[str, str] | None = None,
+    annotations: dict[str, str] | None = None,
+    cluster_id: str = "local",
+    instance: str | None = None,
+) -> RancherSecretDetail:
+    """Public MCP wrapper for curated secret create."""
+
+    return await rancher_secret_create(
+        namespace=namespace,
+        secret_name=secret_name,
+        string_data=string_data,
+        data=data,
+        secret_type=secret_type,
+        immutable=immutable,
+        labels=labels,
+        annotations=annotations,
         cluster_id=cluster_id,
         instance=instance,
     )
