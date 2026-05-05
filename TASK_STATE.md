@@ -30,7 +30,7 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 - Operational roadmap (track-level work breakdown): `ROADMAP.md`
 - Primary target: Rancher `2.9.3` (production)
 - Compat floor: Rancher `2.6.5` (devlab; never regress)
-- Public tool surface: 258 tools
+- Public tool surface: 261 tools
 - Completion gate: `make check-if-the-agent-can-consider-this-task-completed`
 - Active quality gates:
   `make check-architecture`
@@ -51,6 +51,18 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 - **User-visible changes** → `CHANGELOG.md`
 
 ## Next Slice
+
+**Read Serena memo `tasks/autonomous_session_handoff_2026_05_05` first.** Comprehensive handoff after a long autonomous Opus turn that shipped Batches 3-10 (204 → 261 tools, +57 net new). Memo lists deferred substrate slices and remaining mechanical work.
+
+**Top deferred items**:
+
+1. **Substrate slice — nested target_path support** in `scripts/codegen/templates/tool_module.py.j2`. Currently `target_path: spec.resources.requests` emits as literal dotted key `{"spec.resources.requests": {...}}` instead of nesting. Affects `rancher_persistent_volume_claim_set_size` (shipped but emits broken body shape — test asserts current behavior). Fix: split target_path on `.` and build nested dict in the patch helper. ~10 LOC change.
+2. **Substrate slice — argless patches**: lift `≥1 arg` constraint on PatchConfig to allow argless verbs that toggle a known field (e.g. `cron_job_resume` sets `spec.suspend=false`, `deployment_pause/resume` set `spec.paused=true/false`, `deployment_restart` sets a timestamp annotation). ~15 LOC schema change + template branch. Unlocks 4-5 specialized patches.
+3. **Batch 11 (mechanical)** — same-pack pairs deferred from Batch 9 to save context: `resource_quota_delete`, `limit_range_delete`, `service_monitor_delete`. 3 agents, 2 packs (governance pair + prometheus_monitoring single).
+4. **Cookbook doc**: `docs/codegen-write-tools-cookbook.md` per Q9 default. Outline: 5 verb recipes (create / apply / patch / delete + multi-patch), the `metadata_annotations` rename pitfall, the camelCase k8s arg-name pattern, the dotted-target_path substrate gap.
+5. **Norman writes substrate** (Q3 deferred). All Norman descriptors stay read-only on curated side until validated.
+
+## Old Next Slice (kept for history)
 
 Batch 3 landed cleanly. Next candidate batch (per Serena
 memo `tasks/post_compaction_resume_2026_05_05` "What's after
