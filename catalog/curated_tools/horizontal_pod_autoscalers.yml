@@ -93,6 +93,20 @@ patches:
         description: Replacement metadata.annotations map (merge-patch semantics).
     next_steps:
       - rancher_horizontal_pod_autoscaler_get
+  - verb: set_min_max
+    target_path: spec
+    audit_operation: hpa_set_min_max
+    args:
+      - name: minReplicas
+        type: int
+        required: true
+        description: New value for spec.minReplicas.
+      - name: maxReplicas
+        type: int
+        required: true
+        description: New value for spec.maxReplicas.
+    next_steps:
+      - rancher_horizontal_pod_autoscaler_get
 
 tools:
   list:
@@ -113,4 +127,7 @@ tools:
       annotation_set: IDEMPOTENT_WRITE
     - name: rancher_horizontal_pod_autoscaler_set_annotations
       description: Replace metadata.annotations on one Kubernetes HorizontalPodAutoscaler via JSON merge-patch. Returns the curated detail.
+      annotation_set: IDEMPOTENT_WRITE
+    - name: rancher_horizontal_pod_autoscaler_set_min_max
+      description: "Set spec.minReplicas and spec.maxReplicas on a HorizontalPodAutoscaler via JSON merge-patch. Body is `{spec: {minReplicas: N, maxReplicas: M}}`. Returns curated detail."
       annotation_set: IDEMPOTENT_WRITE
