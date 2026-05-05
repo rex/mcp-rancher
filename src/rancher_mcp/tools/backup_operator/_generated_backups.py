@@ -6,11 +6,15 @@
 
 from __future__ import annotations
 
+from rancher_mcp.audit import audit_mutation
 from rancher_mcp.clients.management import ManagementDiscoveryClient, RancherManagementClient
 from rancher_mcp.config import AppSettings, get_settings
+from rancher_mcp.exceptions import RancherCapabilityError
 from rancher_mcp.models.backup_operator import RancherBackupDetail, RancherBackupList
+from rancher_mcp.rate_limit import rate_limit_writes
 from rancher_mcp.services.instances import resolve_instance
 from rancher_mcp.services.resources.builders_pagination import next_page_token_from_payload
+from rancher_mcp.services.safety import ensure_instance_writable
 from rancher_mcp.tools.backup_operator.paths import (
     resources_cattle_io_v1_collection_path,
     resources_cattle_io_v1_resource_path,
@@ -138,6 +142,76 @@ async def rancher_backup_get(
         )
 
 
+async def _patch_backup_set_labels(
+    instance_name: str,
+    cluster_id: str,
+    backup_name: str,
+    labels: dict[str, str],
+    client: ManagementDiscoveryClient,
+) -> RancherBackupDetail:
+    """Set_labels one backup via JSON merge-patch; returns the curated detail."""
+
+    patch_subtree: dict[str, object] = {}
+    patch_subtree["labels"] = labels
+    if not patch_subtree:
+        raise RancherCapabilityError(
+            "No patch fields provided; every arg was None. Pass at least one field to update."
+        )
+    request_payload: dict[str, object] = {"metadata": patch_subtree}
+    payload = await client.patch_json(
+        resources_cattle_io_v1_resource_path(cluster_id, "backups", backup_name),
+        payload=request_payload,
+    )
+    summary = backup_summary_from_payload(payload)
+
+    metadata = mapping_value(payload, "metadata") or {}
+    annotations = mapping_value(metadata, "annotations") or {}
+    detail = RancherBackupDetail.model_validate(payload)
+    return detail.model_copy(
+        update={
+            "summary_state": summary.summary_state,
+            "annotation_keys": sorted(string_dict(annotations)),
+            "condition_types_true": condition_types_true(conditions_from_payload(payload)),
+            "storage_location_summary": storage_location_summary(payload),
+            "payload": dict(payload),
+            "suggested_next_steps": ["rancher_backup_get"],
+        }
+    )
+
+
+@audit_mutation(operation="backup_set_labels", plane="steve")
+@rate_limit_writes
+async def rancher_backup_set_labels(
+    backup_name: str,
+    labels: dict[str, str],
+    cluster_id: str = "local",
+    instance: str | None = None,
+    settings: AppSettings | None = None,
+    client: ManagementDiscoveryClient | None = None,
+) -> RancherBackupDetail:
+    """Set_labels one backup via JSON merge-patch."""
+
+    resolved_settings = settings or get_settings()
+    instance_name, instance_config = resolve_instance(resolved_settings, instance)
+    ensure_instance_writable(instance_name, instance_config)
+    if client is not None:
+        return await _patch_backup_set_labels(
+            instance_name,
+            cluster_id,
+            backup_name,
+            labels,
+            client,
+        )
+    async with RancherManagementClient(instance_name, instance_config) as managed_client:
+        return await _patch_backup_set_labels(
+            instance_name,
+            cluster_id,
+            backup_name,
+            labels,
+            managed_client,
+        )
+
+
 async def rancher_backups_list_tool(
     cluster_id: str = "local",
     limit: int | None = None,
@@ -163,6 +237,22 @@ async def rancher_backup_get_tool(
 
     return await rancher_backup_get(
         backup_name=backup_name,
+        cluster_id=cluster_id,
+        instance=instance,
+    )
+
+
+async def rancher_backup_set_labels_tool(
+    backup_name: str,
+    labels: dict[str, str],
+    cluster_id: str = "local",
+    instance: str | None = None,
+) -> RancherBackupDetail:
+    """Public MCP wrapper for curated backup set_labels."""
+
+    return await rancher_backup_set_labels(
+        backup_name=backup_name,
+        labels=labels,
         cluster_id=cluster_id,
         instance=instance,
     )
