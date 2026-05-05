@@ -25,7 +25,7 @@ support_value_imports:
   - string_dict
 summary_function: daemonset_summary_from_payload
 
-operations: [list, get, patch]
+operations: [list, get, patch, delete]
 
 list:
   query_params: [limit, continue_token, label_selector, field_selector]
@@ -59,6 +59,12 @@ get:
     - rancher_daemonsets_list
     - rancher_pods_list
 
+delete:
+  audit_operation: daemonset_delete
+  confirmation_phrase: "delete daemonset {daemonset_name} in namespace {namespace}"
+  next_steps:
+    - rancher_daemonsets_list
+
 patches:
   - verb: set_labels
     target_path: metadata
@@ -91,6 +97,10 @@ tools:
     name: rancher_daemonset_get
     description: Fetch one daemonset by namespace and name via Rancher's raw Kubernetes proxy. Returns the curated summary plus full payload and annotation keys.
     annotation_set: READ_ONLY
+  delete:
+    name: rancher_daemonset_delete
+    description: Delete one Kubernetes DaemonSet. The `confirmation` arg must equal the exact phrase "delete daemonset NAME in namespace NS" (substituting the actual values). Returns a typed delete result with the rendered confirmation phrase. Subject to write rate limiting and audit logging.
+    annotation_set: DESTRUCTIVE
   patches:
     - name: rancher_daemonset_set_labels
       description: Replace metadata.labels on one Kubernetes DaemonSet via JSON merge-patch. The `labels` arg is a complete replacement map. Returns the curated detail.

@@ -9,6 +9,8 @@ from mcp.server.fastmcp import FastMCP
 
 from rancher_mcp.tools.support.annotations import DESTRUCTIVE, IDEMPOTENT_WRITE, READ_ONLY
 from rancher_mcp.tools.workloads._generated_daemonsets import (
+    rancher_daemonset_delete,
+    rancher_daemonset_delete_tool,
     rancher_daemonset_get,
     rancher_daemonset_get_tool,
     rancher_daemonset_set_annotations,
@@ -52,6 +54,7 @@ from rancher_mcp.tools.workloads._generated_statefulsets import (
 )
 
 __all__ = [
+    "rancher_daemonset_delete",
     "rancher_daemonset_get",
     "rancher_daemonset_set_annotations",
     "rancher_daemonset_set_labels",
@@ -78,6 +81,9 @@ def register_workload_tools(mcp: FastMCP) -> None:
 
     mcp.tool(name="rancher_daemonsets_list", annotations=READ_ONLY)(rancher_daemonsets_list_tool)
     mcp.tool(name="rancher_daemonset_get", annotations=READ_ONLY)(rancher_daemonset_get_tool)
+    mcp.tool(name="rancher_daemonset_delete", annotations=DESTRUCTIVE)(
+        rancher_daemonset_delete_tool
+    )
     mcp.tool(name="rancher_daemonset_set_labels", annotations=IDEMPOTENT_WRITE)(
         rancher_daemonset_set_labels_tool
     )
