@@ -1508,6 +1508,165 @@ Same as previous slices.
 
 ---
 
+## Shared briefs
+
+When a family of slices follows the same shape, a shared brief
+covers all of them with a slice-specific row table. This avoids
+~80% of brief-writing effort vs per-slice full treatment.
+
+Each slice in a shared brief still has a stable Slice ID. Agents
+are pointed at the shared brief and given their slice ID; they
+find their row in the brief's table, follow the shared
+pattern using the row's values.
+
+### Shared brief — Narrow label-set patch (`D-1-*-set-labels`)
+
+Covers any slice that adds a narrow patch tool replacing
+`metadata.labels` on one resource via JSON merge-patch. All
+slices in this family follow the same pattern; only the
+descriptor filename, pack name, and resource-specific names
+differ.
+
+#### Common pattern (every slice in this family)
+
+- `verb: set_labels`
+- `target_path: metadata`
+- One required arg: `name: labels, type: dict_str_str, required: true`
+- Annotation tier: `IDEMPOTENT_WRITE`
+- Tool name: `rancher_<display_name_singular>_set_labels`
+- HTTP shape: PATCH on resource detail path with body
+  `{"metadata": {"labels": <map>}}` and content-type
+  `application/merge-patch+json` (the substrate handles this).
+
+#### Files to read first (one-time, applies to all slices)
+
+1. **`catalog/curated_tools/ingresses.yml`** — see the `patch:`
+   block (verb=set_labels, target_path=metadata, single labels
+   arg). This is the canonical example landed via parallel
+   batch 1.
+2. **`tests/unit/test_networking_tools.py`** — find
+   `StubIngressSetLabelsClient` + `test_rancher_ingress_set_labels_*`
+   tests. Copy this stub-client + test pattern, adapting
+   paths and resource names to your slice's resource.
+3. **`docs/codegen-curated-tools.md` Section 12 "Patch
+   operation"** — the canonical recipe for write substrate
+   semantics.
+4. **The descriptor file you'll modify** (per the slice row).
+
+#### Files to modify (per slice)
+
+1. **`catalog/curated_tools/<descriptor_filename>.yml`**:
+   - Update `operations:` to include `patch` (e.g.
+     `[list, get, patch]`).
+   - Add a `patch:` block with the common-pattern values
+     above. Use the slice row's `audit_operation` string.
+   - Add a `tools.patch:` block with `name:
+     rancher_<display_name_singular>_set_labels`,
+     `annotation_set: IDEMPOTENT_WRITE`, and a description
+     under 100 characters describing the merge-patch shape.
+
+2. **Run `make codegen`**. The `_generated_<descriptor>.py`
+   file and the pack `__init__.py` regenerate. **Do NOT
+   hand-edit either** — they're build artifacts.
+
+3. **`tests/unit/test_<pack>_tools.py`**:
+   - Add a `Stub<Resource>SetLabelsClient` class with
+     `__init__` capturing `last_patch_path` and
+     `last_patch_payload`, plus `get_json` (unused — raises),
+     and `patch_json` (captures the request and echoes the
+     resource payload with `metadata.labels` reflecting the
+     new value).
+   - Add 2 tests:
+     - `test_rancher_<singular>_set_labels_round_trip`:
+       PATCH path is the resource detail path; body is
+       exactly `{"metadata": {"labels": {<dict>}}}`. For
+       cluster-scoped resources, the path has NO namespace
+       segment.
+     - `test_rancher_<singular>_set_labels_emits_audit`:
+       audit `tool_name`, `operation` (matches your row's
+       audit_operation), `outcome == "success"`,
+       `arg_keys` contains "labels".
+
+#### Common pitfalls (apply to every slice)
+
+- **`target_path` is `metadata`**, NOT `metadata.labels`.
+  The substrate wraps args under target_path, so
+  target_path=metadata + arg name=labels produces
+  `{metadata: {labels: <dict>}}`. Setting target_path to
+  `metadata.labels` produces a wrong shape.
+- **`labels` arg does NOT collide with the existing
+  `annotations` local** in `get.locals`. No rename needed.
+- **Cluster-scoped resources** (descriptor has
+  `namespaced: false`): the generated tool has NO `namespace`
+  parameter and the path has NO namespace segment. Verify by
+  inspecting the regenerated file after `make codegen`.
+- **Optional-chart slices** (longhorn, prometheus_monitoring,
+  cert_manager, logging_pipeline) ship even though the chart
+  may not be installed in the lab. Tests use stub clients;
+  live validation is gated on chart availability.
+- **Don't push** — leave commits local, the orchestrator
+  cherry-picks.
+- **Line length**: ruff format runs after codegen. If a
+  generated docstring exceeds 100 chars, shorten the
+  descriptor's tool description.
+
+#### Acceptance criteria (every slice)
+
+- `make codegen` produces clean output and idempotent
+  re-runs (no diff after second run).
+- `make typecheck` clean.
+- `make test` passes (your 2 new tests included).
+- `make validate` fully green.
+- Tool surface +1.
+
+#### Commit message template
+
+```
+feat(<SLICE-ID>): merge-patch metadata.labels on <Resource>
+
+Adds rancher_<singular>_set_labels(labels: dict[str, str])
+IDEMPOTENT_WRITE narrow patch on the existing <descriptor>
+descriptor. target_path: metadata, single required arg `labels`.
+Routes to merge-patch+json with body {metadata: {labels: <map>}}.
+
+Tests: stub-client round-trip + audit operation assertion.
+
+Tool surface +1. All gates green.
+
+Co-Authored-By: Claude Sonnet <noreply@anthropic.com>
+```
+
+Substitute `<SLICE-ID>`, `<Resource>` (display kind,
+e.g. "Deployment"), `<singular>` (snake_case singular,
+e.g. "deployment"), `<descriptor>` (descriptor id,
+e.g. "deployments") with the slice row values.
+
+#### Stop condition (every slice)
+
+Commit lands cleanly and locally. Return a one-line summary
+describing what was added and the test count delta. Do NOT
+update `docs/tool-catalog.md`, `TASK_STATE.md`, or
+`CHANGELOG.md` — the orchestrator handles those after merge.
+
+#### Slice-specific rows — Batch 2 (2026-05-05)
+
+| Slice ID | Descriptor file | Pack | display_name_singular | audit_operation | Resource (display kind) | Notes |
+|---|---|---|---|---|---|---|
+| `D-1-deployment-set-labels` | `deployments.yml` | workloads | deployment | deployment_set_labels | Deployment | namespaced |
+| `D-1-hpa-set-labels` | `horizontal_pod_autoscalers.yml` | governance | horizontal_pod_autoscaler | hpa_set_labels | HorizontalPodAutoscaler | namespaced |
+| `D-1-backup-set-labels` | `backups.yml` | backup_operator | backup | backup_set_labels | Backup | cluster-scoped (Rancher Backup CRD `resources.cattle.io/v1`) |
+| `D-1-longhorn-volume-set-labels` | `longhorn_volumes.yml` | longhorn | longhorn_volume | longhorn_volume_set_labels | Volume | namespaced (typically longhorn-system); optional chart |
+| `D-1-service-monitor-set-labels` | `service_monitors.yml` | prometheus_monitoring | service_monitor | service_monitor_set_labels | ServiceMonitor | namespaced; optional kube-prometheus-stack chart |
+| `D-1-cert-manager-certificate-set-labels` | `cert_manager_certificates.yml` | cert_manager | cert_manager_certificate | cert_manager_certificate_set_labels | Certificate | namespaced; optional cert-manager chart |
+| `D-1-flow-set-labels` | `flows.yml` | logging_pipeline | flow | flow_set_labels | Flow | namespaced; optional Banzai logging chart |
+| `D-1-runtime-class-set-labels` | `runtime_classes.yml` | scheduling | runtime_class | runtime_class_set_labels | RuntimeClass | cluster-scoped — second cluster-scoped substrate proof after priority_class |
+
+Each row maps to one Sonnet implementer subagent in the
+parallel batch. Eight rows = eight agents = eight commits.
+After cherry-picking, tool surface +8.
+
+---
+
 ## Recently shipped (running log)
 
 | Date | Slice ID | Commit | Notes |
