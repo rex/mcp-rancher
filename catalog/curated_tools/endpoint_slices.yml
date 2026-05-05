@@ -27,7 +27,7 @@ summary_function: endpoint_slice_summary_from_payload
 query_builder_function: build_list_query_params
 query_builder_in_shared: true
 
-operations: [list, get]
+operations: [list, get, patch]
 
 list:
   query_params: [limit, continue_token, label_selector, field_selector]
@@ -63,6 +63,19 @@ get:
     - rancher_endpoint_slices_list
     - rancher_services_list
 
+patches:
+  - verb: set_labels
+    target_path: metadata
+    audit_operation: endpoint_slice_set_labels
+    args:
+      - name: labels
+        type: dict_str_str
+        required: true
+        description: Replacement metadata.labels map (merge-patch semantics — passing this REPLACES the labels map; pass an empty dict to remove all labels).
+    next_steps:
+      - rancher_endpoint_slice_get
+      - rancher_endpoint_slices_list
+
 tools:
   list:
     name: rancher_endpoint_slices_list
@@ -72,3 +85,7 @@ tools:
     name: rancher_endpoint_slice_get
     description: Fetch one Kubernetes EndpointSlice by namespace and name via Rancher's raw Kubernetes proxy. Returns the curated summary plus full payload and annotation keys.
     annotation_set: READ_ONLY
+  patches:
+    - name: rancher_endpoint_slice_set_labels
+      description: Replace metadata.labels on one Kubernetes EndpointSlice via JSON merge-patch. The `labels` arg is a complete replacement map. Returns the curated detail.
+      annotation_set: IDEMPOTENT_WRITE
