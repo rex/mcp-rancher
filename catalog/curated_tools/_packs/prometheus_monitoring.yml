@@ -1,0 +1,5 @@
+schema_version: 1
+id: prometheus_monitoring
+register_function: register_prometheus_monitoring_tools
+docstring: Curated kube-prometheus-stack tools (PrometheusRule, ServiceMonitor, PodMonitor).
+register_docstring: Register curated kube-prometheus-stack tools with the FastMCP server.

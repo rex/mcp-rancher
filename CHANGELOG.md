@@ -2,6 +2,38 @@
 
 ## [2026-05-04] - Agent: Claude Opus 4.7
 
+### Added (prometheus_monitoring pack — kube-prometheus-stack CRDs)
+- New **`prometheus_monitoring`** pack with 6 tools across 3
+  Prometheus Operator CRDs at `monitoring.coreos.com/v1`:
+  - `rancher_prometheus_rules_list` /
+    `rancher_prometheus_rule_get` — PrometheusRule. Summary
+    counts groups, total rules, alert rules, recording rules.
+    Detail adds sorted unique `group_names` and `alert_names`.
+  - `rancher_service_monitors_list` /
+    `rancher_service_monitor_get` — ServiceMonitor. Summary
+    exposes selector match labels, endpoint count,
+    `target_namespaces` (from `spec.namespaceSelector.matchNames`),
+    job label. Detail adds sorted unique `endpoint_ports`.
+  - `rancher_pod_monitors_list` / `rancher_pod_monitor_get`
+    — PodMonitor. Same shape as ServiceMonitor but reads
+    `spec.podMetricsEndpoints` instead of `spec.endpoints`.
+- Distinct from the existing `monitoring` pack (single
+  capability-detection tool for the Rancher monitoring chart
+  as a whole) and from `alerts` (Norman cluster_alert_rule
+  legacy alerting).
+- New path helpers: `monitoring_namespaced_collection_path` /
+  `monitoring_namespaced_resource_path`.
+- 6 new unit tests in
+  `tests/unit/test_prometheus_monitoring_tools.py` covering
+  list+get for all 3 types with realistic fixtures (mixed
+  alert + recording rules; multi-namespace ServiceMonitor;
+  single-endpoint PodMonitor).
+- 289 tests pass, 85.94% coverage. Codegen: 85 files match
+  descriptors. Public tool surface 158 → 164.
+- kube-prometheus-stack is the standard chart shipped by the
+  rancher-monitoring chart on Rancher clusters; tools 404 if
+  the chart isn't installed.
+
 ### Added (F-1 — Longhorn pack via descriptors)
 - New **`longhorn`** pack with 8 tools across 4 Longhorn CRDs at
   `longhorn.io/v1beta2`:

@@ -29,7 +29,7 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 - Canonical plan: `PERFECT_RANCHER_MCP_IMPLEMENTATION_PLAN.md`
 - Operational roadmap (track-level work breakdown): `ROADMAP.md`
 - Primary compatibility target: Rancher `2.6.5`
-- Public tool surface: 158 tools
+- Public tool surface: 164 tools
 - Completion gate: `make check-if-the-agent-can-consider-this-task-completed`
 - Active quality gates:
   `make check-architecture`
@@ -57,6 +57,14 @@ E destructive writes, H-3 broader confirmation, H-5 streaming
 under load). See "Tracks ticked this session" and "NEXT
 options" below.
 
+- **prometheus_monitoring pack landed.** 6 new tools across
+  PrometheusRule, ServiceMonitor, PodMonitor (kube-prometheus-stack
+  CRDs at `monitoring.coreos.com/v1`). PrometheusRule summary
+  splits rule_count into alert_count + recording_count;
+  detail exposes group_names + alert_names. ServiceMonitor and
+  PodMonitor summaries expose selector match labels +
+  endpoint counts + target namespaces. Tool surface 158 → 164.
+  289 tests pass, 85.94% coverage.
 - **F-1 Longhorn pack landed.** 8 new tools for Longhorn CRDs
   at `longhorn.io/v1beta2` (Volume, Node, Backup, Snapshot).
   Node summary derives `ready` and `schedulable` from

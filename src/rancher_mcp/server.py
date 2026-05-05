@@ -37,6 +37,9 @@ def register_all_tools(mcp: FastMCP) -> None:
     from rancher_mcp.tools.pods_services import register_pod_service_tools
     from rancher_mcp.tools.policy_reports import register_policy_reports_tools
     from rancher_mcp.tools.projects_namespaces import register_project_namespace_tools
+    from rancher_mcp.tools.prometheus_monitoring import (
+        register_prometheus_monitoring_tools,
+    )
     from rancher_mcp.tools.provisioning import register_provisioning_tools
     from rancher_mcp.tools.rbac import register_rbac_tools
     from rancher_mcp.tools.resources import register_resource_tools
@@ -71,6 +74,7 @@ def register_all_tools(mcp: FastMCP) -> None:
     register_logging_pipeline_tools(mcp)
     register_policy_reports_tools(mcp)
     register_longhorn_tools(mcp)
+    register_prometheus_monitoring_tools(mcp)
     register_mcp_resources(mcp)
     register_mcp_prompts(mcp)
     # Order: metrics is INNER so it sees the original RancherMCPError;

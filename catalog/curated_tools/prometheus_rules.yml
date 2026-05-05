@@ -1,0 +1,76 @@
+schema_version: 1
+
+id: prometheus_rules
+pack: prometheus_monitoring
+display_name_singular: prometheus_rule
+display_name_plural: prometheus_rules
+
+plane: steve
+transport: k8s-proxy
+namespaced: true
+
+path_helper:
+  module: rancher_mcp.tools.prometheus_monitoring.paths
+  list_function: monitoring_namespaced_collection_path
+  detail_function: monitoring_namespaced_resource_path
+  resource_kind: prometheusrules
+
+list_response_model: rancher_mcp.models.prometheus_monitoring.RancherPrometheusRuleList
+detail_response_model: rancher_mcp.models.prometheus_monitoring.RancherPrometheusRuleDetail
+
+shared_imports:
+  - alert_names
+  - group_names
+  - items
+  - prometheus_rule_summary_from_payload
+support_value_imports:
+  - string_dict
+summary_function: prometheus_rule_summary_from_payload
+query_builder_function: build_list_query_params
+query_builder_in_shared: true
+
+operations: [list, get]
+
+list:
+  query_params: [limit, continue_token, label_selector]
+  filters: []
+  count_field: prometheus_rule_count
+  collection_field: prometheus_rules
+  next_steps:
+    - rancher_prometheus_rule_get
+    - rancher_service_monitors_list
+
+get:
+  arg_name: rule_name
+  summary_copy_fields:
+    - group_count
+    - rule_count
+    - alert_count
+    - recording_count
+  locals:
+    - name: metadata
+      expression: 'mapping_value(payload, "metadata") or {}'
+    - name: annotations
+      expression: 'mapping_value(metadata, "annotations") or {}'
+  extras:
+    - field: annotation_keys
+      expression: sorted(string_dict(annotations))
+    - field: group_names
+      expression: group_names(payload)
+    - field: alert_names
+      expression: alert_names(payload)
+  include_link_keys: false
+  include_payload: true
+  next_steps:
+    - rancher_prometheus_rules_list
+    - rancher_service_monitors_list
+
+tools:
+  list:
+    name: rancher_prometheus_rules_list
+    description: List PrometheusRule CRDs (monitoring.coreos.com/v1) in one namespace via Rancher's raw Kubernetes proxy. Returns curated summaries with rule_count split into alert_count and recording_count.
+    annotation_set: READ_ONLY
+  get:
+    name: rancher_prometheus_rule_get
+    description: Fetch one PrometheusRule by namespace and name. Returns the curated summary plus group_names and alert_names lists, annotation keys, and full payload.
+    annotation_set: READ_ONLY

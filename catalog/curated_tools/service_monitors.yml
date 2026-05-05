@@ -1,0 +1,71 @@
+schema_version: 1
+
+id: service_monitors
+pack: prometheus_monitoring
+display_name_singular: service_monitor
+display_name_plural: service_monitors
+
+plane: steve
+transport: k8s-proxy
+namespaced: true
+
+path_helper:
+  module: rancher_mcp.tools.prometheus_monitoring.paths
+  list_function: monitoring_namespaced_collection_path
+  detail_function: monitoring_namespaced_resource_path
+  resource_kind: servicemonitors
+
+list_response_model: rancher_mcp.models.prometheus_monitoring.RancherServiceMonitorList
+detail_response_model: rancher_mcp.models.prometheus_monitoring.RancherServiceMonitorDetail
+
+shared_imports:
+  - items
+  - service_monitor_endpoint_ports
+  - service_monitor_summary_from_payload
+support_value_imports:
+  - string_dict
+summary_function: service_monitor_summary_from_payload
+query_builder_function: build_list_query_params
+query_builder_in_shared: true
+
+operations: [list, get]
+
+list:
+  query_params: [limit, continue_token, label_selector]
+  filters: []
+  count_field: service_monitor_count
+  collection_field: service_monitors
+  next_steps:
+    - rancher_service_monitor_get
+    - rancher_prometheus_rules_list
+
+get:
+  arg_name: service_monitor_name
+  summary_copy_fields:
+    - endpoint_count
+    - target_namespaces
+  locals:
+    - name: metadata
+      expression: 'mapping_value(payload, "metadata") or {}'
+    - name: annotations
+      expression: 'mapping_value(metadata, "annotations") or {}'
+  extras:
+    - field: annotation_keys
+      expression: sorted(string_dict(annotations))
+    - field: endpoint_ports
+      expression: service_monitor_endpoint_ports(payload)
+  include_link_keys: false
+  include_payload: true
+  next_steps:
+    - rancher_service_monitors_list
+    - rancher_services_list
+
+tools:
+  list:
+    name: rancher_service_monitors_list
+    description: List ServiceMonitor CRDs (monitoring.coreos.com/v1) in one namespace via Rancher's raw Kubernetes proxy. Returns curated summaries with selector match labels, endpoint count, target namespaces, and job label.
+    annotation_set: READ_ONLY
+  get:
+    name: rancher_service_monitor_get
+    description: Fetch one ServiceMonitor by namespace and name. Returns the curated summary plus the list of endpoint ports being scraped, annotation keys, and full payload.
+    annotation_set: READ_ONLY

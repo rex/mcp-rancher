@@ -136,6 +136,7 @@ _CODEGEN_PACKS = frozenset(
         "pods_services",
         "policy_reports",
         "projects_namespaces",
+        "prometheus_monitoring",
         "provisioning",
         "rbac",
         "settings_features",
