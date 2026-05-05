@@ -143,14 +143,14 @@ async def _fetch_horizontal_pod_autoscaler_get(
     summary = hpa_summary_from_payload(payload)
 
     metadata = mapping_value(payload, "metadata") or {}
-    annotations = mapping_value(metadata, "annotations") or {}
+    metadata_annotations = mapping_value(metadata, "annotations") or {}
     detail = RancherHorizontalPodAutoscalerDetail.model_validate(payload)
     return detail.model_copy(
         update={
             "metric_count": summary.metric_count,
             "able_to_scale": summary.able_to_scale,
             "scaling_active": summary.scaling_active,
-            "annotation_keys": sorted(string_dict(annotations)),
+            "annotation_keys": sorted(string_dict(metadata_annotations)),
             "metric_types": hpa_metric_types(payload),
             "payload": dict(payload),
             "suggested_next_steps": [
@@ -211,14 +211,14 @@ async def _patch_horizontal_pod_autoscaler_set_labels(
     summary = hpa_summary_from_payload(payload)
 
     metadata = mapping_value(payload, "metadata") or {}
-    annotations = mapping_value(metadata, "annotations") or {}
+    metadata_annotations = mapping_value(metadata, "annotations") or {}
     detail = RancherHorizontalPodAutoscalerDetail.model_validate(payload)
     return detail.model_copy(
         update={
             "metric_count": summary.metric_count,
             "able_to_scale": summary.able_to_scale,
             "scaling_active": summary.scaling_active,
-            "annotation_keys": sorted(string_dict(annotations)),
+            "annotation_keys": sorted(string_dict(metadata_annotations)),
             "metric_types": hpa_metric_types(payload),
             "payload": dict(payload),
             "suggested_next_steps": [
@@ -261,6 +261,81 @@ async def rancher_horizontal_pod_autoscaler_set_labels(
             namespace,
             hpa_name,
             labels,
+            managed_client,
+        )
+
+
+async def _patch_horizontal_pod_autoscaler_set_annotations(
+    instance_name: str,
+    cluster_id: str,
+    namespace: str,
+    hpa_name: str,
+    annotations: dict[str, str],
+    client: ManagementDiscoveryClient,
+) -> RancherHorizontalPodAutoscalerDetail:
+    """Set_annotations one horizontal_pod_autoscaler via JSON merge-patch; returns the curated detail."""
+
+    patch_subtree: dict[str, object] = {}
+    patch_subtree["annotations"] = annotations
+    if not patch_subtree:
+        raise RancherCapabilityError(
+            "No patch fields provided; every arg was None. Pass at least one field to update."
+        )
+    request_payload: dict[str, object] = {"metadata": patch_subtree}
+    payload = await client.patch_json(
+        autoscaling_v2_resource_path(cluster_id, namespace, "horizontalpodautoscalers", hpa_name),
+        payload=request_payload,
+    )
+    summary = hpa_summary_from_payload(payload)
+
+    metadata = mapping_value(payload, "metadata") or {}
+    metadata_annotations = mapping_value(metadata, "annotations") or {}
+    detail = RancherHorizontalPodAutoscalerDetail.model_validate(payload)
+    return detail.model_copy(
+        update={
+            "metric_count": summary.metric_count,
+            "able_to_scale": summary.able_to_scale,
+            "scaling_active": summary.scaling_active,
+            "annotation_keys": sorted(string_dict(metadata_annotations)),
+            "metric_types": hpa_metric_types(payload),
+            "payload": dict(payload),
+            "suggested_next_steps": ["rancher_horizontal_pod_autoscaler_get"],
+        }
+    )
+
+
+@audit_mutation(operation="hpa_set_annotations", plane="steve")
+@rate_limit_writes
+async def rancher_horizontal_pod_autoscaler_set_annotations(
+    namespace: str,
+    hpa_name: str,
+    annotations: dict[str, str],
+    cluster_id: str = "local",
+    instance: str | None = None,
+    settings: AppSettings | None = None,
+    client: ManagementDiscoveryClient | None = None,
+) -> RancherHorizontalPodAutoscalerDetail:
+    """Set_annotations one horizontal_pod_autoscaler via JSON merge-patch."""
+
+    resolved_settings = settings or get_settings()
+    instance_name, instance_config = resolve_instance(resolved_settings, instance)
+    ensure_instance_writable(instance_name, instance_config)
+    if client is not None:
+        return await _patch_horizontal_pod_autoscaler_set_annotations(
+            instance_name,
+            cluster_id,
+            namespace,
+            hpa_name,
+            annotations,
+            client,
+        )
+    async with RancherManagementClient(instance_name, instance_config) as managed_client:
+        return await _patch_horizontal_pod_autoscaler_set_annotations(
+            instance_name,
+            cluster_id,
+            namespace,
+            hpa_name,
+            annotations,
             managed_client,
         )
 
@@ -320,6 +395,24 @@ async def rancher_horizontal_pod_autoscaler_set_labels_tool(
         namespace=namespace,
         hpa_name=hpa_name,
         labels=labels,
+        cluster_id=cluster_id,
+        instance=instance,
+    )
+
+
+async def rancher_horizontal_pod_autoscaler_set_annotations_tool(
+    namespace: str,
+    hpa_name: str,
+    annotations: dict[str, str],
+    cluster_id: str = "local",
+    instance: str | None = None,
+) -> RancherHorizontalPodAutoscalerDetail:
+    """Public MCP wrapper for curated horizontal_pod_autoscaler set_annotations."""
+
+    return await rancher_horizontal_pod_autoscaler_set_annotations(
+        namespace=namespace,
+        hpa_name=hpa_name,
+        annotations=annotations,
         cluster_id=cluster_id,
         instance=instance,
     )
