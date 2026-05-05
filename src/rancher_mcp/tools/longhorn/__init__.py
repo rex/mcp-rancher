@@ -28,6 +28,8 @@ from rancher_mcp.tools.longhorn._generated_longhorn_snapshots import (
 from rancher_mcp.tools.longhorn._generated_longhorn_volumes import (
     rancher_longhorn_volume_get,
     rancher_longhorn_volume_get_tool,
+    rancher_longhorn_volume_set_annotations,
+    rancher_longhorn_volume_set_annotations_tool,
     rancher_longhorn_volume_set_labels,
     rancher_longhorn_volume_set_labels_tool,
     rancher_longhorn_volumes_list,
@@ -43,6 +45,7 @@ __all__ = [
     "rancher_longhorn_snapshot_get",
     "rancher_longhorn_snapshots_list",
     "rancher_longhorn_volume_get",
+    "rancher_longhorn_volume_set_annotations",
     "rancher_longhorn_volume_set_labels",
     "rancher_longhorn_volumes_list",
     "register_longhorn_tools",
@@ -78,4 +81,7 @@ def register_longhorn_tools(mcp: FastMCP) -> None:
     )
     mcp.tool(name="rancher_longhorn_volume_set_labels", annotations=IDEMPOTENT_WRITE)(
         rancher_longhorn_volume_set_labels_tool
+    )
+    mcp.tool(name="rancher_longhorn_volume_set_annotations", annotations=IDEMPOTENT_WRITE)(
+        rancher_longhorn_volume_set_annotations_tool
     )

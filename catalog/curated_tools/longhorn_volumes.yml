@@ -48,11 +48,11 @@ get:
   locals:
     - name: metadata
       expression: 'mapping_value(payload, "metadata") or {}'
-    - name: annotations
+    - name: metadata_annotations
       expression: 'mapping_value(metadata, "annotations") or {}'
   extras:
     - field: annotation_keys
-      expression: sorted(string_dict(annotations))
+      expression: sorted(string_dict(metadata_annotations))
   include_link_keys: false
   include_payload: true
   next_steps:
@@ -71,6 +71,16 @@ patches:
     next_steps:
       - rancher_longhorn_volume_get
       - rancher_longhorn_volumes_list
+  - verb: set_annotations
+    target_path: metadata
+    audit_operation: longhorn_volume_set_annotations
+    args:
+      - name: annotations
+        type: dict_str_str
+        required: true
+        description: Replacement metadata.annotations map (merge-patch semantics).
+    next_steps:
+      - rancher_longhorn_volume_get
 
 tools:
   list:
@@ -84,4 +94,7 @@ tools:
   patches:
     - name: rancher_longhorn_volume_set_labels
       description: Replace metadata.labels on one Longhorn Volume via JSON merge-patch. The `labels` arg is a complete replacement map. Returns the curated detail.
+      annotation_set: IDEMPOTENT_WRITE
+    - name: rancher_longhorn_volume_set_annotations
+      description: Replace metadata.annotations on one Longhorn Volume via JSON merge-patch. Returns the curated detail.
       annotation_set: IDEMPOTENT_WRITE
