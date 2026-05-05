@@ -402,10 +402,13 @@ class PatchConfig(BaseModel):
     pipeline as create / apply, so ``get`` is required when
     ``patch`` is in operations.
 
-    Multi-narrow-patch resources (e.g. deployment with separate
-    scale and pause tools) currently require one descriptor per
-    patch verb. Future substrate work may extend this to
-    ``patches: list[PatchConfig]`` for tool consolidation.
+    A descriptor declares its narrow patches via
+    ``patches: list[PatchConfig]`` — one entry per verb. The
+    paired ``tools.patches: list[ToolMeta]`` block carries
+    per-tool metadata in the same order. Validators enforce
+    that the two lists have the same length, that
+    ``tools.patches[i].name == rancher_<singular>_<patches[i].verb>``,
+    and that no two patches share the same verb.
     """
 
     model_config = ConfigDict(extra="forbid")
@@ -413,9 +416,10 @@ class PatchConfig(BaseModel):
     verb: str
     """Action verb that becomes the tool-name suffix:
     ``rancher_<singular>_<verb>``. Examples: ``scale``, ``suspend``,
-    ``annotate``. Use ``lower_snake_case``. The descriptor's
-    ``tools.patch.name`` must be ``rancher_<singular>_<verb>``;
-    codegen validates this to keep the two in sync."""
+    ``annotate``. Use ``lower_snake_case``. The paired entry in
+    ``tools.patches`` must have ``name`` equal to
+    ``rancher_<singular>_<verb>``; codegen validates this to keep
+    the two in sync."""
 
     args: list[ArgSpec]
     """Typed args. At least one required. Their values are written
@@ -461,7 +465,7 @@ class ToolsBlock(BaseModel):
     get: ToolMeta | None = None
     create: ToolMeta | None = None
     apply: ToolMeta | None = None
-    patch: ToolMeta | None = None
+    patches: list[ToolMeta] = []
     delete: ToolMeta | None = None
 
 
@@ -564,7 +568,7 @@ class Descriptor(BaseModel):
     create: CreateConfig | None = None
     apply: ApplyConfig | None = None
     delete: DeleteConfig | None = None
-    patch: PatchConfig | None = None
+    patches: list[PatchConfig] = []
 
     # --- MCP tool metadata -----------------------------------------
 
@@ -628,29 +632,49 @@ class Descriptor(BaseModel):
                     "Add 'get' to operations and provide a get config."
                 )
         if "patch" in self.operations:
-            if self.patch is None:
-                raise ValueError("operations includes 'patch' but patch config is missing")
-            if self.tools.patch is None:
-                raise ValueError("operations includes 'patch' but tools.patch metadata is missing")
+            if not self.patches:
+                raise ValueError("operations includes 'patch' but patches list is empty")
+            if not self.tools.patches:
+                raise ValueError("operations includes 'patch' but tools.patches list is empty")
+            if len(self.patches) != len(self.tools.patches):
+                raise ValueError(
+                    f"len(patches) ({len(self.patches)}) must equal "
+                    f"len(tools.patches) ({len(self.tools.patches)}) — "
+                    f"each patch entry pairs with one tools.patches entry "
+                    f"by index."
+                )
             if "get" not in self.operations or self.get is None:
                 raise ValueError(
                     "operations includes 'patch' but 'get' is missing — "
                     "patch reuses get's response-shaping pipeline. Add 'get' "
                     "to operations and provide a get config."
                 )
-            if not self.patch.args:
-                raise ValueError(
-                    "patch.args must include at least one ArgSpec — "
-                    "narrow patches are defined by which fields they update."
-                )
-            expected_tool_name = f"rancher_{self.display_name_singular}_{self.patch.verb}"
-            if self.tools.patch.name != expected_tool_name:
-                raise ValueError(
-                    f"tools.patch.name must be {expected_tool_name!r} "
-                    f"(rancher_<singular>_<verb>), got {self.tools.patch.name!r}. "
-                    f"Either update tools.patch.name or change patch.verb to keep "
-                    f"them in sync."
-                )
+            verbs_seen: list[str] = []
+            for index, patch in enumerate(self.patches):
+                if not patch.args:
+                    raise ValueError(
+                        f"patches[{index}].args must include at least one "
+                        f"ArgSpec — narrow patches are defined by which "
+                        f"fields they update."
+                    )
+                if patch.verb in verbs_seen:
+                    raise ValueError(
+                        f"patches[{index}].verb={patch.verb!r} is duplicated. "
+                        f"Each patch on a descriptor must have a unique verb "
+                        f"so the generated tool names don't collide."
+                    )
+                verbs_seen.append(patch.verb)
+                expected_tool_name = f"rancher_{self.display_name_singular}_{patch.verb}"
+                actual_tool_name = self.tools.patches[index].name
+                if actual_tool_name != expected_tool_name:
+                    raise ValueError(
+                        f"tools.patches[{index}].name must be "
+                        f"{expected_tool_name!r} "
+                        f"(rancher_<singular>_<verb>), got "
+                        f"{actual_tool_name!r}. Either update "
+                        f"tools.patches[{index}].name or change "
+                        f"patches[{index}].verb to keep them in sync."
+                    )
         if self.transport == "steve":
             if not self.list_path:
                 raise ValueError("transport=steve requires list_path")

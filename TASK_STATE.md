@@ -29,7 +29,7 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 - Canonical plan: `PERFECT_RANCHER_MCP_IMPLEMENTATION_PLAN.md`
 - Operational roadmap (track-level work breakdown): `ROADMAP.md`
 - Primary compatibility target: Rancher `2.6.5`
-- Public tool surface: 203 tools
+- Public tool surface: 204 tools
 - Completion gate: `make check-if-the-agent-can-consider-this-task-completed`
 - Active quality gates:
   `make check-architecture`
@@ -50,6 +50,57 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 - **User-visible changes** → `CHANGELOG.md`
 
 ## Latest Logical Step
+
+- **J-3-extension-multi-patch landed (substrate evolution).**
+  Unblocks `D-1-deployment-set-labels` (which Sonnet correctly
+  refused in Batch 2) and any future multi-narrow-patch resource.
+  The substrate now supports `patches: list[PatchConfig]` and
+  paired `tools.patches: list[ToolMeta]` per descriptor.
+  - **Schema** (`scripts/codegen/descriptor.py`):
+    - `Descriptor.patch: PatchConfig | None` →
+      `Descriptor.patches: list[PatchConfig] = []`.
+    - `ToolsBlock.patch: ToolMeta | None` →
+      `ToolsBlock.patches: list[ToolMeta] = []`.
+    - Validator enforces: `len(patches) == len(tools.patches)`,
+      `tools.patches[i].name == rancher_<singular>_<patches[i].verb>`,
+      unique verbs, ≥1 args per patch, get config required.
+  - **Planner** (`scripts/codegen/plan.py`): `_public_names`,
+    `_tool_metas`, `_registrations`, and `as_jinja_context`
+    updated to iterate over `descriptor.patches`. `tools.patches`
+    yielded by index pair.
+  - **Template** (`scripts/codegen/templates/tool_module.py.j2`):
+    PATCH OPERATION section + tool-wrapper section both wrapped
+    in `{% for patch in patches %}...{% endfor %}` loops.
+  - **12-descriptor migration** (every existing descriptor with
+    a `patch:` block migrated to `patches: [<single block>]`):
+    backups, cert_manager_certificates, cron_jobs, deployments,
+    flows, horizontal_pod_autoscalers, ingresses, longhorn_volumes,
+    priority_classes, runtime_classes, service_monitors,
+    statefulsets. **Zero src/ diff** after `make codegen` —
+    proves the substrate change is byte-equivalent for
+    single-patch descriptors.
+  - **Multi-patch proof: `rancher_deployment_set_labels`**
+    landed as the second `patches:` entry on `deployments.yml`,
+    alongside `rancher_deployment_scale`. Both tools coexist on
+    one descriptor; codegen emits both `_patch_deployment_scale`
+    and `_patch_deployment_set_labels` private helpers and both
+    decorated public functions in one generated file.
+  - **Tests** (3 new in `tests/unit/test_workloads_tools.py`):
+    - `test_rancher_deployment_set_labels_uses_metadata_target_path`
+      — body is exactly `{metadata: {labels: <map>}}` (distinct
+      from scale's `{spec: {replicas: N}}`)
+    - `test_rancher_deployment_set_labels_emits_audit_with_set_labels_op`
+      — operation `deployment_set_labels` (not the scale op)
+    - `test_deployment_scale_and_set_labels_coexist_on_same_descriptor`
+      — both tools work independently with their own stub
+      clients
+  - **Docs**: `docs/codegen-curated-tools.md` Section 12 gains
+    "Multi-patch per descriptor" subsection with the worked
+    deployments example. Removed the "still pending"
+    multi-patch entry from the J-3 pending list.
+  - **Tool surface 203 → 204** (+1: rancher_deployment_set_labels).
+  - **358 tests pass** (was 355 → +3 for multi-patch
+    coexistence proof), 85.90% coverage, all gates green.
 
 - **Parallel-orchestration Batch 2: 8-agent run shipped 7 tools
   in ~4.2 min wall-clock; 1 blocked exactly as predicted.**

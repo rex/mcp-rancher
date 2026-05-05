@@ -312,6 +312,81 @@ async def rancher_deployment_scale(
         )
 
 
+async def _patch_deployment_set_labels(
+    instance_name: str,
+    cluster_id: str,
+    namespace: str,
+    deployment_name: str,
+    labels: dict[str, str],
+    client: ManagementDiscoveryClient,
+) -> RancherDeploymentDetail:
+    """Set_labels one deployment via JSON merge-patch; returns the curated detail."""
+
+    patch_subtree: dict[str, object] = {}
+    patch_subtree["labels"] = labels
+    if not patch_subtree:
+        raise RancherCapabilityError(
+            "No patch fields provided; every arg was None. Pass at least one field to update."
+        )
+    request_payload: dict[str, object] = {"metadata": patch_subtree}
+    payload = await client.patch_json(
+        workload_resource_path(cluster_id, namespace, "deployments", deployment_name),
+        payload=request_payload,
+    )
+    summary = deployment_summary_from_payload(payload)
+
+    metadata = mapping_value(payload, "metadata") or {}
+    annotations = mapping_value(metadata, "annotations") or {}
+    detail = RancherDeploymentDetail.model_validate(payload)
+    return detail.model_copy(
+        update={
+            "id": summary.id,
+            "ready": summary.ready,
+            "rollout_complete": summary.rollout_complete,
+            "container_images": summary.container_images,
+            "annotation_keys": sorted(string_dict(annotations)),
+            "payload": dict(payload),
+            "suggested_next_steps": ["rancher_deployment_get", "rancher_pods_list"],
+        }
+    )
+
+
+@audit_mutation(operation="deployment_set_labels", plane="steve")
+@rate_limit_writes
+async def rancher_deployment_set_labels(
+    namespace: str,
+    deployment_name: str,
+    labels: dict[str, str],
+    cluster_id: str = "local",
+    instance: str | None = None,
+    settings: AppSettings | None = None,
+    client: ManagementDiscoveryClient | None = None,
+) -> RancherDeploymentDetail:
+    """Set_labels one deployment via JSON merge-patch."""
+
+    resolved_settings = settings or get_settings()
+    instance_name, instance_config = resolve_instance(resolved_settings, instance)
+    ensure_instance_writable(instance_name, instance_config)
+    if client is not None:
+        return await _patch_deployment_set_labels(
+            instance_name,
+            cluster_id,
+            namespace,
+            deployment_name,
+            labels,
+            client,
+        )
+    async with RancherManagementClient(instance_name, instance_config) as managed_client:
+        return await _patch_deployment_set_labels(
+            instance_name,
+            cluster_id,
+            namespace,
+            deployment_name,
+            labels,
+            managed_client,
+        )
+
+
 async def rancher_deployments_list_tool(
     namespace: str,
     cluster_id: str = "local",
@@ -383,6 +458,24 @@ async def rancher_deployment_scale_tool(
         namespace=namespace,
         deployment_name=deployment_name,
         replicas=replicas,
+        cluster_id=cluster_id,
+        instance=instance,
+    )
+
+
+async def rancher_deployment_set_labels_tool(
+    namespace: str,
+    deployment_name: str,
+    labels: dict[str, str],
+    cluster_id: str = "local",
+    instance: str | None = None,
+) -> RancherDeploymentDetail:
+    """Public MCP wrapper for curated deployment set_labels."""
+
+    return await rancher_deployment_set_labels(
+        namespace=namespace,
+        deployment_name=deployment_name,
+        labels=labels,
         cluster_id=cluster_id,
         instance=instance,
     )

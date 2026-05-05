@@ -66,7 +66,7 @@ table. The [Status legend](#status-legend) explains the icons.
 
 ## Quick start
 
-- **Tool surface today: 203 registered.** See
+- **Tool surface today: 204 registered.** See
   [Tool registry](#tool-registry).
 - **Estimated target: ~380 tools** at "perfect" coverage of
   the 25-domain canonical plan. We're roughly 50% of the way.
@@ -121,7 +121,7 @@ descriptor migration commit). That's fine — Slice IDs map
 
 | Bucket | Count |
 |---|---|
-| ✅ Built (registered tools) | **203** |
+| ✅ Built (registered tools) | **204** |
 | 🟡 Planned (gap from plan) | ~190 |
 | 🟠 Partial (documented limitations) | ~10 |
 | 🔴 Blocked (external dep / design) | ~12 |
@@ -257,6 +257,7 @@ the source module (hand-written).
 | ✅ | rancher_deployments_list | k8s-proxy | list | `catalog/curated_tools/deployments.yml` |
 | ✅ | rancher_deployment_get | k8s-proxy | get | `catalog/curated_tools/deployments.yml` |
 | ✅ | rancher_deployment_scale | k8s-proxy | patch | `catalog/curated_tools/deployments.yml` (J-3) |
+| ✅ | rancher_deployment_set_labels | k8s-proxy | patch | `catalog/curated_tools/deployments.yml` (D-1, multi-patch) |
 | ✅ | rancher_deployment_delete | k8s-proxy | delete | `catalog/curated_tools/deployments.yml` (J-3) |
 | ✅ | rancher_daemonsets_list | k8s-proxy | list | `catalog/curated_tools/daemonsets.yml` |
 | ✅ | rancher_daemonset_get | k8s-proxy | get | `catalog/curated_tools/daemonsets.yml` |
@@ -661,7 +662,7 @@ surface to parity with `catalog/capabilities.yaml`.
 | J-1 | Migrate existing read-only packs (35 resource types, 14 packs) | ✅ |
 | J-2 | Track B new read tools via descriptors | ✅ |
 | J-3 | Write substrate (create / apply / patch / delete) | ✅ feature-complete |
-| J-3-extension-multi-patch | Substrate evolution: `patches: list[PatchConfig]` for multi-narrow-patch resources | 🟡 |
+| J-3-extension-multi-patch | Substrate evolution: `patches: list[PatchConfig]` for multi-narrow-patch resources | ✅ shipped |
 | J-3-extension-steve-norman-writes | Verify Steve / Norman write paths under 2.6.5 | 🔴 BLOCKED on lab access |
 | J-3-extension-dict-str-object | Worked example using `dict_str_object` arg type for nested struct args | 🟡 |
 | J-4 | Track D safe writes via descriptors | 🟡 unblocked — substrate is ready |
@@ -1659,7 +1660,7 @@ update `docs/tool-catalog.md`, `TASK_STATE.md`, or
 
 | Slice ID | Descriptor file | Pack | display_name_singular | audit_operation | Resource (display kind) | Notes |
 |---|---|---|---|---|---|---|
-| `D-1-deployment-set-labels` 🔴 | `deployments.yml` | workloads | deployment | deployment_set_labels | Deployment | **BLOCKED on `J-3-extension-multi-patch`** — deployments.yml's `patch:` slot is occupied by `rancher_deployment_scale`; substrate allows one patch per descriptor today. |
+| `D-1-deployment-set-labels` ✅ | `deployments.yml` | workloads | deployment | deployment_set_labels | Deployment | Shipped via multi-patch substrate (J-3-extension-multi-patch landed). |
 | `D-1-hpa-set-labels` | `horizontal_pod_autoscalers.yml` | governance | horizontal_pod_autoscaler | hpa_set_labels | HorizontalPodAutoscaler | namespaced |
 | `D-1-backup-set-labels` | `backups.yml` | backup_operator | backup | backup_set_labels | Backup | cluster-scoped (Rancher Backup CRD `resources.cattle.io/v1`) |
 | `D-1-longhorn-volume-set-labels` | `longhorn_volumes.yml` | longhorn | longhorn_volume | longhorn_volume_set_labels | Volume | namespaced (typically longhorn-system); optional chart |

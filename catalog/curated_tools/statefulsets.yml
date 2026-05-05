@@ -59,18 +59,18 @@ get:
     - rancher_statefulsets_list
     - rancher_pods_list
 
-patch:
-  verb: scale
-  target_path: spec
-  audit_operation: statefulset_scale
-  args:
-    - name: replicas
-      type: int
-      required: true
-      description: Desired replica count for the StatefulSet.
-  next_steps:
-    - rancher_statefulset_get
-    - rancher_pods_list
+patches:
+  - verb: scale
+    target_path: spec
+    audit_operation: statefulset_scale
+    args:
+      - name: replicas
+        type: int
+        required: true
+        description: Desired replica count for the StatefulSet.
+    next_steps:
+      - rancher_statefulset_get
+      - rancher_pods_list
 
 tools:
   list:
@@ -81,7 +81,7 @@ tools:
     name: rancher_statefulset_get
     description: Fetch one statefulset by namespace and name via Rancher's raw Kubernetes proxy. Returns the curated summary plus full payload and annotation keys.
     annotation_set: READ_ONLY
-  patch:
-    name: rancher_statefulset_scale
-    description: Scale one Kubernetes StatefulSet to a target `replicas` count via JSON merge-patch on `spec.replicas`. Returns the curated detail of the patched resource. Subject to write rate limiting and audit logging.
-    annotation_set: IDEMPOTENT_WRITE
+  patches:
+    - name: rancher_statefulset_scale
+      description: Scale one Kubernetes StatefulSet to a target `replicas` count via JSON merge-patch on `spec.replicas`. Returns the curated detail of the patched resource. Subject to write rate limiting and audit logging.
+      annotation_set: IDEMPOTENT_WRITE

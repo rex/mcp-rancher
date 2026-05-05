@@ -65,18 +65,18 @@ get:
     - rancher_cron_jobs_list
     - rancher_jobs_list
 
-patch:
-  verb: suspend
-  target_path: spec
-  audit_operation: cronjob_suspend
-  args:
-    - name: suspend
-      type: bool
-      required: true
-      description: Pause (true) or resume (false) the CronJob.
-  next_steps:
-    - rancher_cron_job_get
-    - rancher_jobs_list
+patches:
+  - verb: suspend
+    target_path: spec
+    audit_operation: cronjob_suspend
+    args:
+      - name: suspend
+        type: bool
+        required: true
+        description: Pause (true) or resume (false) the CronJob.
+    next_steps:
+      - rancher_cron_job_get
+      - rancher_jobs_list
 
 tools:
   list:
@@ -87,7 +87,7 @@ tools:
     name: rancher_cron_job_get
     description: Fetch one Kubernetes CronJob by namespace and name. Returns the curated summary plus container_images list (from spec.jobTemplate.spec.template.spec.containers), active_job_names list, annotation keys, and full payload.
     annotation_set: READ_ONLY
-  patch:
-    name: rancher_cron_job_suspend
-    description: Pause or resume one Kubernetes CronJob via JSON merge-patch on `spec.suspend`. Pass suspend=True to pause, suspend=False to resume. Returns the curated detail. Subject to write rate limiting and audit logging.
-    annotation_set: IDEMPOTENT_WRITE
+  patches:
+    - name: rancher_cron_job_suspend
+      description: Pause or resume one Kubernetes CronJob via JSON merge-patch on `spec.suspend`. Pass suspend=True to pause, suspend=False to resume. Returns the curated detail. Subject to write rate limiting and audit logging.
+      annotation_set: IDEMPOTENT_WRITE

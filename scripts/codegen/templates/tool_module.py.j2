@@ -686,7 +686,7 @@ async def rancher_{{ display_name_singular }}_delete(
 
 {% endif -%}
 {# ===================== PATCH OPERATION ===================== #}
-{% if 'patch' in operations -%}
+{% for patch in patches -%}
 async def _patch_{{ display_name_singular }}_{{ patch.verb }}(
     instance_name: str,
     {% if cluster_id_required -%}
@@ -823,7 +823,7 @@ async def rancher_{{ display_name_singular }}_{{ patch.verb }}(
         )
 
 
-{% endif -%}
+{% endfor -%}
 {# ===================== TOOL WRAPPERS ===================== #}
 {% if 'list' in operations -%}
 async def rancher_{{ display_name_plural }}_list_tool(
@@ -1003,7 +1003,7 @@ async def rancher_{{ display_name_singular }}_delete_tool(
 
 
 {% endif -%}
-{% if 'patch' in operations -%}
+{% for patch in patches -%}
 async def rancher_{{ display_name_singular }}_{{ patch.verb }}_tool(
     {% if namespaced -%}
     namespace: str,
@@ -1035,4 +1035,6 @@ async def rancher_{{ display_name_singular }}_{{ patch.verb }}_tool(
         {% endif -%}
         instance=instance,
     )
-{% endif -%}
+
+
+{% endfor -%}

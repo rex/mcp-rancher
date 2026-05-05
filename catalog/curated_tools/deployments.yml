@@ -62,18 +62,29 @@ get:
     - rancher_pods_list
     - rancher_workload_readiness
 
-patch:
-  verb: scale
-  target_path: spec
-  audit_operation: deployment_scale
-  args:
-    - name: replicas
-      type: int
-      required: true
-      description: Desired replica count for the deployment.
-  next_steps:
-    - rancher_deployment_get
-    - rancher_pods_list
+patches:
+  - verb: scale
+    target_path: spec
+    audit_operation: deployment_scale
+    args:
+      - name: replicas
+        type: int
+        required: true
+        description: Desired replica count for the deployment.
+    next_steps:
+      - rancher_deployment_get
+      - rancher_pods_list
+  - verb: set_labels
+    target_path: metadata
+    audit_operation: deployment_set_labels
+    args:
+      - name: labels
+        type: dict_str_str
+        required: true
+        description: Replacement metadata.labels map (merge-patch semantics — passing this REPLACES the labels map; pass an empty dict to remove all labels).
+    next_steps:
+      - rancher_deployment_get
+      - rancher_pods_list
 
 delete:
   audit_operation: deployment_delete
@@ -90,10 +101,13 @@ tools:
     name: rancher_deployment_get
     description: Fetch one deployment by namespace and name via Rancher's raw Kubernetes proxy. Returns the curated summary plus full payload and annotation keys.
     annotation_set: READ_ONLY
-  patch:
-    name: rancher_deployment_scale
-    description: Scale one Kubernetes Deployment to a target `replicas` count via JSON merge-patch on `spec.replicas`. Returns the curated detail of the patched resource. Subject to write rate limiting and audit logging.
-    annotation_set: IDEMPOTENT_WRITE
+  patches:
+    - name: rancher_deployment_scale
+      description: Scale one Kubernetes Deployment to a target `replicas` count via JSON merge-patch on `spec.replicas`. Returns the curated detail of the patched resource. Subject to write rate limiting and audit logging.
+      annotation_set: IDEMPOTENT_WRITE
+    - name: rancher_deployment_set_labels
+      description: Replace metadata.labels on one Kubernetes Deployment via JSON merge-patch. The `labels` arg is a complete replacement map. Returns the curated detail.
+      annotation_set: IDEMPOTENT_WRITE
   delete:
     name: rancher_deployment_delete
     description: Delete one Kubernetes Deployment. The `confirmation` arg must equal the exact phrase "delete deployment NAME in namespace NS" (substituting the actual values). Returns a typed delete result with the rendered confirmation phrase. Subject to write rate limiting and audit logging.

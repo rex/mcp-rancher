@@ -1086,12 +1086,61 @@ Stub a client whose `patch_json` captures `last_patch_path` and
 The `rancher_deployment_scale` example
 (`tests/unit/test_workloads_tools.py`) is the worked reference.
 
+#### Multi-patch per descriptor
+
+A descriptor can declare multiple narrow patches. Each entry in
+`patches:` pairs by index with an entry in `tools.patches:`.
+Codegen emits one `_patch_<singular>_<verb>` private helper, one
+decorated public `rancher_<singular>_<verb>` function, and one
+`rancher_<singular>_<verb>_tool` MCP wrapper per patch.
+
+```yaml
+operations: [list, get, patch]
+
+patches:
+  - verb: scale
+    target_path: spec
+    audit_operation: deployment_scale
+    args:
+      - name: replicas
+        type: int
+        required: true
+    next_steps:
+      - rancher_deployment_get
+  - verb: set_labels
+    target_path: metadata
+    audit_operation: deployment_set_labels
+    args:
+      - name: labels
+        type: dict_str_str
+        required: true
+    next_steps:
+      - rancher_deployment_get
+
+tools:
+  patches:
+    - name: rancher_deployment_scale
+      description: |
+        Scale Deployment via merge-patch on spec.replicas.
+      annotation_set: IDEMPOTENT_WRITE
+    - name: rancher_deployment_set_labels
+      description: |
+        Replace metadata.labels via merge-patch.
+      annotation_set: IDEMPOTENT_WRITE
+```
+
+Validators enforce:
+- `len(patches) == len(tools.patches)` (paired by index).
+- Every `tools.patches[i].name` equals
+  `rancher_<singular>_<patches[i].verb>`.
+- Every `verb` is unique within the descriptor.
+- Each patch has at least one ArgSpec.
+
+Single-patch descriptors use the same shape with a single-element
+list — `patches: [<one block>]` and `tools.patches: [<one block>]`.
+
 ### What's still pending in J-3
 
-- Multi-patch-per-resource — one narrow patch per descriptor today.
-  When a resource needs N narrow patches (e.g. deployment with
-  scale + pause + restart), we need one descriptor file per verb,
-  or substrate evolution to `patches: list[PatchConfig]`.
 - Norman / Steve transports — the create / apply / delete / patch
   templates handle all three transports identically (POST / PUT /
   DELETE / PATCH to `list_path` or `detail_path` for steve/norman,

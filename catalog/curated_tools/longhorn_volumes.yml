@@ -59,18 +59,18 @@ get:
     - rancher_longhorn_volumes_list
     - rancher_longhorn_snapshots_list
 
-patch:
-  verb: set_labels
-  target_path: metadata
-  audit_operation: longhorn_volume_set_labels
-  args:
-    - name: labels
-      type: dict_str_str
-      required: true
-      description: Replacement metadata.labels map (merge-patch semantics — passing this REPLACES the labels map; pass an empty dict to remove all labels).
-  next_steps:
-    - rancher_longhorn_volume_get
-    - rancher_longhorn_volumes_list
+patches:
+  - verb: set_labels
+    target_path: metadata
+    audit_operation: longhorn_volume_set_labels
+    args:
+      - name: labels
+        type: dict_str_str
+        required: true
+        description: Replacement metadata.labels map (merge-patch semantics — passing this REPLACES the labels map; pass an empty dict to remove all labels).
+    next_steps:
+      - rancher_longhorn_volume_get
+      - rancher_longhorn_volumes_list
 
 tools:
   list:
@@ -81,7 +81,7 @@ tools:
     name: rancher_longhorn_volume_get
     description: Fetch one Longhorn Volume by namespace and name. Returns the curated summary plus current engine image, actual size, restore-required flag, and full payload.
     annotation_set: READ_ONLY
-  patch:
-    name: rancher_longhorn_volume_set_labels
-    description: Replace metadata.labels on one Longhorn Volume via JSON merge-patch. The `labels` arg is a complete replacement map. Returns the curated detail.
-    annotation_set: IDEMPOTENT_WRITE
+  patches:
+    - name: rancher_longhorn_volume_set_labels
+      description: Replace metadata.labels on one Longhorn Volume via JSON merge-patch. The `labels` arg is a complete replacement map. Returns the curated detail.
+      annotation_set: IDEMPOTENT_WRITE

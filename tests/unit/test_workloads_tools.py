@@ -12,6 +12,7 @@ from rancher_mcp.tools.workloads import (
     rancher_deployment_delete,
     rancher_deployment_get,
     rancher_deployment_scale,
+    rancher_deployment_set_labels,
     rancher_deployments_list,
     rancher_replica_set_get,
     rancher_replica_sets_list,
@@ -1064,3 +1065,180 @@ async def test_rancher_replica_set_get_returns_typed_detail() -> None:
     assert result.annotation_keys == ["deployment.kubernetes.io/desired-replicas"]
     assert result.container_images == ["nginx:1.25"]
     assert result.payload is not None
+
+
+# =====================================================================
+# rancher_deployment_set_labels (multi-patch substrate proof)
+# =====================================================================
+#
+# This test class exists alongside StubScaleClient. It proves a single
+# descriptor can carry MULTIPLE narrow patches (scale + set_labels) on
+# the same resource — the J-3-extension-multi-patch substrate evolution.
+
+
+class StubDeploymentSetLabelsClient:
+    """Patch-capable stub for the deployment set_labels tests.
+
+    Captures the most recent patch_json request so tests can assert
+    on the merge-patch body. The stub answers ONLY on the deployment
+    detail path used by the test fixture — any other path is an
+    AssertionError.
+    """
+
+    def __init__(self) -> None:
+        self.last_patch_path: str | None = None
+        self.last_patch_payload: dict[str, object] | None = None
+
+    async def get_json(self, path: str, params: object = None) -> dict[str, object]:
+        raise AssertionError(f"unexpected get on {path!r} (params={params!r})")
+
+    async def patch_json(
+        self,
+        path: str,
+        payload: dict[str, object] | None = None,
+        params: object = None,
+    ) -> dict[str, object]:
+        self.last_patch_path = path
+        assert payload is not None
+        self.last_patch_payload = dict(payload)
+
+        detail = (
+            "/k8s/clusters/venue-local/apis/apps/v1/namespaces/"
+            "cattle-system/deployments/cattle-cluster-agent"
+        )
+        if path == detail:
+            assert params is None
+            metadata_patch = payload.get("metadata")
+            assert isinstance(metadata_patch, dict)
+            new_labels = metadata_patch.get("labels") or {}
+            return {
+                "metadata": {
+                    "name": "cattle-cluster-agent",
+                    "namespace": "cattle-system",
+                    "annotations": {
+                        "deployment.kubernetes.io/revision": "3",
+                    },
+                    "labels": new_labels,
+                    "generation": 5,
+                },
+                "spec": {
+                    "replicas": 2,
+                    "selector": {"matchLabels": {"app": "cattle-cluster-agent"}},
+                    "template": {
+                        "spec": {
+                            "serviceAccountName": "cattle",
+                            "containers": [
+                                {
+                                    "name": "cluster-register",
+                                    "image": "rancher/rancher-agent:v2.6.5",
+                                }
+                            ],
+                        }
+                    },
+                },
+                "status": {
+                    "observedGeneration": 4,
+                    "readyReplicas": 2,
+                    "availableReplicas": 2,
+                    "updatedReplicas": 2,
+                },
+            }
+        raise AssertionError(f"unexpected patch path {path!r}")
+
+
+@pytest.mark.asyncio
+async def test_rancher_deployment_set_labels_uses_metadata_target_path() -> None:
+    """Set_labels lands at the resource detail path with body
+    {metadata: {labels: <map>}} — distinct from scale's
+    {spec: {replicas: N}} body. Proves both patches coexist on
+    one descriptor and target different subtrees.
+    """
+
+    reset_rate_limit_state()
+    client = StubDeploymentSetLabelsClient()
+
+    result = await rancher_deployment_set_labels(
+        namespace="cattle-system",
+        deployment_name="cattle-cluster-agent",
+        labels={"app": "cattle", "tier": "agent"},
+        cluster_id="venue-local",
+        instance="work",
+        settings=build_settings(),
+        client=client,
+    )
+
+    assert client.last_patch_path == (
+        "/k8s/clusters/venue-local/apis/apps/v1/namespaces/"
+        "cattle-system/deployments/cattle-cluster-agent"
+    )
+    assert client.last_patch_payload == {"metadata": {"labels": {"app": "cattle", "tier": "agent"}}}
+
+    assert result.id == "cattle-system/cattle-cluster-agent"
+
+
+@pytest.mark.asyncio
+async def test_rancher_deployment_set_labels_emits_audit_with_set_labels_op() -> None:
+    """Audit operation = deployment_set_labels (not deployment_scale).
+
+    This is the multi-patch substrate's defining test: two patches on
+    one descriptor must emit DIFFERENT operation names so audit
+    records correctly attribute work to the called tool.
+    """
+
+    reset_rate_limit_state()
+
+    with capture_logs() as logs:
+        await rancher_deployment_set_labels(
+            namespace="cattle-system",
+            deployment_name="cattle-cluster-agent",
+            labels={"app": "demo"},
+            cluster_id="venue-local",
+            instance="work",
+            settings=build_settings(),
+            client=StubDeploymentSetLabelsClient(),
+        )
+
+    audit_records = [r for r in logs if r.get("event") == "audit"]
+    assert len(audit_records) == 1
+    record = audit_records[0]
+    assert record["tool_name"] == "rancher_deployment_set_labels"
+    assert record["operation"] == "deployment_set_labels"
+    assert record["plane"] == "steve"
+    assert record["outcome"] == "success"
+    assert "labels" in record["arg_keys"]
+
+
+@pytest.mark.asyncio
+async def test_deployment_scale_and_set_labels_coexist_on_same_descriptor() -> None:
+    """Smoke check: both patch tools exist on the deployments
+    descriptor and target different subtrees independently.
+    """
+
+    reset_rate_limit_state()
+    scale_client = StubScaleClient()
+    labels_client = StubDeploymentSetLabelsClient()
+
+    # Scale targets spec.replicas
+    await rancher_deployment_scale(
+        namespace="cattle-system",
+        deployment_name="cattle-cluster-agent",
+        replicas=4,
+        cluster_id="venue-local",
+        instance="work",
+        settings=build_settings(),
+        client=scale_client,
+    )
+    assert scale_client.last_patch_payload == {"spec": {"replicas": 4}}
+
+    # set_labels targets metadata.labels — fully independent body shape.
+    reset_rate_limit_state()
+    await rancher_deployment_set_labels(
+        namespace="cattle-system",
+        deployment_name="cattle-cluster-agent",
+        labels={"role": "edge"},
+        cluster_id="venue-local",
+        instance="work",
+        settings=build_settings(),
+        client=labels_client,
+    )
+    assert labels_client.last_patch_payload == {"metadata": {"labels": {"role": "edge"}}}

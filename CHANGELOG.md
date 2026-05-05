@@ -1,6 +1,71 @@
 # Changelog
 
-## [2026-05-05] - Agent: Claude Opus 4.7 (orchestrator) + Claude Sonnet (8 implementer subagents)
+## [2026-05-05] - Agent: Claude Opus 4.7
+
+### Added (J-3-extension-multi-patch — substrate now allows multiple narrow patches per descriptor)
+
+Substrate evolution. Unblocks any resource that needs more than
+one narrow patch (deployment scale + set_labels, statefulset
+scale + future patches, etc.). The Batch 2 blocker on
+`D-1-deployment-set-labels` is resolved.
+
+Schema:
+
+- `Descriptor.patch: PatchConfig | None` →
+  `Descriptor.patches: list[PatchConfig] = []`.
+- `ToolsBlock.patch: ToolMeta | None` →
+  `ToolsBlock.patches: list[ToolMeta] = []`.
+- Validator (in `_check_consistency`) enforces:
+  `len(patches) == len(tools.patches)` (paired by index),
+  `tools.patches[i].name == rancher_<singular>_<patches[i].verb>`,
+  unique verbs within a descriptor, ≥1 arg per patch, and `get`
+  in operations.
+
+Planner (`scripts/codegen/plan.py`): `_public_names`,
+`_tool_metas`, `_registrations`, and `as_jinja_context` all
+iterate over `descriptor.patches`; `tools.patches[i]` paired by
+index.
+
+Template (`scripts/codegen/templates/tool_module.py.j2`): PATCH
+OPERATION block (private helper + public decorated function) and
+the PATCH tool-wrapper block both wrapped in
+`{% for patch in patches %}...{% endfor %}` loops.
+
+Migration (zero behavioral change for existing descriptors): all
+12 existing descriptors with a `patch:` block converted to
+`patches: [<single block>]` + `tools.patches: [<single block>]`.
+After `make codegen`, **`src/` shows zero diff** — proves the
+single→list shape change is byte-equivalent. Migrated:
+
+- backups, cert_manager_certificates, cron_jobs, deployments,
+  flows, horizontal_pod_autoscalers, ingresses, longhorn_volumes,
+  priority_classes, runtime_classes, service_monitors,
+  statefulsets.
+
+Multi-patch proof: `rancher_deployment_set_labels` (the slice
+Sonnet correctly blocked in Batch 2) landed as the second
+`patches:` entry on `deployments.yml`, alongside
+`rancher_deployment_scale`. Tool surface 203 → 204.
+
+Tests (3 new in `test_workloads_tools.py`):
+
+- Round-trip on `deployment_set_labels`: PATCH body is exactly
+  `{metadata: {labels: <map>}}` (distinct from scale's
+  `{spec: {replicas: N}}`).
+- Audit operation: `deployment_set_labels` (not `deployment_scale`).
+- Coexistence smoke: both tools work independently against their
+  own stub clients in the same test session.
+
+Documentation: `docs/codegen-curated-tools.md` Section 12 gains a
+"Multi-patch per descriptor" subsection with the worked
+deployments example.
+
+### Stats
+
+- Tool surface 203 → 204 (+1: rancher_deployment_set_labels).
+- Tests 355 → 358 (+3 multi-patch coexistence proof).
+- Coverage 85.91% → 85.90% (essentially unchanged).
+- All gates green; codegen 100 files match descriptors.
 
 ### Added (parallel-orchestration Batch 2 — 7 tools via shared brief + 8 Sonnet subagents)
 

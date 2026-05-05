@@ -64,18 +64,18 @@ get:
     - rancher_cert_manager_certificates_list
     - rancher_cert_manager_issuers_list
 
-patch:
-  verb: set_labels
-  target_path: metadata
-  audit_operation: cert_manager_certificate_set_labels
-  args:
-    - name: labels
-      type: dict_str_str
-      required: true
-      description: Replacement metadata.labels map (merge-patch semantics — passing this REPLACES the labels map; pass an empty dict to remove all labels).
-  next_steps:
-    - rancher_cert_manager_certificate_get
-    - rancher_cert_manager_certificates_list
+patches:
+  - verb: set_labels
+    target_path: metadata
+    audit_operation: cert_manager_certificate_set_labels
+    args:
+      - name: labels
+        type: dict_str_str
+        required: true
+        description: Replacement metadata.labels map (merge-patch semantics — passing this REPLACES the labels map; pass an empty dict to remove all labels).
+    next_steps:
+      - rancher_cert_manager_certificate_get
+      - rancher_cert_manager_certificates_list
 
 tools:
   list:
@@ -86,7 +86,7 @@ tools:
     name: rancher_cert_manager_certificate_get
     description: Fetch one cert-manager Certificate by namespace and name. Returns the curated summary plus condition_types_true (sorted list of condition types whose status is True), annotation keys, and full payload.
     annotation_set: READ_ONLY
-  patch:
-    name: rancher_cert_manager_certificate_set_labels
-    description: Replace metadata.labels on one cert-manager Certificate via JSON merge-patch. The `labels` arg is a complete replacement map. Returns the curated detail.
-    annotation_set: IDEMPOTENT_WRITE
+  patches:
+    - name: rancher_cert_manager_certificate_set_labels
+      description: Replace metadata.labels on one cert-manager Certificate via JSON merge-patch. The `labels` arg is a complete replacement map. Returns the curated detail.
+      annotation_set: IDEMPOTENT_WRITE
