@@ -7,6 +7,8 @@ import json
 from collections.abc import Callable
 from typing import Any
 
+from mcp.server.fastmcp.exceptions import ToolError
+
 from rancher_mcp.exceptions import RancherAPIError, RancherMCPError
 
 
@@ -23,14 +25,27 @@ def _error_envelope(exc: RancherMCPError) -> str:
 
 
 def wrap_with_structured_errors(fn: Callable[..., Any]) -> Callable[..., Any]:
-    """Wrap an async tool function so RancherMCPError becomes a structured JSON response."""
+    """Wrap an async tool function so RancherMCPError surfaces a structured envelope.
+
+    Raises ``ToolError`` carrying a JSON envelope with ``error_code``,
+    ``message``, and (for API errors) ``http_status``/``field``. FastMCP
+    converts ``ToolError`` to a ``CallToolResult`` with ``isError=True`` and
+    ``TextContent`` containing the envelope verbatim. The agent parses the
+    text to dispatch on ``error_code``.
+
+    Without this wrapper, the boundary trips on ``ValidationError`` because
+    a plain string return cannot be coerced into a typed Pydantic return
+    model (e.g. ``GenericResourceMutationResult``). Raising ``ToolError``
+    bypasses outputSchema validation entirely and uses the MCP-native
+    error path instead.
+    """
 
     @functools.wraps(fn)
     async def wrapper(*args: Any, **kwargs: Any) -> Any:
         try:
             return await fn(*args, **kwargs)
         except RancherMCPError as exc:
-            return _error_envelope(exc)
+            raise ToolError(_error_envelope(exc)) from exc
 
     return wrapper
 

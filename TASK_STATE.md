@@ -48,16 +48,21 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 
 ## Latest Logical Step
 
-- **BLOCKED: J-1 complete; awaiting user direction on next track.**
-  All 14 directory packs migrated to descriptors (35 of 35
-  applicable resource types). `monitoring` stays hand-written by
-  design (single capability-detection tool). `ops` stays
-  hand-written per spec non-goals. The next slice (J-2: Track B
-  new read tools via descriptors) is net-new feature scope and
-  shouldn't begin without explicit user instruction. Other
-  candidate next tracks: Track A quick fixes (4 small bugs),
-  Track C Phase 5 stretch items (elicitation/OAuth/metrics/audit),
-  Track G live-validation matrix.
+- **Track A COMPLETE.** All 4 quick fixes landed in one commit:
+  - A-1 `rancher_project_health_summary` Norman→Steve fix
+  - A-2 mutation-guard error shape (ToolError instead of
+    JSON-string return; agent now branches on `error_code`)
+  - A-3 `cancellable=` → `abandon_on_cancel=` deprecation
+  - A-4 `RANCHER_MCP_SERVER_NAME` /
+    `RANCHER_MCP_SERVER_DESCRIPTION` env-vars wired through
+    `AppSettings` to both `__main__.py` and
+    `server.py:create_mcp_server`.
+  All 210 tests pass, lint + pyright clean, codegen drift OK.
+  Coverage 85.42%.
+- **NEXT: J-2** (Track B new read tools via descriptors). Per
+  `default_slice_completion_behavior: continue-until-blocked`,
+  proceeding to B-3 (config_secrets) → B-2 (networking expansion)
+  → B-1 (provisioning) → B-4 (certificates).
 - **Resumed post-compaction (2026-05-04).** Bootstrap done:
   Serena activated, onboarding confirmed, hand-off memory
   `tasks/track_j_codegen_resume` re-read. Continued J-1 through

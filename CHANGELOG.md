@@ -1,5 +1,39 @@
 # Changelog
 
+## [2026-05-04] - Agent: Claude Opus 4.7
+
+### Fixed (Track A — quick fixes)
+- **A-1** `rancher_project_health_summary` switched from Norman
+  `/v3/namespaces?projectId=...` (which 404s on downstream
+  clusters) to the Kubernetes API proxy
+  `/k8s/clusters/{cluster_id}/api/v1/namespaces?labelSelector=field.cattle.io/projectId={short_id}`.
+  Project ID `c-xxx:p-yyy` is split to extract the short id used by
+  the namespace label. Test stub in `tests/unit/test_ops_tools.py`
+  updated to match the new URL + k8s payload shape.
+- **A-2** Mutation-guard rejection no longer trips Pydantic
+  `ValidationError` at the MCP boundary. `wrap_with_structured_errors`
+  now raises `mcp.server.fastmcp.exceptions.ToolError` with the JSON
+  envelope as message instead of returning a JSON-encoded string.
+  FastMCP converts `ToolError` to a `CallToolResult(isError=True,
+  content=[TextContent(...)])` carrying the envelope verbatim — the
+  agent parses it to dispatch on `error_code`. Direct unit tests
+  (which don't go through the wrapper) continue to assert
+  `RancherCapabilityError` raises.
+- **A-3** `to_thread.run_sync(..., cancellable=True)` →
+  `abandon_on_cancel=True` (anyio 4.1+ deprecation).
+- **A-4** Added `RANCHER_MCP_SERVER_NAME` and
+  `RANCHER_MCP_SERVER_DESCRIPTION` env-vars wired through
+  `AppSettings.server_name` / `server_instructions`. Both
+  `__main__.py` (production) and `server.py:create_mcp_server`
+  (tests/scripts) now read these from settings instead of
+  hard-coding `"rancher-mcp"` / the default instructions string.
+  Defaults preserve current behavior.
+
+### Quality gates
+- 210 tests pass, 85.42% coverage. Lint + pyright clean.
+  Architecture warnings unchanged (4 soft size warnings).
+  Codegen drift check: 49 files match descriptors.
+
 ## [2026-05-04] - Agent: Claude Sonnet 4.6
 ### Added
 - **Track J slice J-1 COMPLETE**: `projects_namespaces` pack

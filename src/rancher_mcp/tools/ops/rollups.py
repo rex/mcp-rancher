@@ -15,7 +15,6 @@ from rancher_mcp.models.ops.rollups import (
 )
 from rancher_mcp.services.instances import resolve_instance
 from rancher_mcp.tools.ops.paths import k8s_apps_ns_path, k8s_core_ns_path, k8s_items
-from rancher_mcp.tools.support.collections import object_items
 from rancher_mcp.tools.support.values import mapping_value, string_value
 from rancher_mcp.tools.workloads.readiness import (
     daemonset_ready,
@@ -195,14 +194,22 @@ async def _build_project_health(
 
     if ctx:
         await ctx.report_progress(1, 2)
-    ns_payload = await client.get_json(
-        "/v3/namespaces",
-        params={"projectId": project_id},
-    )
-    ns_items = object_items(ns_payload, field="data")
-    ns_names = [
-        string_value(ns, "name") or string_value(ns, "id") or "<unknown>" for ns in ns_items
-    ]
+
+    # Project ID is "{cluster_id}:{short_id}"; the namespace label uses just
+    # the short id. Norman /v3/namespaces?projectId=... 404s on downstream
+    # clusters in modern Rancher; the Kubernetes API proxy with a project
+    # label selector is the supported path.
+    ns_names: list[str] = []
+    if cluster_id is not None:
+        short_project_id = project_id.split(":", 1)[1] if ":" in project_id else project_id
+        ns_payload = await client.get_json(
+            f"/k8s/clusters/{cluster_id}/api/v1/namespaces",
+            params={
+                "labelSelector": f"field.cattle.io/projectId={short_project_id}",
+            },
+        )
+        ns_items = k8s_items(ns_payload)
+        ns_names = [string_value(_metadata(ns), "name") or "<unknown>" for ns in ns_items]
 
     total_pods = 0
     failing_pods = 0

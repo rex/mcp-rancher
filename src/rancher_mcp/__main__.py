@@ -52,8 +52,8 @@ def main() -> None:
     from mcp.server.fastmcp import FastMCP
 
     mcp = FastMCP(
-        name="rancher-mcp",
-        instructions="Capability-aware Rancher MCP server for Rancher 2.6.5",
+        name=settings.server_name,
+        instructions=settings.server_instructions,
     )
 
     # ── Phase B: background tool loading ───────────────────────────────────
@@ -76,7 +76,7 @@ def main() -> None:
         """Block (async-friendly) until all tools are registered, then list."""
         await to_thread.run_sync(
             lambda: _tools_ready.wait(timeout=30),
-            cancellable=True,
+            abandon_on_cancel=True,
         )
         return await _original_list_tools()  # type: ignore[return-value]
 

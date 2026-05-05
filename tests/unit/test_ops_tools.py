@@ -115,11 +115,13 @@ class StubOpsClient:
                 "clusterId": "local",
                 "state": "active",
             }
-        if path == "/v3/namespaces":
-            assert params == {"projectId": "local:p-ops"}
+        if path == "/k8s/clusters/local/api/v1/namespaces":
+            assert params == {
+                "labelSelector": "field.cattle.io/projectId=p-ops",
+            }
             return {
-                "data": [
-                    {"id": "local:default", "name": "default"},
+                "items": [
+                    {"metadata": {"name": "default"}},
                 ]
             }
         if path == "/v3/nodes":

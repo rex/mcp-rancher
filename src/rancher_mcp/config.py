@@ -24,6 +24,11 @@ class AppSettings(BaseSettings):
     rancher_verify_ssl: bool = Field(default=True, alias="RANCHER_VERIFY_SSL")
     rancher_ca_bundle: str | None = Field(default=None, alias="RANCHER_CA_BUNDLE")
     rancher_read_only: bool = Field(default=False, alias="RANCHER_READ_ONLY")
+    server_name: str = Field(default="rancher-mcp", alias="RANCHER_MCP_SERVER_NAME")
+    server_instructions: str = Field(
+        default="Capability-aware Rancher MCP server for Rancher 2.6.5",
+        alias="RANCHER_MCP_SERVER_DESCRIPTION",
+    )
     instances: dict[str, RancherInstanceConfig] = Field(default_factory=dict)
 
     model_config = SettingsConfigDict(

@@ -65,9 +65,12 @@ def create_mcp_server() -> FastMCP:
     Intended for tests and one-off scripts.  Production startup uses
     ``register_all_tools`` from a background thread instead.
     """
+    from rancher_mcp.config import get_settings
+
+    settings = get_settings()
     mcp = FastMCP(
-        name="rancher-mcp",
-        instructions="Capability-aware Rancher MCP server for Rancher 2.6.5",
+        name=settings.server_name,
+        instructions=settings.server_instructions,
     )
     register_all_tools(mcp)
     return mcp
