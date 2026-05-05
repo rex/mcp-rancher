@@ -95,6 +95,22 @@ patches:
         description: Replacement metadata.annotations map (merge-patch semantics).
     next_steps:
       - rancher_deployment_get
+  - verb: pause
+    target_path: spec
+    target_value:
+      paused: true
+    audit_operation: deployment_pause
+    next_steps:
+      - rancher_deployment_get
+      - rancher_deployment_resume
+  - verb: resume
+    target_path: spec
+    target_value:
+      paused: false
+    audit_operation: deployment_resume
+    next_steps:
+      - rancher_deployment_get
+      - rancher_pods_list
 
 delete:
   audit_operation: deployment_delete
@@ -120,6 +136,12 @@ tools:
       annotation_set: IDEMPOTENT_WRITE
     - name: rancher_deployment_set_annotations
       description: Replace metadata.annotations on one Kubernetes Deployment via JSON merge-patch. Returns the curated detail.
+      annotation_set: IDEMPOTENT_WRITE
+    - name: rancher_deployment_pause
+      description: Pause a Deployment rollout by setting spec.paused=true via JSON merge-patch. Argless toggle. Returns the curated detail.
+      annotation_set: IDEMPOTENT_WRITE
+    - name: rancher_deployment_resume
+      description: Resume a paused Deployment rollout by setting spec.paused=false via JSON merge-patch. Argless toggle — counterpart to rancher_deployment_pause. Returns the curated detail.
       annotation_set: IDEMPOTENT_WRITE
   delete:
     name: rancher_deployment_delete

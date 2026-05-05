@@ -468,6 +468,142 @@ async def rancher_deployment_set_annotations(
         )
 
 
+async def _patch_deployment_pause(
+    instance_name: str,
+    cluster_id: str,
+    namespace: str,
+    deployment_name: str,
+    client: ManagementDiscoveryClient,
+) -> RancherDeploymentDetail:
+    """Pause one deployment via JSON merge-patch; returns the curated detail."""
+
+    patch_subtree: dict[str, object] = {"paused": True}
+    request_payload: dict[str, object] = patch_subtree
+    request_payload = {"spec": request_payload}
+
+    payload = await client.patch_json(
+        workload_resource_path(cluster_id, namespace, "deployments", deployment_name),
+        payload=request_payload,
+    )
+    summary = deployment_summary_from_payload(payload)
+
+    metadata = mapping_value(payload, "metadata") or {}
+    metadata_annotations = mapping_value(metadata, "annotations") or {}
+    detail = RancherDeploymentDetail.model_validate(payload)
+    return detail.model_copy(
+        update={
+            "id": summary.id,
+            "ready": summary.ready,
+            "rollout_complete": summary.rollout_complete,
+            "container_images": summary.container_images,
+            "annotation_keys": sorted(string_dict(metadata_annotations)),
+            "payload": dict(payload),
+            "suggested_next_steps": ["rancher_deployment_get", "rancher_deployment_resume"],
+        }
+    )
+
+
+@audit_mutation(operation="deployment_pause", plane="steve")
+@rate_limit_writes
+async def rancher_deployment_pause(
+    namespace: str,
+    deployment_name: str,
+    cluster_id: str = "local",
+    instance: str | None = None,
+    settings: AppSettings | None = None,
+    client: ManagementDiscoveryClient | None = None,
+) -> RancherDeploymentDetail:
+    """Pause one deployment via JSON merge-patch."""
+
+    resolved_settings = settings or get_settings()
+    instance_name, instance_config = resolve_instance(resolved_settings, instance)
+    ensure_instance_writable(instance_name, instance_config)
+    if client is not None:
+        return await _patch_deployment_pause(
+            instance_name,
+            cluster_id,
+            namespace,
+            deployment_name,
+            client,
+        )
+    async with RancherManagementClient(instance_name, instance_config) as managed_client:
+        return await _patch_deployment_pause(
+            instance_name,
+            cluster_id,
+            namespace,
+            deployment_name,
+            managed_client,
+        )
+
+
+async def _patch_deployment_resume(
+    instance_name: str,
+    cluster_id: str,
+    namespace: str,
+    deployment_name: str,
+    client: ManagementDiscoveryClient,
+) -> RancherDeploymentDetail:
+    """Resume one deployment via JSON merge-patch; returns the curated detail."""
+
+    patch_subtree: dict[str, object] = {"paused": False}
+    request_payload: dict[str, object] = patch_subtree
+    request_payload = {"spec": request_payload}
+
+    payload = await client.patch_json(
+        workload_resource_path(cluster_id, namespace, "deployments", deployment_name),
+        payload=request_payload,
+    )
+    summary = deployment_summary_from_payload(payload)
+
+    metadata = mapping_value(payload, "metadata") or {}
+    metadata_annotations = mapping_value(metadata, "annotations") or {}
+    detail = RancherDeploymentDetail.model_validate(payload)
+    return detail.model_copy(
+        update={
+            "id": summary.id,
+            "ready": summary.ready,
+            "rollout_complete": summary.rollout_complete,
+            "container_images": summary.container_images,
+            "annotation_keys": sorted(string_dict(metadata_annotations)),
+            "payload": dict(payload),
+            "suggested_next_steps": ["rancher_deployment_get", "rancher_pods_list"],
+        }
+    )
+
+
+@audit_mutation(operation="deployment_resume", plane="steve")
+@rate_limit_writes
+async def rancher_deployment_resume(
+    namespace: str,
+    deployment_name: str,
+    cluster_id: str = "local",
+    instance: str | None = None,
+    settings: AppSettings | None = None,
+    client: ManagementDiscoveryClient | None = None,
+) -> RancherDeploymentDetail:
+    """Resume one deployment via JSON merge-patch."""
+
+    resolved_settings = settings or get_settings()
+    instance_name, instance_config = resolve_instance(resolved_settings, instance)
+    ensure_instance_writable(instance_name, instance_config)
+    if client is not None:
+        return await _patch_deployment_resume(
+            instance_name,
+            cluster_id,
+            namespace,
+            deployment_name,
+            client,
+        )
+    async with RancherManagementClient(instance_name, instance_config) as managed_client:
+        return await _patch_deployment_resume(
+            instance_name,
+            cluster_id,
+            namespace,
+            deployment_name,
+            managed_client,
+        )
+
+
 async def rancher_deployments_list_tool(
     namespace: str,
     cluster_id: str = "local",
@@ -575,6 +711,38 @@ async def rancher_deployment_set_annotations_tool(
         namespace=namespace,
         deployment_name=deployment_name,
         annotations=annotations,
+        cluster_id=cluster_id,
+        instance=instance,
+    )
+
+
+async def rancher_deployment_pause_tool(
+    namespace: str,
+    deployment_name: str,
+    cluster_id: str = "local",
+    instance: str | None = None,
+) -> RancherDeploymentDetail:
+    """Public MCP wrapper for curated deployment pause."""
+
+    return await rancher_deployment_pause(
+        namespace=namespace,
+        deployment_name=deployment_name,
+        cluster_id=cluster_id,
+        instance=instance,
+    )
+
+
+async def rancher_deployment_resume_tool(
+    namespace: str,
+    deployment_name: str,
+    cluster_id: str = "local",
+    instance: str | None = None,
+) -> RancherDeploymentDetail:
+    """Public MCP wrapper for curated deployment resume."""
+
+    return await rancher_deployment_resume(
+        namespace=namespace,
+        deployment_name=deployment_name,
         cluster_id=cluster_id,
         instance=instance,
     )
