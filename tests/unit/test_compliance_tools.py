@@ -48,6 +48,10 @@ class StubClient:
                         "passed": 112,
                         "skipped": 5,
                         "total": 120,
+                        "scheduledScanConfig": {
+                            "cronSchedule": "0 0 * * 0",
+                            "retentionCount": 7,
+                        },
                     }
                 ]
             }
@@ -63,6 +67,10 @@ class StubClient:
                 "skipped": 5,
                 "total": 120,
                 "status": {"lastRunTimestamp": "2024-01-01T00:00:00Z"},
+                "scheduledScanConfig": {
+                    "cronSchedule": "0 0 * * 0",
+                    "retentionCount": 7,
+                },
             }
         raise AssertionError(f"unexpected path: {path}")
 
@@ -96,6 +104,9 @@ async def test_cis_scans_list_returns_summary() -> None:
     assert scan.id == "scan-abc"
     assert scan.passed == 112
     assert scan.failed == 3
+    # Scheduled-scan visibility (B-7 follow-up extension).
+    assert scan.cron_schedule == "0 0 * * 0"
+    assert scan.retention_count == 7
 
 
 @pytest.mark.asyncio
@@ -106,3 +117,5 @@ async def test_cis_scan_get_returns_detail() -> None:
     assert result.id == "scan-abc"
     assert result.scan_profile_name == "cis-1.6"
     assert result.status == {"lastRunTimestamp": "2024-01-01T00:00:00Z"}
+    assert result.cron_schedule == "0 0 * * 0"
+    assert result.retention_count == 7

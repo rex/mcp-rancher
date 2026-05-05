@@ -54,6 +54,12 @@ multi-user/CI deployment scope, C-3 Prometheus metrics needs
 endpoint design; B-5 monitoring deepening blocks on
 Alertmanager API access design).
 
+- **B-7 follow-up: scheduled-scan visibility on CIS scans.**
+  `RancherCisScanSummary` now exposes `cron_schedule` and
+  `retention_count` via `AliasPath` on the existing
+  `scheduledScanConfig` payload subkey. Auto-aliasing handles
+  population — no helper change. Test fixture updated.
+  `docs/known-gaps.md` updated to reflect landed status.
 - **I-2 known-gaps doc landed.** `docs/known-gaps.md` documents
   every deferred / out-of-scope / accessible-elsewhere item
   identified during this session's Phase 4-5 work. Static

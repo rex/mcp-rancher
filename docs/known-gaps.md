@@ -131,18 +131,14 @@ For each gap:
 - **Workaround**: `rancher_steve_resource_list(schema_id="policies.kubewarden.io.admissionpolicy", ...)`
   on clusters where the chart is installed.
 
-### Scheduled-scan visibility on CIS scans
+### Scheduled-scan visibility on CIS scans — landed
 
-- **Status**: `deferred` — minor extension to existing pack.
-- **Why**: the existing `RancherCisScanSummary` model doesn't expose
-  `spec.scheduledScanConfig.cronSchedule` or
-  `spec.scheduledScanConfig.retentionCount`. Adding two fields with
-  `AliasPath` is straightforward but not done yet.
-- **Where it belongs**: B-7 follow-up commit on the existing
-  `compliance` pack.
-- **Workaround**: `rancher_cis_scan_get(scan_id="...")` —
-  the full payload includes these fields under
-  `payload.spec.scheduledScanConfig`.
+- **Status**: `landed` (B-7 follow-up).
+- **Detail**: `RancherCisScanSummary` now exposes
+  `cron_schedule` and `retention_count` via
+  `AliasPath("scheduledScanConfig", "cronSchedule")` and
+  `AliasPath("scheduledScanConfig", "retentionCount")`. Both
+  surface on list and detail tools.
 
 ---
 

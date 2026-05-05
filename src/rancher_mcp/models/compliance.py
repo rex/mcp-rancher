@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from pydantic import Field
+from pydantic import AliasPath, Field
 
 from rancher_mcp.models.base import RancherModel
 
@@ -57,6 +57,14 @@ class RancherCisScanSummary(RancherModel):
     passed: int | None = None
     skipped: int | None = None
     total: int | None = None
+    cron_schedule: str | None = Field(
+        default=None,
+        validation_alias=AliasPath("scheduledScanConfig", "cronSchedule"),
+    )
+    retention_count: int | None = Field(
+        default=None,
+        validation_alias=AliasPath("scheduledScanConfig", "retentionCount"),
+    )
 
 
 class RancherCisScanDetail(RancherCisScanSummary):

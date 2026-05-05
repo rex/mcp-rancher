@@ -2,6 +2,25 @@
 
 ## [2026-05-04] - Agent: Claude Opus 4.7
 
+### Added (B-7 follow-up — scheduled-scan visibility on CIS scans)
+- `RancherCisScanSummary` now exposes `cron_schedule` (string,
+  e.g. `"0 0 * * 0"`) and `retention_count` (int) extracted via
+  `AliasPath("scheduledScanConfig", "cronSchedule")` /
+  `AliasPath("scheduledScanConfig", "retentionCount")`. Defaults
+  to `None` when the scan isn't scheduled.
+- Auto-aliasing handles the rest — the summary helper is
+  unchanged. Pydantic's `AliasPath` resolves the nested keys
+  during `model_validate(payload)`.
+- Test fixture in `tests/unit/test_compliance_tools.py` updated
+  to include `scheduledScanConfig` on both list and detail
+  payloads. New assertions verify `cron_schedule="0 0 * * 0"`
+  and `retention_count=7`.
+- Closes the deferred B-7 partial item noted in
+  `docs/known-gaps.md`. Updated that file's
+  scheduled-scan entry to reflect the change.
+- 273 tests pass, 85.81% coverage. Lint + pyright + codegen
+  drift clean.
+
 ### Added (I-2 — known-gaps documentation)
 - New **`docs/known-gaps.md`** captures every deferred /
   out-of-scope / accessible-elsewhere item identified through
