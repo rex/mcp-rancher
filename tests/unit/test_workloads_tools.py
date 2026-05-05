@@ -12,6 +12,7 @@ from rancher_mcp.tools.workloads import (
     rancher_deployment_delete,
     rancher_deployment_get,
     rancher_deployment_scale,
+    rancher_deployment_set_annotations,
     rancher_deployment_set_labels,
     rancher_deployments_list,
     rancher_replica_set_get,
@@ -1242,3 +1243,139 @@ async def test_deployment_scale_and_set_labels_coexist_on_same_descriptor() -> N
         client=labels_client,
     )
     assert labels_client.last_patch_payload == {"metadata": {"labels": {"role": "edge"}}}
+
+
+# rancher_deployment_set_annotations (3-patch coexistence proof)
+# =====================================================================
+#
+# This test class proves that a THIRD patch (set_annotations) can coexist
+# alongside scale + set_labels on the same deployments descriptor. It is
+# the strongest test of the multi-patch substrate to date.
+
+
+class StubDeploymentSetAnnotationsClient:
+    """Patch-capable stub for the deployment set_annotations tests.
+
+    Captures the most recent patch_json request so tests can assert
+    on the merge-patch body.
+    """
+
+    def __init__(self) -> None:
+        self.last_patch_path: str | None = None
+        self.last_patch_payload: dict[str, object] | None = None
+
+    async def get_json(self, path: str, params: object = None) -> dict[str, object]:
+        raise AssertionError(f"unexpected get on {path!r} (params={params!r})")
+
+    async def patch_json(
+        self,
+        path: str,
+        payload: dict[str, object] | None = None,
+        params: object = None,
+    ) -> dict[str, object]:
+        self.last_patch_path = path
+        assert payload is not None
+        self.last_patch_payload = dict(payload)
+
+        detail = (
+            "/k8s/clusters/venue-local/apis/apps/v1/namespaces/"
+            "cattle-system/deployments/cattle-cluster-agent"
+        )
+        if path == detail:
+            assert params is None
+            metadata_patch = payload.get("metadata")
+            assert isinstance(metadata_patch, dict)
+            new_annotations = metadata_patch.get("annotations") or {}
+            return {
+                "metadata": {
+                    "name": "cattle-cluster-agent",
+                    "namespace": "cattle-system",
+                    "annotations": new_annotations,
+                    "labels": {},
+                    "generation": 5,
+                },
+                "spec": {
+                    "replicas": 2,
+                    "selector": {"matchLabels": {"app": "cattle-cluster-agent"}},
+                    "template": {
+                        "spec": {
+                            "serviceAccountName": "cattle",
+                            "containers": [
+                                {
+                                    "name": "cluster-register",
+                                    "image": "rancher/rancher-agent:v2.6.5",
+                                }
+                            ],
+                        }
+                    },
+                },
+                "status": {
+                    "observedGeneration": 4,
+                    "readyReplicas": 2,
+                    "availableReplicas": 2,
+                    "updatedReplicas": 2,
+                },
+            }
+        raise AssertionError(f"unexpected patch path {path!r}")
+
+
+@pytest.mark.asyncio
+async def test_rancher_deployment_set_annotations_uses_metadata_target_path() -> None:
+    """Set_annotations lands at the resource detail path with body
+    {metadata: {annotations: <map>}} — distinct from scale's
+    {spec: {replicas: N}} and set_labels' {metadata: {labels: <map>}}.
+    Proves all three patches coexist on one descriptor and target
+    independent subtrees.
+    """
+
+    reset_rate_limit_state()
+    client = StubDeploymentSetAnnotationsClient()
+
+    result = await rancher_deployment_set_annotations(
+        namespace="cattle-system",
+        deployment_name="cattle-cluster-agent",
+        annotations={"app.kubernetes.io/managed-by": "helm", "version": "1.0"},
+        cluster_id="venue-local",
+        instance="work",
+        settings=build_settings(),
+        client=client,
+    )
+
+    assert client.last_patch_path == (
+        "/k8s/clusters/venue-local/apis/apps/v1/namespaces/"
+        "cattle-system/deployments/cattle-cluster-agent"
+    )
+    assert client.last_patch_payload == {
+        "metadata": {"annotations": {"app.kubernetes.io/managed-by": "helm", "version": "1.0"}}
+    }
+    assert result.id == "cattle-system/cattle-cluster-agent"
+
+
+@pytest.mark.asyncio
+async def test_rancher_deployment_set_annotations_emits_audit_with_set_annotations_op() -> None:
+    """Audit operation = deployment_set_annotations (not deployment_scale or
+    deployment_set_labels). The 3-patch substrate's defining audit test:
+    all three patches on one descriptor emit distinct operation names.
+    """
+
+    reset_rate_limit_state()
+
+    with capture_logs() as logs:
+        await rancher_deployment_set_annotations(
+            namespace="cattle-system",
+            deployment_name="cattle-cluster-agent",
+            annotations={"env": "prod"},
+            cluster_id="venue-local",
+            instance="work",
+            settings=build_settings(),
+            client=StubDeploymentSetAnnotationsClient(),
+        )
+
+    audit_records = [r for r in logs if r.get("event") == "audit"]
+    assert len(audit_records) == 1
+    record = audit_records[0]
+    assert record["tool_name"] == "rancher_deployment_set_annotations"
+    assert record["operation"] == "deployment_set_annotations"
+    assert record["plane"] == "steve"
+    assert record["outcome"] == "success"
+    assert "annotations" in record["arg_keys"]
