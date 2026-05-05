@@ -102,6 +102,52 @@ and optional-chart resources). Substrate is feature-complete.
 
 ## Latest Logical Step
 
+- **DEFAULT SCOPE COMPLETE.** All 9 Q&A defaults from session
+  start landed. Tool surface 184 → 268 (+84) since post-
+  compaction resume. 504 tests pass, 85.35% coverage. 11 batches
+  shipped via parallel orchestration. 4 substrate evolutions
+  beyond J-3 baseline. Full handoff in Serena memo
+  `tasks/autonomous_session_handoff_2026_05_05`.
+
+- **Substrate slice 4 — target_value_factory landed (`ea415b0`).**
+  PatchConfig now accepts `target_value_factory: <python.path>` as
+  a third mutually-exclusive variant alongside `args` and static
+  `target_value`. Unblocks runtime-dynamic patch bodies (timestamps,
+  computed values). New module: `src/rancher_mcp/tools/support/
+  dynamic_values.py` housing factory functions. First user:
+  `rancher_deployment_restart` — sets `spec.template.metadata.
+  annotations.kubectl.kubernetes.io/restartedAt` to UTC NOW per
+  request, matching `kubectl rollout restart` convention.
+  Deployments now has 6 patches (scale + set_labels + set_annotations
+  + pause + resume + restart) — substrate proves 6-patch coexistence,
+  new high-water mark.
+
+- **Substrate slice 3 — argless patches via target_value (`0fea2da`).**
+  PatchConfig now accepts `target_value: dict[str, object]` for
+  argless toggle verbs. Validator enforces exactly-one of
+  (args, target_value, target_value_factory). Generated code uses
+  the new `python_literal` Jinja filter to emit Python-source-correct
+  literals (True / False / None) vs JSON's lowercase
+  (true / false / null). First users: `cron_job_resume`,
+  `deployment_pause`, `deployment_resume`.
+
+- **Substrate slice 2 — nested target_path (`4ed256e`).**
+  Codegen template now splits `target_path` on `.` and builds the
+  nested dict via Jinja loop. Unblocks `pvc_set_size` (was emitting
+  broken body shape with literal `"spec.resources.requests"` as a
+  dict key). Single-segment cases unchanged. 28 generated files
+  regenerated; functionally equivalent for all existing patches.
+
+- **Cookbook doc landed (`136c72d`)**: `docs/codegen-write-tools-
+  cookbook.md` — practitioner recipes covering all 5 write verbs,
+  pitfalls table with 10 common gotchas, substrate evolution log,
+  agent-autonomy guidance.
+
+- **Batch 11 — 3 deferred deletes (`71771b3`)**: service_monitor_delete,
+  resource_quota_delete, limit_range_delete. Same-pack conflicts
+  expected and resolved via documented manual-apply pattern. Tool
+  surface 265 → 268. Tests 494 → 504 (+10).
+
 - **Batch 6 landed: 8 parallel Sonnet agents shipped 8
   cross-pack patches in ~4.8 min wall-clock — ZERO
   cherry-pick conflicts (FOURTH consecutive clean batch).**
