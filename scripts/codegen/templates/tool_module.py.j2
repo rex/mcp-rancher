@@ -721,8 +721,12 @@ async def _patch_{{ display_name_singular }}_{{ patch.verb }}(
         raise RancherCapabilityError(
             "No patch fields provided; every arg was None. Pass at least one field to update."
         )
-    {%- else -%}
+    {%- elif patch.target_value is not none -%}
     patch_subtree: dict[str, object] = {{ patch.target_value | python_literal }}
+    {%- elif patch.target_value_factory -%}
+    {%- set _factory_parts = patch.target_value_factory.rsplit(".", 1) -%}
+    from {{ _factory_parts[0] }} import {{ _factory_parts[1] }} as _target_value_factory
+    patch_subtree: dict[str, object] = _target_value_factory()
     {%- endif %}
     {% if patch.target_path -%}
     request_payload: dict[str, object] = patch_subtree

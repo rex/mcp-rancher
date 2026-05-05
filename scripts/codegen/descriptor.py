@@ -431,9 +431,18 @@ class PatchConfig(BaseModel):
 
     target_value: dict[str, object] | None = None
     """Literal subtree to inject under ``target_path`` for argless
-    verbs. Mutually exclusive with ``args``. Used by toggle-style
-    patches where the verb encodes the change (e.g. cron_job_resume
-    sets spec.suspend=false). Leaf values must be JSON-compatible."""
+    verbs. Mutually exclusive with ``args`` and
+    ``target_value_factory``. Used by toggle-style patches where the
+    verb encodes the change (e.g. cron_job_resume sets
+    spec.suspend=false). Leaf values must be JSON-compatible."""
+
+    target_value_factory: str | None = None
+    """Python import path to a callable returning the patch subtree at
+    REQUEST time. Mutually exclusive with ``args`` and ``target_value``.
+    Use for runtime-dynamic values (e.g. ``deployment_restart`` sets a
+    ``restartedAt`` timestamp that must be NOW per request). Format:
+    ``rancher_mcp.tools.support.dynamic_values.<function_name>``. The
+    function must take no args and return ``dict[str, object]``."""
 
     target_path: str
     """Dot-delimited JSON path under which args become object keys.
@@ -658,17 +667,25 @@ class Descriptor(BaseModel):
                 )
             verbs_seen: list[str] = []
             for index, patch in enumerate(self.patches):
-                if not patch.args and patch.target_value is None:
+                value_sources = [
+                    bool(patch.args),
+                    patch.target_value is not None,
+                    patch.target_value_factory is not None,
+                ]
+                set_count = sum(value_sources)
+                if set_count == 0:
                     raise ValueError(
-                        f"patches[{index}] must declare either non-empty "
-                        f"args or a target_value — narrow patches need a "
-                        f"defined subtree to inject."
+                        f"patches[{index}] must declare exactly one of "
+                        f"args, target_value, or target_value_factory — "
+                        f"narrow patches need a defined subtree source."
                     )
-                if patch.args and patch.target_value is not None:
+                if set_count > 1:
                     raise ValueError(
-                        f"patches[{index}] cannot declare both args and "
-                        f"target_value — choose one. Use args for typed "
-                        f"input; target_value for argless toggles."
+                        f"patches[{index}] declares more than one of "
+                        f"(args, target_value, target_value_factory). "
+                        f"Pick exactly one: args for typed input, "
+                        f"target_value for static toggles, "
+                        f"target_value_factory for runtime-dynamic values."
                     )
                 if patch.verb in verbs_seen:
                     raise ValueError(

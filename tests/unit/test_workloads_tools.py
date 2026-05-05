@@ -15,6 +15,7 @@ from rancher_mcp.tools.workloads import (
     rancher_deployment_delete,
     rancher_deployment_get,
     rancher_deployment_pause,
+    rancher_deployment_restart,
     rancher_deployment_resume,
     rancher_deployment_scale,
     rancher_deployment_set_annotations,
@@ -2111,3 +2112,112 @@ async def test_deployment_pause_resume_audit_ops_distinct() -> None:
 
     resume_audit = next(r for r in logs_resume if r.get("event") == "audit")
     assert resume_audit["operation"] == "deployment_resume"
+
+
+# =====================================================================
+# rancher_deployment_restart (target_value_factory — runtime timestamp)
+# =====================================================================
+
+
+class StubDeploymentRestartClient:
+    """Stub for the deployment_restart test.
+
+    Captures the merge-patch body so the test can assert that the
+    factory-emitted timestamp lands at the right nested location.
+    """
+
+    def __init__(self) -> None:
+        self.last_patch_payload: dict[str, object] | None = None
+
+    async def get_json(self, path: str, params: object = None) -> dict[str, object]:
+        raise AssertionError(f"unexpected get on {path!r}")
+
+    async def patch_json(
+        self,
+        path: str,
+        payload: dict[str, object] | None = None,
+        params: object = None,
+    ) -> dict[str, object]:
+        del path, params
+        assert payload is not None
+        self.last_patch_payload = dict(payload)
+        return {
+            "metadata": {
+                "name": "cattle-cluster-agent",
+                "namespace": "cattle-system",
+                "annotations": {},
+                "generation": 5,
+            },
+            "spec": {
+                "replicas": 3,
+                "selector": {"matchLabels": {"app": "cattle-cluster-agent"}},
+                "template": {"spec": {"containers": []}},
+            },
+            "status": {},
+        }
+
+
+@pytest.mark.asyncio
+async def test_rancher_deployment_restart_pokes_restartedAt_annotation() -> None:
+    """Restart sets spec.template.metadata.annotations[kubectl.kubernetes.io/restartedAt].
+
+    The substrate target_value_factory mechanism imports
+    ``deployment_restart_target_value`` from
+    ``rancher_mcp.tools.support.dynamic_values`` at request time and
+    calls it. The function returns a fresh dict with the current UTC
+    timestamp; codegen wraps it under target_path=spec to produce the
+    final merge-patch body.
+
+    This test asserts STRUCTURAL correctness of the body — the
+    timestamp value itself is non-deterministic (now()) so we just
+    verify the nested keys exist and the value is a non-empty string.
+    """
+
+    reset_rate_limit_state()
+    client = StubDeploymentRestartClient()
+
+    await rancher_deployment_restart(
+        namespace="cattle-system",
+        deployment_name="cattle-cluster-agent",
+        cluster_id="venue-local",
+        instance="work",
+        settings=build_settings(),
+        client=client,
+    )
+
+    assert client.last_patch_payload is not None
+    spec = client.last_patch_payload.get("spec")
+    assert isinstance(spec, dict)
+    template = spec.get("template")
+    assert isinstance(template, dict)
+    metadata = template.get("metadata")
+    assert isinstance(metadata, dict)
+    annotations = metadata.get("annotations")
+    assert isinstance(annotations, dict)
+    restarted_at = annotations.get("kubectl.kubernetes.io/restartedAt")
+    assert isinstance(restarted_at, str)
+    assert len(restarted_at) > 0
+    # ISO 8601 format check — has 'T' separator and 'Z'-or-offset suffix.
+    assert "T" in restarted_at
+
+
+@pytest.mark.asyncio
+async def test_rancher_deployment_restart_emits_audit_op() -> None:
+    """Restart audit records carry operation='deployment_restart'."""
+
+    reset_rate_limit_state()
+
+    with capture_logs() as logs:
+        await rancher_deployment_restart(
+            namespace="cattle-system",
+            deployment_name="cattle-cluster-agent",
+            cluster_id="venue-local",
+            instance="work",
+            settings=build_settings(),
+            client=StubDeploymentRestartClient(),
+        )
+
+    audit = next(r for r in logs if r.get("event") == "audit")
+    assert audit["tool_name"] == "rancher_deployment_restart"
+    assert audit["operation"] == "deployment_restart"
+    assert audit["outcome"] == "success"

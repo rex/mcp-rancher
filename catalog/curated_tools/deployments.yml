@@ -111,6 +111,13 @@ patches:
     next_steps:
       - rancher_deployment_get
       - rancher_pods_list
+  - verb: restart
+    target_path: spec
+    target_value_factory: rancher_mcp.tools.support.dynamic_values.deployment_restart_target_value
+    audit_operation: deployment_restart
+    next_steps:
+      - rancher_deployment_get
+      - rancher_pods_list
 
 delete:
   audit_operation: deployment_delete
@@ -142,6 +149,9 @@ tools:
       annotation_set: IDEMPOTENT_WRITE
     - name: rancher_deployment_resume
       description: Resume a paused Deployment rollout by setting spec.paused=false via JSON merge-patch. Argless toggle — counterpart to rancher_deployment_pause. Returns the curated detail.
+      annotation_set: IDEMPOTENT_WRITE
+    - name: rancher_deployment_restart
+      description: Trigger a Deployment rolling restart by patching spec.template.metadata.annotations.kubectl.kubernetes.io/restartedAt to the current UTC time. Same convention as `kubectl rollout restart`. Returns the curated detail.
       annotation_set: IDEMPOTENT_WRITE
   delete:
     name: rancher_deployment_delete
