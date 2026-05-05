@@ -24,7 +24,7 @@ shared_imports:
 summary_function: service_summary_from_payload
 
 # Operations
-operations: [list, get]
+operations: [list, get, patch]
 
 list:
   query_params: [limit, continue_token, label_selector]
@@ -52,6 +52,19 @@ get:
     - rancher_services_list
     - rancher_pods_list
 
+patches:
+  - verb: set_labels
+    target_path: metadata
+    audit_operation: service_set_labels
+    args:
+      - name: labels
+        type: dict_str_str
+        required: true
+        description: Replacement metadata.labels map (merge-patch semantics — passing this REPLACES the labels map; pass an empty dict to remove all labels).
+    next_steps:
+      - rancher_service_get
+      - rancher_services_list
+
 tools:
   list:
     name: rancher_services_list
@@ -61,3 +74,7 @@ tools:
     name: rancher_service_get
     description: Fetch one service by namespace and name. Returns the curated summary plus relationships, ports, link keys, and full payload.
     annotation_set: READ_ONLY
+  patches:
+    - name: rancher_service_set_labels
+      description: Replace metadata.labels on one Kubernetes Service via JSON merge-patch. The `labels` arg is a complete replacement map. Returns the curated detail.
+      annotation_set: IDEMPOTENT_WRITE

@@ -8,7 +8,11 @@ from __future__ import annotations
 from rancher_mcp.audit import audit_mutation
 {% endif -%}
 {% if transport == 'steve' -%}
+{% if has_mutation -%}
+from rancher_mcp.clients.steve import RancherSteveClient, SteveMutationClient
+{% else -%}
 from rancher_mcp.clients.steve import RancherSteveClient, SteveDiscoveryClient
+{% endif -%}
 {% elif transport == 'k8s-proxy' or transport == 'norman' -%}
 from rancher_mcp.clients.management import ManagementDiscoveryClient, RancherManagementClient
 {% endif -%}
@@ -50,7 +54,7 @@ from rancher_mcp.tools.{{ pack }}.shared import (
 
 {# Transport-specific shorthand definitions for use in the template #}
 {%- if transport == 'steve' -%}
-{%- set client_protocol = 'SteveDiscoveryClient' -%}
+{%- set client_protocol = 'SteveMutationClient' if has_mutation else 'SteveDiscoveryClient' -%}
 {%- set client_class = 'RancherSteveClient' -%}
 {%- set client_var = 'steve_client' -%}
 {%- set items_function = 'data_items' -%}
