@@ -1706,6 +1706,21 @@ today) and **multi-patch additions** (descriptor already has a
 | `D-1-statefulset-set-labels` | `statefulsets.yml` | workloads | statefulset | statefulset_set_labels | StatefulSet | namespaced; multi-patch (existing has `scale` — APPEND) |
 | `D-1-configmap-set-labels` | `configmaps.yml` | config_secrets | config_map | configmap_set_labels | ConfigMap | namespaced; FIRST patch on descriptor that already has create + apply + delete (validates patch coexistence with full mutation set) |
 
+#### Slice-specific rows — Batch 6 set_labels (2026-05-05, post-Batch-5)
+
+8 agents across 8 packs. **Each pack already has at least one patched descriptor**; this batch adds a SECOND patched descriptor per pack. Validates that `__init__.py` regeneration merges cleanly across alphabetically-distant new descriptors. All single-patch virgin (descriptor's first `patches:` entry).
+
+| Slice ID | Descriptor file | Pack | display_name_singular | audit_operation | Resource | Notes |
+|---|---|---|---|---|---|---|
+| `D-1-service-set-labels` | `services.yml` | pods_services | service | service_set_labels | Service | namespaced; pods_services pack's first patched descriptor |
+| `D-1-daemonset-set-labels` | `daemonsets.yml` | workloads | daemonset | daemonset_set_labels | DaemonSet | namespaced; workloads pack's third patched descriptor (after deployments, statefulsets) |
+| `D-1-job-set-labels` | `jobs.yml` | batch_workloads | job | job_set_labels | Job | namespaced; batch_workloads pack's second patched descriptor (after cron_jobs) |
+| `D-1-secret-set-labels` | `secrets.yml` | config_secrets | secret | secret_set_labels | Secret | namespaced; config_secrets second patched descriptor (after configmaps); secret already has create — validates create + patch coexistence |
+| `D-1-limit-range-set-labels` | `limit_ranges.yml` | governance | limit_range | limit_range_set_labels | LimitRange | namespaced; governance pack's third patched descriptor |
+| `D-1-endpoint-slice-set-labels` | `endpoint_slices.yml` | networking | endpoint_slice | endpoint_slice_set_labels | EndpointSlice | namespaced; networking pack's third patched descriptor |
+| `D-1-persistent-volume-claim-set-labels` | `persistent_volume_claims.yml` | storage | persistent_volume_claim | persistent_volume_claim_set_labels | PersistentVolumeClaim | namespaced; storage pack's second patched descriptor |
+| `D-1-longhorn-node-set-labels` | `longhorn_nodes.yml` | longhorn | longhorn_node | longhorn_node_set_labels | Longhorn Node CR | namespaced; longhorn pack's second patched descriptor; optional Longhorn chart |
+
 ### Shared brief — Narrow annotation-set patch (`D-1-*-set-annotations`)
 
 Covers any slice that adds a narrow patch tool replacing
