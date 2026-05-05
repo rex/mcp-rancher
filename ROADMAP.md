@@ -544,10 +544,17 @@ Required by `VIBE.yaml` `security` section but not yet landed.
   - The current `confirmation: "delete steve namespace foo"` phrase is
     only for deletes. Apply equivalent (or Track C-1 elicitation) to
     other Tier-2 / Tier-3 writes.
-- [ ] **H-4** Large-result pagination boundary verification (P10)
-  - Synthesize a load test against a populated lab (or fixture-driven)
-    that proves cursor pagination behaves correctly at 10× the default
-    page size and that progress notifications fire under load.
+- [x] **H-4** Large-result pagination boundary verification (P10) — landed (fixture-driven)
+  - `tests/unit/test_pagination_load.py` walks 10 pages of 100
+    items each through `rancher_pods_list`, verifies all 1000
+    items collected exactly once, exact page count, and that
+    the terminal page (no `pagination.next` URL) yields
+    `next_page_token=None`. Hard-ceiling at 20 pages so a
+    future cursor-token regression fails fast.
+  - **Remaining (deferred)**: progress-notification firing
+    under load. The synthetic stub doesn't drive the FastMCP
+    progress-notification path; that's better tested via
+    `mcp_probe.py` against the real lab during Track G.
 - [ ] **H-5** Streaming behavior verification (P10 / G-4 overlap)
 
 ---

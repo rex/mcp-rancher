@@ -2,6 +2,28 @@
 
 ## [2026-05-04] - Agent: Claude Opus 4.7
 
+### Added (H-4 — cursor-pagination boundary verification)
+- New **`tests/unit/test_pagination_load.py`** synthesizes a
+  Steve-style collection where the curated `rancher_pods_list`
+  walks 10 pages to collect 1000 items (10 × the default page
+  size of 100). Verifies:
+  - All 1000 items are retrieved.
+  - No item is duplicated across pages.
+  - Walked exactly 10 pages (catches off-by-one in the
+    `next_page_token` guard).
+  - Final-page response (no `pagination.next` URL) yields
+    `next_page_token=None`.
+- Hard-ceiling at 20 iterations so any future cursor-token
+  regression that would spin forever fails fast with a
+  diagnostic.
+- Stub mimics the Rancher Steve list shape: items under `data`,
+  optional `pagination.next` URL whose `marker=<token>` query
+  param encodes the next continuation. The stub correctly
+  exercises `next_page_token_from_payload`'s Norman-style
+  `pagination.next` URL parsing path.
+- 275 tests pass, 85.92% coverage.
+- Ticks ROADMAP H-4.
+
 ### Added (B-7 follow-up — scheduled-scan visibility on CIS scans)
 - `RancherCisScanSummary` now exposes `cron_schedule` (string,
   e.g. `"0 0 * * 0"`) and `retention_count` (int) extracted via

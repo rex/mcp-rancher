@@ -54,6 +54,13 @@ multi-user/CI deployment scope, C-3 Prometheus metrics needs
 endpoint design; B-5 monitoring deepening blocks on
 Alertmanager API access design).
 
+- **H-4 pagination boundary test landed.** Synthesizes a Steve
+  collection of 1000 items and walks 10 pages via
+  `rancher_pods_list`. Verifies count, uniqueness, exact page
+  count, and terminal-page `next_page_token=None`. Hard-ceiling
+  at 20 iterations to fail fast on cursor-token regression.
+  275 tests pass, 85.92% coverage. Progress-notification firing
+  under load is deferred to Track G live validation.
 - **B-7 follow-up: scheduled-scan visibility on CIS scans.**
   `RancherCisScanSummary` now exposes `cron_schedule` and
   `retention_count` via `AliasPath` on the existing
