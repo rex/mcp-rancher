@@ -1697,7 +1697,7 @@ today) and **multi-patch additions** (descriptor already has a
 | `D-1-pod-disruption-budget-set-labels` | `pod_disruption_budgets.yml` | disruption | pod_disruption_budget | pod_disruption_budget_set_labels | PodDisruptionBudget | namespaced; single-patch virgin |
 | `D-1-network-policy-set-labels` | `network_policies.yml` | networking | network_policy | network_policy_set_labels | NetworkPolicy | namespaced; single-patch virgin |
 | `D-1-prometheus-rule-set-labels` | `prometheus_rules.yml` | prometheus_monitoring | prometheus_rule | prometheus_rule_set_labels | PrometheusRule | namespaced; single-patch virgin; optional kube-prometheus-stack |
-| `D-1-namespaced-certificate-set-labels` | `namespaced_certificates.yml` | certificates | namespaced_certificate | namespaced_certificate_set_labels | NamespacedCertificate (Norman type) | project-scoped; single-patch virgin |
+| `D-1-storage-class-set-labels` | `storage_classes.yml` | storage | storage_class | storage_class_set_labels | StorageClass | cluster-scoped (storage.k8s.io/v1); single-patch virgin |
 
 ### Shared brief — Narrow annotation-set patch (`D-1-*-set-annotations`)
 
