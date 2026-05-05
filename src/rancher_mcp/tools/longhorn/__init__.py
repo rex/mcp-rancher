@@ -16,6 +16,8 @@ from rancher_mcp.tools.longhorn._generated_longhorn_backups import (
 from rancher_mcp.tools.longhorn._generated_longhorn_nodes import (
     rancher_longhorn_node_get,
     rancher_longhorn_node_get_tool,
+    rancher_longhorn_node_set_labels,
+    rancher_longhorn_node_set_labels_tool,
     rancher_longhorn_nodes_list,
     rancher_longhorn_nodes_list_tool,
 )
@@ -41,6 +43,7 @@ __all__ = [
     "rancher_longhorn_backup_get",
     "rancher_longhorn_backups_list",
     "rancher_longhorn_node_get",
+    "rancher_longhorn_node_set_labels",
     "rancher_longhorn_nodes_list",
     "rancher_longhorn_snapshot_get",
     "rancher_longhorn_snapshots_list",
@@ -66,6 +69,9 @@ def register_longhorn_tools(mcp: FastMCP) -> None:
     )
     mcp.tool(name="rancher_longhorn_node_get", annotations=READ_ONLY)(
         rancher_longhorn_node_get_tool
+    )
+    mcp.tool(name="rancher_longhorn_node_set_labels", annotations=IDEMPOTENT_WRITE)(
+        rancher_longhorn_node_set_labels_tool
     )
     mcp.tool(name="rancher_longhorn_snapshots_list", annotations=READ_ONLY)(
         rancher_longhorn_snapshots_list_tool

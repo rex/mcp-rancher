@@ -6,11 +6,15 @@
 
 from __future__ import annotations
 
+from rancher_mcp.audit import audit_mutation
 from rancher_mcp.clients.management import ManagementDiscoveryClient, RancherManagementClient
 from rancher_mcp.config import AppSettings, get_settings
+from rancher_mcp.exceptions import RancherCapabilityError
 from rancher_mcp.models.longhorn import RancherLonghornNodeDetail, RancherLonghornNodeList
+from rancher_mcp.rate_limit import rate_limit_writes
 from rancher_mcp.services.instances import resolve_instance
 from rancher_mcp.services.resources.builders_pagination import next_page_token_from_payload
+from rancher_mcp.services.safety import ensure_instance_writable
 from rancher_mcp.tools.longhorn.paths import (
     longhorn_namespaced_collection_path,
     longhorn_namespaced_resource_path,
@@ -175,6 +179,83 @@ async def rancher_longhorn_node_get(
         )
 
 
+async def _patch_longhorn_node_set_labels(
+    instance_name: str,
+    cluster_id: str,
+    namespace: str,
+    node_name: str,
+    labels: dict[str, str],
+    client: ManagementDiscoveryClient,
+) -> RancherLonghornNodeDetail:
+    """Set_labels one longhorn_node via JSON merge-patch; returns the curated detail."""
+
+    patch_subtree: dict[str, object] = {}
+    patch_subtree["labels"] = labels
+    if not patch_subtree:
+        raise RancherCapabilityError(
+            "No patch fields provided; every arg was None. Pass at least one field to update."
+        )
+    request_payload: dict[str, object] = {"metadata": patch_subtree}
+    payload = await client.patch_json(
+        longhorn_namespaced_resource_path(cluster_id, namespace, "nodes", node_name),
+        payload=request_payload,
+    )
+    summary = node_summary_from_payload(payload)
+
+    metadata = mapping_value(payload, "metadata") or {}
+    annotations = mapping_value(metadata, "annotations") or {}
+    storage_totals = node_storage_totals(payload)
+    detail = RancherLonghornNodeDetail.model_validate(payload)
+    return detail.model_copy(
+        update={
+            "ready": summary.ready,
+            "schedulable": summary.schedulable,
+            "disk_count": summary.disk_count,
+            "annotation_keys": sorted(string_dict(annotations)),
+            "storage_available_total": storage_totals[0],
+            "storage_maximum_total": storage_totals[1],
+            "payload": dict(payload),
+            "suggested_next_steps": ["rancher_longhorn_node_get", "rancher_longhorn_nodes_list"],
+        }
+    )
+
+
+@audit_mutation(operation="longhorn_node_set_labels", plane="steve")
+@rate_limit_writes
+async def rancher_longhorn_node_set_labels(
+    namespace: str,
+    node_name: str,
+    labels: dict[str, str],
+    cluster_id: str = "local",
+    instance: str | None = None,
+    settings: AppSettings | None = None,
+    client: ManagementDiscoveryClient | None = None,
+) -> RancherLonghornNodeDetail:
+    """Set_labels one longhorn_node via JSON merge-patch."""
+
+    resolved_settings = settings or get_settings()
+    instance_name, instance_config = resolve_instance(resolved_settings, instance)
+    ensure_instance_writable(instance_name, instance_config)
+    if client is not None:
+        return await _patch_longhorn_node_set_labels(
+            instance_name,
+            cluster_id,
+            namespace,
+            node_name,
+            labels,
+            client,
+        )
+    async with RancherManagementClient(instance_name, instance_config) as managed_client:
+        return await _patch_longhorn_node_set_labels(
+            instance_name,
+            cluster_id,
+            namespace,
+            node_name,
+            labels,
+            managed_client,
+        )
+
+
 async def rancher_longhorn_nodes_list_tool(
     namespace: str,
     cluster_id: str = "local",
@@ -210,6 +291,24 @@ async def rancher_longhorn_node_get_tool(
     return await rancher_longhorn_node_get(
         namespace=namespace,
         node_name=node_name,
+        cluster_id=cluster_id,
+        instance=instance,
+    )
+
+
+async def rancher_longhorn_node_set_labels_tool(
+    namespace: str,
+    node_name: str,
+    labels: dict[str, str],
+    cluster_id: str = "local",
+    instance: str | None = None,
+) -> RancherLonghornNodeDetail:
+    """Public MCP wrapper for curated longhorn_node set_labels."""
+
+    return await rancher_longhorn_node_set_labels(
+        namespace=namespace,
+        node_name=node_name,
+        labels=labels,
         cluster_id=cluster_id,
         instance=instance,
     )
