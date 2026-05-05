@@ -19,6 +19,7 @@ list_response_model: rancher_mcp.models.config_secrets.RancherConfigMapList
 detail_response_model: rancher_mcp.models.config_secrets.RancherConfigMapDetail
 
 shared_imports:
+  - build_configmap_payload
   - config_map_summary_from_payload
   - items
 support_value_imports:
@@ -27,7 +28,7 @@ summary_function: config_map_summary_from_payload
 query_builder_function: build_list_query_params
 query_builder_in_shared: true
 
-operations: [list, get]
+operations: [list, get, create]
 
 list:
   query_params: [limit, continue_token, label_selector, field_selector]
@@ -47,7 +48,7 @@ get:
   locals:
     - name: metadata
       expression: 'mapping_value(payload, "metadata") or {}'
-    - name: annotations
+    - name: metadata_annotations
       expression: 'mapping_value(metadata, "annotations") or {}'
     - name: data_dict
       expression: 'mapping_value(payload, "data") or {}'
@@ -55,7 +56,7 @@ get:
       expression: 'mapping_value(payload, "binaryData") or {}'
   extras:
     - field: annotation_keys
-      expression: sorted(string_dict(annotations))
+      expression: sorted(string_dict(metadata_annotations))
     - field: data_keys
       expression: sorted(string_dict(data_dict))
     - field: binary_data_keys
@@ -64,6 +65,30 @@ get:
   include_payload: true
   next_steps:
     - rancher_config_maps_list
+    - rancher_pods_list
+
+create:
+  payload_composer: build_configmap_payload
+  audit_operation: configmap_create
+  args:
+    - name: data
+      type: dict_str_str
+      required: true
+      description: Top-level string key/value pairs stored in the ConfigMap.
+    - name: binary_data
+      type: dict_str_str
+      description: Optional binaryData entries (base64-encoded values).
+    - name: immutable
+      type: bool
+      description: If True, the ConfigMap cannot be updated after creation.
+    - name: labels
+      type: dict_str_str
+      description: Optional metadata labels merged into metadata.labels.
+    - name: annotations
+      type: dict_str_str
+      description: Optional metadata annotations merged into metadata.annotations.
+  next_steps:
+    - rancher_config_map_get
     - rancher_pods_list
 
 tools:
@@ -75,3 +100,7 @@ tools:
     name: rancher_config_map_get
     description: Fetch one Kubernetes ConfigMap by namespace and name via Rancher's raw Kubernetes proxy. Returns the curated summary plus full payload, data keys, binary data keys, and annotation keys.
     annotation_set: READ_ONLY
+  create:
+    name: rancher_config_map_create
+    description: Create one Kubernetes ConfigMap in the given namespace via Rancher's raw Kubernetes proxy. Accepts typed `data` (str → str map) plus optional `binary_data`, `immutable`, `labels`, and `annotations`. Returns the curated detail of the created resource. Subject to write rate limiting and audit logging.
+    annotation_set: SAFE_WRITE

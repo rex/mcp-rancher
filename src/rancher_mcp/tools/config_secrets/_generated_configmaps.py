@@ -6,13 +6,17 @@
 
 from __future__ import annotations
 
+from rancher_mcp.audit import audit_mutation
 from rancher_mcp.clients.management import ManagementDiscoveryClient, RancherManagementClient
 from rancher_mcp.config import AppSettings, get_settings
 from rancher_mcp.models.config_secrets import RancherConfigMapDetail, RancherConfigMapList
+from rancher_mcp.rate_limit import rate_limit_writes
 from rancher_mcp.services.instances import resolve_instance
 from rancher_mcp.services.resources.builders_pagination import next_page_token_from_payload
+from rancher_mcp.services.safety import ensure_instance_writable
 from rancher_mcp.tools.config_secrets.paths import core_v1_collection_path, core_v1_resource_path
 from rancher_mcp.tools.config_secrets.shared import (
+    build_configmap_payload,
     build_list_query_params,
     config_map_summary_from_payload,
     items,
@@ -112,7 +116,7 @@ async def _fetch_config_map_get(
     summary = config_map_summary_from_payload(payload)
 
     metadata = mapping_value(payload, "metadata") or {}
-    annotations = mapping_value(metadata, "annotations") or {}
+    metadata_annotations = mapping_value(metadata, "annotations") or {}
     data_dict = mapping_value(payload, "data") or {}
     binary_data_dict = mapping_value(payload, "binaryData") or {}
     detail = RancherConfigMapDetail.model_validate(payload)
@@ -121,7 +125,7 @@ async def _fetch_config_map_get(
             "data_key_count": summary.data_key_count,
             "binary_data_key_count": summary.binary_data_key_count,
             "immutable": summary.immutable,
-            "annotation_keys": sorted(string_dict(annotations)),
+            "annotation_keys": sorted(string_dict(metadata_annotations)),
             "data_keys": sorted(string_dict(data_dict)),
             "binary_data_keys": sorted(string_dict(binary_data_dict)),
             "payload": dict(payload),
@@ -152,6 +156,102 @@ async def rancher_config_map_get(
             cluster_id,
             namespace,
             config_map_name,
+            managed_client,
+        )
+
+
+async def _create_config_map(
+    instance_name: str,
+    cluster_id: str,
+    namespace: str,
+    config_map_name: str,
+    data: dict[str, str],
+    binary_data: dict[str, str] | None,
+    immutable: bool | None,
+    labels: dict[str, str] | None,
+    annotations: dict[str, str] | None,
+    client: ManagementDiscoveryClient,
+) -> RancherConfigMapDetail:
+    """Create one config_map and return the curated detail."""
+
+    request_payload = build_configmap_payload(
+        name=config_map_name,
+        namespace=namespace,
+        data=data,
+        binary_data=binary_data,
+        immutable=immutable,
+        labels=labels,
+        annotations=annotations,
+    )
+    payload = await client.post_json(
+        core_v1_collection_path(cluster_id, namespace, "configmaps"),
+        payload=request_payload,
+    )
+    summary = config_map_summary_from_payload(payload)
+
+    metadata = mapping_value(payload, "metadata") or {}
+    metadata_annotations = mapping_value(metadata, "annotations") or {}
+    data_dict = mapping_value(payload, "data") or {}
+    binary_data_dict = mapping_value(payload, "binaryData") or {}
+    detail = RancherConfigMapDetail.model_validate(payload)
+    return detail.model_copy(
+        update={
+            "data_key_count": summary.data_key_count,
+            "binary_data_key_count": summary.binary_data_key_count,
+            "immutable": summary.immutable,
+            "annotation_keys": sorted(string_dict(metadata_annotations)),
+            "data_keys": sorted(string_dict(data_dict)),
+            "binary_data_keys": sorted(string_dict(binary_data_dict)),
+            "payload": dict(payload),
+            "suggested_next_steps": ["rancher_config_map_get", "rancher_pods_list"],
+        }
+    )
+
+
+@audit_mutation(operation="configmap_create", plane="steve")
+@rate_limit_writes
+async def rancher_config_map_create(
+    namespace: str,
+    config_map_name: str,
+    data: dict[str, str],
+    binary_data: dict[str, str] | None = None,
+    immutable: bool | None = None,
+    labels: dict[str, str] | None = None,
+    annotations: dict[str, str] | None = None,
+    cluster_id: str = "local",
+    instance: str | None = None,
+    settings: AppSettings | None = None,
+    client: ManagementDiscoveryClient | None = None,
+) -> RancherConfigMapDetail:
+    """Create one config_map in one namespace and return the curated detail."""
+
+    resolved_settings = settings or get_settings()
+    instance_name, instance_config = resolve_instance(resolved_settings, instance)
+    ensure_instance_writable(instance_name, instance_config)
+    if client is not None:
+        return await _create_config_map(
+            instance_name,
+            cluster_id,
+            namespace,
+            config_map_name,
+            data,
+            binary_data,
+            immutable,
+            labels,
+            annotations,
+            client,
+        )
+    async with RancherManagementClient(instance_name, instance_config) as managed_client:
+        return await _create_config_map(
+            instance_name,
+            cluster_id,
+            namespace,
+            config_map_name,
+            data,
+            binary_data,
+            immutable,
+            labels,
+            annotations,
             managed_client,
         )
 
@@ -189,6 +289,32 @@ async def rancher_config_map_get_tool(
     return await rancher_config_map_get(
         namespace=namespace,
         config_map_name=config_map_name,
+        cluster_id=cluster_id,
+        instance=instance,
+    )
+
+
+async def rancher_config_map_create_tool(
+    namespace: str,
+    config_map_name: str,
+    data: dict[str, str],
+    binary_data: dict[str, str] | None = None,
+    immutable: bool | None = None,
+    labels: dict[str, str] | None = None,
+    annotations: dict[str, str] | None = None,
+    cluster_id: str = "local",
+    instance: str | None = None,
+) -> RancherConfigMapDetail:
+    """Public MCP wrapper for curated config_map create."""
+
+    return await rancher_config_map_create(
+        namespace=namespace,
+        config_map_name=config_map_name,
+        data=data,
+        binary_data=binary_data,
+        immutable=immutable,
+        labels=labels,
+        annotations=annotations,
         cluster_id=cluster_id,
         instance=instance,
     )

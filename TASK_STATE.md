@@ -29,7 +29,7 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 - Canonical plan: `PERFECT_RANCHER_MCP_IMPLEMENTATION_PLAN.md`
 - Operational roadmap (track-level work breakdown): `ROADMAP.md`
 - Primary compatibility target: Rancher `2.6.5`
-- Public tool surface: 184 tools
+- Public tool surface: 185 tools
 - Completion gate: `make check-if-the-agent-can-consider-this-task-completed`
 - Active quality gates:
   `make check-architecture`
@@ -48,14 +48,68 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 
 ## Latest Logical Step
 
-**Status: blocked** — every remaining ROADMAP item requires
-either external dependency (live lab access for G / I-1 / some
-F items), MCP SDK feature-flag check (C-1 elicitation),
-significant refactor work (C-2 OAuth, J-3 codegen for writes),
-or design-level decisions before implementation (D safe writes,
-E destructive writes, H-3 broader confirmation, H-5 streaming
-under load). See "Tracks ticked this session" and "NEXT
-options" below.
+- **J-3 first slice landed (codegen for create operations).**
+  Per user direction "Option A. Ideally I want to get to a
+  place where Sonnet can pick things up, but not at the cost of
+  quality." Substrate work for codegen-driven curated writes:
+  - **Descriptor schema** extended (`scripts/codegen/descriptor.py`):
+    new `ArgType` literal (`str | int | bool | dict_str_str |
+    dict_str_object | string_list`), `ArgSpec` Pydantic model
+    (typed input arg), `CreateConfig` Pydantic model (args +
+    payload_composer + audit_operation + confirmation_required +
+    next_steps), `Descriptor.create: CreateConfig | None` (default
+    None — additive, read-only descriptors unaffected). Validator
+    rule: `create` operation requires `create:` config + `tools.
+    create:` block + `get` in operations (because create reuses
+    the get response-shaping pipeline).
+  - **Planner** extended (`scripts/codegen/plan.py`):
+    `ARG_TYPES_PYTHON` mapping + `arg_python_type()` helper;
+    `_public_names`, `_tool_metas`, `_registrations` updated to
+    emit create entries; `create` config wired into Jinja context.
+  - **Emitter** wires `arg_python_type` as Jinja global.
+  - **Jinja template** (`tool_module.py.j2`) gains conditional
+    audit/rate_limit/safety imports + a CREATE OPERATION block
+    emitting private `_create_<singular>`, public
+    `rancher_<singular>_create` (decorated `@audit_mutation`
+    outer + `@rate_limit_writes` inner), and
+    `rancher_<singular>_create_tool` MCP wrapper. Decorator
+    stack matches the existing 8 generic mutation tools so
+    audit/rate-limit semantics are identical.
+  - **Generic payload composer**: new
+    `src/rancher_mcp/tools/support/payloads.py` with
+    `build_k8s_payload(api_version, kind, name, namespace,
+    labels, annotations, spec, body_overrides)`. Pack composers
+    wrap this; codegen never calls it directly.
+  - **First end-to-end example**: `rancher_config_map_create`.
+    Composer `build_configmap_payload` lives in
+    `tools/config_secrets/shared.py`. Descriptor
+    (`catalog/curated_tools/configmaps.yml`) declares 5 typed
+    args (data required; binary_data, immutable, labels,
+    annotations optional). `audit_operation: configmap_create`,
+    `annotation_set: SAFE_WRITE`. Generated tool runs through
+    `make codegen`.
+  - **Tests**: 7 new tests in
+    `tests/unit/test_config_secrets_tools.py` covering
+    composer-in-isolation (3 cases: minimal, all-None
+    omitted, all-set), end-to-end round-trip (request shape +
+    response parsing), optional args omitted from request,
+    read-only-instance refusal (with audit-on-error captured),
+    and successful-create audit emission (verifying arg-name
+    capture but never values).
+  - **Documentation**: new "12. J-3 landed: create operation
+    pattern" section in `docs/codegen-curated-tools.md` —
+    canonical recipe for adding a write to an existing read pack
+    (composer → descriptor → regenerate → test).
+  - **Tool surface 184 → 185** (+1: rancher_config_map_create).
+  - **316 tests pass, 85.98% coverage**, 99 files match
+    descriptors, all gates green (architecture warnings only on
+    pre-existing files plus the new generated configmap module
+    at 320/250 soft limit — no errors).
+  - **Pending in J-3**: apply / patch / delete operations (same
+    descriptor shape, different verbs and slightly different
+    response handling); Steve / Norman transports (configmap
+    example exercises k8s-proxy only); `dict_str_object` arg
+    type usage example (declared in literal but not yet used).
 
 - **scheduling pack landed.** 4 new tools for PriorityClass
   (scheduling.k8s.io/v1) and RuntimeClass (node.k8s.io/v1) —

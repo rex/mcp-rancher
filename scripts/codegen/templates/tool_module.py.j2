@@ -2,14 +2,26 @@
 
 from __future__ import annotations
 
+{% if 'create' in operations -%}
+from rancher_mcp.audit import audit_mutation
+{% endif -%}
 {% if transport == 'steve' -%}
 from rancher_mcp.clients.steve import RancherSteveClient, SteveDiscoveryClient
 {% elif transport == 'k8s-proxy' or transport == 'norman' -%}
 from rancher_mcp.clients.management import ManagementDiscoveryClient, RancherManagementClient
 {% endif -%}
 from rancher_mcp.config import AppSettings, get_settings
+{% if 'create' in operations and create.confirmation_required -%}
+from rancher_mcp.exceptions import RancherCapabilityError
+{% endif -%}
+{% if 'create' in operations -%}
+from rancher_mcp.rate_limit import rate_limit_writes
+{% endif -%}
 from rancher_mcp.models.{{ pack }} import {{ list_model_name }}, {{ detail_model_name }}
 from rancher_mcp.services.instances import resolve_instance
+{% if 'create' in operations -%}
+from rancher_mcp.services.safety import ensure_instance_writable
+{% endif -%}
 {% if not query_builder_in_shared -%}
 from rancher_mcp.services.resource_queries import {{ query_builder_function }}
 {% endif -%}
@@ -287,6 +299,145 @@ async def rancher_{{ display_name_singular }}_get(
 
 
 {% endif -%}
+{# ===================== CREATE OPERATION ===================== #}
+{% if 'create' in operations -%}
+async def _create_{{ display_name_singular }}(
+    instance_name: str,
+    {% if cluster_id_required -%}
+    cluster_id: str,
+    {% endif -%}
+    {% if namespaced -%}
+    namespace: str,
+    {% endif -%}
+    {{ get.arg_name }}: str,
+    {%- for arg in create.args %}
+    {{ arg.name }}: {{ arg_python_type(arg.type) }}{% if not arg.required %} | None{% endif %},
+    {%- endfor %}
+    client: {{ client_protocol }},
+) -> {{ detail_model_name }}:
+    """Create one {{ display_name_singular }} and return the curated detail."""
+
+    request_payload = {{ create.payload_composer }}(
+        name={{ get.arg_name }},
+        {% if namespaced -%}
+        namespace=namespace,
+        {% endif -%}
+        {%- for arg in create.args %}
+        {{ arg.name }}={{ arg.name }},
+        {%- endfor %}
+    )
+    {% if transport == 'k8s-proxy' -%}
+    payload = await client.post_json(
+        {{ path_helper.list_function }}(cluster_id{% if namespaced %}, namespace{% endif %}{% if path_helper.resource_kind %}, "{{ path_helper.resource_kind }}"{% endif %}),
+        payload=request_payload,
+    )
+    {%- elif transport == 'steve' or transport == 'norman' -%}
+    payload = await client.post_json(f"{{ list_path }}", payload=request_payload)
+    {%- endif %}
+    {% if get.summary_copy_fields -%}
+    summary = {{ summary_function }}(payload)
+    {% endif -%}
+    {%- for local in get.locals %}
+    {{ local.name }} = {{ local.expression }}
+    {%- endfor %}
+    detail = {{ detail_model_name }}.model_validate(payload)
+    return detail.model_copy(
+        update={
+            {%- for field in get.summary_copy_fields %}
+            "{{ field }}": summary.{{ field }},
+            {%- endfor %}
+            {%- for extra in get.extras %}
+            "{{ extra.field }}": {{ extra.expression }},
+            {%- endfor %}
+            {%- if get.include_action_keys %}
+            "action_keys": sorted(mapping_value(payload, "actions") or {}),
+            {%- endif %}
+            {%- if get.include_link_keys %}
+            "link_keys": sorted(mapping_value(payload, "links") or {}),
+            {%- endif %}
+            {%- if get.include_payload %}
+            "payload": dict(payload),
+            {%- endif %}
+            "suggested_next_steps": [{% for step in create.next_steps %}"{{ step }}"{% if not loop.last %}, {% endif %}{% endfor %}],
+        }
+    )
+
+
+@audit_mutation(operation="{{ create.audit_operation or (id ~ '_create') }}", plane="{{ plane }}")
+@rate_limit_writes
+async def rancher_{{ display_name_singular }}_create(
+    {% if namespaced -%}
+    namespace: str,
+    {% endif -%}
+    {{ get.arg_name }}: str,
+    {%- for arg in create.args if arg.required %}
+    {{ arg.name }}: {{ arg_python_type(arg.type) }},
+    {%- endfor %}
+    {%- for arg in create.args if not arg.required %}
+    {{ arg.name }}: {{ arg_python_type(arg.type) }} | None = None,
+    {%- endfor %}
+    {% if cluster_id_required -%}
+    cluster_id: str = "local",
+    {% endif -%}
+    {%- if create.confirmation_required %}
+    confirmation: bool = False,
+    {%- endif %}
+    instance: str | None = None,
+    settings: AppSettings | None = None,
+    client: {{ client_protocol }} | None = None,
+) -> {{ detail_model_name }}:
+    """Create one {{ display_name_singular }}{{ ' in one namespace' if namespaced else '' }} and return the curated detail."""
+
+    {% if create.confirmation_required -%}
+    if confirmation is not True:
+        raise RancherCapabilityError(
+            f"Refusing to create {{ display_name_singular }} {{ '{' }}{{ get.arg_name }}!r{{ '}' }}: confirmation must be True"
+        )
+    {% endif -%}
+    resolved_settings = settings or get_settings()
+    instance_name, instance_config = resolve_instance(resolved_settings, instance)
+    ensure_instance_writable(instance_name, instance_config)
+    if client is not None:
+        return await _create_{{ display_name_singular }}(
+            instance_name,
+            {% if cluster_id_required -%}
+            cluster_id,
+            {% endif -%}
+            {% if namespaced -%}
+            namespace,
+            {% endif -%}
+            {{ get.arg_name }},
+            {%- for arg in create.args %}
+            {{ arg.name }},
+            {%- endfor %}
+            client,
+        )
+    {% if transport == 'steve' -%}
+    async with {{ client_class }}(
+        instance_name,
+        instance_config,
+        cluster_id=cluster_id,
+    ) as {{ client_var }}:
+    {%- elif transport == 'k8s-proxy' or transport == 'norman' -%}
+    async with {{ client_class }}(instance_name, instance_config) as {{ client_var }}:
+    {%- endif %}
+        return await _create_{{ display_name_singular }}(
+            instance_name,
+            {% if cluster_id_required -%}
+            cluster_id,
+            {% endif -%}
+            {% if namespaced -%}
+            namespace,
+            {% endif -%}
+            {{ get.arg_name }},
+            {%- for arg in create.args %}
+            {{ arg.name }},
+            {%- endfor %}
+            {{ client_var }},
+        )
+
+
+{% endif -%}
 {# ===================== TOOL WRAPPERS ===================== #}
 {% if 'list' in operations -%}
 async def rancher_{{ display_name_plural }}_list_tool(
@@ -351,6 +502,47 @@ async def rancher_{{ display_name_singular }}_get_tool(
         {% if cluster_id_required -%}
         cluster_id=cluster_id,
         {% endif -%}
+        instance=instance,
+    )
+
+
+{% endif -%}
+{% if 'create' in operations -%}
+async def rancher_{{ display_name_singular }}_create_tool(
+    {% if namespaced -%}
+    namespace: str,
+    {% endif -%}
+    {{ get.arg_name }}: str,
+    {%- for arg in create.args if arg.required %}
+    {{ arg.name }}: {{ arg_python_type(arg.type) }},
+    {%- endfor %}
+    {%- for arg in create.args if not arg.required %}
+    {{ arg.name }}: {{ arg_python_type(arg.type) }} | None = None,
+    {%- endfor %}
+    {% if cluster_id_required -%}
+    cluster_id: str = "local",
+    {% endif -%}
+    {%- if create.confirmation_required %}
+    confirmation: bool = False,
+    {%- endif %}
+    instance: str | None = None,
+) -> {{ detail_model_name }}:
+    """Public MCP wrapper for curated {{ display_name_singular }} create."""
+
+    return await rancher_{{ display_name_singular }}_create(
+        {% if namespaced -%}
+        namespace=namespace,
+        {% endif -%}
+        {{ get.arg_name }}={{ get.arg_name }},
+        {%- for arg in create.args %}
+        {{ arg.name }}={{ arg.name }},
+        {%- endfor %}
+        {% if cluster_id_required -%}
+        cluster_id=cluster_id,
+        {% endif -%}
+        {%- if create.confirmation_required %}
+        confirmation=confirmation,
+        {%- endif %}
         instance=instance,
     )
 {% endif -%}

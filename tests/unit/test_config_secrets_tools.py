@@ -7,9 +7,13 @@ that ruff's bandit-derived rules flag as possible hardcoded passwords.
 """
 
 import pytest
+from structlog.testing import capture_logs
 
 from rancher_mcp.config import AppSettings
+from rancher_mcp.exceptions import RancherCapabilityError
+from rancher_mcp.rate_limit import reset_rate_limit_state
 from rancher_mcp.tools.config_secrets import (
+    rancher_config_map_create,
     rancher_config_map_get,
     rancher_config_maps_list,
     rancher_secret_get,
@@ -17,6 +21,7 @@ from rancher_mcp.tools.config_secrets import (
     rancher_service_account_get,
     rancher_service_accounts_list,
 )
+from rancher_mcp.tools.config_secrets.shared import build_configmap_payload
 
 
 def build_settings() -> AppSettings:
@@ -82,6 +87,12 @@ _SERVICE_ACCOUNT_PAYLOAD = {
 class StubConfigSecretsClient:
     """Deterministic raw Kubernetes proxy client for curated config-secrets tools."""
 
+    def __init__(self) -> None:
+        """Initialize a fresh per-test capture buffer for write requests."""
+
+        self.last_post_path: str | None = None
+        self.last_post_payload: dict[str, object] | None = None
+
     async def get_json(
         self,
         path: str,
@@ -114,6 +125,38 @@ class StubConfigSecretsClient:
             return _SERVICE_ACCOUNT_PAYLOAD
 
         raise AssertionError(f"unexpected path {path!r} (params={params!r})")
+
+    async def post_json(
+        self,
+        path: str,
+        payload: dict[str, object] | None = None,
+        params: object = None,
+    ) -> dict[str, object]:
+        """Capture the create request and echo a Kubernetes-shaped response.
+
+        Echoes the request body as the API server would on success: the
+        response payload IS the created resource. The stub augments the
+        echoed payload with realistic post-create mutations (resourceVersion
+        and uid) so the curated detail can be parsed end-to-end.
+        """
+
+        self.last_post_path = path
+        assert payload is not None
+        # Snapshot the outgoing request for assertions (a copy so the
+        # caller can't mutate it after the fact).
+        self.last_post_payload = dict(payload)
+
+        cm_root = "/k8s/clusters/local/api/v1/namespaces/demo/configmaps"
+        if path == cm_root:
+            assert params is None
+            response = dict(payload)
+            metadata = dict(response.get("metadata") or {})  # type: ignore[arg-type]
+            metadata["uid"] = "test-uid-1234"
+            metadata["resourceVersion"] = "42"
+            response["metadata"] = metadata
+            return response
+
+        raise AssertionError(f"unexpected post path {path!r}")
 
 
 @pytest.mark.asyncio
@@ -263,3 +306,237 @@ async def test_rancher_service_account_get_returns_named_refs() -> None:
     assert result.image_pull_secret_names == ["regcred"]
     assert result.annotation_keys == ["description"]
     assert result.payload == _SERVICE_ACCOUNT_PAYLOAD
+
+
+# =====================================================================
+# build_configmap_payload composer (pure-function unit tests)
+# =====================================================================
+
+
+def test_build_configmap_payload_minimal_required_fields() -> None:
+    """Composer with only required args produces a Kubernetes-shaped POST body."""
+
+    payload = build_configmap_payload(
+        name="demo-config",
+        namespace="demo",
+        data={"key": "value"},
+    )
+
+    assert payload == {
+        "apiVersion": "v1",
+        "kind": "ConfigMap",
+        "metadata": {"name": "demo-config", "namespace": "demo"},
+        "data": {"key": "value"},
+    }
+
+
+def test_build_configmap_payload_omits_none_optional_fields() -> None:
+    """Composer must NOT emit binaryData/immutable/labels/annotations when None.
+
+    Sending those keys with empty/null values changes Kubernetes
+    apply-merge semantics — the composer's contract is that None
+    means "don't touch this field on the server".
+    """
+
+    payload = build_configmap_payload(
+        name="demo-config",
+        namespace="demo",
+        data={"key": "value"},
+        binary_data=None,
+        immutable=None,
+        labels=None,
+        annotations=None,
+    )
+
+    assert payload == {
+        "apiVersion": "v1",
+        "kind": "ConfigMap",
+        "metadata": {"name": "demo-config", "namespace": "demo"},
+        "data": {"key": "value"},
+    }
+    assert "binaryData" not in payload
+    assert "immutable" not in payload
+
+
+def test_build_configmap_payload_includes_optional_fields_when_set() -> None:
+    """Composer wires optional args into the right payload slots when set."""
+
+    payload = build_configmap_payload(
+        name="demo-config",
+        namespace="demo",
+        data={"k": "v"},
+        binary_data={"b": "AAAA"},
+        immutable=True,
+        labels={"app": "demo"},
+        annotations={"owner": "ops"},
+    )
+
+    assert payload == {
+        "apiVersion": "v1",
+        "kind": "ConfigMap",
+        "metadata": {
+            "name": "demo-config",
+            "namespace": "demo",
+            "labels": {"app": "demo"},
+            "annotations": {"owner": "ops"},
+        },
+        "data": {"k": "v"},
+        "binaryData": {"b": "AAAA"},
+        "immutable": True,
+    }
+
+
+# =====================================================================
+# rancher_config_map_create end-to-end tests
+# =====================================================================
+
+
+@pytest.mark.asyncio
+async def test_rancher_config_map_create_round_trips_request_and_response() -> None:
+    """Create should POST a Kubernetes-shaped body and parse the echoed response."""
+
+    reset_rate_limit_state()
+    client = StubConfigSecretsClient()
+
+    result = await rancher_config_map_create(
+        namespace="demo",
+        config_map_name="demo-config",
+        data={"key": "value", "extra": "x"},
+        labels={"app": "demo"},
+        cluster_id="local",
+        instance="work",
+        settings=build_settings(),
+        client=client,
+    )
+
+    # Request shape: composer-built POST body landed at the right path.
+    assert client.last_post_path == "/k8s/clusters/local/api/v1/namespaces/demo/configmaps"
+    assert client.last_post_payload == {
+        "apiVersion": "v1",
+        "kind": "ConfigMap",
+        "metadata": {
+            "name": "demo-config",
+            "namespace": "demo",
+            "labels": {"app": "demo"},
+        },
+        "data": {"key": "value", "extra": "x"},
+    }
+
+    # Response shape: same curated detail an agent would get from `get`,
+    # including the post-create resourceVersion / uid the API server adds.
+    assert result.name == "demo-config"
+    assert result.data_key_count == 2
+    assert result.data_keys == ["extra", "key"]
+    assert result.suggested_next_steps == [
+        "rancher_config_map_get",
+        "rancher_pods_list",
+    ]
+    assert result.payload is not None
+    response_metadata = result.payload["metadata"]
+    assert isinstance(response_metadata, dict)
+    assert response_metadata["uid"] == "test-uid-1234"
+    assert response_metadata["resourceVersion"] == "42"
+
+
+@pytest.mark.asyncio
+async def test_rancher_config_map_create_omits_optional_args_from_request() -> None:
+    """Optional args left as None must not appear in the request body."""
+
+    reset_rate_limit_state()
+    client = StubConfigSecretsClient()
+
+    await rancher_config_map_create(
+        namespace="demo",
+        config_map_name="demo-config",
+        data={"only": "data"},
+        cluster_id="local",
+        instance="work",
+        settings=build_settings(),
+        client=client,
+    )
+
+    sent = client.last_post_payload
+    assert sent is not None
+    assert "binaryData" not in sent
+    assert "immutable" not in sent
+    metadata = sent.get("metadata") or {}
+    assert isinstance(metadata, dict)
+    assert "labels" not in metadata
+    assert "annotations" not in metadata
+
+
+@pytest.mark.asyncio
+async def test_rancher_config_map_create_refuses_read_only_instance() -> None:
+    """Read-only instances must reject create with a capability error.
+
+    The audit decorator is OUTER, so the rejection still produces an
+    audit record (outcome=error, error_code=CAPABILITY_REQUIRED) before
+    the exception propagates — this verifies both the gate AND the
+    audit trail for refused writes.
+    """
+
+    reset_rate_limit_state()
+    read_only_settings = AppSettings(
+        RANCHER_DEFAULT_INSTANCE="locked",
+        RANCHER_INSTANCES_JSON=(
+            '{"locked":{"url":"https://rancher.example.com","token":"token-x:secret",'
+            '"verify_ssl":true,"read_only":true}}'
+        ),
+        RANCHER_MCP_CATALOG_PATH="catalog/capabilities.yaml",
+    )
+
+    with capture_logs() as logs, pytest.raises(RancherCapabilityError):
+        await rancher_config_map_create(
+            namespace="demo",
+            config_map_name="demo-config",
+            data={"key": "value"},
+            cluster_id="local",
+            instance="locked",
+            settings=read_only_settings,
+            client=StubConfigSecretsClient(),
+        )
+
+    audit_records = [r for r in logs if r.get("event") == "audit"]
+    assert len(audit_records) == 1
+    record = audit_records[0]
+    assert record["tool_name"] == "rancher_config_map_create"
+    assert record["operation"] == "configmap_create"
+    assert record["plane"] == "steve"
+    assert record["outcome"] == "error"
+    assert record["instance"] == "locked"
+
+
+@pytest.mark.asyncio
+async def test_rancher_config_map_create_emits_success_audit() -> None:
+    """A successful create writes one outcome=success audit record."""
+
+    reset_rate_limit_state()
+
+    with capture_logs() as logs:
+        await rancher_config_map_create(
+            namespace="demo",
+            config_map_name="demo-config",
+            data={"key": "value"},
+            cluster_id="local",
+            instance="work",
+            settings=build_settings(),
+            client=StubConfigSecretsClient(),
+        )
+
+    audit_records = [r for r in logs if r.get("event") == "audit"]
+    assert len(audit_records) == 1
+    record = audit_records[0]
+    assert record["tool_name"] == "rancher_config_map_create"
+    assert record["operation"] == "configmap_create"
+    assert record["plane"] == "steve"
+    assert record["outcome"] == "success"
+    assert record["instance"] == "work"
+    assert record["namespace"] == "demo"
+    assert record["cluster_id"] == "local"
+    # Audit captures arg NAMES, never values — verify the value strings
+    # don't show up anywhere in the record.
+    assert "value" not in str(record)
+    # And the arg-name list is present and sorted.
+    assert "data" in record["arg_keys"]
+    assert "config_map_name" in record["arg_keys"]
+    assert record["arg_keys"] == sorted(record["arg_keys"])

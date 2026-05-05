@@ -9,6 +9,7 @@ import jinja2
 from scripts.codegen.plan import (
     ModuleContext,
     PackContext,
+    arg_python_type,
     build_module_context,
     qp_kwarg,
     qp_type,
@@ -44,6 +45,7 @@ def make_environment() -> jinja2.Environment:
     # callables is supported at runtime but not in pyright's stub.
     env.globals["qp_type"] = qp_type  # pyright: ignore[reportArgumentType]
     env.globals["qp_kwarg"] = qp_kwarg  # pyright: ignore[reportArgumentType]
+    env.globals["arg_python_type"] = arg_python_type  # pyright: ignore[reportArgumentType]
     return env
 
 

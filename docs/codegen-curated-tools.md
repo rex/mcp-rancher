@@ -695,3 +695,197 @@ If J-0 fails (descriptor cannot reproduce existing pods.py
 behaviorally), the failure mode is informative: it tells us exactly
 where the editorial line is between mechanical and curated. Either
 outcome justifies the J-0 investment.
+
+---
+
+## 12. J-3 landed: create operation pattern
+
+J-3 is partially landed. The descriptor schema, planner, Jinja
+template, generic payload composer, and one end-to-end example
+(`rancher_config_map_create`) are in tree. Apply / patch / delete
+follow the same shape; they are descriptor extensions, not
+substrate work.
+
+### What J-3 added to the substrate
+
+- `ArgType` literal in `scripts/codegen/descriptor.py`
+  (`str | int | bool | dict_str_str | dict_str_object | string_list`).
+- `ArgSpec` Pydantic model — describes one typed input arg.
+- `CreateConfig` Pydantic model — describes the create operation.
+- `Descriptor.create: CreateConfig | None` (default None) — additive,
+  read-only descriptors are unaffected.
+- `_check_consistency` rule: `create` in operations requires both a
+  `create:` config and a `tools.create:` block, and requires `get` in
+  operations (because create reuses the get response-shaping pipeline).
+- `ARG_TYPES_PYTHON` mapping + `arg_python_type()` helper in
+  `scripts/codegen/plan.py`, registered as a Jinja global in
+  `emitter.py`.
+- `_public_names`, `_tool_metas`, `_registrations` in `plan.py` updated
+  to emit `rancher_<singular>_create`,
+  `rancher_<singular>_create_tool`, and the FastMCP registration line.
+- New CREATE OPERATION block in
+  `scripts/codegen/templates/tool_module.py.j2` emitting:
+  - `_create_<singular>` private async helper (composer call → POST →
+    response-shaping via the get pipeline).
+  - `rancher_<singular>_create` public function decorated with
+    `@audit_mutation(operation=..., plane=...)` outer and
+    `@rate_limit_writes` inner, with `ensure_instance_writable`
+    inside the body.
+  - `rancher_<singular>_create_tool` public MCP wrapper.
+- `src/rancher_mcp/tools/support/payloads.py` —
+  `build_k8s_payload(api_version, kind, name, namespace, labels,
+  annotations, spec, body_overrides)` generic Kubernetes-shaped
+  payload builder. Pack composers wrap this; codegen never calls it
+  directly.
+
+### How to add a write operation to an existing read pack
+
+This is the canonical recipe. The `configmaps` example is the
+worked reference.
+
+#### Step 1: write a payload composer in `tools/<pack>/shared.py`
+
+The composer takes `name`, optionally `namespace`, and the typed
+args by keyword, and returns the full request body. Optional args
+that are `None` MUST be omitted from the payload — sending them
+as nulls / empty dicts changes Kubernetes apply-merge semantics.
+
+```python
+def _build_configmap_payload(
+    *,
+    name: str,
+    namespace: str,
+    data: dict[str, str],
+    binary_data: dict[str, str] | None = None,
+    immutable: bool | None = None,
+    labels: dict[str, str] | None = None,
+    annotations: dict[str, str] | None = None,
+) -> dict[str, object]:
+    body: dict[str, object] = {"data": data}
+    if binary_data is not None:
+        body["binaryData"] = binary_data
+    if immutable is not None:
+        body["immutable"] = immutable
+    return build_k8s_payload(
+        api_version="v1",
+        kind="ConfigMap",
+        name=name,
+        namespace=namespace,
+        labels=labels,
+        annotations=annotations,
+        body_overrides=body,
+    )
+
+
+build_configmap_payload = _build_configmap_payload
+```
+
+The trailing alias is the public name codegen imports from the
+pack's `shared.py`. Add it to the descriptor's `shared_imports` list.
+
+#### Step 2: extend the descriptor
+
+```yaml
+shared_imports:
+  - build_configmap_payload          # ← add
+  - config_map_summary_from_payload
+  - items
+
+operations: [list, get, create]      # ← add create
+
+# ... existing list / get blocks ...
+
+create:
+  payload_composer: build_configmap_payload
+  audit_operation: configmap_create  # passed to @audit_mutation
+  args:
+    - name: data
+      type: dict_str_str
+      required: true
+      description: Top-level string key/value pairs stored in the ConfigMap.
+    - name: binary_data
+      type: dict_str_str
+    - name: immutable
+      type: bool
+    - name: labels
+      type: dict_str_str
+    - name: annotations
+      type: dict_str_str
+  next_steps:
+    - rancher_config_map_get
+    - rancher_pods_list
+
+tools:
+  # ... existing list / get tool metadata ...
+  create:
+    name: rancher_config_map_create
+    description: |
+      Create one Kubernetes ConfigMap in the given namespace via
+      Rancher's raw Kubernetes proxy. Accepts typed `data` plus
+      optional `binary_data`, `immutable`, `labels`, and
+      `annotations`. Returns the curated detail. Subject to write
+      rate limiting and audit logging.
+    annotation_set: SAFE_WRITE
+```
+
+Notes:
+- `name` and `namespace` are NOT declared in `create.args`. They are
+  auto-injected from `get.arg_name` and the descriptor's `namespaced`
+  flag.
+- `audit_operation` defaults to `<id>_create` if omitted; override
+  for tool-specific names.
+- `confirmation_required: true` adds a `confirmation: bool = False`
+  kwarg that must be set explicitly. Use it for high-risk creates
+  (e.g. cluster, project) where accidental invocation would be
+  costly.
+- The descriptor's existing `get.locals` and `get.extras` are reused
+  to shape the create response. Beware: a local that shadows a
+  declared arg (e.g. a local named `annotations` when an arg is also
+  named `annotations`) breaks pyright. Rename the local to
+  `metadata_annotations` or similar.
+
+#### Step 3: regenerate
+
+```bash
+make codegen
+```
+
+Codegen emits the create function in
+`src/rancher_mcp/tools/<pack>/_generated_<id>.py` and registers it
+in `tools/<pack>/__init__.py` with the `SAFE_WRITE` annotation.
+
+#### Step 4: write tests
+
+Mirror `tests/unit/test_config_secrets_tools.py`. The stub client
+needs a `post_json` method that captures the request payload and
+echoes a Kubernetes-shaped response. Test:
+
+1. Round-trip: composer-built request shape + response parsed into
+   the curated detail (same shape as `get`).
+2. Optional args omitted from the request when `None`.
+3. Read-only instance refused with `RancherCapabilityError` (and the
+   audit log captures the rejection).
+4. Successful create emits one `outcome=success` audit record with
+   the right `tool_name`, `operation`, `plane`, and arg-name keys.
+5. The composer in isolation (pure function) — minimal,
+   all-optional, fully-populated cases.
+
+Use `reset_rate_limit_state()` at the top of each create test so
+the global token bucket starts fresh.
+
+### What's still pending in J-3
+
+- `apply` / `patch` / `delete` operations — same descriptor shape,
+  different HTTP verbs and slightly different response handling.
+  `delete` adds a confirmation-phrase guard (already implemented for
+  generic deletes in `services/safety.py`); the descriptor will
+  declare the phrase template.
+- Norman / Steve transports — currently the create template handles
+  all three transports identically (POST to `list_path` for
+  steve/norman, POST to `path_helper.list_function(...)` for
+  k8s-proxy). The configmap example exercises k8s-proxy only;
+  Steve / Norman creates need a curated example before relying on
+  the substrate for those planes.
+- `dict_str_object` arg type — declared in the literal but no
+  example yet. Add when the first descriptor needs nested struct
+  args (e.g. `spec` for a CRD).

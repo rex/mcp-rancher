@@ -1,5 +1,96 @@
 # Changelog
 
+## [2026-05-05] - Agent: Claude Opus 4.7
+
+### Added (J-3 first slice — codegen substrate for create operations)
+
+Per user direction "Option A. Ideally I want to get to a place
+where Sonnet can pick things up, but not at the cost of quality."
+Track J-3 was previously listed as design-blocked; this slice
+delivers the substrate end-to-end through one worked example
+(`rancher_config_map_create`). Apply / patch / delete are
+descriptor extensions on the same substrate, not net-new design.
+
+- **Descriptor schema** extended (`scripts/codegen/descriptor.py`):
+  new `ArgType` literal (`str | int | bool | dict_str_str |
+  dict_str_object | string_list`), `ArgSpec` Pydantic model
+  (typed input arg with `name`/`type`/`required`/`description`),
+  `CreateConfig` Pydantic model (args + payload_composer +
+  audit_operation + confirmation_required + next_steps).
+  `Descriptor.create: CreateConfig | None` (default None —
+  read-only descriptors unaffected). Validator rule: `create`
+  in operations requires `create:` config + `tools.create:`
+  metadata + `get` in operations (because create reuses the
+  get response-shaping pipeline: summary_copy_fields, locals,
+  extras, link_keys).
+- **Planner** extended (`scripts/codegen/plan.py`):
+  `ARG_TYPES_PYTHON` mapping + `arg_python_type()` helper
+  registered as Jinja global; `_public_names`, `_tool_metas`,
+  `_registrations` updated to emit create entries; `create`
+  config wired into `ModuleContext.as_jinja_context()`.
+- **Jinja template** (`scripts/codegen/templates/tool_module.py.j2`):
+  conditional audit / rate_limit / safety / RancherCapabilityError
+  imports + a CREATE OPERATION block emitting:
+  - `_create_<singular>` private async helper (composer call →
+    POST → response-shaping reusing get's pipeline)
+  - `rancher_<singular>_create` public function with
+    `@audit_mutation(operation=..., plane=...)` outer +
+    `@rate_limit_writes` inner; `ensure_instance_writable`
+    inside the body. Decorator stack matches the existing
+    8 generic mutation tools.
+  - `rancher_<singular>_create_tool` public MCP wrapper.
+- **Generic payload composer**: new
+  `src/rancher_mcp/tools/support/payloads.py` with
+  `build_k8s_payload(api_version, kind, name, namespace,
+  labels, annotations, spec, body_overrides)`. Optional inputs
+  are omitted from the resulting payload. Pack composers wrap
+  this; codegen never calls it directly.
+- **First end-to-end example: `rancher_config_map_create`**.
+  Composer `build_configmap_payload` lives in
+  `src/rancher_mcp/tools/config_secrets/shared.py` and uses
+  `build_k8s_payload` with `body_overrides={data, binaryData,
+  immutable}` (ConfigMap stores content at top-level, not
+  under `spec`). Descriptor declares 5 typed args: `data`
+  (required `dict_str_str`), `binary_data` (optional
+  `dict_str_str`), `immutable` (optional `bool`), `labels`
+  and `annotations` (optional `dict_str_str`).
+  `audit_operation: configmap_create`,
+  `annotation_set: SAFE_WRITE`. Read-only instances refuse
+  the create with `RancherCapabilityError`.
+- **Tests** (7 new in `tests/unit/test_config_secrets_tools.py`):
+  - 3 composer-in-isolation cases (minimal, all-None
+    omitted from payload, all-set populates correctly)
+  - End-to-end round-trip: composer-built request shape
+    asserted byte-for-byte + response parsing into the
+    curated detail (same shape as `get` returns)
+  - Optional args omitted from the request when None
+  - Read-only-instance refusal with audit-on-error captured
+    (`outcome=error`, `error_code=CAPABILITY_REQUIRED`)
+  - Successful create emits one `outcome=success` audit
+    record with arg-name capture (verifying values never
+    leak into the audit log)
+  - All tests use `reset_rate_limit_state()` to start with
+    a fresh global token bucket
+- **Documentation**: new "12. J-3 landed: create operation
+  pattern" section in `docs/codegen-curated-tools.md` —
+  canonical recipe (composer → descriptor → regenerate → test)
+  with the configmap example as the worked reference. Future
+  agents should read this section before adding the next
+  curated write.
+- **Tool surface 184 → 185** (+1: rancher_config_map_create
+  registered with `SAFE_WRITE` annotation).
+- **316 tests pass, 85.98% coverage**, 99 files match
+  descriptors. All gates green.
+
+**Pending in J-3** (substrate exists, descriptors needed):
+- Apply / patch / delete operations (same shape, different
+  HTTP verbs and slightly different response handling). Delete
+  needs the existing confirmation-phrase guard from
+  `services/safety.py`.
+- Steve / Norman transport validation — configmap example
+  exercises k8s-proxy only.
+- `dict_str_object` arg type usage example.
+
 ## [2026-05-04] - Agent: Claude Opus 4.7
 
 ### Added (scheduling pack — PriorityClass, RuntimeClass)

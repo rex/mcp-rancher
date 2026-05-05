@@ -159,6 +159,22 @@ def qp_kwarg(name: str) -> str:
     return QP_KWARGS[name]
 
 
+ARG_TYPES_PYTHON: Mapping[str, str] = {
+    "str": "str",
+    "int": "int",
+    "bool": "bool",
+    "dict_str_str": "dict[str, str]",
+    "dict_str_object": "dict[str, object]",
+    "string_list": "list[str]",
+}
+
+
+def arg_python_type(arg_type: str) -> str:
+    """Return the Python type-annotation string for an ArgSpec.type literal."""
+
+    return ARG_TYPES_PYTHON[arg_type]
+
+
 def split_model_path(full_path: str) -> tuple[str, str]:
     """Split `pkg.subpkg.ClassName` → (`pkg.subpkg`, `ClassName`)."""
 
@@ -220,6 +236,7 @@ class ModuleContext:
             "operations": descriptor.operations,
             "list": descriptor.list_,
             "get": descriptor.get,
+            "create": descriptor.create,
             "tools": descriptor.tools,
             "fetch_docstring_phrase": fetch_docstring_phrase,
         }
@@ -303,6 +320,13 @@ def _public_names(descriptor: Descriptor) -> list[str]:
                 f"rancher_{singular}_get_tool",
             ]
         )
+    if "create" in descriptor.operations:
+        names.extend(
+            [
+                f"rancher_{singular}_create",
+                f"rancher_{singular}_create_tool",
+            ]
+        )
     return names
 
 
@@ -313,6 +337,8 @@ def _tool_metas(descriptor: Descriptor) -> Iterator[ToolMeta]:
         yield descriptor.tools.list_
     if descriptor.tools.get is not None:
         yield descriptor.tools.get
+    if descriptor.tools.create is not None:
+        yield descriptor.tools.create
 
 
 def _registrations(descriptor: Descriptor) -> list[RegistrationEntry]:
@@ -335,6 +361,14 @@ def _registrations(descriptor: Descriptor) -> list[RegistrationEntry]:
                 tool_name=descriptor.tools.get.name,
                 annotation=descriptor.tools.get.annotation_set,
                 callable=f"rancher_{singular}_get_tool",
+            )
+        )
+    if descriptor.tools.create is not None:
+        entries.append(
+            RegistrationEntry(
+                tool_name=descriptor.tools.create.name,
+                annotation=descriptor.tools.create.annotation_set,
+                callable=f"rancher_{singular}_create_tool",
             )
         )
     return entries

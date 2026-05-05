@@ -11,6 +11,7 @@ from rancher_mcp.models.config_secrets import (
     RancherServiceAccountSummary,
 )
 from rancher_mcp.tools.support.collections import object_items
+from rancher_mcp.tools.support.payloads import build_k8s_payload
 from rancher_mcp.tools.support.values import (
     mapping_value,
     string_dict,
@@ -123,6 +124,42 @@ def _name_list_from_payload(payload: Mapping[str, object], field: str) -> list[s
     return sorted(set(names))
 
 
+def _build_configmap_payload(
+    *,
+    name: str,
+    namespace: str,
+    data: dict[str, str],
+    binary_data: dict[str, str] | None = None,
+    immutable: bool | None = None,
+    labels: dict[str, str] | None = None,
+    annotations: dict[str, str] | None = None,
+) -> dict[str, object]:
+    """Build a Kubernetes ConfigMap creation payload.
+
+    ConfigMap stores its content at top-level ``data`` and ``binaryData``
+    rather than under ``spec``, so the composer threads those fields
+    through ``body_overrides``. ``immutable`` is also a top-level field
+    (per Kubernetes ConfigMap schema) and is only included when the
+    caller set it explicitly.
+    """
+
+    body: dict[str, object] = {"data": data}
+    if binary_data is not None:
+        body["binaryData"] = binary_data
+    if immutable is not None:
+        body["immutable"] = immutable
+    return build_k8s_payload(
+        api_version="v1",
+        kind="ConfigMap",
+        name=name,
+        namespace=namespace,
+        labels=labels,
+        annotations=annotations,
+        body_overrides=body,
+    )
+
+
+build_configmap_payload = _build_configmap_payload
 build_list_query_params = _build_list_query_params
 config_map_summary_from_payload = _config_map_summary_from_payload
 image_pull_secret_names_from_payload = _image_pull_secret_names_from_payload

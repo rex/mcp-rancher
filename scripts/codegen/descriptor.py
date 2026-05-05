@@ -31,6 +31,14 @@ AnnotationSet = Literal[
 ]
 FilterType = Literal["str", "bool"]
 FilterPredicate = Literal["is_provided", "is_true"]
+ArgType = Literal[
+    "str",
+    "int",
+    "bool",
+    "dict_str_str",
+    "dict_str_object",
+    "string_list",
+]
 
 
 class FilterSpec(BaseModel):
@@ -221,6 +229,86 @@ class GetConfig(BaseModel):
     """Suggested next-step tool names included in the detail response."""
 
 
+class ArgSpec(BaseModel):
+    """One typed input argument to a write operation.
+
+    Resource name and namespace are NOT declared via ArgSpec — they are
+    auto-injected by codegen using `get.arg_name` and the descriptor's
+    `namespaced` flag. ArgSpec only describes the body args (data,
+    replicas, image, labels, etc.).
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    name: str
+    """Public arg name on the generated tool (e.g. `data`, `replicas`).
+    Must match the keyword the payload composer accepts."""
+
+    type: ArgType
+    """Python type to render in the function signature.
+    `dict_str_str` → `dict[str, str]`, `dict_str_object` → `dict[str, object]`,
+    `string_list` → `list[str]`."""
+
+    required: bool = False
+    """If True, no default; agent must provide. If False, the generated
+    signature gives the arg `None` as default and the composer is
+    responsible for handling it (typically by omitting the field from
+    the payload when None)."""
+
+    description: str = ""
+    """Optional descriptive text. Reserved for future MCP input-schema
+    surfacing — currently unused by codegen."""
+
+
+class CreateConfig(BaseModel):
+    """Create operation configuration.
+
+    Resource `name` and `namespace` (when namespaced) are auto-injected
+    by codegen using `get.arg_name` and the descriptor's `namespaced`
+    flag, so the descriptor here only declares the resource-specific
+    body args (data, replicas, image, etc.) via `args`.
+
+    The payload is built by a hand-written composer function imported
+    from `tools.<pack>.shared`. The composer takes `name`, optionally
+    `namespace`, and the typed args by keyword, and returns the full
+    request body. Keeping payload assembly in pack code (not codegen)
+    means cross-arg validation and pack-specific normalization stay in
+    one auditable place per resource type.
+
+    The response payload is reshaped into the curated detail model
+    using the same machinery as `get`: summary_copy_fields, locals,
+    extras, link_keys, and payload. A `get` config is therefore
+    required when `create` is in operations.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    args: list[ArgSpec] = []
+    """Resource-specific typed body args. `name` and `namespace` are
+    NOT declared here — they come from the descriptor."""
+
+    payload_composer: str
+    """Name imported from `tools.<pack>.shared` — a function that takes
+    `name=<get.arg_name value>`, optionally `namespace=<namespace>`,
+    and the typed args by keyword, and returns the full request body
+    for POST."""
+
+    confirmation_required: bool = False
+    """If True, the public tool requires `confirmation: bool = False`
+    kwarg and refuses unless explicitly True. Use for high-risk
+    creates where accidental invocation would be costly (e.g. cluster,
+    project)."""
+
+    audit_operation: str = ""
+    """Operation name passed to `@audit_mutation`. When empty, codegen
+    emits `<descriptor.id>_create`. Override for tool-specific names
+    that should differ from the descriptor id."""
+
+    next_steps: list[str] = []
+    """Suggested next-step tool names included in the create response
+    (matches the `get` next_steps pattern)."""
+
+
 class ToolMeta(BaseModel):
     """MCP tool metadata for one operation."""
 
@@ -345,6 +433,7 @@ class Descriptor(BaseModel):
 
     list_: ListConfig | None = Field(default=None, alias="list")
     get: GetConfig | None = None
+    create: CreateConfig | None = None
 
     # --- MCP tool metadata -----------------------------------------
 
@@ -369,6 +458,20 @@ class Descriptor(BaseModel):
             raise ValueError("operations includes 'list' but tools.list metadata is missing")
         if "get" in self.operations and self.tools.get is None:
             raise ValueError("operations includes 'get' but tools.get metadata is missing")
+        if "create" in self.operations:
+            if self.create is None:
+                raise ValueError("operations includes 'create' but create config is missing")
+            if self.tools.create is None:
+                raise ValueError(
+                    "operations includes 'create' but tools.create metadata is missing"
+                )
+            if "get" not in self.operations or self.get is None:
+                raise ValueError(
+                    "operations includes 'create' but 'get' is missing — "
+                    "create reuses get's summary_copy_fields/locals/extras/link_keys "
+                    "to shape the response payload. Add 'get' to operations and "
+                    "provide a get config."
+                )
         if self.transport == "steve":
             if not self.list_path:
                 raise ValueError("transport=steve requires list_path")
