@@ -13,6 +13,8 @@ from rancher_mcp.tools.workloads import (
     rancher_deployment_get,
     rancher_deployment_scale,
     rancher_deployments_list,
+    rancher_replica_set_get,
+    rancher_replica_sets_list,
     rancher_statefulset_get,
     rancher_statefulset_scale,
     rancher_statefulsets_list,
@@ -51,6 +53,7 @@ class StubRawK8sClient:
         statefulset_collection = (
             "/k8s/clusters/venue-local/apis/apps/v1/namespaces/apps/statefulsets"
         )
+        replicaset_collection = "/k8s/clusters/venue-local/apis/apps/v1/namespaces/apps/replicasets"
 
         if path == deployment_collection:
             assert params == {"limit": 5, "labelSelector": "app=cattle-cluster-agent"}
@@ -287,6 +290,74 @@ class StubRawK8sClient:
                     "availableReplicas": 1,
                     "currentRevision": "demo-db-7f9cfb6f8c",
                     "updateRevision": "demo-db-7f9cfb6f8c",
+                },
+            }
+        if path == replicaset_collection:
+            assert params == {"limit": 5}
+            return {
+                "items": [
+                    {
+                        "metadata": {
+                            "name": "nginx-rs",
+                            "namespace": "apps",
+                            "annotations": {
+                                "deployment.kubernetes.io/desired-replicas": "3",
+                            },
+                        },
+                        "spec": {
+                            "replicas": 3,
+                            "selector": {"matchLabels": {"app": "nginx"}},
+                            "template": {
+                                "spec": {
+                                    "containers": [
+                                        {
+                                            "name": "nginx",
+                                            "image": "nginx:1.25",
+                                        }
+                                    ],
+                                }
+                            },
+                        },
+                        "status": {
+                            "observedGeneration": 1,
+                            "replicas": 3,
+                            "readyReplicas": 3,
+                            "availableReplicas": 3,
+                            "fullyLabeledReplicas": 3,
+                        },
+                    }
+                ]
+            }
+        if path == f"{replicaset_collection}/nginx-rs":
+            assert params is None
+            return {
+                "metadata": {
+                    "name": "nginx-rs",
+                    "namespace": "apps",
+                    "annotations": {
+                        "deployment.kubernetes.io/desired-replicas": "3",
+                    },
+                },
+                "spec": {
+                    "replicas": 3,
+                    "selector": {"matchLabels": {"app": "nginx"}},
+                    "template": {
+                        "spec": {
+                            "containers": [
+                                {
+                                    "name": "nginx",
+                                    "image": "nginx:1.25",
+                                }
+                            ],
+                        }
+                    },
+                },
+                "status": {
+                    "observedGeneration": 1,
+                    "replicas": 3,
+                    "readyReplicas": 3,
+                    "availableReplicas": 3,
+                    "fullyLabeledReplicas": 3,
                 },
             }
         raise AssertionError(f"unexpected raw K8s path: {path}")
@@ -949,3 +1020,47 @@ async def test_rancher_deployment_delete_with_correct_phrase_succeeds() -> None:
     assert result.namespace == "cattle-system"
     assert result.cluster_id == "venue-local"
     assert result.suggested_next_steps == ["rancher_deployments_list"]
+
+
+@pytest.mark.asyncio
+async def test_rancher_replica_sets_list_returns_typed_summaries() -> None:
+    """Curated replicaset list should expose readiness-aware summaries."""
+
+    result = await rancher_replica_sets_list(
+        namespace="apps",
+        cluster_id="venue-local",
+        ready=True,
+        limit=5,
+        instance="work",
+        settings=build_settings(),
+        client=StubRawK8sClient(),
+    )
+
+    assert result.instance == "work"
+    assert result.cluster_id == "venue-local"
+    assert result.namespace == "apps"
+    assert result.replica_set_count == 1
+    assert result.replica_sets[0].name == "nginx-rs"
+    assert result.replica_sets[0].ready is True
+    assert result.replica_sets[0].replicas == 3
+    assert result.replica_sets[0].ready_replicas == 3
+
+
+@pytest.mark.asyncio
+async def test_rancher_replica_set_get_returns_typed_detail() -> None:
+    """Curated replicaset detail should expose annotation keys and full payload."""
+
+    result = await rancher_replica_set_get(
+        namespace="apps",
+        replica_set_name="nginx-rs",
+        cluster_id="venue-local",
+        instance="work",
+        settings=build_settings(),
+        client=StubRawK8sClient(),
+    )
+
+    assert result.id == "apps/nginx-rs"
+    assert result.ready is True
+    assert result.annotation_keys == ["deployment.kubernetes.io/desired-replicas"]
+    assert result.container_images == ["nginx:1.25"]
+    assert result.payload is not None

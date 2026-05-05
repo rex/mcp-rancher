@@ -1,0 +1,70 @@
+schema_version: 1
+
+id: replicasets
+pack: workloads
+display_name_singular: replica_set
+display_name_plural: replica_sets
+
+plane: steve
+transport: k8s-proxy
+namespaced: true
+
+path_helper:
+  module: rancher_mcp.tools.workloads.paths
+  list_function: workload_collection_path
+  detail_function: workload_resource_path
+  resource_kind: replicasets
+
+list_response_model: rancher_mcp.models.workloads.RancherReplicaSetList
+detail_response_model: rancher_mcp.models.workloads.RancherReplicaSetDetail
+
+shared_imports:
+  - items
+  - replicaset_summary_from_payload
+support_value_imports:
+  - string_dict
+summary_function: replicaset_summary_from_payload
+
+operations: [list, get]
+
+list:
+  query_params: [limit, continue_token, label_selector, field_selector]
+  filters:
+    - name: ready
+      summary_field: ready
+      type: bool
+  count_field: replica_set_count
+  collection_field: replica_sets
+  next_steps:
+    - rancher_replica_set_get
+    - rancher_pods_list
+
+get:
+  arg_name: replica_set_name
+  summary_copy_fields:
+    - id
+    - ready
+    - container_images
+  locals:
+    - name: metadata
+      expression: 'mapping_value(payload, "metadata") or {}'
+    - name: metadata_annotations
+      expression: 'mapping_value(metadata, "annotations") or {}'
+  extras:
+    - field: annotation_keys
+      expression: sorted(string_dict(metadata_annotations))
+  include_link_keys: false
+  include_payload: true
+  next_steps:
+    - rancher_replica_sets_list
+    - rancher_pods_list
+
+tools:
+  list:
+    name: rancher_replica_sets_list
+    description: List ReplicaSets in one namespace via Rancher's raw Kubernetes proxy. Returns curated summaries with readiness state.
+    annotation_set: READ_ONLY
+  get:
+    name: rancher_replica_set_get
+    description: Fetch one ReplicaSet by namespace and name via Rancher's raw Kubernetes proxy. Returns the curated summary plus full payload and annotation keys.
+    annotation_set: READ_ONLY

@@ -8,6 +8,7 @@ from typing import cast
 from rancher_mcp.models.workloads import (
     RancherDaemonSetSummary,
     RancherDeploymentSummary,
+    RancherReplicaSetSummary,
     RancherStatefulSetSummary,
     RancherWorkloadContainerSummary,
 )
@@ -100,6 +101,25 @@ def _statefulset_summary_from_payload(payload: Mapping[str, object]) -> RancherS
     )
 
 
+def _replicaset_summary_from_payload(payload: Mapping[str, object]) -> RancherReplicaSetSummary:
+    """Normalize one replicaset payload."""
+
+    metadata = _mapping_value(payload, "metadata") or {}
+    summary = RancherReplicaSetSummary.model_validate(payload)
+    replicas = summary.replicas
+    ready_replicas = summary.ready_replicas
+    ready: bool | None = None
+    if replicas is not None:
+        ready = ready_replicas is not None and replicas == ready_replicas
+    return summary.model_copy(
+        update={
+            "id": _namespaced_id(metadata, "replicaset"),
+            "ready": ready,
+            "container_images": _container_images(_template_spec(payload)),
+        }
+    )
+
+
 def _template_spec(payload: Mapping[str, object]) -> dict[str, object]:
     """Return one workload template pod spec when present."""
 
@@ -156,6 +176,7 @@ deployment_summary_from_payload = _deployment_summary_from_payload
 int_value = _int_value
 items = _items
 mapping_value = _mapping_value
+replicaset_summary_from_payload = _replicaset_summary_from_payload
 string_dict = _string_dict
 string_value = _string_value
 statefulset_summary_from_payload = _statefulset_summary_from_payload

@@ -11,6 +11,11 @@ from rancher_mcp.models.workloads.deployments import (
     RancherDeploymentList,
     RancherDeploymentSummary,
 )
+from rancher_mcp.models.workloads.replicasets import (
+    RancherReplicaSetDetail,
+    RancherReplicaSetList,
+    RancherReplicaSetSummary,
+)
 from rancher_mcp.models.workloads.statefulsets import (
     RancherStatefulSetDetail,
     RancherStatefulSetList,
@@ -24,6 +29,9 @@ __all__ = [
     "RancherDeploymentDetail",
     "RancherDeploymentList",
     "RancherDeploymentSummary",
+    "RancherReplicaSetDetail",
+    "RancherReplicaSetList",
+    "RancherReplicaSetSummary",
     "RancherStatefulSetDetail",
     "RancherStatefulSetList",
     "RancherStatefulSetSummary",
