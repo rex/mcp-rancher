@@ -2,6 +2,32 @@
 
 ## [2026-05-04] - Agent: Claude Opus 4.7
 
+### Added (I-2 — known-gaps documentation)
+- New **`docs/known-gaps.md`** captures every deferred /
+  out-of-scope / accessible-elsewhere item identified through
+  Phase 4-5 work.
+- Structured entries per gap: **Status** (one of `out-of-scope`,
+  `deferred`, `accessible-elsewhere`), **why deferred / out of
+  scope**, **where it belongs** (which Track owns the item), and
+  the **agent-side workaround** when one exists.
+- Sections: Provisioning (machine_configs, machine_pools),
+  Certificates & Secrets (TLS-secret X.509 parsing, cluster
+  cert expiry, cloud-credential reveal), Monitoring &
+  Alertmanager (routes / silences / configs, notifier depth),
+  Compliance (Kubewarden, scheduled-scan visibility),
+  Observability/Logging (Banzai chart optionality), Generic vs
+  curated (`monitoring` and `ops` packs stay hand-written),
+  Multi-process deployment (cross-replica rate-limit, audit-log
+  shipping, metrics endpoint), Live validation (compatibility
+  matrix, streaming behavior).
+- This is the static partner of Track I-1 (which will be the
+  runtime schema-crawl coverage report). I-2 is the editorial /
+  design-decision side; I-1 will be the mechanical coverage
+  enumeration.
+- Documented update protocol at the bottom: when a deferred
+  item ships, update its entry here AND tick the matching
+  ROADMAP item.
+
 ### Added (C-3 — tool-call metrics as structured log lines)
 - New **`src/rancher_mcp/metrics.py`** module with:
   - `MetricEntry` Pydantic model (extra=forbid). Fields:

@@ -560,10 +560,16 @@ Required by `VIBE.yaml` `security` section but not yet landed.
     `docs/coverage-by-domain.md`.
   - Output: per-domain "covered / partial / not-yet-curated" with the
     list of types in each bucket.
-- [ ] **I-2** Documented known-gaps appendix (P11)
-  - Anything in I-1's "not-yet-curated" bucket that is intentionally
-    out of scope (vs just not yet built) gets an explicit entry in
-    `docs/known-gaps.md` so the gap is machine-identifiable.
+- [x] **I-2** Documented known-gaps appendix (P11) — landed
+  - `docs/known-gaps.md` captures every deferred / out-of-scope /
+    accessible-elsewhere item identified through Phase 4-5 work.
+  - Each entry records Status (out-of-scope, deferred,
+    accessible-elsewhere), where it belongs (which Track / subsystem),
+    and the agent-side workaround when one exists.
+  - Static partner of Track I-1 (which will be the live runtime
+    schema crawl). I-2 is the editorial / design-decision side;
+    I-1 is the mechanical coverage report.
+  - Update protocol documented at the bottom of the doc.
 
 ---
 

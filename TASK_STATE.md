@@ -54,6 +54,11 @@ multi-user/CI deployment scope, C-3 Prometheus metrics needs
 endpoint design; B-5 monitoring deepening blocks on
 Alertmanager API access design).
 
+- **I-2 known-gaps doc landed.** `docs/known-gaps.md` documents
+  every deferred / out-of-scope / accessible-elsewhere item
+  identified during this session's Phase 4-5 work. Static
+  partner of Track I-1 (which still needs runtime schema crawl
+  for the mechanical coverage report).
 - **C-3 metrics-as-log-lines landed.** New
   `src/rancher_mcp/metrics.py` with `MetricEntry` model +
   `track_metric` decorator + `apply_metrics_to_all_tools(mcp)`
