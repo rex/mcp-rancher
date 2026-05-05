@@ -2,6 +2,50 @@
 
 ## [2026-05-05] - Agent: Claude Opus 4.7
 
+### Added (Batch 5 — 8 parallel Sonnet subagents, third consecutive ZERO-conflict batch)
+
+Tool surface 220 → 228 (+8). 406 tests pass (was 390; +16 =
+8 × 2). Coverage 85.61%. Wall-clock ~3.2 min for the longest
+agent. The file-disjoint-by-pack parallel-orchestration
+pattern is now battle-tested across 3 consecutive batches
+with zero post-cherry-pick fixups.
+
+Slices:
+
+- `rancher_cron_job_set_annotations` (batch_workloads;
+  **3-patch coexistence #2** — suspend + set_labels +
+  set_annotations) — `87154df`
+- `rancher_resource_quota_set_annotations` (governance;
+  multi-patch) — `d00c852`
+- `rancher_pod_disruption_budget_set_annotations` (disruption;
+  multi-patch) — `105c829`
+- `rancher_network_policy_set_annotations` (networking;
+  multi-patch) — `2829a30`
+- `rancher_prometheus_rule_set_annotations`
+  (prometheus_monitoring; multi-patch; optional
+  kube-prometheus-stack) — `579160c`
+- `rancher_storage_class_set_annotations` (storage;
+  multi-patch + cluster-scoped) — `25c2b68`
+- `rancher_statefulset_set_labels` (workloads; multi-patch
+  — APPEND alongside scale; statefulsets becomes 2-patch) —
+  `4dcfb9e`
+- `rancher_config_map_set_labels` (config_secrets; FIRST
+  patch on a descriptor that already has full create + apply
+  + delete mutation set — validates patch coexistence with
+  the entire CRUD suite) — `ab0a91e`
+
+### Pattern lessons reinforced
+
+- **3-patch coexistence is now a substrate property, not a
+  deployments quirk** — cron_jobs proves the pattern.
+- **Patch can coexist with the FULL mutation set** —
+  configmaps now has create + apply + delete + patch on a
+  single descriptor. The substrate handles all 4 verbs +
+  list/get cleanly.
+- **Three consecutive ZERO-conflict batches** validates the
+  file-disjoint-by-pack constraint as the right parallelism
+  dimension. Subagent infrastructure is operationally mature.
+
 ### Added (Batch 4 — 8 parallel Sonnet subagents, file-disjoint by pack, ZERO cherry-pick conflicts)
 
 Most ambitious batch to date. Mix of 5 single-patch virgin

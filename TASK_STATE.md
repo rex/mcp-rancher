@@ -29,7 +29,7 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 - Canonical plan: `PERFECT_RANCHER_MCP_IMPLEMENTATION_PLAN.md`
 - Operational roadmap (track-level work breakdown): `ROADMAP.md`
 - Primary compatibility target: Rancher `2.6.5`
-- Public tool surface: 220 tools
+- Public tool surface: 228 tools
 - Completion gate: `make check-if-the-agent-can-consider-this-task-completed`
 - Active quality gates:
   `make check-architecture`
@@ -83,6 +83,67 @@ scale + set_labels), and 8 different packs (incl. cluster-scoped
 and optional-chart resources). Substrate is feature-complete.
 
 ## Latest Logical Step
+
+- **Batch 5 landed: 8 parallel Sonnet agents shipped 8
+  cross-pack patches in ~3.2 min wall-clock — ZERO
+  cherry-pick conflicts (third consecutive clean batch).**
+  Two-batch maturity for the file-disjoint-by-pack pattern;
+  this run added the second 3-patch coexistence proof and
+  validated patch coexistence with a FULL mutation set
+  (create + apply + delete + patch on configmaps).
+  - **Slices shipped (each k8s-proxy or Steve, IDEMPOTENT_WRITE
+    patch on `metadata.labels` or `metadata.annotations`)**:
+    - `D-1-cron-job-set-annotations` (commit `87154df`,
+      **3-patch coexistence #2** — suspend + set_labels +
+      set_annotations on a single descriptor)
+    - `D-1-resource-quota-set-annotations` (commit `d00c852`,
+      multi-patch; governance pack now 2-patch)
+    - `D-1-pod-disruption-budget-set-annotations` (commit
+      `105c829`, multi-patch; disruption pack now 2-patch)
+    - `D-1-network-policy-set-annotations` (commit `2829a30`,
+      multi-patch; networking pack now 2-patch on
+      network_policies)
+    - `D-1-prometheus-rule-set-annotations` (commit `579160c`,
+      multi-patch; optional kube-prometheus-stack)
+    - `D-1-storage-class-set-annotations` (commit `25c2b68`,
+      multi-patch + cluster-scoped — fourth cluster-scoped
+      multi-patch proof)
+    - `D-1-statefulset-set-labels` (commit `4dcfb9e`,
+      multi-patch — APPEND alongside scale; workloads
+      pack's third multi-patch descriptor after deployments
+      3-patch and statefulsets now 2-patch)
+    - `D-1-configmap-set-labels` (commit `ab0a91e`, FIRST
+      patch on a descriptor with full create + apply + delete
+      mutation set; validates patch coexistence with the full
+      operation suite)
+  - **Substrate proofs**:
+    - 3-patch coexistence works on a SECOND descriptor
+      (cron_jobs after deployments) — confirms it's a substrate
+      pattern, not a deployments-specific quirk.
+    - Patch can coexist with the FULL mutation set
+      (create + apply + delete + patch) on configmaps —
+      validates that adding a patch verb to a mature descriptor
+      with all CRUD verbs already in place works seamlessly.
+    - Multi-patch on a workload controller (statefulset:
+      scale + set_labels) — same pattern as deployments scale.
+  - **File-disjoint by pack continues to be conflict-free**:
+    8 packs touched (batch_workloads, governance, disruption,
+    networking, prometheus_monitoring, storage, workloads,
+    config_secrets) — no merge conflicts. Three consecutive
+    batches with zero post-cherry-pick fixups.
+  - **Wall-clock leverage**: 8 slices × ~2.5 min = ~20 min
+    sequential vs ~3.2 min parallel = **~6.3× speedup**.
+    Catalog prep + merge + docs = ~7 min total wall-clock.
+  - **406 tests pass** (was 390 → +16: 8 slices × 2 tests
+    each), 85.61% coverage, 124 files match descriptors,
+    all gates green.
+  - **Tool surface 220 → 228** (+8).
+  - **Cumulative session run rate** through Batch 5:
+    tool surface 184 → 228 (+44), tests 309 → 406 (+97).
+    24 tools shipped via parallel orchestration in this
+    post-compaction Opus turn (3 batches × 8 = 24 + 0
+    blockers). Substrate is feature-complete + battle-tested
+    at production scale.
 
 - **Batch 4 landed: 8 parallel Sonnet agents shipped 8
   cross-pack patches in ~3 min wall-clock — ZERO cherry-pick

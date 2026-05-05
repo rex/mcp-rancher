@@ -66,7 +66,7 @@ table. The [Status legend](#status-legend) explains the icons.
 
 ## Quick start
 
-- **Tool surface today: 220 registered.** See
+- **Tool surface today: 228 registered.** See
   [Tool registry](#tool-registry).
 - **Estimated target: ~380 tools** at "perfect" coverage of
   the 25-domain canonical plan. We're roughly 50% of the way.
@@ -121,7 +121,7 @@ descriptor migration commit). That's fine — Slice IDs map
 
 | Bucket | Count |
 |---|---|
-| ✅ Built (registered tools) | **220** |
+| ✅ Built (registered tools) | **228** |
 | 🟡 Planned (gap from plan) | ~190 |
 | 🟠 Partial (documented limitations) | ~10 |
 | 🔴 Blocked (external dep / design) | ~12 |
@@ -1910,3 +1910,11 @@ Six multi-patch additions following Batch 4 — adds `set_annotations` alongside
 | 2026-05-05 | D-1-network-policy-set-labels (Batch 4) | `ee8c72a` | Sonnet, 2.6 min — single-patch virgin; networking pack |
 | 2026-05-05 | D-1-deployment-set-annotations (Batch 4) | `9ad9e79` | Sonnet, 2.5 min — **3-patch coexistence proof** (scale + set_labels + set_annotations); workloads pack |
 | 2026-05-05 | D-1-storage-class-set-labels (Batch 4) | `ec44070` | Sonnet, 3.0 min — single-patch virgin + cluster-scoped (storage.k8s.io/v1); storage pack |
+| 2026-05-05 | D-1-cron-job-set-annotations (Batch 5) | `87154df` | Sonnet, 2.3 min — **second 3-patch coexistence proof** (suspend + set_labels + set_annotations); batch_workloads pack |
+| 2026-05-05 | D-1-pod-disruption-budget-set-annotations (Batch 5) | `105c829` | Sonnet, 2.4 min — multi-patch; disruption pack |
+| 2026-05-05 | D-1-resource-quota-set-annotations (Batch 5) | `d00c852` | Sonnet, 2.6 min — multi-patch; governance pack |
+| 2026-05-05 | D-1-network-policy-set-annotations (Batch 5) | `2829a30` | Sonnet, 2.5 min — multi-patch; networking pack |
+| 2026-05-05 | D-1-prometheus-rule-set-annotations (Batch 5) | `579160c` | Sonnet, 2.7 min — multi-patch; optional kube-prometheus-stack |
+| 2026-05-05 | D-1-statefulset-set-labels (Batch 5) | `4dcfb9e` | Sonnet, 2.8 min — multi-patch (scale + set_labels coexistence); workloads pack |
+| 2026-05-05 | D-1-configmap-set-labels (Batch 5) | `ab0a91e` | Sonnet, 2.9 min — **first patch on descriptor with full create+apply+delete** (validates patch coexistence with full mutation set); config_secrets pack |
+| 2026-05-05 | D-1-storage-class-set-annotations (Batch 5) | `25c2b68` | Sonnet, 3.2 min — multi-patch + cluster-scoped; storage pack |
