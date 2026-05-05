@@ -13,7 +13,9 @@ from rancher_mcp.config import AppSettings
 from rancher_mcp.exceptions import RancherCapabilityError
 from rancher_mcp.rate_limit import reset_rate_limit_state
 from rancher_mcp.tools.config_secrets import (
+    rancher_config_map_apply,
     rancher_config_map_create,
+    rancher_config_map_delete,
     rancher_config_map_get,
     rancher_config_maps_list,
     rancher_secret_get,
@@ -92,6 +94,9 @@ class StubConfigSecretsClient:
 
         self.last_post_path: str | None = None
         self.last_post_payload: dict[str, object] | None = None
+        self.last_put_path: str | None = None
+        self.last_put_payload: dict[str, object] | None = None
+        self.last_delete_path: str | None = None
 
     async def get_json(
         self,
@@ -157,6 +162,59 @@ class StubConfigSecretsClient:
             return response
 
         raise AssertionError(f"unexpected post path {path!r}")
+
+    async def put_json(
+        self,
+        path: str,
+        payload: dict[str, object] | None = None,
+        params: object = None,
+    ) -> dict[str, object]:
+        """Capture the apply request and echo a Kubernetes-shaped response.
+
+        Apply is HTTP PUT to the resource detail path. The API server
+        echoes the resource as stored, with the resourceVersion bumped
+        (apply mutates state). The stub mirrors that shape so the
+        curated detail can be parsed end-to-end.
+        """
+
+        self.last_put_path = path
+        assert payload is not None
+        self.last_put_payload = dict(payload)
+
+        cm_detail = "/k8s/clusters/local/api/v1/namespaces/demo/configmaps/demo-config"
+        if path == cm_detail:
+            assert params is None
+            response = dict(payload)
+            metadata = dict(response.get("metadata") or {})  # type: ignore[arg-type]
+            metadata["uid"] = "test-uid-1234"
+            metadata["resourceVersion"] = "99"
+            response["metadata"] = metadata
+            return response
+
+        raise AssertionError(f"unexpected put path {path!r}")
+
+    async def delete_json(
+        self,
+        path: str,
+        payload: dict[str, object] | None = None,
+        params: object = None,
+    ) -> dict[str, object]:
+        """Capture the delete request and return a Kubernetes Status object."""
+
+        del payload  # unused for k8s configmap deletes
+        self.last_delete_path = path
+
+        cm_detail = "/k8s/clusters/local/api/v1/namespaces/demo/configmaps/demo-config"
+        if path == cm_detail:
+            assert params is None
+            return {
+                "kind": "Status",
+                "apiVersion": "v1",
+                "status": "Success",
+                "details": {"name": "demo-config", "kind": "configmaps"},
+            }
+
+        raise AssertionError(f"unexpected delete path {path!r}")
 
 
 @pytest.mark.asyncio
@@ -540,3 +598,228 @@ async def test_rancher_config_map_create_emits_success_audit() -> None:
     assert "data" in record["arg_keys"]
     assert "config_map_name" in record["arg_keys"]
     assert record["arg_keys"] == sorted(record["arg_keys"])
+
+
+# =====================================================================
+# rancher_config_map_apply end-to-end tests
+# =====================================================================
+
+
+@pytest.mark.asyncio
+async def test_rancher_config_map_apply_uses_put_to_detail_path() -> None:
+    """Apply must PUT (not POST) to the resource detail path with full state.
+
+    Distinct from create which POSTs to the collection. Apply replaces
+    the resource in place; the response carries a bumped resourceVersion.
+    """
+
+    reset_rate_limit_state()
+    client = StubConfigSecretsClient()
+
+    result = await rancher_config_map_apply(
+        namespace="demo",
+        config_map_name="demo-config",
+        data={"key": "new-value"},
+        immutable=True,
+        cluster_id="local",
+        instance="work",
+        settings=build_settings(),
+        client=client,
+    )
+
+    # The verb went to the DETAIL path, not the collection path.
+    assert (
+        client.last_put_path == "/k8s/clusters/local/api/v1/namespaces/demo/configmaps/demo-config"
+    )
+    # POST capture stays empty — apply does NOT call create.
+    assert client.last_post_path is None
+
+    # Same composer as create produces the same payload shape.
+    assert client.last_put_payload == {
+        "apiVersion": "v1",
+        "kind": "ConfigMap",
+        "metadata": {"name": "demo-config", "namespace": "demo"},
+        "data": {"key": "new-value"},
+        "immutable": True,
+    }
+
+    # Response is shaped through get's pipeline — same curated detail.
+    assert result.name == "demo-config"
+    assert result.data_keys == ["key"]
+    assert result.immutable is True
+    assert result.suggested_next_steps == [
+        "rancher_config_map_get",
+        "rancher_pods_list",
+    ]
+
+
+@pytest.mark.asyncio
+async def test_rancher_config_map_apply_emits_success_audit_with_apply_op() -> None:
+    """Apply audit records carry operation=configmap_apply (not _create)."""
+
+    reset_rate_limit_state()
+
+    with capture_logs() as logs:
+        await rancher_config_map_apply(
+            namespace="demo",
+            config_map_name="demo-config",
+            data={"key": "value"},
+            cluster_id="local",
+            instance="work",
+            settings=build_settings(),
+            client=StubConfigSecretsClient(),
+        )
+
+    audit_records = [r for r in logs if r.get("event") == "audit"]
+    assert len(audit_records) == 1
+    record = audit_records[0]
+    assert record["tool_name"] == "rancher_config_map_apply"
+    assert record["operation"] == "configmap_apply"
+    assert record["outcome"] == "success"
+
+
+# =====================================================================
+# rancher_config_map_delete end-to-end tests
+# =====================================================================
+
+
+@pytest.mark.asyncio
+async def test_rancher_config_map_delete_requires_exact_confirmation_phrase() -> None:
+    """Mismatched confirmation must refuse the delete BEFORE any HTTP call.
+
+    The whole point of the confirmation phrase is that an agent (or
+    user) can't accidentally delete a resource by guessing the tool's
+    contract. The exact phrase must be echoed back.
+    """
+
+    reset_rate_limit_state()
+    client = StubConfigSecretsClient()
+
+    with pytest.raises(RancherCapabilityError) as excinfo:
+        await rancher_config_map_delete(
+            namespace="demo",
+            config_map_name="demo-config",
+            confirmation="wrong phrase",
+            cluster_id="local",
+            instance="work",
+            settings=build_settings(),
+            client=client,
+        )
+
+    # The error message exposes the required phrase so the agent
+    # can recover by echoing it back on the next call.
+    assert "delete configmap demo-config in namespace demo" in str(excinfo.value)
+    # No HTTP call happened — the guard fires before the client is used.
+    assert client.last_delete_path is None
+
+
+@pytest.mark.asyncio
+async def test_rancher_config_map_delete_with_correct_phrase_succeeds() -> None:
+    """Correct confirmation phrase routes to delete_json on the detail path."""
+
+    reset_rate_limit_state()
+    client = StubConfigSecretsClient()
+
+    result = await rancher_config_map_delete(
+        namespace="demo",
+        config_map_name="demo-config",
+        confirmation="delete configmap demo-config in namespace demo",
+        cluster_id="local",
+        instance="work",
+        settings=build_settings(),
+        client=client,
+    )
+
+    assert (
+        client.last_delete_path
+        == "/k8s/clusters/local/api/v1/namespaces/demo/configmaps/demo-config"
+    )
+    assert result.deleted is True
+    assert result.resource_kind == "config_map"
+    assert result.resource_name == "demo-config"
+    assert result.namespace == "demo"
+    assert result.cluster_id == "local"
+    assert result.confirmation_phrase_used == ("delete configmap demo-config in namespace demo")
+    # The k8s Status object is preserved verbatim in response_payload.
+    assert result.response_payload["kind"] == "Status"
+    assert result.response_payload["status"] == "Success"
+    assert result.suggested_next_steps == ["rancher_config_maps_list"]
+
+
+@pytest.mark.asyncio
+async def test_rancher_config_map_delete_emits_audit_with_delete_op() -> None:
+    """Delete success and rejection both write audit records."""
+
+    reset_rate_limit_state()
+
+    # Success path
+    with capture_logs() as success_logs:
+        await rancher_config_map_delete(
+            namespace="demo",
+            config_map_name="demo-config",
+            confirmation="delete configmap demo-config in namespace demo",
+            cluster_id="local",
+            instance="work",
+            settings=build_settings(),
+            client=StubConfigSecretsClient(),
+        )
+
+    success_audits = [r for r in success_logs if r.get("event") == "audit"]
+    assert len(success_audits) == 1
+    assert success_audits[0]["operation"] == "configmap_delete"
+    assert success_audits[0]["outcome"] == "success"
+
+    # Rejection path: bad confirmation still emits an outcome=error audit
+    reset_rate_limit_state()
+    with (
+        capture_logs() as reject_logs,
+        pytest.raises(RancherCapabilityError),
+    ):
+        await rancher_config_map_delete(
+            namespace="demo",
+            config_map_name="demo-config",
+            confirmation="bad",
+            cluster_id="local",
+            instance="work",
+            settings=build_settings(),
+            client=StubConfigSecretsClient(),
+        )
+
+    reject_audits = [r for r in reject_logs if r.get("event") == "audit"]
+    assert len(reject_audits) == 1
+    assert reject_audits[0]["operation"] == "configmap_delete"
+    assert reject_audits[0]["outcome"] == "error"
+    # Audit captures the rejection reason but never the wrong phrase value.
+    assert "bad" not in reject_audits[0].get("arg_keys", [])
+
+
+@pytest.mark.asyncio
+async def test_rancher_config_map_delete_refuses_read_only_instance() -> None:
+    """Read-only instances must refuse delete even with valid confirmation.
+
+    The order of checks matters: confirmation guard runs FIRST (so an
+    agent on a read-only instance who hasn't even formed a valid phrase
+    learns about the phrase requirement), then the read-only guard.
+    With a valid phrase, the read-only check then fires.
+    """
+
+    reset_rate_limit_state()
+    read_only_settings = AppSettings(
+        RANCHER_DEFAULT_INSTANCE="locked",
+        RANCHER_INSTANCES_JSON=(
+            '{"locked":{"url":"https://rancher.example.com","token":"token-x:secret",'
+            '"verify_ssl":true,"read_only":true}}'
+        ),
+        RANCHER_MCP_CATALOG_PATH="catalog/capabilities.yaml",
+    )
+
+    with pytest.raises(RancherCapabilityError):
+        await rancher_config_map_delete(
+            namespace="demo",
+            config_map_name="demo-config",
+            confirmation="delete configmap demo-config in namespace demo",
+            cluster_id="local",
+            instance="locked",
+            settings=read_only_settings,
+            client=StubConfigSecretsClient(),
+        )

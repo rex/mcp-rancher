@@ -237,6 +237,8 @@ class ModuleContext:
             "list": descriptor.list_,
             "get": descriptor.get,
             "create": descriptor.create,
+            "apply": descriptor.apply,
+            "delete": descriptor.delete,
             "tools": descriptor.tools,
             "fetch_docstring_phrase": fetch_docstring_phrase,
         }
@@ -327,6 +329,20 @@ def _public_names(descriptor: Descriptor) -> list[str]:
                 f"rancher_{singular}_create_tool",
             ]
         )
+    if "apply" in descriptor.operations:
+        names.extend(
+            [
+                f"rancher_{singular}_apply",
+                f"rancher_{singular}_apply_tool",
+            ]
+        )
+    if "delete" in descriptor.operations:
+        names.extend(
+            [
+                f"rancher_{singular}_delete",
+                f"rancher_{singular}_delete_tool",
+            ]
+        )
     return names
 
 
@@ -339,6 +355,10 @@ def _tool_metas(descriptor: Descriptor) -> Iterator[ToolMeta]:
         yield descriptor.tools.get
     if descriptor.tools.create is not None:
         yield descriptor.tools.create
+    if descriptor.tools.apply is not None:
+        yield descriptor.tools.apply
+    if descriptor.tools.delete is not None:
+        yield descriptor.tools.delete
 
 
 def _registrations(descriptor: Descriptor) -> list[RegistrationEntry]:
@@ -369,6 +389,22 @@ def _registrations(descriptor: Descriptor) -> list[RegistrationEntry]:
                 tool_name=descriptor.tools.create.name,
                 annotation=descriptor.tools.create.annotation_set,
                 callable=f"rancher_{singular}_create_tool",
+            )
+        )
+    if descriptor.tools.apply is not None:
+        entries.append(
+            RegistrationEntry(
+                tool_name=descriptor.tools.apply.name,
+                annotation=descriptor.tools.apply.annotation_set,
+                callable=f"rancher_{singular}_apply_tool",
+            )
+        )
+    if descriptor.tools.delete is not None:
+        entries.append(
+            RegistrationEntry(
+                tool_name=descriptor.tools.delete.name,
+                annotation=descriptor.tools.delete.annotation_set,
+                callable=f"rancher_{singular}_delete_tool",
             )
         )
     return entries

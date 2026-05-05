@@ -111,6 +111,37 @@ class GenericResourceMutationResult(RancherModel):
     payload: dict[str, object] = Field(default_factory=dict)
 
 
+class RancherCuratedDeleteResult(RancherModel):
+    """Normalized result from a curated delete tool.
+
+    Curated deletes don't return a curated detail (the resource is
+    gone). They return this small result model confirming the
+    deletion, the rendered confirmation phrase the caller had to
+    echo, and the raw response payload (typically a Kubernetes
+    Status object on k8s-proxy deletes).
+    """
+
+    instance: str
+    plane: str
+    resource_kind: str
+    """Display kind (e.g. ``ConfigMap``, ``Project``). Used by the
+    agent for confirmation messages and downstream reasoning."""
+    resource_name: str
+    """The deleted resource's name (the value of the path arg)."""
+    namespace: str | None = None
+    cluster_id: str | None = None
+    deleted: bool = True
+    """True on success. The decorator stack ensures error paths
+    raise; this field is informational rather than a guard."""
+    confirmation_phrase_used: str
+    """The exact rendered phrase the caller echoed back to authorize
+    the delete. Audit-trail aid — already captured by
+    @audit_mutation, repeated here for the response object."""
+    response_payload: dict[str, object] = Field(default_factory=dict)
+    """Raw response body. For Kubernetes deletes this is typically
+    a Status object with details about the deletion."""
+
+
 class GenericResourceLinkResult(RancherModel):
     """Normalized result from following a resource link."""
 

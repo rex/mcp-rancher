@@ -34,6 +34,7 @@ architecture:
     - app/**/*.py
   exclude_globs:
     - "**/*.generated.*"
+    - "**/_generated_*.py"
     - "**/node_modules/**"
     - "**/.next/**"
   max_lines_per_file:

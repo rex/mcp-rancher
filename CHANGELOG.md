@@ -2,6 +2,84 @@
 
 ## [2026-05-05] - Agent: Claude Opus 4.7
 
+### Added (J-3 second slice — apply + delete on the codegen substrate)
+
+Substrate is now feature-complete for canonical CRUD writes
+(create / apply / delete). Patch is the only remaining verb and
+needs a separate descriptor design (narrow typed-arg patches
+targeting specific JSON paths) — not a same-shape extension.
+
+- **`ApplyConfig`** Pydantic model: mirrors `CreateConfig` (same
+  `args` schema, same `payload_composer` signature contract,
+  optional `confirmation_required`). Apply does HTTP PUT to the
+  resource **detail** path (vs create's POST to collection); the
+  response is shaped through the same get-pipeline as create.
+- **`DeleteConfig`** Pydantic model: no `args`, no composer.
+  Declares `confirmation_phrase` template — codegen renders it
+  as a Python f-string with `{namespace}`, `{cluster_id}`, and
+  `{<get.arg_name>}` substitutions. The agent must echo the
+  rendered phrase back verbatim or the operation refuses before
+  any HTTP call.
+- **`Descriptor.apply` and `Descriptor.delete`** fields, with
+  validator rules requiring `get` config (apply reuses the
+  response pipeline; delete uses get.arg_name as the
+  resource-name argument).
+- **`ManagementDiscoveryClient` Protocol** extended with
+  `put_json` and `delete_json` matching the existing
+  `RancherManagementClient` implementations.
+- **`RancherCuratedDeleteResult`** model (in
+  `src/rancher_mcp/models/resources.py`): typed delete result
+  with `instance / plane / resource_kind / resource_name /
+  namespace / cluster_id / deleted / confirmation_phrase_used /
+  response_payload / suggested_next_steps`. Distinct from the
+  existing `GenericResourceMutationResult` because curated
+  deletes don't return the resource (it's gone) and don't carry
+  schema_id (the curated tool implies the kind).
+- **Jinja template** (`tool_module.py.j2`):
+  - Conditional imports refactored with `{% set %}` vars
+    (`has_mutation`, `needs_capability_error`) so audit /
+    rate_limit / safety / RancherCapabilityError imports compose
+    cleanly across create / apply / delete.
+  - APPLY OPERATION block — `_apply_<singular>` (PUT to detail
+    path, response shaped through get pipeline) + decorated
+    public `rancher_<singular>_apply` + tool wrapper.
+  - DELETE OPERATION block — `_delete_<singular>` (DELETE to
+    detail path, returns `RancherCuratedDeleteResult`) +
+    decorated public `rancher_<singular>_delete` with
+    confirmation-phrase guard at body top + tool wrapper.
+- **Worked examples**: `rancher_config_map_apply`
+  (IDEMPOTENT_WRITE) and `rancher_config_map_delete`
+  (DESTRUCTIVE). Apply reuses the existing
+  `build_configmap_payload` composer (same signature works for
+  POST and PUT). Delete's phrase:
+  `"delete configmap {config_map_name} in namespace {namespace}"`.
+- **Tests** (6 new): apply-uses-PUT-not-POST round-trip;
+  apply audit operation correctness; delete-with-wrong-phrase
+  refuses before HTTP; delete-with-correct-phrase round-trip;
+  delete success and rejection audit records;
+  read-only-instance refuses delete.
+- **Documentation**: extended `docs/codegen-curated-tools.md`
+  Section 12 with apply + delete recipes, the decorator stack
+  ordering rationale (audit OUTER, rate_limit INNER,
+  ensure_instance_writable inside body, confirmation guards at
+  body top), and remaining-pending notes.
+
+### Changed
+
+- **`VIBE.yaml`** architecture `exclude_globs` adds
+  `**/_generated_*.py`. Codegen-emitted files bypass per-file
+  line-count and public-function-count limits because the
+  human-readable artifact is the descriptor + Jinja template,
+  not the .py file. Hand-written files retain the existing
+  soft (250) / hard (400) limits and 8-public-function rule.
+
+### Stats
+
+- Tool surface 185 → 187 (+2: rancher_config_map_apply,
+  rancher_config_map_delete).
+- 322 tests pass (was 316), 85.98% coverage (unchanged).
+- 99 files match descriptors. All gates green.
+
 ### Added (J-3 first slice — codegen substrate for create operations)
 
 Per user direction "Option A. Ideally I want to get to a place

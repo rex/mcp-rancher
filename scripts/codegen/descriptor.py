@@ -309,6 +309,78 @@ class CreateConfig(BaseModel):
     (matches the `get` next_steps pattern)."""
 
 
+class ApplyConfig(BaseModel):
+    """Apply (replace) operation configuration.
+
+    Apply does an HTTP PUT against the resource detail path with a full
+    desired-state payload. The response is the resource as the API
+    server stored it (potentially with normalized / defaulted fields),
+    which is shaped using the same response pipeline as ``get``.
+
+    Apply reuses the create operation's payload composer by default
+    (composer signature is identical: ``name`` plus typed kwargs →
+    full request body). Provide a separate composer only if the
+    apply payload shape differs from create — rare in practice.
+
+    Like ``create``, ``apply`` requires ``get`` in operations because
+    the response is shaped through get's summary_copy_fields, locals,
+    extras, link_keys.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    args: list[ArgSpec] = []
+    """Resource-specific typed body args. Same shape as CreateConfig.args."""
+
+    payload_composer: str
+    """Name imported from `tools.<pack>.shared`. Same signature contract
+    as the create composer: ``name``, optionally ``namespace``, and the
+    typed args by keyword → full PUT body."""
+
+    confirmation_required: bool = False
+    """If True, the public tool requires `confirmation: bool = False`
+    kwarg. Apply replaces the entire spec; for resources where that's
+    high-impact (e.g. cluster, project), require explicit confirmation."""
+
+    audit_operation: str = ""
+    """Operation name passed to `@audit_mutation`. Default: `<id>_apply`."""
+
+    next_steps: list[str] = []
+
+
+class DeleteConfig(BaseModel):
+    """Delete operation configuration.
+
+    Delete sends an HTTP DELETE to the resource detail path. The agent
+    must echo the descriptor-defined confirmation phrase verbatim;
+    otherwise the operation is refused at the tool boundary before any
+    HTTP call is made. The phrase template is rendered with the
+    resource path args (``namespace``, ``cluster_id``, and the
+    ``get.arg_name`` value) substituted in.
+
+    Unlike create / apply, delete does NOT return a curated detail
+    (the resource is gone). It returns a small typed result model
+    confirming the deletion, the rendered confirmation phrase, and
+    the suggested next steps.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    confirmation_phrase: str
+    """Template string for the required confirmation phrase. Available
+    substitutions: ``{namespace}``, ``{cluster_id}``, and the value of
+    ``{<get.arg_name>}`` (e.g. ``{config_map_name}``). Example:
+    ``delete configmap {config_map_name} in namespace {namespace}``."""
+
+    audit_operation: str = ""
+    """Operation name passed to `@audit_mutation`. Default: `<id>_delete`."""
+
+    next_steps: list[str] = []
+    """Suggested next-step tool names included in the delete response.
+    Typically references the list tool so the agent can verify the
+    resource is gone."""
+
+
 class ToolMeta(BaseModel):
     """MCP tool metadata for one operation."""
 
@@ -434,6 +506,8 @@ class Descriptor(BaseModel):
     list_: ListConfig | None = Field(default=None, alias="list")
     get: GetConfig | None = None
     create: CreateConfig | None = None
+    apply: ApplyConfig | None = None
+    delete: DeleteConfig | None = None
 
     # --- MCP tool metadata -----------------------------------------
 
@@ -471,6 +545,30 @@ class Descriptor(BaseModel):
                     "create reuses get's summary_copy_fields/locals/extras/link_keys "
                     "to shape the response payload. Add 'get' to operations and "
                     "provide a get config."
+                )
+        if "apply" in self.operations:
+            if self.apply is None:
+                raise ValueError("operations includes 'apply' but apply config is missing")
+            if self.tools.apply is None:
+                raise ValueError("operations includes 'apply' but tools.apply metadata is missing")
+            if "get" not in self.operations or self.get is None:
+                raise ValueError(
+                    "operations includes 'apply' but 'get' is missing — "
+                    "apply reuses get's response-shaping pipeline. Add 'get' "
+                    "to operations and provide a get config."
+                )
+        if "delete" in self.operations:
+            if self.delete is None:
+                raise ValueError("operations includes 'delete' but delete config is missing")
+            if self.tools.delete is None:
+                raise ValueError(
+                    "operations includes 'delete' but tools.delete metadata is missing"
+                )
+            if self.get is None:
+                raise ValueError(
+                    "operations includes 'delete' but 'get' config is missing — "
+                    "delete uses get.arg_name as the resource-name argument. "
+                    "Add 'get' to operations and provide a get config."
                 )
         if self.transport == "steve":
             if not self.list_path:

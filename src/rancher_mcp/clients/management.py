@@ -46,6 +46,30 @@ class ManagementDiscoveryClient(Protocol):
         """Perform a JSON POST request."""
         ...
 
+    async def put_json(
+        self,
+        path: str,
+        payload: Mapping[str, object] | None = None,
+        params: Mapping[str, str | int | bool] | None = None,
+    ) -> dict[str, object]:
+        """Perform a JSON PUT request (used by curated apply / replace flows)."""
+        ...
+
+    async def delete_json(
+        self,
+        path: str,
+        payload: Mapping[str, object] | None = None,
+        params: Mapping[str, str | int | bool] | None = None,
+    ) -> dict[str, object]:
+        """Perform a DELETE request expecting a JSON object response.
+
+        Kubernetes DELETEs return a Status object on success; the protocol
+        contract is that the response body parses as a JSON object. The
+        optional ``payload`` carries DeleteOptions (gracePeriodSeconds,
+        propagationPolicy, preconditions).
+        """
+        ...
+
 
 class ManagementMutationClient(ManagementDiscoveryClient, Protocol):
     """Protocol for mutation-capable management client behavior used by tools."""

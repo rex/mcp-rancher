@@ -28,7 +28,7 @@ summary_function: config_map_summary_from_payload
 query_builder_function: build_list_query_params
 query_builder_in_shared: true
 
-operations: [list, get, create]
+operations: [list, get, create, apply, delete]
 
 list:
   query_params: [limit, continue_token, label_selector, field_selector]
@@ -91,6 +91,36 @@ create:
     - rancher_config_map_get
     - rancher_pods_list
 
+apply:
+  payload_composer: build_configmap_payload
+  audit_operation: configmap_apply
+  args:
+    - name: data
+      type: dict_str_str
+      required: true
+      description: Top-level string key/value pairs stored in the ConfigMap.
+    - name: binary_data
+      type: dict_str_str
+      description: Optional binaryData entries (base64-encoded values).
+    - name: immutable
+      type: bool
+      description: If True, the ConfigMap cannot be updated after creation.
+    - name: labels
+      type: dict_str_str
+      description: Optional metadata labels merged into metadata.labels.
+    - name: annotations
+      type: dict_str_str
+      description: Optional metadata annotations merged into metadata.annotations.
+  next_steps:
+    - rancher_config_map_get
+    - rancher_pods_list
+
+delete:
+  audit_operation: configmap_delete
+  confirmation_phrase: "delete configmap {config_map_name} in namespace {namespace}"
+  next_steps:
+    - rancher_config_maps_list
+
 tools:
   list:
     name: rancher_config_maps_list
@@ -104,3 +134,11 @@ tools:
     name: rancher_config_map_create
     description: Create one Kubernetes ConfigMap in the given namespace via Rancher's raw Kubernetes proxy. Accepts typed `data` (str → str map) plus optional `binary_data`, `immutable`, `labels`, and `annotations`. Returns the curated detail of the created resource. Subject to write rate limiting and audit logging.
     annotation_set: SAFE_WRITE
+  apply:
+    name: rancher_config_map_apply
+    description: Apply (PUT) one Kubernetes ConfigMap to a desired state via Rancher's raw Kubernetes proxy. Replaces the entire resource — any fields not declared in this call are dropped. Same args as create. Returns the curated detail. Subject to write rate limiting and audit logging.
+    annotation_set: IDEMPOTENT_WRITE
+  delete:
+    name: rancher_config_map_delete
+    description: Delete one Kubernetes ConfigMap. The `confirmation` arg must equal the exact phrase "delete configmap NAME in namespace NS" (substituting the actual values). Returns a typed delete result with the rendered confirmation phrase. Subject to write rate limiting and audit logging.
+    annotation_set: DESTRUCTIVE

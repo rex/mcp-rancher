@@ -873,19 +873,149 @@ echoes a Kubernetes-shaped response. Test:
 Use `reset_rate_limit_state()` at the top of each create test so
 the global token bucket starts fresh.
 
+### Apply operation
+
+`apply` is HTTP PUT to the resource detail path with a full desired-
+state payload. Reuses the create operation's payload composer by
+default (composer signature is identical). Response is shaped through
+the same get pipeline as create.
+
+#### Descriptor
+
+```yaml
+operations: [list, get, create, apply]
+
+apply:
+  payload_composer: build_configmap_payload   # same composer as create
+  audit_operation: configmap_apply
+  args:
+    # Same arg shape as create — apply replaces the entire spec, so
+    # all fields the agent wants the resource to have must be passed.
+    - name: data
+      type: dict_str_str
+      required: true
+    - name: binary_data
+      type: dict_str_str
+    - name: immutable
+      type: bool
+    - name: labels
+      type: dict_str_str
+    - name: annotations
+      type: dict_str_str
+  next_steps:
+    - rancher_config_map_get
+    - rancher_pods_list
+
+tools:
+  apply:
+    name: rancher_config_map_apply
+    description: |
+      Apply (PUT) one Kubernetes ConfigMap to a desired state.
+      Replaces the entire resource — any fields not declared in
+      this call are dropped.
+    annotation_set: IDEMPOTENT_WRITE
+```
+
+Notes:
+- The `apply` block typically has the SAME `args` as `create`. Apply
+  is "set this resource to exactly this state"; the agent must pass
+  every field the resource should have.
+- `annotation_set: IDEMPOTENT_WRITE` because applying the same
+  desired state twice produces the same end state. (Create is
+  `SAFE_WRITE` because creating twice typically conflicts on uid /
+  resourceVersion.)
+- Test the apply tool by asserting the request goes to the **detail**
+  path (not the collection path) via `client.last_put_path`, and that
+  `client.last_post_path is None` (apply does not call create).
+
+### Delete operation
+
+`delete` is HTTP DELETE on the resource detail path, gated by a
+confirmation phrase the agent must echo back verbatim. Returns a
+typed `RancherCuratedDeleteResult` with the rendered phrase, the
+deleted resource's identifying fields, and the API server's response
+payload (typically a Kubernetes `Status` object).
+
+#### Descriptor
+
+```yaml
+operations: [list, get, create, apply, delete]
+
+delete:
+  audit_operation: configmap_delete
+  confirmation_phrase: "delete configmap {config_map_name} in namespace {namespace}"
+  next_steps:
+    - rancher_config_maps_list
+
+tools:
+  delete:
+    name: rancher_config_map_delete
+    description: |
+      Delete one Kubernetes ConfigMap. The `confirmation` arg must
+      equal the exact phrase "delete configmap NAME in namespace NS"
+      (substituting the actual values).
+    annotation_set: DESTRUCTIVE
+```
+
+Notes:
+- `confirmation_phrase` is rendered as a Python f-string. Available
+  substitutions: `{namespace}`, `{cluster_id}`, and the value of
+  `{<get.arg_name>}` (e.g. `{config_map_name}`). The codegen does NOT
+  validate that referenced names exist in scope — author the
+  template carefully, mismatches surface as `NameError` at tool-call
+  time.
+- `annotation_set: DESTRUCTIVE` is mandatory for delete — agents that
+  filter by tier (e.g. read-only-aware mode) skip it.
+- The error message on a wrong confirmation echoes the required
+  phrase so the agent can recover by retrying with the right one.
+- Delete does NOT take an args list — the only inputs are the path
+  args (already auto-injected) plus `confirmation`.
+- Test the confirmation guard by passing a wrong string and asserting
+  no HTTP call was made (`client.last_delete_path is None`). The
+  guard fires before the client is touched.
+
+### Decorator stack ordering
+
+All three write operations use the same decorator order:
+
+```python
+@audit_mutation(operation=..., plane=...)   # OUTER
+@rate_limit_writes                          # INNER
+async def rancher_<singular>_<verb>(...):
+    # body
+    # ensure_instance_writable(instance_name, instance_config)  ← inside body
+```
+
+Reasoning:
+- **audit OUTER**: every call (success, rejection, rate-limit
+  exhaustion, instance-locked) gets one audit record.
+- **rate_limit INNER**: rate-limit rejections (`RancherRateLimitError`)
+  propagate up through audit, so the audit record captures
+  `outcome=error, error_code=RATE_LIMITED`.
+- **ensure_instance_writable inside the body**: hits AFTER kwargs are
+  resolved and instance is identified. Raises
+  `RancherCapabilityError` with `error_code=CAPABILITY_REQUIRED`,
+  audited by the outer decorator.
+- **Confirmation guards (delete, optional create/apply) at body top**:
+  fire FIRST, before any I/O. An agent on a read-only instance with a
+  wrong confirmation phrase gets the phrase requirement back first
+  (most actionable feedback).
+
 ### What's still pending in J-3
 
-- `apply` / `patch` / `delete` operations — same descriptor shape,
-  different HTTP verbs and slightly different response handling.
-  `delete` adds a confirmation-phrase guard (already implemented for
-  generic deletes in `services/safety.py`); the descriptor will
-  declare the phrase template.
-- Norman / Steve transports — currently the create template handles
-  all three transports identically (POST to `list_path` for
-  steve/norman, POST to `path_helper.list_function(...)` for
-  k8s-proxy). The configmap example exercises k8s-proxy only;
-  Steve / Norman creates need a curated example before relying on
-  the substrate for those planes.
+- `patch` operation — narrow typed-arg patches (e.g.
+  `rancher_deployment_scale(replicas)`) need a different descriptor
+  shape than create/apply. Each patch tool targets a specific JSON
+  path; the substrate work is bigger than just a new template block.
+  Plan: design `PatchConfig` with `target_path: str` and a typed
+  args list whose values are written into that path. Defer until a
+  concrete need arises.
+- Norman / Steve transports — the create/apply/delete templates
+  handle all three transports identically (POST/PUT/DELETE to
+  `list_path`/`detail_path` for steve/norman, equivalent path-helper
+  call for k8s-proxy). The configmap example exercises k8s-proxy
+  only; Steve / Norman writes need a curated example before relying
+  on the substrate for those planes.
 - `dict_str_object` arg type — declared in the literal but no
   example yet. Add when the first descriptor needs nested struct
   args (e.g. `spec` for a CRD).
