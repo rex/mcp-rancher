@@ -140,14 +140,14 @@ async def _fetch_endpoint_slice_get(
     summary = endpoint_slice_summary_from_payload(payload)
 
     metadata = mapping_value(payload, "metadata") or {}
-    annotations = mapping_value(metadata, "annotations") or {}
+    metadata_annotations = mapping_value(metadata, "annotations") or {}
     detail = RancherEndpointSliceDetail.model_validate(payload)
     return detail.model_copy(
         update={
             "port_count": summary.port_count,
             "endpoint_count": summary.endpoint_count,
             "ready_endpoint_count": summary.ready_endpoint_count,
-            "annotation_keys": sorted(string_dict(annotations)),
+            "annotation_keys": sorted(string_dict(metadata_annotations)),
             "payload": dict(payload),
             "suggested_next_steps": ["rancher_endpoint_slices_list", "rancher_services_list"],
         }
@@ -204,14 +204,14 @@ async def _patch_endpoint_slice_set_labels(
     summary = endpoint_slice_summary_from_payload(payload)
 
     metadata = mapping_value(payload, "metadata") or {}
-    annotations = mapping_value(metadata, "annotations") or {}
+    metadata_annotations = mapping_value(metadata, "annotations") or {}
     detail = RancherEndpointSliceDetail.model_validate(payload)
     return detail.model_copy(
         update={
             "port_count": summary.port_count,
             "endpoint_count": summary.endpoint_count,
             "ready_endpoint_count": summary.ready_endpoint_count,
-            "annotation_keys": sorted(string_dict(annotations)),
+            "annotation_keys": sorted(string_dict(metadata_annotations)),
             "payload": dict(payload),
             "suggested_next_steps": ["rancher_endpoint_slice_get", "rancher_endpoint_slices_list"],
         }
@@ -250,6 +250,80 @@ async def rancher_endpoint_slice_set_labels(
             namespace,
             endpoint_slice_name,
             labels,
+            managed_client,
+        )
+
+
+async def _patch_endpoint_slice_set_annotations(
+    instance_name: str,
+    cluster_id: str,
+    namespace: str,
+    endpoint_slice_name: str,
+    annotations: dict[str, str],
+    client: ManagementDiscoveryClient,
+) -> RancherEndpointSliceDetail:
+    """Set_annotations one endpoint_slice via JSON merge-patch; returns the curated detail."""
+
+    patch_subtree: dict[str, object] = {}
+    patch_subtree["annotations"] = annotations
+    if not patch_subtree:
+        raise RancherCapabilityError(
+            "No patch fields provided; every arg was None. Pass at least one field to update."
+        )
+    request_payload: dict[str, object] = {"metadata": patch_subtree}
+    payload = await client.patch_json(
+        discovery_v1_resource_path(cluster_id, namespace, "endpointslices", endpoint_slice_name),
+        payload=request_payload,
+    )
+    summary = endpoint_slice_summary_from_payload(payload)
+
+    metadata = mapping_value(payload, "metadata") or {}
+    metadata_annotations = mapping_value(metadata, "annotations") or {}
+    detail = RancherEndpointSliceDetail.model_validate(payload)
+    return detail.model_copy(
+        update={
+            "port_count": summary.port_count,
+            "endpoint_count": summary.endpoint_count,
+            "ready_endpoint_count": summary.ready_endpoint_count,
+            "annotation_keys": sorted(string_dict(metadata_annotations)),
+            "payload": dict(payload),
+            "suggested_next_steps": ["rancher_endpoint_slice_get"],
+        }
+    )
+
+
+@audit_mutation(operation="endpoint_slice_set_annotations", plane="steve")
+@rate_limit_writes
+async def rancher_endpoint_slice_set_annotations(
+    namespace: str,
+    endpoint_slice_name: str,
+    annotations: dict[str, str],
+    cluster_id: str = "local",
+    instance: str | None = None,
+    settings: AppSettings | None = None,
+    client: ManagementDiscoveryClient | None = None,
+) -> RancherEndpointSliceDetail:
+    """Set_annotations one endpoint_slice via JSON merge-patch."""
+
+    resolved_settings = settings or get_settings()
+    instance_name, instance_config = resolve_instance(resolved_settings, instance)
+    ensure_instance_writable(instance_name, instance_config)
+    if client is not None:
+        return await _patch_endpoint_slice_set_annotations(
+            instance_name,
+            cluster_id,
+            namespace,
+            endpoint_slice_name,
+            annotations,
+            client,
+        )
+    async with RancherManagementClient(instance_name, instance_config) as managed_client:
+        return await _patch_endpoint_slice_set_annotations(
+            instance_name,
+            cluster_id,
+            namespace,
+            endpoint_slice_name,
+            annotations,
             managed_client,
         )
 
@@ -309,6 +383,24 @@ async def rancher_endpoint_slice_set_labels_tool(
         namespace=namespace,
         endpoint_slice_name=endpoint_slice_name,
         labels=labels,
+        cluster_id=cluster_id,
+        instance=instance,
+    )
+
+
+async def rancher_endpoint_slice_set_annotations_tool(
+    namespace: str,
+    endpoint_slice_name: str,
+    annotations: dict[str, str],
+    cluster_id: str = "local",
+    instance: str | None = None,
+) -> RancherEndpointSliceDetail:
+    """Public MCP wrapper for curated endpoint_slice set_annotations."""
+
+    return await rancher_endpoint_slice_set_annotations(
+        namespace=namespace,
+        endpoint_slice_name=endpoint_slice_name,
+        annotations=annotations,
         cluster_id=cluster_id,
         instance=instance,
     )
