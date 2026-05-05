@@ -1,0 +1,76 @@
+schema_version: 1
+
+id: horizontal_pod_autoscalers
+pack: governance
+display_name_singular: horizontal_pod_autoscaler
+display_name_plural: horizontal_pod_autoscalers
+
+plane: steve
+transport: k8s-proxy
+namespaced: true
+
+path_helper:
+  module: rancher_mcp.tools.governance.paths
+  list_function: autoscaling_v2_collection_path
+  detail_function: autoscaling_v2_resource_path
+  resource_kind: horizontalpodautoscalers
+
+list_response_model: rancher_mcp.models.governance.RancherHorizontalPodAutoscalerList
+detail_response_model: rancher_mcp.models.governance.RancherHorizontalPodAutoscalerDetail
+
+shared_imports:
+  - hpa_metric_types
+  - hpa_summary_from_payload
+  - items
+support_value_imports:
+  - string_dict
+summary_function: hpa_summary_from_payload
+query_builder_function: build_list_query_params
+query_builder_in_shared: true
+
+operations: [list, get]
+
+list:
+  query_params: [limit, continue_token, label_selector, field_selector]
+  filters:
+    - name: target_kind
+      summary_field: target_kind
+    - name: target_name
+      summary_field: target_name
+  count_field: horizontal_pod_autoscaler_count
+  collection_field: horizontal_pod_autoscalers
+  next_steps:
+    - rancher_horizontal_pod_autoscaler_get
+    - rancher_deployments_list
+
+get:
+  arg_name: hpa_name
+  summary_copy_fields:
+    - metric_count
+    - able_to_scale
+    - scaling_active
+  locals:
+    - name: metadata
+      expression: 'mapping_value(payload, "metadata") or {}'
+    - name: annotations
+      expression: 'mapping_value(metadata, "annotations") or {}'
+  extras:
+    - field: annotation_keys
+      expression: sorted(string_dict(annotations))
+    - field: metric_types
+      expression: hpa_metric_types(payload)
+  include_link_keys: false
+  include_payload: true
+  next_steps:
+    - rancher_horizontal_pod_autoscalers_list
+    - rancher_deployments_list
+
+tools:
+  list:
+    name: rancher_horizontal_pod_autoscalers_list
+    description: List HorizontalPodAutoscalers (autoscaling/v2) in one namespace via Rancher's raw Kubernetes proxy. Returns curated summaries with target ref (kind+name), min/max replicas, current/desired replicas, metric_count, and derived able_to_scale + scaling_active booleans from status.conditions. Filter by target_kind or target_name.
+    annotation_set: READ_ONLY
+  get:
+    name: rancher_horizontal_pod_autoscaler_get
+    description: Fetch one HorizontalPodAutoscaler by namespace and name. Returns the curated summary plus metric_types (sorted unique types from spec.metrics[].type), annotation keys, and full payload.
+    annotation_set: READ_ONLY

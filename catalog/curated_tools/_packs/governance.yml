@@ -1,0 +1,5 @@
+schema_version: 1
+id: governance
+register_function: register_governance_tools
+docstring: Curated cluster-governance tools (HPA, ResourceQuota, LimitRange).
+register_docstring: Register curated cluster-governance tools with the FastMCP server.

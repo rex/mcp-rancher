@@ -2,6 +2,38 @@
 
 ## [2026-05-04] - Agent: Claude Opus 4.7
 
+### Added (governance pack — HPA, ResourceQuota, LimitRange)
+- New **`governance`** pack with 6 tools across 3
+  cluster-governance / capacity-planning primitives:
+  - `rancher_horizontal_pod_autoscalers_list` /
+    `rancher_horizontal_pod_autoscaler_get` — HPA at
+    `autoscaling/v2`. Summary exposes target ref (kind+name),
+    min/max replicas, current/desired replicas, metric_count,
+    and DERIVED `able_to_scale` + `scaling_active` booleans
+    from status.conditions. Detail adds sorted unique
+    `metric_types` (e.g. `["External", "Resource"]`).
+    Filters: target_kind, target_name.
+  - `rancher_resource_quotas_list` /
+    `rancher_resource_quota_get` — ResourceQuota at `core/v1`.
+    Summary exposes `hard_limit_count`, `used_count`, sorted
+    `hard_limit_keys`. Detail surfaces the full
+    `status.hard` and `status.used` dicts so the agent can
+    compare configured limits against current usage.
+  - `rancher_limit_ranges_list` / `rancher_limit_range_get`
+    — LimitRange at `core/v1`. Summary exposes `limit_count`
+    and sorted unique `types_present` (e.g.
+    `["Container", "PersistentVolumeClaim", "Pod"]`).
+- New path helpers: `autoscaling_v2_collection_path` /
+  `autoscaling_v2_resource_path` (HPA only); `core_v1_*`
+  paths in this pack mirror those in `config_secrets`.
+- 6 new unit tests covering list+get for all 3 types with
+  realistic fixtures (3-metric HPA scaling Deployment 5→7;
+  ResourceQuota with cpu/memory/pods; LimitRange with
+  Container, Pod, and PersistentVolumeClaim type entries).
+- 305 tests pass, 85.95% coverage. Codegen: 96 files match
+  descriptors. Public tool surface 174 → 180.
+- Standard k8s primitives — no optional-chart caveat.
+
 ### Added (batch_workloads pack — Kubernetes batch/v1 Job + CronJob)
 - New **`batch_workloads`** pack with 4 tools across the
   standard Kubernetes batch primitives at `batch/v1`:

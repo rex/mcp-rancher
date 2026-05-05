@@ -29,7 +29,7 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 - Canonical plan: `PERFECT_RANCHER_MCP_IMPLEMENTATION_PLAN.md`
 - Operational roadmap (track-level work breakdown): `ROADMAP.md`
 - Primary compatibility target: Rancher `2.6.5`
-- Public tool surface: 174 tools
+- Public tool surface: 180 tools
 - Completion gate: `make check-if-the-agent-can-consider-this-task-completed`
 - Active quality gates:
   `make check-architecture`
@@ -57,6 +57,12 @@ E destructive writes, H-3 broader confirmation, H-5 streaming
 under load). See "Tracks ticked this session" and "NEXT
 options" below.
 
+- **governance pack landed.** 6 new tools for HPA
+  (autoscaling/v2), ResourceQuota and LimitRange (core/v1).
+  HPA summary derives `able_to_scale` and `scaling_active`
+  from status.conditions; ResourceQuota detail surfaces full
+  status.hard / status.used dicts. Tool surface 174 → 180.
+  305 tests pass, 85.95% coverage.
 - **batch_workloads pack landed.** 4 new tools for Kubernetes
   batch/v1 Job and CronJob — standard k8s ops surface not
   previously curated. Job summary derives `complete` and

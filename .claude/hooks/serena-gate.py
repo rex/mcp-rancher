@@ -131,6 +131,7 @@ _CODEGEN_PACKS = frozenset(
         "config_secrets",
         "disruption",
         "fleet_registration",
+        "governance",
         "logging_backups",
         "logging_pipeline",
         "longhorn",
