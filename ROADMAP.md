@@ -303,11 +303,20 @@ domain at the depth defined in the plan.
     - **TLS-secret expiry parsing** — needs the `cryptography`
       library and bypasses B-3's secret masking. Defer to a
       future hand-written tool.
-- [ ] **B-5** Deepen monitoring pack (P4 / overlap P8)
-  - Currently: `monitoring_status` + `cluster_alert_rule_*` reads.
-  - Add: notifier reads beyond bare list/get (state, last-trigger),
-    routes inspection, silences inspection, alertmanager config
-    visibility.
+- [~] **B-5** Deepen monitoring pack (P4 / overlap P8) — **BLOCKED**
+  - Currently: `monitoring_status` + `cluster_alert_rule_*` reads
+    + `notifier_*` reads (in `alerts` pack).
+  - Wanted: routes inspection, silences inspection, alertmanager
+    config visibility.
+  - **BLOCKED**: these all live behind the in-cluster
+    Alertmanager API (`/api/v2/alerts`, `/api/v2/silences`,
+    `/api/v2/status`), not Rancher's `/v3` or Steve API. Reaching
+    them requires either (a) port-forward through the API server
+    proxy, (b) pod-exec into the Alertmanager pod, or
+    (c) creating a Service-of-type-ClusterIP and proxying. All
+    three are bigger architectural decisions than a single read
+    pack. Defer to a dedicated Alertmanager-integration track
+    (likely a Track F subsystem item).
 - [x] **B-6** Logging pipeline pack (P4 / overlap P8) — landed via J-2
   - New pack `logging_pipeline` for Banzai Logging Operator CRDs
     at `logging.banzaicloud.io/v1beta1`: Output (namespaced),

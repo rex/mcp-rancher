@@ -48,6 +48,35 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 
 ## Latest Logical Step
 
+- **BLOCKED: J-2 effectively complete (7 of 8 sub-tracks);
+  B-5 monitoring deepening blocked on Alertmanager API access
+  design.** This session landed 9 commits totalling +40 net new
+  tools (110 → 150) and +43 tests (210 → 253) at 85.5% coverage.
+  B-5 wants routes/silences/alertmanager-config inspection,
+  but those live behind the in-cluster Alertmanager API
+  (`/api/v2/alerts`, `/api/v2/silences`), not Rancher's `/v3`
+  or Steve plane. Reaching them needs either port-forward
+  through the API server proxy, pod-exec, or a Service-of-type-
+  ClusterIP — all three are bigger architectural decisions than
+  a single read pack. Defer to a dedicated Alertmanager-integration
+  track (Track F subsystem candidate).
+
+- **NEXT options (require user direction)**:
+  - **C-4** structured audit-trail log — clear scope,
+    no lab access needed. Decorator wraps the 8 generic
+    mutation tools, emits structured records to a separate
+    log stream. Satisfies VIBE.yaml `audit_logging: required`.
+  - **C-3** Prometheus metrics endpoint — adds `/metrics`
+    handler, tool-call counters and latency histograms.
+  - **C-1** elicitation (MCP 1.1+) for destructive writes —
+    blocks on MCP SDK feature availability.
+  - **C-2** OAuth 2.0 / PKCE — multi-user / CI deployments.
+  - **J-3** extend codegen schema for write operations
+    (create/apply/patch/delete via descriptors). Largest
+    scope; biggest leverage for Tracks D / E.
+  - **Track G** live validation — needs populated lab + read-only
+    prod access.
+
 - **J-2 / B-7 policy_reports pack landed (partial).** 4 new
   tools for the standardized PolicyReport API at
   `wgpolicyk8s.io/v1alpha2` (Kyverno, Kubewarden, Falco emit
