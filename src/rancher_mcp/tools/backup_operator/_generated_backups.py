@@ -106,12 +106,12 @@ async def _fetch_backup_get(
     summary = backup_summary_from_payload(payload)
 
     metadata = mapping_value(payload, "metadata") or {}
-    annotations = mapping_value(metadata, "annotations") or {}
+    metadata_annotations = mapping_value(metadata, "annotations") or {}
     detail = RancherBackupDetail.model_validate(payload)
     return detail.model_copy(
         update={
             "summary_state": summary.summary_state,
-            "annotation_keys": sorted(string_dict(annotations)),
+            "annotation_keys": sorted(string_dict(metadata_annotations)),
             "condition_types_true": condition_types_true(conditions_from_payload(payload)),
             "storage_location_summary": storage_location_summary(payload),
             "payload": dict(payload),
@@ -165,12 +165,12 @@ async def _patch_backup_set_labels(
     summary = backup_summary_from_payload(payload)
 
     metadata = mapping_value(payload, "metadata") or {}
-    annotations = mapping_value(metadata, "annotations") or {}
+    metadata_annotations = mapping_value(metadata, "annotations") or {}
     detail = RancherBackupDetail.model_validate(payload)
     return detail.model_copy(
         update={
             "summary_state": summary.summary_state,
-            "annotation_keys": sorted(string_dict(annotations)),
+            "annotation_keys": sorted(string_dict(metadata_annotations)),
             "condition_types_true": condition_types_true(conditions_from_payload(payload)),
             "storage_location_summary": storage_location_summary(payload),
             "payload": dict(payload),
@@ -208,6 +208,76 @@ async def rancher_backup_set_labels(
             cluster_id,
             backup_name,
             labels,
+            managed_client,
+        )
+
+
+async def _patch_backup_set_annotations(
+    instance_name: str,
+    cluster_id: str,
+    backup_name: str,
+    annotations: dict[str, str],
+    client: ManagementDiscoveryClient,
+) -> RancherBackupDetail:
+    """Set_annotations one backup via JSON merge-patch; returns the curated detail."""
+
+    patch_subtree: dict[str, object] = {}
+    patch_subtree["annotations"] = annotations
+    if not patch_subtree:
+        raise RancherCapabilityError(
+            "No patch fields provided; every arg was None. Pass at least one field to update."
+        )
+    request_payload: dict[str, object] = {"metadata": patch_subtree}
+    payload = await client.patch_json(
+        resources_cattle_io_v1_resource_path(cluster_id, "backups", backup_name),
+        payload=request_payload,
+    )
+    summary = backup_summary_from_payload(payload)
+
+    metadata = mapping_value(payload, "metadata") or {}
+    metadata_annotations = mapping_value(metadata, "annotations") or {}
+    detail = RancherBackupDetail.model_validate(payload)
+    return detail.model_copy(
+        update={
+            "summary_state": summary.summary_state,
+            "annotation_keys": sorted(string_dict(metadata_annotations)),
+            "condition_types_true": condition_types_true(conditions_from_payload(payload)),
+            "storage_location_summary": storage_location_summary(payload),
+            "payload": dict(payload),
+            "suggested_next_steps": ["rancher_backup_get"],
+        }
+    )
+
+
+@audit_mutation(operation="backup_set_annotations", plane="steve")
+@rate_limit_writes
+async def rancher_backup_set_annotations(
+    backup_name: str,
+    annotations: dict[str, str],
+    cluster_id: str = "local",
+    instance: str | None = None,
+    settings: AppSettings | None = None,
+    client: ManagementDiscoveryClient | None = None,
+) -> RancherBackupDetail:
+    """Set_annotations one backup via JSON merge-patch."""
+
+    resolved_settings = settings or get_settings()
+    instance_name, instance_config = resolve_instance(resolved_settings, instance)
+    ensure_instance_writable(instance_name, instance_config)
+    if client is not None:
+        return await _patch_backup_set_annotations(
+            instance_name,
+            cluster_id,
+            backup_name,
+            annotations,
+            client,
+        )
+    async with RancherManagementClient(instance_name, instance_config) as managed_client:
+        return await _patch_backup_set_annotations(
+            instance_name,
+            cluster_id,
+            backup_name,
+            annotations,
             managed_client,
         )
 
@@ -253,6 +323,22 @@ async def rancher_backup_set_labels_tool(
     return await rancher_backup_set_labels(
         backup_name=backup_name,
         labels=labels,
+        cluster_id=cluster_id,
+        instance=instance,
+    )
+
+
+async def rancher_backup_set_annotations_tool(
+    backup_name: str,
+    annotations: dict[str, str],
+    cluster_id: str = "local",
+    instance: str | None = None,
+) -> RancherBackupDetail:
+    """Public MCP wrapper for curated backup set_annotations."""
+
+    return await rancher_backup_set_annotations(
+        backup_name=backup_name,
+        annotations=annotations,
         cluster_id=cluster_id,
         instance=instance,
     )
