@@ -1,0 +1,285 @@
+"""Curated Banzai logging-pipeline tool tests.
+
+Covers Output / ClusterOutput / Flow / ClusterFlow at
+``logging.banzaicloud.io/v1beta1``.
+"""
+
+import pytest
+
+from rancher_mcp.config import AppSettings
+from rancher_mcp.tools.logging_pipeline import (
+    rancher_cluster_flow_get,
+    rancher_cluster_flows_list,
+    rancher_cluster_output_get,
+    rancher_cluster_outputs_list,
+    rancher_flow_get,
+    rancher_flows_list,
+    rancher_output_get,
+    rancher_outputs_list,
+)
+
+
+def build_settings() -> AppSettings:
+    """Create deterministic settings for logging_pipeline tests."""
+
+    return AppSettings(
+        RANCHER_DEFAULT_INSTANCE="work",
+        RANCHER_INSTANCES_JSON=(
+            '{"work":{"url":"https://rancher.work.example.com","token":"token-work:secret",'
+            '"verify_ssl":true,"read_only":false}}'
+        ),
+        RANCHER_MCP_CATALOG_PATH="catalog/capabilities.yaml",
+    )
+
+
+_OUTPUT_PAYLOAD = {
+    "metadata": {
+        "name": "s3-out",
+        "namespace": "logging",
+        "annotations": {"app": "logging"},
+    },
+    "spec": {
+        "loggingRef": "default",
+        "s3": {
+            "bucket": "logs-bucket",
+            "region": "us-west-2",
+        },
+    },
+}
+
+_CLUSTER_OUTPUT_PAYLOAD = {
+    "metadata": {
+        "name": "loki-cout",
+        "annotations": {},
+    },
+    "spec": {
+        "loki": {"url": "http://loki:3100"},
+    },
+}
+
+_FLOW_PAYLOAD = {
+    "metadata": {
+        "name": "app-flow",
+        "namespace": "logging",
+        "annotations": {"team": "platform"},
+    },
+    "spec": {
+        "loggingRef": "default",
+        "match": [
+            {"select": {"labels": {"app": "demo"}}},
+            {"exclude": {"labels": {"role": "system"}}},
+        ],
+        "filters": [
+            {"parser": {"removeKeyNameField": True}},
+        ],
+        "localOutputRefs": ["s3-out"],
+        "globalOutputRefs": ["loki-cout"],
+    },
+}
+
+_CLUSTER_FLOW_PAYLOAD = {
+    "metadata": {"name": "system-cflow", "annotations": {}},
+    "spec": {
+        "loggingRef": "default",
+        "match": [{"select": {"namespaces": ["kube-system"]}}],
+        "filters": [],
+        "globalOutputRefs": ["loki-cout"],
+    },
+}
+
+
+class StubLoggingPipelineClient:
+    """Deterministic raw Kubernetes proxy client for logging-pipeline tools."""
+
+    async def get_json(
+        self,
+        path: str,
+        params: object = None,
+    ) -> dict[str, object]:
+        """Return fake Banzai logging CRD payloads."""
+
+        ns_root = "/k8s/clusters/local/apis/logging.banzaicloud.io/v1beta1/namespaces/logging"
+        cluster_root = "/k8s/clusters/local/apis/logging.banzaicloud.io/v1beta1"
+
+        if path == f"{ns_root}/outputs":
+            assert params == {"limit": 5}
+            return {"items": [_OUTPUT_PAYLOAD]}
+        if path == f"{ns_root}/outputs/s3-out":
+            assert params is None
+            return _OUTPUT_PAYLOAD
+
+        if path == f"{cluster_root}/clusteroutputs":
+            assert params == {"limit": 5}
+            return {"items": [_CLUSTER_OUTPUT_PAYLOAD]}
+        if path == f"{cluster_root}/clusteroutputs/loki-cout":
+            assert params is None
+            return _CLUSTER_OUTPUT_PAYLOAD
+
+        if path == f"{ns_root}/flows":
+            assert params == {"limit": 5}
+            return {"items": [_FLOW_PAYLOAD]}
+        if path == f"{ns_root}/flows/app-flow":
+            assert params is None
+            return _FLOW_PAYLOAD
+
+        if path == f"{cluster_root}/clusterflows":
+            assert params == {"limit": 5}
+            return {"items": [_CLUSTER_FLOW_PAYLOAD]}
+        if path == f"{cluster_root}/clusterflows/system-cflow":
+            assert params is None
+            return _CLUSTER_FLOW_PAYLOAD
+
+        raise AssertionError(f"unexpected path {path!r} (params={params!r})")
+
+
+@pytest.mark.asyncio
+async def test_rancher_outputs_list_detects_output_type() -> None:
+    """List should auto-detect output_type from the first non-loggingRef key."""
+
+    result = await rancher_outputs_list(
+        namespace="logging",
+        cluster_id="local",
+        limit=5,
+        instance="work",
+        settings=build_settings(),
+        client=StubLoggingPipelineClient(),
+    )
+
+    assert result.output_count == 1
+    [out] = result.outputs
+    assert out.name == "s3-out"
+    assert out.output_type == "s3"
+    assert out.logging_ref == "default"
+
+
+@pytest.mark.asyncio
+async def test_rancher_output_get_returns_detail() -> None:
+    """Detail should expose output_type, annotation_keys, full payload."""
+
+    result = await rancher_output_get(
+        namespace="logging",
+        output_name="s3-out",
+        cluster_id="local",
+        instance="work",
+        settings=build_settings(),
+        client=StubLoggingPipelineClient(),
+    )
+
+    assert result.name == "s3-out"
+    assert result.output_type == "s3"
+    assert result.annotation_keys == ["app"]
+    assert result.payload == _OUTPUT_PAYLOAD
+
+
+@pytest.mark.asyncio
+async def test_rancher_cluster_outputs_list_returns_summary() -> None:
+    """ClusterOutput list should detect type without requiring namespace path."""
+
+    result = await rancher_cluster_outputs_list(
+        cluster_id="local",
+        limit=5,
+        instance="work",
+        settings=build_settings(),
+        client=StubLoggingPipelineClient(),
+    )
+
+    assert result.cluster_output_count == 1
+    [cout] = result.cluster_outputs
+    assert cout.name == "loki-cout"
+    assert cout.output_type == "loki"
+
+
+@pytest.mark.asyncio
+async def test_rancher_cluster_output_get_returns_detail() -> None:
+    """ClusterOutput detail should expose output_type and full payload."""
+
+    result = await rancher_cluster_output_get(
+        cluster_output_name="loki-cout",
+        cluster_id="local",
+        instance="work",
+        settings=build_settings(),
+        client=StubLoggingPipelineClient(),
+    )
+
+    assert result.name == "loki-cout"
+    assert result.output_type == "loki"
+    assert result.payload == _CLUSTER_OUTPUT_PAYLOAD
+
+
+@pytest.mark.asyncio
+async def test_rancher_flows_list_counts_match_and_filter() -> None:
+    """Flow list should count match clauses and filters, expose output refs."""
+
+    result = await rancher_flows_list(
+        namespace="logging",
+        cluster_id="local",
+        limit=5,
+        instance="work",
+        settings=build_settings(),
+        client=StubLoggingPipelineClient(),
+    )
+
+    assert result.flow_count == 1
+    [flow] = result.flows
+    assert flow.name == "app-flow"
+    assert flow.match_count == 2
+    assert flow.filter_count == 1
+    assert flow.local_output_refs == ["s3-out"]
+    assert flow.global_output_refs == ["loki-cout"]
+
+
+@pytest.mark.asyncio
+async def test_rancher_flow_get_returns_detail() -> None:
+    """Flow detail should include payload + match/filter counts."""
+
+    result = await rancher_flow_get(
+        namespace="logging",
+        flow_name="app-flow",
+        cluster_id="local",
+        instance="work",
+        settings=build_settings(),
+        client=StubLoggingPipelineClient(),
+    )
+
+    assert result.name == "app-flow"
+    assert result.match_count == 2
+    assert result.filter_count == 1
+    assert result.annotation_keys == ["team"]
+    assert result.payload == _FLOW_PAYLOAD
+
+
+@pytest.mark.asyncio
+async def test_rancher_cluster_flows_list_returns_summary() -> None:
+    """ClusterFlow list should expose match/filter counts and global output refs."""
+
+    result = await rancher_cluster_flows_list(
+        cluster_id="local",
+        limit=5,
+        instance="work",
+        settings=build_settings(),
+        client=StubLoggingPipelineClient(),
+    )
+
+    assert result.cluster_flow_count == 1
+    [cflow] = result.cluster_flows
+    assert cflow.name == "system-cflow"
+    assert cflow.match_count == 1
+    assert cflow.filter_count == 0
+    assert cflow.global_output_refs == ["loki-cout"]
+
+
+@pytest.mark.asyncio
+async def test_rancher_cluster_flow_get_returns_detail() -> None:
+    """ClusterFlow detail should include payload."""
+
+    result = await rancher_cluster_flow_get(
+        cluster_flow_name="system-cflow",
+        cluster_id="local",
+        instance="work",
+        settings=build_settings(),
+        client=StubLoggingPipelineClient(),
+    )
+
+    assert result.name == "system-cflow"
+    assert result.match_count == 1
+    assert result.payload == _CLUSTER_FLOW_PAYLOAD

@@ -1,0 +1,69 @@
+schema_version: 1
+
+id: cluster_outputs
+pack: logging_pipeline
+display_name_singular: cluster_output
+display_name_plural: cluster_outputs
+
+plane: steve
+transport: k8s-proxy
+namespaced: false
+
+path_helper:
+  module: rancher_mcp.tools.logging_pipeline.paths
+  list_function: logging_cluster_collection_path
+  detail_function: logging_cluster_resource_path
+  resource_kind: clusteroutputs
+
+list_response_model: rancher_mcp.models.logging_pipeline.RancherLoggingClusterOutputList
+detail_response_model: rancher_mcp.models.logging_pipeline.RancherLoggingClusterOutputDetail
+
+shared_imports:
+  - cluster_output_summary_from_payload
+  - items
+support_value_imports:
+  - string_dict
+summary_function: cluster_output_summary_from_payload
+query_builder_function: build_list_query_params
+query_builder_in_shared: true
+
+operations: [list, get]
+
+list:
+  query_params: [limit, continue_token, label_selector]
+  filters:
+    - name: output_type
+      summary_field: output_type
+  count_field: cluster_output_count
+  collection_field: cluster_outputs
+  next_steps:
+    - rancher_cluster_output_get
+    - rancher_cluster_flows_list
+
+get:
+  arg_name: cluster_output_name
+  summary_copy_fields:
+    - output_type
+  locals:
+    - name: metadata
+      expression: 'mapping_value(payload, "metadata") or {}'
+    - name: annotations
+      expression: 'mapping_value(metadata, "annotations") or {}'
+  extras:
+    - field: annotation_keys
+      expression: sorted(string_dict(annotations))
+  include_link_keys: false
+  include_payload: true
+  next_steps:
+    - rancher_cluster_outputs_list
+    - rancher_cluster_flows_list
+
+tools:
+  list:
+    name: rancher_cluster_outputs_list
+    description: List Banzai logging ClusterOutput resources (cluster-scoped) via Rancher's raw Kubernetes proxy.
+    annotation_set: READ_ONLY
+  get:
+    name: rancher_cluster_output_get
+    description: Fetch one Banzai logging ClusterOutput by name. Returns the curated summary plus full payload and annotation keys.
+    annotation_set: READ_ONLY

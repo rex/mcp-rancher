@@ -29,7 +29,7 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 - Canonical plan: `PERFECT_RANCHER_MCP_IMPLEMENTATION_PLAN.md`
 - Operational roadmap (track-level work breakdown): `ROADMAP.md`
 - Primary compatibility target: Rancher `2.6.5`
-- Public tool surface: 138 tools
+- Public tool surface: 146 tools
 - Completion gate: `make check-if-the-agent-can-consider-this-task-completed`
 - Active quality gates:
   `make check-architecture`
@@ -48,6 +48,12 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 
 ## Latest Logical Step
 
+- **J-2 / B-6 logging_pipeline pack landed.** 8 new tools for
+  Banzai Logging Operator CRDs (Output/ClusterOutput/Flow/ClusterFlow)
+  at `logging.banzaicloud.io/v1beta1`. Tool surface 138 → 146.
+  249 tests pass, 85.50% coverage. The Banzai chart is optional;
+  these tools 404 if the chart isn't installed. Capability
+  detection is a future enhancement.
 - **J-2 / B-8 backup_operator pack landed.** 4 new tools for
   Rancher Backup Operator's Backup + Restore CRDs (cluster-scoped
   in resources.cattle.io/v1). Storage location rendered as

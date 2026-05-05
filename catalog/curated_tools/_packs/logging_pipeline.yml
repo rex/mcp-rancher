@@ -1,0 +1,5 @@
+schema_version: 1
+id: logging_pipeline
+register_function: register_logging_pipeline_tools
+docstring: Curated Banzai logging-pipeline tools (Output, ClusterOutput, Flow, ClusterFlow).
+register_docstring: Register curated logging-pipeline tools with the FastMCP server.

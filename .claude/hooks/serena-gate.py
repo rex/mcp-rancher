@@ -130,6 +130,7 @@ _CODEGEN_PACKS = frozenset(
         "disruption",
         "fleet_registration",
         "logging_backups",
+        "logging_pipeline",
         "networking",
         "pods_services",
         "provisioning",

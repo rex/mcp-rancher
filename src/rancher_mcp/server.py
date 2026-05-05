@@ -26,6 +26,7 @@ def register_all_tools(mcp: FastMCP) -> None:
     from rancher_mcp.tools.disruption import register_disruption_tools
     from rancher_mcp.tools.fleet_registration import register_fleet_registration_tools
     from rancher_mcp.tools.logging_backups import register_logging_backup_tools
+    from rancher_mcp.tools.logging_pipeline import register_logging_pipeline_tools
     from rancher_mcp.tools.mcp_prompts import register_mcp_prompts
     from rancher_mcp.tools.mcp_resources import register_mcp_resources
     from rancher_mcp.tools.monitoring import register_monitoring_tools
@@ -64,6 +65,7 @@ def register_all_tools(mcp: FastMCP) -> None:
     register_provisioning_tools(mcp)
     register_certificates_tools(mcp)
     register_backup_operator_tools(mcp)
+    register_logging_pipeline_tools(mcp)
     register_mcp_resources(mcp)
     register_mcp_prompts(mcp)
     apply_structured_errors_to_all_tools(mcp)

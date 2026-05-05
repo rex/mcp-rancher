@@ -2,6 +2,39 @@
 
 ## [2026-05-04] - Agent: Claude Opus 4.7
 
+### Added (J-2 / B-6 — logging_pipeline pack via descriptors)
+- New **`logging_pipeline`** pack with 8 tools across 4 Banzai
+  Logging Operator CRDs in `logging.banzaicloud.io/v1beta1`:
+  - `rancher_outputs_list` / `rancher_output_get` (namespaced)
+  - `rancher_cluster_outputs_list` /
+    `rancher_cluster_output_get` (cluster-scoped)
+  - `rancher_flows_list` / `rancher_flow_get` (namespaced)
+  - `rancher_cluster_flows_list` /
+    `rancher_cluster_flow_get` (cluster-scoped)
+- Distinct from Rancher's legacy Norman `clusterLoggings` /
+  `projectLoggings` types (in the existing `logging_backups` pack).
+- Output / ClusterOutput summaries auto-detect `output_type` from
+  the first non-`loggingRef` key in spec (e.g. `s3`, `loki`,
+  `kafka`, `gcs`, `fluentd`). Filter on list: `output_type`.
+- Flow / ClusterFlow summaries expose `local_output_refs`,
+  `global_output_refs`, `match_count` (number of select/exclude
+  clauses), and `filter_count`. Auto-aliasing handles
+  camelCase Banzai fields.
+- New path helpers: `logging_namespaced_collection_path` /
+  `logging_namespaced_resource_path` for Output and Flow;
+  `logging_cluster_collection_path` /
+  `logging_cluster_resource_path` for ClusterOutput and ClusterFlow.
+- 8 new unit tests in `tests/unit/test_logging_pipeline_tools.py`
+  covering list+get for all 4 types with realistic payloads
+  (s3 Output, Loki ClusterOutput, multi-match Flow, namespace-scoped
+  ClusterFlow).
+- 249 tests pass, 85.50% coverage. Codegen: 73 files match
+  descriptors. Public tool surface 138 → 146.
+- The Banzai Logging Operator chart is OPTIONAL — without it
+  installed on a cluster, these tools 404. That's acceptable
+  current-default behavior; capability detection is a future
+  enhancement.
+
 ### Added (J-2 / B-8 — backup_operator pack via descriptors)
 - New **`backup_operator`** pack with 4 tools across 2
   cluster-scoped CRDs in `resources.cattle.io/v1`:

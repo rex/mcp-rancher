@@ -308,9 +308,18 @@ domain at the depth defined in the plan.
   - Add: notifier reads beyond bare list/get (state, last-trigger),
     routes inspection, silences inspection, alertmanager config
     visibility.
-- [ ] **B-6** Deepen logging pack (P4 / overlap P8)
-  - Currently: `cluster_logging`, `project_logging` summary reads.
-  - Add: Output, ClusterOutput, Flow, ClusterFlow read tools.
+- [x] **B-6** Logging pipeline pack (P4 / overlap P8) — landed via J-2
+  - New pack `logging_pipeline` for Banzai Logging Operator CRDs
+    at `logging.banzaicloud.io/v1beta1`: Output (namespaced),
+    ClusterOutput (cluster-scoped), Flow (namespaced),
+    ClusterFlow (cluster-scoped).
+  - Output type auto-detected from first non-loggingRef key in
+    spec. Flow summaries expose match/filter counts and output
+    refs.
+  - Distinct from existing `logging_backups` pack which covers
+    Rancher's legacy Norman cluster_loggings / project_loggings.
+  - Banzai chart is optional — tools 404 if chart not installed.
+    Capability-detection is a future enhancement.
 - [ ] **B-7** Deepen compliance pack (P4 / overlap P8)
   - Currently: CIS scan profiles + scans.
   - Add: scheduled-scan visibility, Kubewarden detection (where

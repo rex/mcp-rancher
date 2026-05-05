@@ -1,0 +1,68 @@
+schema_version: 1
+
+id: flows
+pack: logging_pipeline
+display_name_singular: flow
+display_name_plural: flows
+
+plane: steve
+transport: k8s-proxy
+namespaced: true
+
+path_helper:
+  module: rancher_mcp.tools.logging_pipeline.paths
+  list_function: logging_namespaced_collection_path
+  detail_function: logging_namespaced_resource_path
+  resource_kind: flows
+
+list_response_model: rancher_mcp.models.logging_pipeline.RancherLoggingFlowList
+detail_response_model: rancher_mcp.models.logging_pipeline.RancherLoggingFlowDetail
+
+shared_imports:
+  - flow_summary_from_payload
+  - items
+support_value_imports:
+  - string_dict
+summary_function: flow_summary_from_payload
+query_builder_function: build_list_query_params
+query_builder_in_shared: true
+
+operations: [list, get]
+
+list:
+  query_params: [limit, continue_token, label_selector]
+  filters: []
+  count_field: flow_count
+  collection_field: flows
+  next_steps:
+    - rancher_flow_get
+    - rancher_outputs_list
+
+get:
+  arg_name: flow_name
+  summary_copy_fields:
+    - match_count
+    - filter_count
+  locals:
+    - name: metadata
+      expression: 'mapping_value(payload, "metadata") or {}'
+    - name: annotations
+      expression: 'mapping_value(metadata, "annotations") or {}'
+  extras:
+    - field: annotation_keys
+      expression: sorted(string_dict(annotations))
+  include_link_keys: false
+  include_payload: true
+  next_steps:
+    - rancher_flows_list
+    - rancher_outputs_list
+
+tools:
+  list:
+    name: rancher_flows_list
+    description: List Banzai logging Flow resources in one namespace via Rancher's raw Kubernetes proxy. Returns curated summaries with localOutputRefs, globalOutputRefs, match_count, filter_count.
+    annotation_set: READ_ONLY
+  get:
+    name: rancher_flow_get
+    description: Fetch one Banzai logging Flow by namespace and name. Returns the curated summary plus full payload and annotation keys.
+    annotation_set: READ_ONLY
