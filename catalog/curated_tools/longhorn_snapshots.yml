@@ -1,0 +1,68 @@
+schema_version: 1
+
+id: longhorn_snapshots
+pack: longhorn
+display_name_singular: longhorn_snapshot
+display_name_plural: longhorn_snapshots
+
+plane: steve
+transport: k8s-proxy
+namespaced: true
+
+path_helper:
+  module: rancher_mcp.tools.longhorn.paths
+  list_function: longhorn_namespaced_collection_path
+  detail_function: longhorn_namespaced_resource_path
+  resource_kind: snapshots
+
+list_response_model: rancher_mcp.models.longhorn.RancherLonghornSnapshotList
+detail_response_model: rancher_mcp.models.longhorn.RancherLonghornSnapshotDetail
+
+shared_imports:
+  - items
+  - snapshot_summary_from_payload
+support_value_imports:
+  - string_dict
+summary_function: snapshot_summary_from_payload
+query_builder_function: build_list_query_params
+query_builder_in_shared: true
+
+operations: [list, get]
+
+list:
+  query_params: [limit, continue_token, label_selector]
+  filters:
+    - name: volume
+      summary_field: volume
+  count_field: snapshot_count
+  collection_field: snapshots
+  next_steps:
+    - rancher_longhorn_snapshot_get
+    - rancher_longhorn_volumes_list
+
+get:
+  arg_name: snapshot_name
+  summary_copy_fields: []
+  locals:
+    - name: metadata
+      expression: 'mapping_value(payload, "metadata") or {}'
+    - name: annotations
+      expression: 'mapping_value(metadata, "annotations") or {}'
+  extras:
+    - field: annotation_keys
+      expression: sorted(string_dict(annotations))
+  include_link_keys: false
+  include_payload: true
+  next_steps:
+    - rancher_longhorn_snapshots_list
+    - rancher_longhorn_volumes_list
+
+tools:
+  list:
+    name: rancher_longhorn_snapshots_list
+    description: List Longhorn Snapshot CRDs (longhorn.io/v1beta2) in one namespace via Rancher's raw Kubernetes proxy. Returns curated summaries with volume name, creation time, size, and ready_to_use flag. Filter by volume.
+    annotation_set: READ_ONLY
+  get:
+    name: rancher_longhorn_snapshot_get
+    description: Fetch one Longhorn Snapshot by namespace and name. Returns the curated summary plus parent snapshot reference, child snapshot list, annotation keys, and full payload.
+    annotation_set: READ_ONLY

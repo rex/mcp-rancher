@@ -28,6 +28,7 @@ def register_all_tools(mcp: FastMCP) -> None:
     from rancher_mcp.tools.fleet_registration import register_fleet_registration_tools
     from rancher_mcp.tools.logging_backups import register_logging_backup_tools
     from rancher_mcp.tools.logging_pipeline import register_logging_pipeline_tools
+    from rancher_mcp.tools.longhorn import register_longhorn_tools
     from rancher_mcp.tools.mcp_prompts import register_mcp_prompts
     from rancher_mcp.tools.mcp_resources import register_mcp_resources
     from rancher_mcp.tools.monitoring import register_monitoring_tools
@@ -69,6 +70,7 @@ def register_all_tools(mcp: FastMCP) -> None:
     register_backup_operator_tools(mcp)
     register_logging_pipeline_tools(mcp)
     register_policy_reports_tools(mcp)
+    register_longhorn_tools(mcp)
     register_mcp_resources(mcp)
     register_mcp_prompts(mcp)
     # Order: metrics is INNER so it sees the original RancherMCPError;

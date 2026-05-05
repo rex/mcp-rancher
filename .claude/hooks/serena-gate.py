@@ -131,6 +131,7 @@ _CODEGEN_PACKS = frozenset(
         "fleet_registration",
         "logging_backups",
         "logging_pipeline",
+        "longhorn",
         "networking",
         "pods_services",
         "policy_reports",

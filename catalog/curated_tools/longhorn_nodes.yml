@@ -1,0 +1,82 @@
+schema_version: 1
+
+id: longhorn_nodes
+pack: longhorn
+display_name_singular: longhorn_node
+display_name_plural: longhorn_nodes
+
+plane: steve
+transport: k8s-proxy
+namespaced: true
+
+path_helper:
+  module: rancher_mcp.tools.longhorn.paths
+  list_function: longhorn_namespaced_collection_path
+  detail_function: longhorn_namespaced_resource_path
+  resource_kind: nodes
+
+list_response_model: rancher_mcp.models.longhorn.RancherLonghornNodeList
+detail_response_model: rancher_mcp.models.longhorn.RancherLonghornNodeDetail
+
+shared_imports:
+  - items
+  - node_storage_totals
+  - node_summary_from_payload
+support_value_imports:
+  - string_dict
+summary_function: node_summary_from_payload
+query_builder_function: build_list_query_params
+query_builder_in_shared: true
+
+operations: [list, get]
+
+list:
+  query_params: [limit, continue_token, label_selector]
+  filters:
+    - name: ready
+      summary_field: ready
+      type: bool
+    - name: schedulable
+      summary_field: schedulable
+      type: bool
+  count_field: node_count
+  collection_field: nodes
+  next_steps:
+    - rancher_longhorn_node_get
+    - rancher_longhorn_volumes_list
+
+get:
+  arg_name: node_name
+  summary_copy_fields:
+    - ready
+    - schedulable
+    - disk_count
+  locals:
+    - name: metadata
+      expression: 'mapping_value(payload, "metadata") or {}'
+    - name: annotations
+      expression: 'mapping_value(metadata, "annotations") or {}'
+    - name: storage_totals
+      expression: node_storage_totals(payload)
+  extras:
+    - field: annotation_keys
+      expression: sorted(string_dict(annotations))
+    - field: storage_available_total
+      expression: storage_totals[0]
+    - field: storage_maximum_total
+      expression: storage_totals[1]
+  include_link_keys: false
+  include_payload: true
+  next_steps:
+    - rancher_longhorn_nodes_list
+    - rancher_longhorn_volumes_list
+
+tools:
+  list:
+    name: rancher_longhorn_nodes_list
+    description: List Longhorn Node CRDs (longhorn.io/v1beta2) in one namespace via Rancher's raw Kubernetes proxy. Returns curated summaries with allowScheduling, evictionRequested, derived ready/schedulable booleans, and disk count.
+    annotation_set: READ_ONLY
+  get:
+    name: rancher_longhorn_node_get
+    description: Fetch one Longhorn Node by namespace and name. Returns the curated summary plus aggregated storage_available_total / storage_maximum_total summed across status.diskStatus disks, annotation keys, and full payload.
+    annotation_set: READ_ONLY

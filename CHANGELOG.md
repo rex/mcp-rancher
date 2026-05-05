@@ -2,6 +2,47 @@
 
 ## [2026-05-04] - Agent: Claude Opus 4.7
 
+### Added (F-1 — Longhorn pack via descriptors)
+- New **`longhorn`** pack with 8 tools across 4 Longhorn CRDs at
+  `longhorn.io/v1beta2`:
+  - `rancher_longhorn_volumes_list` /
+    `rancher_longhorn_volume_get` — Volume CRD with state,
+    robustness, replicas, access mode, frontend, current node.
+    Detail adds engine image, actual size, restore-required.
+  - `rancher_longhorn_nodes_list` / `rancher_longhorn_node_get`
+    — Node CRD with allowScheduling, evictionRequested, tags.
+    Derives `ready` and `schedulable` booleans from
+    `status.conditions[Ready|Schedulable]`. Disk count from
+    `status.diskStatus` map. Detail aggregates total
+    `storageAvailable` and `storageMaximum` across all disks.
+  - `rancher_longhorn_backups_list` /
+    `rancher_longhorn_backup_get` — Backup CRD with state,
+    volume name, snapshot name, size, error. Detail adds
+    backup URL, creation timestamp, last-synced timestamp.
+  - `rancher_longhorn_snapshots_list` /
+    `rancher_longhorn_snapshot_get` — Snapshot CRD with volume
+    name, creation time, size, ready_to_use flag. Detail adds
+    parent/children chain.
+- All 4 types are namespaced (Longhorn defaults to
+  `longhorn-system`; the chart allows overrides). Namespace is
+  always a required tool argument.
+- New path helpers: `longhorn_namespaced_collection_path` /
+  `longhorn_namespaced_resource_path`.
+- Distinct from the existing `storage` pack (which covers
+  Kubernetes-native StorageClass / PV / PVC). Longhorn is the
+  storage *implementation*; this pack exposes its operational
+  CRDs directly.
+- 9 new unit tests in `tests/unit/test_longhorn_tools.py`
+  covering list+get for all 4 types, plus disk-storage
+  aggregation across 2 disks (asserts the running totals match
+  the per-disk inputs).
+- 283 tests pass, 85.88% coverage. Codegen: 81 files match
+  descriptors. Public tool surface 150 → 158.
+- Longhorn is an OPTIONAL Rancher chart — without it installed,
+  these tools 404. Acceptable per same convention as
+  `backup_operator`, `logging_pipeline`, and the policy_reports
+  pack. Capability detection is a future enhancement.
+
 ### Added (H-4 — cursor-pagination boundary verification)
 - New **`tests/unit/test_pagination_load.py`** synthesizes a
   Steve-style collection where the curated `rancher_pods_list`

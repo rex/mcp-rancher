@@ -1,0 +1,5 @@
+schema_version: 1
+id: longhorn
+register_function: register_longhorn_tools
+docstring: Curated Longhorn storage tools (Volume, Node, Backup, Snapshot).
+register_docstring: Register curated Longhorn tools with the FastMCP server.

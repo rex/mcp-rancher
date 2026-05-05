@@ -1,0 +1,70 @@
+schema_version: 1
+
+id: longhorn_backups
+pack: longhorn
+display_name_singular: longhorn_backup
+display_name_plural: longhorn_backups
+
+plane: steve
+transport: k8s-proxy
+namespaced: true
+
+path_helper:
+  module: rancher_mcp.tools.longhorn.paths
+  list_function: longhorn_namespaced_collection_path
+  detail_function: longhorn_namespaced_resource_path
+  resource_kind: backups
+
+list_response_model: rancher_mcp.models.longhorn.RancherLonghornBackupList
+detail_response_model: rancher_mcp.models.longhorn.RancherLonghornBackupDetail
+
+shared_imports:
+  - backup_summary_from_payload
+  - items
+support_value_imports:
+  - string_dict
+summary_function: backup_summary_from_payload
+query_builder_function: build_list_query_params
+query_builder_in_shared: true
+
+operations: [list, get]
+
+list:
+  query_params: [limit, continue_token, label_selector]
+  filters:
+    - name: state
+      summary_field: state
+    - name: volume_name
+      summary_field: volume_name
+  count_field: backup_count
+  collection_field: backups
+  next_steps:
+    - rancher_longhorn_backup_get
+    - rancher_longhorn_volumes_list
+
+get:
+  arg_name: backup_name
+  summary_copy_fields: []
+  locals:
+    - name: metadata
+      expression: 'mapping_value(payload, "metadata") or {}'
+    - name: annotations
+      expression: 'mapping_value(metadata, "annotations") or {}'
+  extras:
+    - field: annotation_keys
+      expression: sorted(string_dict(annotations))
+  include_link_keys: false
+  include_payload: true
+  next_steps:
+    - rancher_longhorn_backups_list
+    - rancher_longhorn_volumes_list
+
+tools:
+  list:
+    name: rancher_longhorn_backups_list
+    description: List Longhorn Backup CRDs (longhorn.io/v1beta2) in one namespace via Rancher's raw Kubernetes proxy. Returns curated summaries with state, volume name, snapshot name, size, and any error message. Filter by state or volume_name.
+    annotation_set: READ_ONLY
+  get:
+    name: rancher_longhorn_backup_get
+    description: Fetch one Longhorn Backup by namespace and name. Returns the curated summary plus backup creation timestamp, last-synced timestamp, backup target URL, annotation keys, and full payload.
+    annotation_set: READ_ONLY

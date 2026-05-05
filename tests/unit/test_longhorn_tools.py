@@ -1,0 +1,324 @@
+"""Curated Longhorn tool tests (Volume, Node, Backup, Snapshot)."""
+
+from __future__ import annotations
+
+import pytest
+
+from rancher_mcp.config import AppSettings
+from rancher_mcp.tools.longhorn import (
+    rancher_longhorn_backup_get,
+    rancher_longhorn_backups_list,
+    rancher_longhorn_node_get,
+    rancher_longhorn_nodes_list,
+    rancher_longhorn_snapshot_get,
+    rancher_longhorn_snapshots_list,
+    rancher_longhorn_volume_get,
+    rancher_longhorn_volumes_list,
+)
+
+
+def build_settings() -> AppSettings:
+    """Create deterministic settings for Longhorn tests."""
+
+    return AppSettings(
+        RANCHER_DEFAULT_INSTANCE="work",
+        RANCHER_INSTANCES_JSON=(
+            '{"work":{"url":"https://rancher.work.example.com","token":"token-work:secret",'
+            '"verify_ssl":true,"read_only":false}}'
+        ),
+        RANCHER_MCP_CATALOG_PATH="catalog/capabilities.yaml",
+    )
+
+
+_VOLUME_PAYLOAD = {
+    "metadata": {
+        "name": "pvc-demo",
+        "namespace": "longhorn-system",
+        "annotations": {"longhorn.io/source": "manual"},
+    },
+    "spec": {
+        "size": "10737418240",
+        "numberOfReplicas": 3,
+        "accessMode": "rwo",
+        "frontend": "blockdev",
+    },
+    "status": {
+        "state": "attached",
+        "robustness": "healthy",
+        "currentNodeID": "worker-1",
+        "currentImage": "longhornio/longhorn-engine:v1.5.0",
+        "actualSize": "5368709120",
+        "restoreRequired": False,
+    },
+}
+
+_NODE_PAYLOAD = {
+    "metadata": {
+        "name": "worker-1",
+        "namespace": "longhorn-system",
+        "annotations": {"team": "storage"},
+    },
+    "spec": {
+        "allowScheduling": True,
+        "evictionRequested": False,
+        "tags": ["ssd", "fast"],
+    },
+    "status": {
+        "conditions": [
+            {"type": "Ready", "status": "True"},
+            {"type": "Schedulable", "status": "True"},
+        ],
+        "diskStatus": {
+            "disk-1": {"storageAvailable": 100, "storageMaximum": 200},
+            "disk-2": {"storageAvailable": 50, "storageMaximum": 150},
+        },
+    },
+}
+
+_BACKUP_PAYLOAD = {
+    "metadata": {
+        "name": "backup-abc",
+        "namespace": "longhorn-system",
+        "annotations": {},
+    },
+    "spec": {
+        "snapshotName": "snap-001",
+    },
+    "status": {
+        "state": "Ready",
+        "volumeName": "pvc-demo",
+        "size": "5368709120",
+        "error": "",
+        "backupCreatedAt": "2026-05-01T00:00:00Z",
+        "lastSyncedAt": "2026-05-01T00:00:01Z",
+        "url": "s3://longhorn-backups/pvc-demo/backup-abc",
+    },
+}
+
+_SNAPSHOT_PAYLOAD = {
+    "metadata": {
+        "name": "snap-001",
+        "namespace": "longhorn-system",
+        "annotations": {},
+    },
+    "spec": {"volume": "pvc-demo"},
+    "status": {
+        "creationTime": "2026-05-01T00:00:00Z",
+        "size": "1073741824",
+        "readyToUse": True,
+        "parent": "snap-000",
+        "children": ["snap-002", "snap-003"],
+    },
+}
+
+
+class StubLonghornClient:
+    """Deterministic raw Kubernetes proxy client for Longhorn tools."""
+
+    async def get_json(
+        self,
+        path: str,
+        params: object = None,
+    ) -> dict[str, object]:
+        """Return fake Longhorn CRD payloads."""
+
+        ns_root = "/k8s/clusters/local/apis/longhorn.io/v1beta2/namespaces/longhorn-system"
+
+        if path == f"{ns_root}/volumes":
+            assert params == {"limit": 5}
+            return {"items": [_VOLUME_PAYLOAD]}
+        if path == f"{ns_root}/volumes/pvc-demo":
+            assert params is None
+            return _VOLUME_PAYLOAD
+
+        if path == f"{ns_root}/nodes":
+            assert params == {"limit": 5}
+            return {"items": [_NODE_PAYLOAD]}
+        if path == f"{ns_root}/nodes/worker-1":
+            assert params is None
+            return _NODE_PAYLOAD
+
+        if path == f"{ns_root}/backups":
+            assert params == {"limit": 5}
+            return {"items": [_BACKUP_PAYLOAD]}
+        if path == f"{ns_root}/backups/backup-abc":
+            assert params is None
+            return _BACKUP_PAYLOAD
+
+        if path == f"{ns_root}/snapshots":
+            assert params == {"limit": 5}
+            return {"items": [_SNAPSHOT_PAYLOAD]}
+        if path == f"{ns_root}/snapshots/snap-001":
+            assert params is None
+            return _SNAPSHOT_PAYLOAD
+
+        raise AssertionError(f"unexpected path {path!r} (params={params!r})")
+
+
+@pytest.mark.asyncio
+async def test_rancher_longhorn_volumes_list_returns_summary() -> None:
+    """List should expose state, robustness, replicas, and current node."""
+
+    result = await rancher_longhorn_volumes_list(
+        namespace="longhorn-system",
+        cluster_id="local",
+        limit=5,
+        instance="work",
+        settings=build_settings(),
+        client=StubLonghornClient(),
+    )
+
+    assert result.volume_count == 1
+    [vol] = result.volumes
+    assert vol.name == "pvc-demo"
+    assert vol.state == "attached"
+    assert vol.robustness == "healthy"
+    assert vol.number_of_replicas == 3
+    assert vol.access_mode == "rwo"
+    assert vol.current_node_id == "worker-1"
+
+
+@pytest.mark.asyncio
+async def test_rancher_longhorn_volume_get_returns_detail() -> None:
+    """Detail should expose engine image, actual size, and full payload."""
+
+    result = await rancher_longhorn_volume_get(
+        namespace="longhorn-system",
+        volume_name="pvc-demo",
+        cluster_id="local",
+        instance="work",
+        settings=build_settings(),
+        client=StubLonghornClient(),
+    )
+
+    assert result.name == "pvc-demo"
+    assert result.current_image == "longhornio/longhorn-engine:v1.5.0"
+    assert result.actual_size == "5368709120"
+    assert result.restore_required is False
+    assert result.payload == _VOLUME_PAYLOAD
+
+
+@pytest.mark.asyncio
+async def test_rancher_longhorn_nodes_list_derives_ready_and_schedulable() -> None:
+    """List should derive ready/schedulable booleans from status.conditions."""
+
+    result = await rancher_longhorn_nodes_list(
+        namespace="longhorn-system",
+        cluster_id="local",
+        limit=5,
+        instance="work",
+        settings=build_settings(),
+        client=StubLonghornClient(),
+    )
+
+    assert result.node_count == 1
+    [node] = result.nodes
+    assert node.name == "worker-1"
+    assert node.allow_scheduling is True
+    assert node.eviction_requested is False
+    assert node.tags == ["ssd", "fast"]
+    assert node.ready is True
+    assert node.schedulable is True
+    assert node.disk_count == 2
+
+
+@pytest.mark.asyncio
+async def test_rancher_longhorn_node_get_aggregates_disk_storage() -> None:
+    """Detail should sum storageAvailable / storageMaximum across all disks."""
+
+    result = await rancher_longhorn_node_get(
+        namespace="longhorn-system",
+        node_name="worker-1",
+        cluster_id="local",
+        instance="work",
+        settings=build_settings(),
+        client=StubLonghornClient(),
+    )
+
+    assert result.name == "worker-1"
+    # disk-1: 100/200, disk-2: 50/150 → totals 150/350
+    assert result.storage_available_total == 150
+    assert result.storage_maximum_total == 350
+    assert result.disk_count == 2
+
+
+@pytest.mark.asyncio
+async def test_rancher_longhorn_backups_list_returns_summary() -> None:
+    """List should expose state, volume name, snapshot name, size."""
+
+    result = await rancher_longhorn_backups_list(
+        namespace="longhorn-system",
+        cluster_id="local",
+        limit=5,
+        instance="work",
+        settings=build_settings(),
+        client=StubLonghornClient(),
+    )
+
+    assert result.backup_count == 1
+    [backup] = result.backups
+    assert backup.name == "backup-abc"
+    assert backup.state == "Ready"
+    assert backup.volume_name == "pvc-demo"
+    assert backup.snapshot_name == "snap-001"
+    assert backup.size == "5368709120"
+
+
+@pytest.mark.asyncio
+async def test_rancher_longhorn_backup_get_returns_url_and_timestamps() -> None:
+    """Detail should expose backup URL and timestamps."""
+
+    result = await rancher_longhorn_backup_get(
+        namespace="longhorn-system",
+        backup_name="backup-abc",
+        cluster_id="local",
+        instance="work",
+        settings=build_settings(),
+        client=StubLonghornClient(),
+    )
+
+    assert result.name == "backup-abc"
+    assert result.url == "s3://longhorn-backups/pvc-demo/backup-abc"
+    assert result.backup_created_at == "2026-05-01T00:00:00Z"
+    assert result.last_synced_at == "2026-05-01T00:00:01Z"
+
+
+@pytest.mark.asyncio
+async def test_rancher_longhorn_snapshots_list_returns_summary() -> None:
+    """List should expose volume, creation time, size, ready_to_use."""
+
+    result = await rancher_longhorn_snapshots_list(
+        namespace="longhorn-system",
+        cluster_id="local",
+        limit=5,
+        instance="work",
+        settings=build_settings(),
+        client=StubLonghornClient(),
+    )
+
+    assert result.snapshot_count == 1
+    [snap] = result.snapshots
+    assert snap.name == "snap-001"
+    assert snap.volume == "pvc-demo"
+    assert snap.creation_time == "2026-05-01T00:00:00Z"
+    assert snap.size == "1073741824"
+    assert snap.ready_to_use is True
+
+
+@pytest.mark.asyncio
+async def test_rancher_longhorn_snapshot_get_returns_parent_children() -> None:
+    """Detail should expose parent + children chain."""
+
+    result = await rancher_longhorn_snapshot_get(
+        namespace="longhorn-system",
+        snapshot_name="snap-001",
+        cluster_id="local",
+        instance="work",
+        settings=build_settings(),
+        client=StubLonghornClient(),
+    )
+
+    assert result.name == "snap-001"
+    assert result.parent == "snap-000"
+    assert result.children == ["snap-002", "snap-003"]
+    assert result.payload == _SNAPSHOT_PAYLOAD

@@ -1,0 +1,70 @@
+schema_version: 1
+
+id: longhorn_volumes
+pack: longhorn
+display_name_singular: longhorn_volume
+display_name_plural: longhorn_volumes
+
+plane: steve
+transport: k8s-proxy
+namespaced: true
+
+path_helper:
+  module: rancher_mcp.tools.longhorn.paths
+  list_function: longhorn_namespaced_collection_path
+  detail_function: longhorn_namespaced_resource_path
+  resource_kind: volumes
+
+list_response_model: rancher_mcp.models.longhorn.RancherLonghornVolumeList
+detail_response_model: rancher_mcp.models.longhorn.RancherLonghornVolumeDetail
+
+shared_imports:
+  - items
+  - volume_summary_from_payload
+support_value_imports:
+  - string_dict
+summary_function: volume_summary_from_payload
+query_builder_function: build_list_query_params
+query_builder_in_shared: true
+
+operations: [list, get]
+
+list:
+  query_params: [limit, continue_token, label_selector]
+  filters:
+    - name: state
+      summary_field: state
+    - name: robustness
+      summary_field: robustness
+  count_field: volume_count
+  collection_field: volumes
+  next_steps:
+    - rancher_longhorn_volume_get
+    - rancher_longhorn_nodes_list
+
+get:
+  arg_name: volume_name
+  summary_copy_fields: []
+  locals:
+    - name: metadata
+      expression: 'mapping_value(payload, "metadata") or {}'
+    - name: annotations
+      expression: 'mapping_value(metadata, "annotations") or {}'
+  extras:
+    - field: annotation_keys
+      expression: sorted(string_dict(annotations))
+  include_link_keys: false
+  include_payload: true
+  next_steps:
+    - rancher_longhorn_volumes_list
+    - rancher_longhorn_snapshots_list
+
+tools:
+  list:
+    name: rancher_longhorn_volumes_list
+    description: List Longhorn Volume CRDs (longhorn.io/v1beta2) in one namespace via Rancher's raw Kubernetes proxy. Default Longhorn install is in namespace 'longhorn-system'. Filter by state (attached/detached) or robustness (healthy/degraded/faulted).
+    annotation_set: READ_ONLY
+  get:
+    name: rancher_longhorn_volume_get
+    description: Fetch one Longhorn Volume by namespace and name. Returns the curated summary plus current engine image, actual size, restore-required flag, and full payload.
+    annotation_set: READ_ONLY

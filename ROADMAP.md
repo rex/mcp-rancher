@@ -470,14 +470,23 @@ list. Some overlap with Track B's "deepen X pack" items; the difference
 is Track B closes the read surface to parity with the catalog, while
 Track F adds the long tail of subsystem-specific operations.
 
-- [ ] **F-1** Longhorn pack (P8)
-  - Volume list/get/expand
-  - Node list/get
-  - Backup list/get/create
-  - Snapshot list/create/delete
-  - Settings inspection
-  - Backup-target inspection
-  - Recurring-job inspection
+- [x] **F-1** Longhorn pack (P8) — landed (read-only subset)
+  - New pack `longhorn` for `longhorn.io/v1beta2` CRDs.
+    4 types: Volume, Node, Backup, Snapshot.
+  - Node summary derives `ready` and `schedulable` from
+    `status.conditions`; detail aggregates total storage
+    across all disks.
+  - **Read-only subset shipped**:
+    - Volume list/get ✓ (expand is P6/P7 — not yet)
+    - Node list/get ✓
+    - Backup list/get ✓ (create is P6/P7 — not yet)
+    - Snapshot list/get ✓ (create/delete are P6/P7 — not yet)
+  - **Deferred**:
+    - Settings inspection — `Setting` CRD; same pattern as
+      Rancher Norman settings but cluster-local. Not yet.
+    - Backup-target inspection — `BackupTarget` CRD. Not yet.
+    - Recurring-job inspection — `RecurringJob` CRD. Not yet.
+  - Optional chart: tools 404 if Longhorn isn't installed.
 - [ ] **F-2** Rancher backup operator depth (P8)
   - Beyond list/get/inspect: backup operator config, encryption config
     awareness, retention inspection.

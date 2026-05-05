@@ -29,7 +29,7 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 - Canonical plan: `PERFECT_RANCHER_MCP_IMPLEMENTATION_PLAN.md`
 - Operational roadmap (track-level work breakdown): `ROADMAP.md`
 - Primary compatibility target: Rancher `2.6.5`
-- Public tool surface: 150 tools
+- Public tool surface: 158 tools
 - Completion gate: `make check-if-the-agent-can-consider-this-task-completed`
 - Active quality gates:
   `make check-architecture`
@@ -57,6 +57,14 @@ E destructive writes, H-3 broader confirmation, H-5 streaming
 under load). See "Tracks ticked this session" and "NEXT
 options" below.
 
+- **F-1 Longhorn pack landed.** 8 new tools for Longhorn CRDs
+  at `longhorn.io/v1beta2` (Volume, Node, Backup, Snapshot).
+  Node summary derives `ready` and `schedulable` from
+  `status.conditions`; node detail aggregates total
+  `storageAvailable`/`storageMaximum` across `status.diskStatus`
+  disks. Tool surface 150 → 158. 283 tests pass, 85.88%
+  coverage. Optional chart — tools 404 if Longhorn isn't
+  installed.
 - **H-4 pagination boundary test landed.** Synthesizes a Steve
   collection of 1000 items and walks 10 pages via
   `rancher_pods_list`. Verifies count, uniqueness, exact page
