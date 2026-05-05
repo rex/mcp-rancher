@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from rancher_mcp.audit import audit_mutation
 from rancher_mcp.clients.management import ManagementMutationClient, RancherManagementClient
 from rancher_mcp.config import AppSettings, get_settings
 from rancher_mcp.models.resources import GenericResourceMutationResult
@@ -55,6 +56,7 @@ async def _delete_norman_resource(
     )
 
 
+@audit_mutation(operation="delete", plane="norman")
 async def rancher_norman_resource_delete(
     schema_id: str,
     resource_id: str,

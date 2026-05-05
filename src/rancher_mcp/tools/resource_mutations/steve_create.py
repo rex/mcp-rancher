@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from rancher_mcp.audit import audit_mutation
 from rancher_mcp.clients.management import ManagementMutationClient, RancherManagementClient
 from rancher_mcp.clients.steve import RancherSteveClient, SteveDiscoveryClient
 from rancher_mcp.config import AppSettings, get_settings
@@ -62,6 +63,7 @@ async def _create_steve_resource(
     )
 
 
+@audit_mutation(operation="create", plane="steve")
 async def rancher_steve_resource_create(
     schema_id: str,
     payload_json: str,

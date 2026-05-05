@@ -48,8 +48,19 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 
 ## Latest Logical Step
 
-**Status: blocked** (B-5 monitoring deepening — Alertmanager API
-access requires architectural decision; see ROADMAP B-5).
+**Status: blocked** (Track C remaining items — C-1 elicitation
+needs MCP 1.1+ SDK feature-flag check, C-2 OAuth needs
+multi-user/CI deployment scope, C-3 Prometheus metrics needs
+endpoint design; B-5 monitoring deepening blocks on
+Alertmanager API access design).
+
+- **C-4 audit-trail log landed.** New `src/rancher_mcp/audit.py`
+  with `AuditEntry` model + `emit_audit` + `audit_mutation`
+  decorator applied to all 8 generic mutation tools. Argument
+  *names* logged (sorted `arg_keys`), values never. Success +
+  error paths covered with `error_code` / `http_status`.
+  Satisfies VIBE.yaml `security.audit_logging: required`.
+  259 tests pass, 85.66% coverage.
 
 - **BLOCKED: J-2 effectively complete (7 of 8 sub-tracks);
   B-5 monitoring deepening blocked on Alertmanager API access

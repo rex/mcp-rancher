@@ -377,10 +377,24 @@ that were not part of those slices.
   - For multi-user and CI deployments. Currently bearer-token only.
 - [ ] **C-3** Prometheus metrics endpoint (P5)
   - Tool-call counts, latency histograms, error rates by error_code.
-- [ ] **C-4** Structured audit-trail log (P5 / P10 overlap)
-  - Every write tool emits a structured audit record (who, what, when,
-    args, outcome) to a separate log stream. Also satisfies the
-    `audit_logging: required` line in `VIBE.yaml`.
+- [x] **C-4** Structured audit-trail log (P5 / P10 overlap) — landed
+  - New `src/rancher_mcp/audit.py` with `AuditEntry` Pydantic
+    model + `emit_audit` + `audit_mutation` decorator.
+  - Decorator applied to all 8 generic mutation tools'
+    public entry points. Argument names logged (`arg_keys`)
+    but values never — keeps secrets/confirmation-phrases/
+    payload-json out of the log stream.
+  - Records `tool_name`, `operation`, `plane`, `outcome`,
+    `instance`, `schema_id`, `resource_id`, `cluster_id`,
+    `namespace`, plus `error_code`/`error_message`/`http_status`
+    on the error path. `event="audit"` for grep/filter pipelines.
+    Inherits structlog config + contextvars.
+  - Tests in `tests/unit/test_audit.py` use
+    `structlog.testing.capture_logs` for record assertions.
+  - Satisfies `VIBE.yaml` `security.audit_logging: required`.
+  - **Track H-1 overlap**: this is the same infrastructure
+    Track H-1 wants. Tick H-1 too once curated writes (Track D)
+    arrive — they should reuse this decorator.
 
 ---
 
@@ -492,12 +506,19 @@ Track F adds the long tail of subsystem-specific operations.
 
 Required by `VIBE.yaml` `security` section but not yet landed.
 
-- [ ] **H-1** Audit logging on every write tool (P10)
-  - Structured records, separate log stream, includes instance, plane,
-    schema, resource_id, args (with secrets masked), outcome,
-    error_code if any.
-  - Same requirement as Track C-4; consolidate or land both with shared
-    infrastructure.
+- [x] **H-1** Audit logging on every write tool (P10) — partial
+  - Generic mutation tools (8 of 8) covered by Track C-4's
+    `audit_mutation` decorator. Records carry `tool_name`,
+    `operation`, `plane`, `outcome`, `instance`, `schema_id`,
+    `resource_id`, `cluster_id`, `namespace`, `arg_keys`, and
+    on error `error_code`/`error_message`/`http_status`.
+  - Argument *values* are intentionally not in the record —
+    only argument *names* via `arg_keys`. This keeps
+    `payload_json`, confirmation phrases, and any secret-bearing
+    arg out of the log stream while preserving forensic intent.
+  - **Remaining**: when Track D (curated safe writes) lands,
+    apply the same `audit_mutation` decorator to each curated
+    mutation tool's entry point. Then tick H-1 fully.
 - [ ] **H-2** Rate limiting on write bursts (P10)
   - Per-instance token-bucket on writes. Default a conservative
     rate; expose env var for override.

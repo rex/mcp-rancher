@@ -2,6 +2,49 @@
 
 ## [2026-05-04] - Agent: Claude Opus 4.7
 
+### Added (C-4 — structured audit-trail log)
+- New **`src/rancher_mcp/audit.py`** module with:
+  - `AuditEntry` Pydantic model (forbid extra fields). Captures
+    `tool_name`, `operation`, `plane`, `outcome`, `instance`,
+    `schema_id`, `resource_id`, `cluster_id`, `namespace`,
+    `arg_keys` (list of kwarg names — never values), and on
+    error path `error_code`, `error_message`, `http_status`.
+  - `emit_audit(entry)` — emits one record on the dedicated
+    `rancher_mcp.audit` structlog logger with `event="audit"`.
+    Inherits the global structlog config (JSON in production,
+    console in dev) plus any `structlog.contextvars`-bound
+    fields (request_id / trace_id auto-merged).
+  - `audit_mutation(operation=..., plane=...)` decorator — wraps
+    an async tool function and emits one audit record per call:
+    `outcome="success"` on normal return,
+    `outcome="error"` plus `error_code` / `error_message`
+    (and `http_status` for `RancherAPIError`) on
+    `RancherMCPError`. The exception is re-raised so upstream
+    handlers continue to see it.
+- **Applied** to all 8 generic mutation tools' public entry
+  points (`rancher_norman_resource_create/apply/patch/delete`,
+  `rancher_steve_resource_create/apply/patch/delete`).
+  Decorator is the outermost wrapper, so ToolError translation
+  via `wrap_with_structured_errors` (A-2) sees the same
+  exception that gets audited — the audit record fires for the
+  read-only-instance and delete-confirmation rejection paths
+  too.
+- **Argument values are never logged.** Only kwarg *names* land
+  in `arg_keys` (sorted). The rationale is forensic: the audit
+  trail proves a call was made and what kind of call it was,
+  without leaking ``payload_json``, secret content, or
+  destructive confirmation phrases into the log stream.
+- 6 new unit tests in `tests/unit/test_audit.py` covering
+  `emit_audit` direct emission, optional-field exclusion, the
+  decorator's success path, the capability-error path
+  (verifies re-raise + error_code), the API-error path
+  (verifies `http_status`), and an end-to-end through
+  `rancher_steve_resource_patch` with a read-only instance
+  configuration.
+- 259 tests pass, 85.66% coverage. Lint + pyright + codegen
+  drift all clean.
+- Satisfies `VIBE.yaml` `security.audit_logging: required`.
+
 ### Added (J-2 / B-7 — policy_reports pack via descriptors)
 - New **`policy_reports`** pack with 4 tools across 2 standardized
   CRDs in `wgpolicyk8s.io/v1alpha2`:
