@@ -2,6 +2,35 @@
 
 ## [2026-05-04] - Agent: Claude Opus 4.7
 
+### Added (batch_workloads pack — Kubernetes batch/v1 Job + CronJob)
+- New **`batch_workloads`** pack with 4 tools across the
+  standard Kubernetes batch primitives at `batch/v1`:
+  - `rancher_jobs_list` / `rancher_job_get` — Job. Summary
+    exposes parallelism, completions, backoffLimit,
+    active/succeeded/failed counts, start/completion times,
+    and DERIVED `complete` + `failed_terminal` booleans from
+    status.conditions[Complete|Failed]. Detail adds container
+    images from `spec.template.spec.containers`. Filters:
+    complete (bool), failed_terminal (bool).
+  - `rancher_cron_jobs_list` / `rancher_cron_job_get` —
+    CronJob. Summary exposes schedule (cron string), suspend
+    flag, concurrencyPolicy, history limits, lastScheduleTime,
+    lastSuccessfulTime, and `active_job_count` derived from
+    `status.active[]` (running child Jobs). Detail adds
+    container images (walked through `spec.jobTemplate.spec.
+    template.spec.containers`) and `active_job_names`.
+    Filter: suspend (bool).
+- Distinct from the existing `workloads` pack which covers
+  apps/v1 (Deployments, DaemonSets, StatefulSets). Standard
+  k8s ops surface that wasn't yet covered by curated tools.
+- New path helpers: `batch_v1_collection_path` /
+  `batch_v1_resource_path`.
+- 4 new unit tests covering list+get for both types with
+  realistic payloads (completed Job with mixed succeeded/failed
+  counts; active CronJob with 1 child).
+- 299 tests pass, 85.94% coverage. Codegen: 92 files match
+  descriptors. Public tool surface 170 → 174.
+
 ### Added (cert_manager pack — cert-manager.io/v1 CRDs)
 - New **`cert_manager`** pack with 6 tools across 3 cert-manager
   CRDs at `cert-manager.io/v1`:

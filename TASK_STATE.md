@@ -29,7 +29,7 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 - Canonical plan: `PERFECT_RANCHER_MCP_IMPLEMENTATION_PLAN.md`
 - Operational roadmap (track-level work breakdown): `ROADMAP.md`
 - Primary compatibility target: Rancher `2.6.5`
-- Public tool surface: 170 tools
+- Public tool surface: 174 tools
 - Completion gate: `make check-if-the-agent-can-consider-this-task-completed`
 - Active quality gates:
   `make check-architecture`
@@ -57,6 +57,13 @@ E destructive writes, H-3 broader confirmation, H-5 streaming
 under load). See "Tracks ticked this session" and "NEXT
 options" below.
 
+- **batch_workloads pack landed.** 4 new tools for Kubernetes
+  batch/v1 Job and CronJob — standard k8s ops surface not
+  previously curated. Job summary derives `complete` and
+  `failed_terminal` from status.conditions; CronJob summary
+  exposes schedule, suspend, and `active_job_count` from
+  `status.active[]`. Tool surface 170 → 174. 299 tests pass,
+  85.94% coverage.
 - **cert_manager pack landed.** 6 new tools across Certificate
   (namespaced), Issuer (namespaced), ClusterIssuer
   (cluster-scoped) at `cert-manager.io/v1`. Certificate

@@ -1,0 +1,5 @@
+schema_version: 1
+id: batch_workloads
+register_function: register_batch_workloads_tools
+docstring: Curated Kubernetes batch/v1 tools (Job, CronJob).
+register_docstring: Register curated batch/v1 tools with the FastMCP server.
