@@ -54,6 +54,16 @@ multi-user/CI deployment scope, C-3 Prometheus metrics needs
 endpoint design; B-5 monitoring deepening blocks on
 Alertmanager API access design).
 
+- **H-2 rate-limit landed.** New `src/rancher_mcp/rate_limit.py`
+  with `TokenBucket` + singleton state + `rate_limit_writes`
+  decorator. New `RancherRateLimitError` exception (distinct
+  `error_code="RATE_LIMITED"`). New `write_rate_limit_per_min`
+  AppSettings field (env `RANCHER_MCP_WRITE_RATE_LIMIT_PER_MIN`,
+  default 60). Applied to all 8 generic mutation tools as the
+  inner-of-audit decorator. Rate-limit rejections still get
+  audited before the exception propagates. Satisfies VIBE.yaml
+  `security.rate_limiting: required`. 267 tests pass, 85.77%
+  coverage.
 - **C-4 audit-trail log landed.** New `src/rancher_mcp/audit.py`
   with `AuditEntry` model + `emit_audit` + `audit_mutation`
   decorator applied to all 8 generic mutation tools. Argument

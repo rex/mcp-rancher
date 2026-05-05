@@ -2,6 +2,47 @@
 
 ## [2026-05-04] - Agent: Claude Opus 4.7
 
+### Added (H-2 — token-bucket rate limiting on writes)
+- New **`src/rancher_mcp/rate_limit.py`** with:
+  - `TokenBucket` — thread-safe monotonic-clock token bucket.
+    Refill rate is tokens/second; capacity is the burst allowance.
+  - Process-local singleton bucket. Rate is read from
+    `settings.write_rate_limit_per_min` (env
+    `RANCHER_MCP_WRITE_RATE_LIMIT_PER_MIN`, default 60).
+    Burst capacity = 2 × per-minute rate (so short
+    apply-then-patch-then-get sequences don't trip the limit).
+  - `rate_limit_writes` decorator — empty-bucket → raises
+    `RancherRateLimitError` (`error_code="RATE_LIMITED"`).
+    Resolves `settings` from kwarg first, falls back to
+    `get_settings()`.
+  - Setting rate to `0` disables rate limiting entirely
+    (useful for batch reconciliations and test environments).
+  - `reset_rate_limit_state()` — test-only helper to drop the
+    singleton between tests.
+- New `RancherRateLimitError` exception in
+  `src/rancher_mcp/exceptions.py` (distinct from
+  `RancherCapabilityError`'s read-only-instance rejection —
+  rate-limit is transient and retryable).
+- New `AppSettings.write_rate_limit_per_min` field
+  (`RANCHER_MCP_WRITE_RATE_LIMIT_PER_MIN`).
+- **Applied** to all 8 generic mutation tools'
+  public entry points. Decorator order is
+  `@audit_mutation` (outer) → `@rate_limit_writes` (inner) →
+  function body. Rate-limit rejections are still audited
+  before the exception propagates.
+- 8 new unit tests in `tests/unit/test_rate_limit.py`:
+  - `TokenBucket` consume/reject/validation
+  - decorator allows under burst, rejects over burst
+  - rate=0 disables (50 calls all succeed)
+  - error has distinct `error_code`
+  - bucket refills over time (drain → sleep → succeed)
+- 267 tests pass, 85.77% coverage. Lint + pyright + codegen
+  drift all clean.
+- Satisfies `VIBE.yaml` `security.rate_limiting: required`.
+- **Limitation**: bucket is process-local. For multi-process /
+  multi-replica deployments, an external rate limiter is
+  required. Documented in the module docstring.
+
 ### Added (C-4 — structured audit-trail log)
 - New **`src/rancher_mcp/audit.py`** module with:
   - `AuditEntry` Pydantic model (forbid extra fields). Captures

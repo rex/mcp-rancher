@@ -519,9 +519,16 @@ Required by `VIBE.yaml` `security` section but not yet landed.
   - **Remaining**: when Track D (curated safe writes) lands,
     apply the same `audit_mutation` decorator to each curated
     mutation tool's entry point. Then tick H-1 fully.
-- [ ] **H-2** Rate limiting on write bursts (P10)
-  - Per-instance token-bucket on writes. Default a conservative
-    rate; expose env var for override.
+- [x] **H-2** Rate limiting on write bursts (P10) — landed
+  - New `src/rancher_mcp/rate_limit.py` with thread-safe
+    `TokenBucket` + singleton state + `rate_limit_writes`
+    decorator. Default 60/min, burst = 2 × per-min rate.
+    Set env `RANCHER_MCP_WRITE_RATE_LIMIT_PER_MIN=0` to disable.
+  - Applied to all 8 generic mutation tools as the inner-of-audit
+    decorator. Rate-limit rejections still get audited.
+  - **Limitation**: process-local bucket. Multi-replica
+    deployments need an external rate limiter (Redis-backed or
+    sidecar). Documented.
 - [ ] **H-3** Broader write confirmation (P10)
   - The current `confirmation: "delete steve namespace foo"` phrase is
     only for deletes. Apply equivalent (or Track C-1 elicitation) to

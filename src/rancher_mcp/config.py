@@ -29,6 +29,14 @@ class AppSettings(BaseSettings):
         default="Capability-aware Rancher MCP server for Rancher 2.6.5",
         alias="RANCHER_MCP_SERVER_DESCRIPTION",
     )
+    write_rate_limit_per_min: int = Field(
+        default=60,
+        alias="RANCHER_MCP_WRITE_RATE_LIMIT_PER_MIN",
+        description=(
+            "Maximum write tool calls per minute across all instances. "
+            "Burst capacity is twice this value. Set to 0 to disable."
+        ),
+    )
     instances: dict[str, RancherInstanceConfig] = Field(default_factory=dict)
 
     model_config = SettingsConfigDict(

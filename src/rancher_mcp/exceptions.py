@@ -49,3 +49,14 @@ class RancherConflictError(RancherAPIError):
     """Raised when the API reports a conflict."""
 
     error_code: str = "CONFLICT"
+
+
+class RancherRateLimitError(RancherMCPError):
+    """Raised when a write tool call exceeds the configured rate limit.
+
+    Distinct from ``RancherCapabilityError`` (which covers read-only
+    instance configuration) — the rate limit is a transient guard
+    that the agent can retry after the bucket refills.
+    """
+
+    error_code: str = "RATE_LIMITED"

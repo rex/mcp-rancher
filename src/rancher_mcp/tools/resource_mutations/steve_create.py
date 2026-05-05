@@ -7,6 +7,7 @@ from rancher_mcp.clients.management import ManagementMutationClient, RancherMana
 from rancher_mcp.clients.steve import RancherSteveClient, SteveDiscoveryClient
 from rancher_mcp.config import AppSettings, get_settings
 from rancher_mcp.models.resources import GenericResourceMutationResult
+from rancher_mcp.rate_limit import rate_limit_writes
 from rancher_mcp.services.instances import resolve_instance
 from rancher_mcp.services.resource_queries import parse_query_params
 from rancher_mcp.services.resources import (
@@ -64,6 +65,7 @@ async def _create_steve_resource(
 
 
 @audit_mutation(operation="create", plane="steve")
+@rate_limit_writes
 async def rancher_steve_resource_create(
     schema_id: str,
     payload_json: str,

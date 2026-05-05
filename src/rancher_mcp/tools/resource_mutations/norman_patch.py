@@ -6,6 +6,7 @@ from rancher_mcp.audit import audit_mutation
 from rancher_mcp.clients.management import ManagementMutationClient, RancherManagementClient
 from rancher_mcp.config import AppSettings, get_settings
 from rancher_mcp.models.resources import GenericResourceMutationResult
+from rancher_mcp.rate_limit import rate_limit_writes
 from rancher_mcp.services.instances import resolve_instance
 from rancher_mcp.services.resource_queries import parse_query_params
 from rancher_mcp.services.resources import build_resource_mutation_result
@@ -63,6 +64,7 @@ async def _patch_norman_resource(
 
 
 @audit_mutation(operation="patch", plane="norman")
+@rate_limit_writes
 async def rancher_norman_resource_patch(
     schema_id: str,
     resource_id: str,
