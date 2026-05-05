@@ -25,7 +25,7 @@ support_value_imports:
   - string_dict
 summary_function: deployment_summary_from_payload
 
-operations: [list, get, patch]
+operations: [list, get, patch, delete]
 
 list:
   query_params: [limit, continue_token, label_selector, field_selector]
@@ -75,6 +75,12 @@ patch:
     - rancher_deployment_get
     - rancher_pods_list
 
+delete:
+  audit_operation: deployment_delete
+  confirmation_phrase: "delete deployment {deployment_name} in namespace {namespace}"
+  next_steps:
+    - rancher_deployments_list
+
 tools:
   list:
     name: rancher_deployments_list
@@ -88,3 +94,7 @@ tools:
     name: rancher_deployment_scale
     description: Scale one Kubernetes Deployment to a target `replicas` count via JSON merge-patch on `spec.replicas`. Returns the curated detail of the patched resource. Subject to write rate limiting and audit logging.
     annotation_set: IDEMPOTENT_WRITE
+  delete:
+    name: rancher_deployment_delete
+    description: Delete one Kubernetes Deployment. The `confirmation` arg must equal the exact phrase "delete deployment NAME in namespace NS" (substituting the actual values). Returns a typed delete result with the rendered confirmation phrase. Subject to write rate limiting and audit logging.
+    annotation_set: DESTRUCTIVE

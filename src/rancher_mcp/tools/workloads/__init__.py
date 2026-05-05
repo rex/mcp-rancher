@@ -7,7 +7,7 @@
 
 from mcp.server.fastmcp import FastMCP
 
-from rancher_mcp.tools.support.annotations import IDEMPOTENT_WRITE, READ_ONLY
+from rancher_mcp.tools.support.annotations import DESTRUCTIVE, IDEMPOTENT_WRITE, READ_ONLY
 from rancher_mcp.tools.workloads._generated_daemonsets import (
     rancher_daemonset_get,
     rancher_daemonset_get_tool,
@@ -15,6 +15,8 @@ from rancher_mcp.tools.workloads._generated_daemonsets import (
     rancher_daemonsets_list_tool,
 )
 from rancher_mcp.tools.workloads._generated_deployments import (
+    rancher_deployment_delete,
+    rancher_deployment_delete_tool,
     rancher_deployment_get,
     rancher_deployment_get_tool,
     rancher_deployment_scale,
@@ -25,6 +27,8 @@ from rancher_mcp.tools.workloads._generated_deployments import (
 from rancher_mcp.tools.workloads._generated_statefulsets import (
     rancher_statefulset_get,
     rancher_statefulset_get_tool,
+    rancher_statefulset_scale,
+    rancher_statefulset_scale_tool,
     rancher_statefulsets_list,
     rancher_statefulsets_list_tool,
 )
@@ -32,10 +36,12 @@ from rancher_mcp.tools.workloads._generated_statefulsets import (
 __all__ = [
     "rancher_daemonset_get",
     "rancher_daemonsets_list",
+    "rancher_deployment_delete",
     "rancher_deployment_get",
     "rancher_deployment_scale",
     "rancher_deployments_list",
     "rancher_statefulset_get",
+    "rancher_statefulset_scale",
     "rancher_statefulsets_list",
     "register_workload_tools",
 ]
@@ -48,6 +54,9 @@ def register_workload_tools(mcp: FastMCP) -> None:
     mcp.tool(name="rancher_daemonset_get", annotations=READ_ONLY)(rancher_daemonset_get_tool)
     mcp.tool(name="rancher_deployments_list", annotations=READ_ONLY)(rancher_deployments_list_tool)
     mcp.tool(name="rancher_deployment_get", annotations=READ_ONLY)(rancher_deployment_get_tool)
+    mcp.tool(name="rancher_deployment_delete", annotations=DESTRUCTIVE)(
+        rancher_deployment_delete_tool
+    )
     mcp.tool(name="rancher_deployment_scale", annotations=IDEMPOTENT_WRITE)(
         rancher_deployment_scale_tool
     )
@@ -55,3 +64,6 @@ def register_workload_tools(mcp: FastMCP) -> None:
         rancher_statefulsets_list_tool
     )
     mcp.tool(name="rancher_statefulset_get", annotations=READ_ONLY)(rancher_statefulset_get_tool)
+    mcp.tool(name="rancher_statefulset_scale", annotations=IDEMPOTENT_WRITE)(
+        rancher_statefulset_scale_tool
+    )

@@ -6,12 +6,16 @@
 
 from __future__ import annotations
 
+from rancher_mcp.audit import audit_mutation
 from rancher_mcp.clients.management import ManagementDiscoveryClient, RancherManagementClient
 from rancher_mcp.config import AppSettings, get_settings
+from rancher_mcp.exceptions import RancherCapabilityError
 from rancher_mcp.models.workloads import RancherStatefulSetDetail, RancherStatefulSetList
+from rancher_mcp.rate_limit import rate_limit_writes
 from rancher_mcp.services.instances import resolve_instance
 from rancher_mcp.services.resource_queries import build_steve_list_query_params
 from rancher_mcp.services.resources.builders_pagination import next_page_token_from_payload
+from rancher_mcp.services.safety import ensure_instance_writable
 from rancher_mcp.tools.support.values import mapping_value, string_dict
 from rancher_mcp.tools.workloads.paths import workload_collection_path, workload_resource_path
 from rancher_mcp.tools.workloads.shared import (
@@ -158,6 +162,80 @@ async def rancher_statefulset_get(
         )
 
 
+async def _patch_statefulset_scale(
+    instance_name: str,
+    cluster_id: str,
+    namespace: str,
+    statefulset_name: str,
+    replicas: int,
+    client: ManagementDiscoveryClient,
+) -> RancherStatefulSetDetail:
+    """Scale one statefulset via JSON merge-patch; returns the curated detail."""
+
+    patch_subtree: dict[str, object] = {}
+    patch_subtree["replicas"] = replicas
+    if not patch_subtree:
+        raise RancherCapabilityError(
+            "No patch fields provided; every arg was None. Pass at least one field to update."
+        )
+    request_payload: dict[str, object] = {"spec": patch_subtree}
+    payload = await client.patch_json(
+        workload_resource_path(cluster_id, namespace, "statefulsets", statefulset_name),
+        payload=request_payload,
+    )
+    summary = statefulset_summary_from_payload(payload)
+
+    metadata = mapping_value(payload, "metadata") or {}
+    annotations = mapping_value(metadata, "annotations") or {}
+    detail = RancherStatefulSetDetail.model_validate(payload)
+    return detail.model_copy(
+        update={
+            "id": summary.id,
+            "ready": summary.ready,
+            "container_images": summary.container_images,
+            "annotation_keys": sorted(string_dict(annotations)),
+            "payload": dict(payload),
+            "suggested_next_steps": ["rancher_statefulset_get", "rancher_pods_list"],
+        }
+    )
+
+
+@audit_mutation(operation="statefulset_scale", plane="steve")
+@rate_limit_writes
+async def rancher_statefulset_scale(
+    namespace: str,
+    statefulset_name: str,
+    replicas: int,
+    cluster_id: str = "local",
+    instance: str | None = None,
+    settings: AppSettings | None = None,
+    client: ManagementDiscoveryClient | None = None,
+) -> RancherStatefulSetDetail:
+    """Scale one statefulset via JSON merge-patch."""
+
+    resolved_settings = settings or get_settings()
+    instance_name, instance_config = resolve_instance(resolved_settings, instance)
+    ensure_instance_writable(instance_name, instance_config)
+    if client is not None:
+        return await _patch_statefulset_scale(
+            instance_name,
+            cluster_id,
+            namespace,
+            statefulset_name,
+            replicas,
+            client,
+        )
+    async with RancherManagementClient(instance_name, instance_config) as managed_client:
+        return await _patch_statefulset_scale(
+            instance_name,
+            cluster_id,
+            namespace,
+            statefulset_name,
+            replicas,
+            managed_client,
+        )
+
+
 async def rancher_statefulsets_list_tool(
     namespace: str,
     cluster_id: str = "local",
@@ -193,6 +271,24 @@ async def rancher_statefulset_get_tool(
     return await rancher_statefulset_get(
         namespace=namespace,
         statefulset_name=statefulset_name,
+        cluster_id=cluster_id,
+        instance=instance,
+    )
+
+
+async def rancher_statefulset_scale_tool(
+    namespace: str,
+    statefulset_name: str,
+    replicas: int,
+    cluster_id: str = "local",
+    instance: str | None = None,
+) -> RancherStatefulSetDetail:
+    """Public MCP wrapper for curated statefulset scale."""
+
+    return await rancher_statefulset_scale(
+        namespace=namespace,
+        statefulset_name=statefulset_name,
+        replicas=replicas,
         cluster_id=cluster_id,
         instance=instance,
     )

@@ -29,7 +29,7 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 - Canonical plan: `PERFECT_RANCHER_MCP_IMPLEMENTATION_PLAN.md`
 - Operational roadmap (track-level work breakdown): `ROADMAP.md`
 - Primary compatibility target: Rancher `2.6.5`
-- Public tool surface: 189 tools
+- Public tool surface: 191 tools
 - Completion gate: `make check-if-the-agent-can-consider-this-task-completed`
 - Active quality gates:
   `make check-architecture`
@@ -47,6 +47,45 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 - **User-visible changes** → `CHANGELOG.md`
 
 ## Latest Logical Step
+
+- **J-3 fifth slice: Track-D launchers (statefulset_scale +
+  deployment_delete).** First wave of curated writes leveraging
+  the now-complete J-3 substrate. No substrate work — pure
+  descriptor authorship + tests, demonstrating the Sonnet-
+  pickupable pattern.
+  - **`rancher_statefulset_scale`** — verb=scale,
+    target_path=spec, single arg `replicas: int (required)`,
+    IDEMPOTENT_WRITE. Generates an identical-shaped merge-patch
+    body to `rancher_deployment_scale` (`{spec: {replicas: N}}`)
+    on the StatefulSet detail path. Proves the patch substrate
+    is resource-agnostic across workload controllers.
+  - **`rancher_deployment_delete`** — DESTRUCTIVE annotation,
+    confirmation phrase
+    `"delete deployment {deployment_name} in namespace {namespace}"`.
+    Same pattern as configmap_delete; proves the delete
+    substrate generalizes to a different resource kind.
+  - **Tests** (3 new in `test_workloads_tools.py`):
+    - statefulset_scale round-trip — identical patch body
+      shape to deployment_scale; proof of substrate generality
+    - deployment_delete with wrong phrase refuses BEFORE any
+      HTTP call (guard fires before client touched)
+    - deployment_delete with correct phrase routes to delete_json
+      on the deployment detail path; result has `deleted=True`,
+      `resource_kind=deployment`, etc.
+  - **Tool surface 189 → 191** (+2: rancher_statefulset_scale,
+    rancher_deployment_delete).
+  - **333 tests pass, 85.97% coverage**, 99 files match
+    descriptors, all gates green.
+
+  Status: blocked — every remaining ROADMAP item now requires
+  either external dependency (live lab access for G / I-1),
+  SDK feature check (C-1 elicitation), significant refactor
+  (C-2 OAuth, J-3 substrate evolution for multi-patch /
+  Steve-Norman writes), OR design-level decisions (Track D
+  beyond launchers, Track E destructive flows beyond simple
+  deletes, H-3 broader confirmation, H-5 streaming).
+  Continuation paths require user direction since the next
+  natural slices each carry meaningful scope choices.
 
 - **J-3 fourth slice: secret_create (substrate generalization
   proof).** Second resource adoption on the create substrate;

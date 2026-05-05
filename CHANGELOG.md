@@ -2,6 +2,44 @@
 
 ## [2026-05-05] - Agent: Claude Opus 4.7
 
+### Added (J-3 fifth slice — Track-D launchers via the substrate)
+
+First wave of curated writes shipping via the J-3 substrate as
+pure descriptor authorship — no substrate code changes. Proves
+the Sonnet-pickupable pattern: each new write tool is a tiny
+descriptor + tests commit, leveraging the established substrate
+primitives.
+
+- **`rancher_statefulset_scale`** (IDEMPOTENT_WRITE) — patch
+  with `verb=scale, target_path=spec, replicas: int (required)`.
+  Generates an identical merge-patch body shape
+  (`{spec: {replicas: N}}`) to deployment_scale, on the
+  StatefulSet detail path. Proves the patch substrate is
+  resource-agnostic across workload controllers.
+- **`rancher_deployment_delete`** (DESTRUCTIVE) — confirmation
+  phrase
+  `"delete deployment {deployment_name} in namespace {namespace}"`.
+  Same DESTRUCTIVE pattern as configmap_delete on a different
+  resource kind.
+
+### Tests (3 new)
+
+- statefulset_scale round-trip: same patch body shape as
+  deployment_scale; substrate-generality proof.
+- deployment_delete with wrong phrase refuses BEFORE any HTTP
+  call (`client.last_delete_path is None`).
+- deployment_delete with correct phrase routes to delete_json
+  on the deployment detail path; typed result with
+  `deleted=True`, `resource_kind=deployment`, `namespace`,
+  `cluster_id`, suggested next steps.
+
+### Stats
+
+- Tool surface 189 → 191 (+2: rancher_statefulset_scale,
+  rancher_deployment_delete).
+- 333 tests pass (was 330), 85.97% coverage.
+- 99 files match descriptors. All gates green.
+
 ### Added (J-3 fourth slice — rancher_secret_create with masked-payload pattern)
 
 Second resource adoption on the create substrate. Exercises the
