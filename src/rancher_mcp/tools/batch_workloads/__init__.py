@@ -8,6 +8,8 @@
 from mcp.server.fastmcp import FastMCP
 
 from rancher_mcp.tools.batch_workloads._generated_cron_jobs import (
+    rancher_cron_job_delete,
+    rancher_cron_job_delete_tool,
     rancher_cron_job_get,
     rancher_cron_job_get_tool,
     rancher_cron_job_set_annotations,
@@ -34,6 +36,7 @@ from rancher_mcp.tools.batch_workloads._generated_jobs import (
 from rancher_mcp.tools.support.annotations import DESTRUCTIVE, IDEMPOTENT_WRITE, READ_ONLY
 
 __all__ = [
+    "rancher_cron_job_delete",
     "rancher_cron_job_get",
     "rancher_cron_job_set_annotations",
     "rancher_cron_job_set_labels",
@@ -53,6 +56,7 @@ def register_batch_workloads_tools(mcp: FastMCP) -> None:
 
     mcp.tool(name="rancher_cron_jobs_list", annotations=READ_ONLY)(rancher_cron_jobs_list_tool)
     mcp.tool(name="rancher_cron_job_get", annotations=READ_ONLY)(rancher_cron_job_get_tool)
+    mcp.tool(name="rancher_cron_job_delete", annotations=DESTRUCTIVE)(rancher_cron_job_delete_tool)
     mcp.tool(name="rancher_cron_job_suspend", annotations=IDEMPOTENT_WRITE)(
         rancher_cron_job_suspend_tool
     )

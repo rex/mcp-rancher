@@ -29,7 +29,7 @@ summary_function: cron_job_summary_from_payload
 query_builder_function: build_list_query_params
 query_builder_in_shared: true
 
-operations: [list, get, patch]
+operations: [list, get, delete, patch]
 
 list:
   query_params: [limit, continue_token, label_selector, field_selector]
@@ -64,6 +64,12 @@ get:
   next_steps:
     - rancher_cron_jobs_list
     - rancher_jobs_list
+
+delete:
+  audit_operation: cron_job_delete
+  confirmation_phrase: "delete cron_job {cron_job_name} in namespace {namespace}"
+  next_steps:
+    - rancher_cron_jobs_list
 
 patches:
   - verb: suspend
@@ -107,6 +113,10 @@ tools:
     name: rancher_cron_job_get
     description: Fetch one Kubernetes CronJob by namespace and name. Returns the curated summary plus container_images list (from spec.jobTemplate.spec.template.spec.containers), active_job_names list, annotation keys, and full payload.
     annotation_set: READ_ONLY
+  delete:
+    name: rancher_cron_job_delete
+    description: Delete one Kubernetes CronJob. The `confirmation` arg must equal the exact phrase "delete cron_job NAME in namespace NS" (substituting the actual values). Returns a typed delete result with the rendered confirmation phrase. Subject to write rate limiting and audit logging.
+    annotation_set: DESTRUCTIVE
   patches:
     - name: rancher_cron_job_suspend
       description: Pause or resume one Kubernetes CronJob via JSON merge-patch on `spec.suspend`. Pass suspend=True to pause, suspend=False to resume. Returns the curated detail. Subject to write rate limiting and audit logging.
