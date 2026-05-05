@@ -29,7 +29,7 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 - Canonical plan: `PERFECT_RANCHER_MCP_IMPLEMENTATION_PLAN.md`
 - Operational roadmap (track-level work breakdown): `ROADMAP.md`
 - Primary compatibility target: Rancher `2.6.5`
-- Public tool surface: 196 tools
+- Public tool surface: 203 tools
 - Completion gate: `make check-if-the-agent-can-consider-this-task-completed`
 - Active quality gates:
   `make check-architecture`
@@ -50,6 +50,81 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 - **User-visible changes** → `CHANGELOG.md`
 
 ## Latest Logical Step
+
+- **Parallel-orchestration Batch 2: 8-agent run shipped 7 tools
+  in ~4.2 min wall-clock; 1 blocked exactly as predicted.**
+  First production use of the **shared brief** pattern — one
+  brief in `docs/tool-catalog.md` plus an 8-row table covered
+  all 8 slices, vs writing 8 individual full-treatment briefs.
+  - **Pattern proved**: shared briefs scale linearly with the
+    pack count, not the slice count. The "Narrow label-set
+    patch" shared brief now covers any future
+    `D-1-<resource>-set-labels` slice — adding the 9th label
+    patch is a one-row table addition, not a new brief.
+  - **Slices shipped (each k8s-proxy, IDEMPOTENT_WRITE patch
+    on `metadata.labels`)**:
+    - `D-1-hpa-set-labels` — `rancher_horizontal_pod_autoscaler_set_labels`
+      (commit `c47c42c`)
+    - `D-1-service-monitor-set-labels` —
+      `rancher_service_monitor_set_labels` (commit `219f7f1`)
+    - `D-1-backup-set-labels` — `rancher_backup_set_labels`
+      (commit `36fedd4`); cluster-scoped Rancher Backup CRD
+    - `D-1-longhorn-volume-set-labels` —
+      `rancher_longhorn_volume_set_labels` (commit `b29a27f`);
+      optional Longhorn chart
+    - `D-1-cert-manager-certificate-set-labels` —
+      `rancher_cert_manager_certificate_set_labels` (commit
+      `f1bcc51`); optional cert-manager chart
+    - `D-1-runtime-class-set-labels` —
+      `rancher_runtime_class_set_labels` (commit `fc3d6a7`);
+      cluster-scoped — **second cluster-scoped substrate
+      proof** after priority_class
+    - `D-1-flow-set-labels` — `rancher_flow_set_labels`
+      (commit `e1a66eb`); optional Banzai logging chart
+  - **Slice blocked**: `D-1-deployment-set-labels` — agent
+    correctly stopped and reported substrate gap. The
+    deployments descriptor's `patch:` slot is already
+    occupied by `rancher_deployment_scale`. The substrate
+    currently allows ONE patch per descriptor (`patch:
+    PatchConfig | None`). Adding a second patch needs slice
+    **`J-3-extension-multi-patch`** to land first (extends
+    descriptor schema to `patches: list[PatchConfig]`). The
+    blocker behavior validates that the
+    "STOP-and-report-blocker" instruction in agent prompts
+    works — agent used 51k tokens, 8 tool calls, 54s,
+    no substrate modification, no broken commit.
+  - **Shared brief content** (commit `8dc0b80`):
+    Files-to-read-first, files-to-modify, common pitfalls,
+    acceptance, commit template, stop condition — all
+    one-time content. Slice rows are compact: descriptor
+    file, pack, display_name_singular, audit_operation,
+    notes (cluster-scoped vs namespaced).
+  - **Wall-clock leverage**: 7 slices × ~3-4 min = ~21 min
+    sequential vs ~4.2 min parallel = **~5× speedup**. With
+    Opus orchestration overhead (catalog brief authoring,
+    diff review, cherry-pick, status updates) ≈ 12 min total
+    end-to-end. Net: 7 tools shipped in ~16 min wall-clock.
+  - **Tool surface 196 → 203** (+7).
+  - **355 tests pass** (was 341 → +14: 7 slices × 2 tests
+    each), 85.91% coverage, all gates green.
+  - **Lessons reinforced** (and added):
+    - Shared briefs are the right scaling primitive. Authoring
+      them is one-shot work; slice rows are mechanical adds.
+    - The "STOP-and-report-blocker" instruction prevents
+      subagents from going off-script when they hit substrate
+      gaps. Validates a key safety property.
+    - Cluster-scoped substrate is solid: 2 of 8 Batch 2 slices
+      were cluster-scoped (backup, runtime_class), both
+      shipped clean with no namespace param leaks.
+    - Optional-chart slices (longhorn, prometheus, cert-mgr,
+      banzai) ship via stub-only tests; live validation gated
+      on chart availability is a separate Track G concern.
+  - **`J-3-extension-multi-patch` is now a confirmed-real
+    next slice**, not hypothetical. Blocked
+    `D-1-deployment-set-labels` and any future
+    multi-narrow-patch resource (deployment pause/resume/
+    restart, statefulset scale + set-labels, etc.). When that
+    substrate slice lands, all such blocked work unblocks.
 
 - **Parallel-orchestration demo: 4 Sonnet subagents shipped 5
   tools in ~4 min wall-clock.** Validates the multi-agent

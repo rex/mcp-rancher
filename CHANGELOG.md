@@ -1,6 +1,72 @@
 # Changelog
 
-## [2026-05-05] - Agent: Claude Opus 4.7 (orchestrator) + Claude Sonnet (4 implementer subagents)
+## [2026-05-05] - Agent: Claude Opus 4.7 (orchestrator) + Claude Sonnet (8 implementer subagents)
+
+### Added (parallel-orchestration Batch 2 — 7 tools via shared brief + 8 Sonnet subagents)
+
+Second parallel-orchestration run, first use of the **shared
+brief** pattern. One brief covers a slice family
+(`D-1-*-set-labels`); slice rows are compact (descriptor file,
+pack, display_name_singular, audit_operation). Adding the next
+label-set patch is now a one-row catalog edit, not a new brief.
+
+**Slices shipped** (each is an IDEMPOTENT_WRITE narrow patch
+on `metadata.labels` via JSON merge-patch; all k8s-proxy
+transport):
+
+- `D-1-hpa-set-labels` — `rancher_horizontal_pod_autoscaler_set_labels`
+  (commit `c47c42c`, Sonnet, 3.2 min)
+- `D-1-service-monitor-set-labels` —
+  `rancher_service_monitor_set_labels` (commit `219f7f1`,
+  Sonnet, 2.9 min); optional kube-prometheus-stack chart
+- `D-1-backup-set-labels` — `rancher_backup_set_labels` (commit
+  `36fedd4`, Sonnet, 3.1 min); **cluster-scoped** Rancher
+  Backup CRD; substrate proof for cluster-scoped patches
+- `D-1-longhorn-volume-set-labels` —
+  `rancher_longhorn_volume_set_labels` (commit `b29a27f`,
+  Sonnet, 3.2 min); optional Longhorn chart
+- `D-1-cert-manager-certificate-set-labels` —
+  `rancher_cert_manager_certificate_set_labels` (commit
+  `f1bcc51`, Sonnet, 3.3 min); optional cert-manager chart
+- `D-1-runtime-class-set-labels` —
+  `rancher_runtime_class_set_labels` (commit `fc3d6a7`,
+  Sonnet, 3.1 min); cluster-scoped — second cluster-scoped
+  proof after priority_class
+- `D-1-flow-set-labels` — `rancher_flow_set_labels` (commit
+  `e1a66eb`, Sonnet, 4.2 min); optional Banzai logging chart
+
+### Blocked (validates substrate gap as a real next-slice priority)
+
+- `D-1-deployment-set-labels` — agent correctly stopped and
+  reported substrate gap. deployments.yml's `patch:` slot is
+  occupied by `rancher_deployment_scale`. Substrate currently
+  allows ONE patch per descriptor (`patch: PatchConfig | None`
+  in `descriptor.py`). Adding a second narrow patch on the
+  same resource needs **`J-3-extension-multi-patch`** to ship
+  first (extending the schema to `patches: list[PatchConfig]`).
+  The agent used 51k tokens, 8 tool calls, 54s, made zero
+  modifications — validates that the "STOP-and-report-blocker"
+  instruction is load-bearing and works.
+
+### Orchestration substrate
+
+- **Shared brief** (commit `8dc0b80`): one brief covers any
+  future `D-1-<resource>-set-labels` slice. Files-to-read,
+  files-to-modify, common pitfalls, acceptance, commit
+  template, stop condition — all one-time content. Slice
+  rows in the brief's table carry the per-slice differences
+  (descriptor file, pack, audit_operation, notes).
+- **Pattern proved**: shared briefs scale linearly with the
+  pack count, not the slice count. Ten more label patches
+  on different resources would be ten one-row additions.
+
+### Stats
+
+- Tool surface 196 → 203 (+7).
+- Tests 341 → 355 (+14: 7 slices × 2 tests each).
+- 85.91% coverage. All gates green.
+- Wall-clock: ~4.2 min parallel vs ~21 min sequential = **~5× speedup**.
+  End-to-end including Opus orchestration: ~16 min for 7 tools.
 
 ### Added (parallel-orchestration demo — 5 tools via 4 Sonnet subagents)
 

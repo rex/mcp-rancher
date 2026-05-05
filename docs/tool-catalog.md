@@ -66,7 +66,7 @@ table. The [Status legend](#status-legend) explains the icons.
 
 ## Quick start
 
-- **Tool surface today: 196 registered.** See
+- **Tool surface today: 203 registered.** See
   [Tool registry](#tool-registry).
 - **Estimated target: ~380 tools** at "perfect" coverage of
   the 25-domain canonical plan. We're roughly 50% of the way.
@@ -121,7 +121,7 @@ descriptor migration commit). That's fine — Slice IDs map
 
 | Bucket | Count |
 |---|---|
-| ✅ Built (registered tools) | **196** |
+| ✅ Built (registered tools) | **203** |
 | 🟡 Planned (gap from plan) | ~190 |
 | 🟠 Partial (documented limitations) | ~10 |
 | 🔴 Blocked (external dep / design) | ~12 |
@@ -376,6 +376,7 @@ the source module (hand-written).
 | ✅ | rancher_cluster_output_get | k8s-proxy | get | `catalog/curated_tools/cluster_outputs.yml` |
 | ✅ | rancher_flows_list | k8s-proxy | list | `catalog/curated_tools/flows.yml` |
 | ✅ | rancher_flow_get | k8s-proxy | get | `catalog/curated_tools/flows.yml` |
+| ✅ | rancher_flow_set_labels | k8s-proxy | patch | `catalog/curated_tools/flows.yml` (D-1) |
 | ✅ | rancher_cluster_flows_list | k8s-proxy | list | `catalog/curated_tools/cluster_flows.yml` |
 | ✅ | rancher_cluster_flow_get | k8s-proxy | get | `catalog/curated_tools/cluster_flows.yml` |
 
@@ -399,6 +400,7 @@ Note: optional Banzai chart — tools 404 if chart isn't installed.
 | ✅ | rancher_prometheus_rule_get | k8s-proxy | get | `catalog/curated_tools/prometheus_rules.yml` |
 | ✅ | rancher_service_monitors_list | k8s-proxy | list | `catalog/curated_tools/service_monitors.yml` |
 | ✅ | rancher_service_monitor_get | k8s-proxy | get | `catalog/curated_tools/service_monitors.yml` |
+| ✅ | rancher_service_monitor_set_labels | k8s-proxy | patch | `catalog/curated_tools/service_monitors.yml` (D-1) |
 | ✅ | rancher_pod_monitors_list | k8s-proxy | list | `catalog/curated_tools/pod_monitors.yml` |
 | ✅ | rancher_pod_monitor_get | k8s-proxy | get | `catalog/curated_tools/pod_monitors.yml` |
 
@@ -432,6 +434,7 @@ Note: optional kube-prometheus-stack chart — tools 404 if chart isn't installe
 |---|---|---|---|---|
 | ✅ | rancher_cert_manager_certificates_list | k8s-proxy | list | `catalog/curated_tools/cert_manager_certificates.yml` |
 | ✅ | rancher_cert_manager_certificate_get | k8s-proxy | get | `catalog/curated_tools/cert_manager_certificates.yml` |
+| ✅ | rancher_cert_manager_certificate_set_labels | k8s-proxy | patch | `catalog/curated_tools/cert_manager_certificates.yml` (D-1) |
 | ✅ | rancher_cert_manager_issuers_list | k8s-proxy | list | `catalog/curated_tools/cert_manager_issuers.yml` |
 | ✅ | rancher_cert_manager_issuer_get | k8s-proxy | get | `catalog/curated_tools/cert_manager_issuers.yml` |
 | ✅ | rancher_cert_manager_cluster_issuers_list | k8s-proxy | list | `catalog/curated_tools/cert_manager_cluster_issuers.yml` |
@@ -443,6 +446,7 @@ Note: optional kube-prometheus-stack chart — tools 404 if chart isn't installe
 |---|---|---|---|---|
 | ✅ | rancher_backups_list | k8s-proxy | list | `catalog/curated_tools/backups.yml` |
 | ✅ | rancher_backup_get | k8s-proxy | get | `catalog/curated_tools/backups.yml` |
+| ✅ | rancher_backup_set_labels | k8s-proxy | patch | `catalog/curated_tools/backups.yml` (D-1) |
 | ✅ | rancher_restores_list | k8s-proxy | list | `catalog/curated_tools/restores.yml` |
 | ✅ | rancher_restore_get | k8s-proxy | get | `catalog/curated_tools/restores.yml` |
 
@@ -452,6 +456,7 @@ Note: optional kube-prometheus-stack chart — tools 404 if chart isn't installe
 |---|---|---|---|---|
 | ✅ | rancher_longhorn_volumes_list | k8s-proxy | list | `catalog/curated_tools/longhorn_volumes.yml` |
 | ✅ | rancher_longhorn_volume_get | k8s-proxy | get | `catalog/curated_tools/longhorn_volumes.yml` |
+| ✅ | rancher_longhorn_volume_set_labels | k8s-proxy | patch | `catalog/curated_tools/longhorn_volumes.yml` (D-1) |
 | ✅ | rancher_longhorn_nodes_list | k8s-proxy | list | `catalog/curated_tools/longhorn_nodes.yml` |
 | ✅ | rancher_longhorn_node_get | k8s-proxy | get | `catalog/curated_tools/longhorn_nodes.yml` |
 | ✅ | rancher_longhorn_backups_list | k8s-proxy | list | `catalog/curated_tools/longhorn_backups.yml` |
@@ -467,6 +472,7 @@ Note: optional Longhorn chart — tools 404 if chart isn't installed.
 |---|---|---|---|---|
 | ✅ | rancher_horizontal_pod_autoscalers_list | k8s-proxy | list | `catalog/curated_tools/horizontal_pod_autoscalers.yml` |
 | ✅ | rancher_horizontal_pod_autoscaler_get | k8s-proxy | get | `catalog/curated_tools/horizontal_pod_autoscalers.yml` |
+| ✅ | rancher_horizontal_pod_autoscaler_set_labels | k8s-proxy | patch | `catalog/curated_tools/horizontal_pod_autoscalers.yml` (D-1) |
 | ✅ | rancher_resource_quotas_list | k8s-proxy | list | `catalog/curated_tools/resource_quotas.yml` |
 | ✅ | rancher_resource_quota_get | k8s-proxy | get | `catalog/curated_tools/resource_quotas.yml` |
 | ✅ | rancher_limit_ranges_list | k8s-proxy | list | `catalog/curated_tools/limit_ranges.yml` |
@@ -481,6 +487,7 @@ Note: optional Longhorn chart — tools 404 if chart isn't installed.
 | ✅ | rancher_priority_class_set_labels | k8s-proxy | patch | `catalog/curated_tools/priority_classes.yml` (D-1) |
 | ✅ | rancher_runtime_classes_list | k8s-proxy | list | `catalog/curated_tools/runtime_classes.yml` |
 | ✅ | rancher_runtime_class_get | k8s-proxy | get | `catalog/curated_tools/runtime_classes.yml` |
+| ✅ | rancher_runtime_class_set_labels | k8s-proxy | patch | `catalog/curated_tools/runtime_classes.yml` (D-1) |
 
 ### Diagnostics ops aggregates (5 tools — Phase 4)
 
@@ -1652,7 +1659,7 @@ update `docs/tool-catalog.md`, `TASK_STATE.md`, or
 
 | Slice ID | Descriptor file | Pack | display_name_singular | audit_operation | Resource (display kind) | Notes |
 |---|---|---|---|---|---|---|
-| `D-1-deployment-set-labels` | `deployments.yml` | workloads | deployment | deployment_set_labels | Deployment | namespaced |
+| `D-1-deployment-set-labels` 🔴 | `deployments.yml` | workloads | deployment | deployment_set_labels | Deployment | **BLOCKED on `J-3-extension-multi-patch`** — deployments.yml's `patch:` slot is occupied by `rancher_deployment_scale`; substrate allows one patch per descriptor today. |
 | `D-1-hpa-set-labels` | `horizontal_pod_autoscalers.yml` | governance | horizontal_pod_autoscaler | hpa_set_labels | HorizontalPodAutoscaler | namespaced |
 | `D-1-backup-set-labels` | `backups.yml` | backup_operator | backup | backup_set_labels | Backup | cluster-scoped (Rancher Backup CRD `resources.cattle.io/v1`) |
 | `D-1-longhorn-volume-set-labels` | `longhorn_volumes.yml` | longhorn | longhorn_volume | longhorn_volume_set_labels | Volume | namespaced (typically longhorn-system); optional chart |
@@ -1682,3 +1689,11 @@ After cherry-picking, tool surface +8.
 | 2026-05-05 | D-4-cronjob-suspend (parallel batch agent 2) | `ea2bcf1` | Sonnet, 3.5 min |
 | 2026-05-05 | D-1-priority-class-set-labels (parallel batch agent 3) | `2f0aeea` | Sonnet, 3.3 min — cluster-scoped substrate proof |
 | 2026-05-05 | B-9-replicasets (parallel batch agent 4) | `54a60d0` | Sonnet, 3.9 min — judgment-tier (new Pydantic models) |
+| 2026-05-05 | catalog: shared brief for narrow label-set patches + 8 Batch-2 rows | `8dc0b80` | Batch 2 prep |
+| 2026-05-05 | D-1-hpa-set-labels (Batch 2) | `c47c42c` | Sonnet, 3.2 min |
+| 2026-05-05 | D-1-service-monitor-set-labels (Batch 2) | `219f7f1` | Sonnet, 2.9 min — optional kube-prometheus-stack chart |
+| 2026-05-05 | D-1-backup-set-labels (Batch 2) | `36fedd4` | Sonnet, 3.1 min — cluster-scoped Rancher Backup CRD |
+| 2026-05-05 | D-1-longhorn-volume-set-labels (Batch 2) | `b29a27f` | Sonnet, 3.2 min — optional Longhorn chart |
+| 2026-05-05 | D-1-cert-manager-certificate-set-labels (Batch 2) | `f1bcc51` | Sonnet, 3.3 min — optional cert-manager chart |
+| 2026-05-05 | D-1-runtime-class-set-labels (Batch 2) | `fc3d6a7` | Sonnet, 3.1 min — second cluster-scoped substrate proof |
+| 2026-05-05 | D-1-flow-set-labels (Batch 2) | `e1a66eb` | Sonnet, 4.2 min — optional Banzai logging chart |
