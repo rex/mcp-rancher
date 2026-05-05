@@ -48,11 +48,14 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 
 ## Latest Logical Step
 
-**Status: blocked** (Track C remaining items — C-1 elicitation
-needs MCP 1.1+ SDK feature-flag check, C-2 OAuth needs
-multi-user/CI deployment scope, C-3 Prometheus metrics needs
-endpoint design; B-5 monitoring deepening blocks on
-Alertmanager API access design).
+**Status: blocked** — every remaining ROADMAP item requires
+either external dependency (live lab access for G / I-1 / some
+F items), MCP SDK feature-flag check (C-1 elicitation),
+significant refactor work (C-2 OAuth, J-3 codegen for writes),
+or design-level decisions before implementation (D safe writes,
+E destructive writes, H-3 broader confirmation, H-5 streaming
+under load). See "Tracks ticked this session" and "NEXT
+options" below.
 
 - **H-4 pagination boundary test landed.** Synthesizes a Steve
   collection of 1000 items and walks 10 pages via
@@ -113,21 +116,44 @@ Alertmanager API access design).
   a single read pack. Defer to a dedicated Alertmanager-integration
   track (Track F subsystem candidate).
 
-- **NEXT options (require user direction)**:
-  - **C-4** structured audit-trail log — clear scope,
-    no lab access needed. Decorator wraps the 8 generic
-    mutation tools, emits structured records to a separate
-    log stream. Satisfies VIBE.yaml `audit_logging: required`.
-  - **C-3** Prometheus metrics endpoint — adds `/metrics`
-    handler, tool-call counters and latency histograms.
-  - **C-1** elicitation (MCP 1.1+) for destructive writes —
-    blocks on MCP SDK feature availability.
+- **Tracks ticked this session** (18 feature/test/doc commits):
+  - Track A all 4 quick fixes
+  - J-2 sub-tracks B-1, B-2, B-3, B-4, B-6, B-7, B-8 (B-5
+    blocked on Alertmanager API design)
+  - C-3 metrics-as-log-lines
+  - C-4 audit-trail log
+  - H-2 token-bucket rate limiting
+  - H-4 pagination boundary verification
+  - I-2 known-gaps documentation
+  - B-7 follow-up: scheduled-scan visibility
+  - Tool surface: 110 → 150 (+40)
+  - Tests: 210 → 275 (+65)
+  - Coverage: ~85.5% maintained throughout
+
+- **NEXT options (each requires either external dep, refactor,
+  or design)**:
+  - **C-1** elicitation (MCP 1.1+) — needs SDK feature check
+    + version handling.
   - **C-2** OAuth 2.0 / PKCE — multi-user / CI deployments.
-  - **J-3** extend codegen schema for write operations
-    (create/apply/patch/delete via descriptors). Largest
-    scope; biggest leverage for Tracks D / E.
+    Large auth refactor.
+  - **J-3** extend codegen schema for write operations —
+    biggest leverage for Tracks D / E. Multi-day work.
+  - **Track D** safe writes (Phase 6) — discrete tools but
+    each needs design (idempotency, payload safety,
+    confirmation strategy).
+  - **Track E** destructive writes (Phase 7) — preferred path
+    is C-1 elicitation first.
+  - **Track F** subsystem depth — Longhorn (volumes, backups,
+    nodes), Rancher backup operator depth, UI extensions,
+    Kubewarden full integration. Each is its own pack.
   - **Track G** live validation — needs populated lab + read-only
     prod access.
+  - **Track I-1** live coverage report — needs runtime schema
+    crawl against the lab.
+  - **H-3** broader write confirmation — needs C-1 elicitation
+    or extension of the existing confirmation-phrase pattern.
+  - **H-5** streaming behavior verification — needs streaming
+    test setup beyond the synthetic stubs used in H-4.
 
 - **J-2 / B-7 policy_reports pack landed (partial).** 4 new
   tools for the standardized PolicyReport API at
