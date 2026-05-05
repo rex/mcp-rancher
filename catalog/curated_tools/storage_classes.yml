@@ -40,6 +40,16 @@ patches:
         description: Replacement metadata.labels map (merge-patch semantics — passing this REPLACES the labels map; pass an empty dict to remove all labels).
     next_steps:
       - rancher_storage_class_get
+  - verb: set_annotations
+    target_path: metadata
+    audit_operation: storage_class_set_annotations
+    args:
+      - name: annotations
+        type: dict_str_str
+        required: true
+        description: Replacement metadata.annotations map (merge-patch semantics — passing this REPLACES the annotations map; pass an empty dict to remove all annotations).
+    next_steps:
+      - rancher_storage_class_get
 
 list:
   query_params: [limit, continue_token]
@@ -63,11 +73,13 @@ get:
   locals:
     - name: metadata
       expression: 'mapping_value(payload, "metadata") or {}'
+    - name: metadata_annotations
+      expression: 'mapping_value(metadata, "annotations") or {}'
   extras:
     - field: mount_options
       expression: string_list(payload.get("mountOptions"))
     - field: annotation_keys
-      expression: 'sorted(string_dict(mapping_value(metadata, "annotations") or {}))'
+      expression: sorted(string_dict(metadata_annotations))
   include_link_keys: false
   include_payload: true
   next_steps:
@@ -86,4 +98,7 @@ tools:
   patches:
     - name: rancher_storage_class_set_labels
       description: Replace metadata.labels on one StorageClass (cluster-scoped) via JSON merge-patch. The `labels` arg is a complete replacement map. Returns the curated detail.
+      annotation_set: IDEMPOTENT_WRITE
+    - name: rancher_storage_class_set_annotations
+      description: Replace metadata.annotations on one Kubernetes StorageClass (cluster-scoped) via JSON merge-patch. The `annotations` arg is a complete replacement map. Returns the curated detail.
       annotation_set: IDEMPOTENT_WRITE
