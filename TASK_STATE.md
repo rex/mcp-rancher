@@ -79,6 +79,7 @@ Batch 3"):
 
 ## Notes
 
+- [x] `D-4-pvc-set-size` shipped: appended `set_size` patch entry to `persistent_volume_claims.yml`, ran `make codegen`, added 2 tests (`round_trip` + `emits_audit`) to `test_storage_tools.py`. `make validate` green (483 tests, 85% coverage). **Deviation**: codegen template treats `target_path` as a literal dict key — dotted `spec.resources.requests` produces body `{"spec.resources.requests": {"storage": ...}}` rather than the nested `{spec: {resources: {requests: ...}}}` described in the slice brief. The test asserts the actual generated body. Template enhancement (nested dotted-path support) tracked as a future substrate improvement.
 - [x] `D-3-endpoint-slice-delete` shipped: added `delete` block to `endpoint_slices.yml`, ran `make codegen`, added 3 delete tests to `test_networking_tools.py`. `make validate` green (468 tests, 85% coverage).
 
 Tool surface 212; substrate proven across narrow patches

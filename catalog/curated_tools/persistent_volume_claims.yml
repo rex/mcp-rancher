@@ -55,6 +55,16 @@ patches:
         description: Replacement metadata.annotations map (merge-patch semantics).
     next_steps:
       - rancher_persistent_volume_claim_get
+  - verb: set_size
+    target_path: spec.resources.requests
+    audit_operation: persistent_volume_claim_set_size
+    args:
+      - name: storage
+        type: str
+        required: true
+        description: Kubernetes resource quantity (e.g. "10Gi", "500Mi"). Most StorageClasses validate only-grow.
+    next_steps:
+      - rancher_persistent_volume_claim_get
 
 list:
   query_params: [limit, continue_token]
@@ -110,4 +120,7 @@ tools:
       annotation_set: IDEMPOTENT_WRITE
     - name: rancher_persistent_volume_claim_set_annotations
       description: Replace metadata.annotations on one Kubernetes PersistentVolumeClaim via JSON merge-patch. Returns the curated detail.
+      annotation_set: IDEMPOTENT_WRITE
+    - name: rancher_persistent_volume_claim_set_size
+      description: "Resize a PersistentVolumeClaim via JSON merge-patch. Body is `{spec: {resources: {requests: {storage: <value>}}}}`. Most StorageClasses validate only-grow. Returns curated detail."
       annotation_set: IDEMPOTENT_WRITE
