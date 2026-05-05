@@ -375,8 +375,19 @@ that were not part of those slices.
     (current confirmation phrase is acceptable in the interim).
 - [ ] **C-2** OAuth 2.0 / PKCE auth for the server (P5)
   - For multi-user and CI deployments. Currently bearer-token only.
-- [ ] **C-3** Prometheus metrics endpoint (P5)
-  - Tool-call counts, latency histograms, error rates by error_code.
+- [x] **C-3** Tool-call metrics (P5) — landed (log-based)
+  - New `src/rancher_mcp/metrics.py` with `MetricEntry` +
+    `track_metric` + `apply_metrics_to_all_tools`.
+  - Emits structured log lines on `rancher_mcp.metrics` logger
+    (`event="metric"`, `tool_name`, `outcome`, `duration_ms`,
+    `error_code`). Wrapped INSIDE the structured-error wrapper
+    so metrics see the original `RancherMCPError` before
+    `ToolError` translation.
+  - **Not** an HTTP `/metrics` endpoint — the MCP server runs
+    over stdio, so a side-channel HTTP server would interfere
+    with the transport. Log aggregation (Promtail/Loki,
+    Vector/Prometheus, fluentd, etc.) derives Prometheus
+    counters/histograms from the records. Documented.
 - [x] **C-4** Structured audit-trail log (P5 / P10 overlap) — landed
   - New `src/rancher_mcp/audit.py` with `AuditEntry` Pydantic
     model + `emit_audit` + `audit_mutation` decorator.

@@ -54,6 +54,16 @@ multi-user/CI deployment scope, C-3 Prometheus metrics needs
 endpoint design; B-5 monitoring deepening blocks on
 Alertmanager API access design).
 
+- **C-3 metrics-as-log-lines landed.** New
+  `src/rancher_mcp/metrics.py` with `MetricEntry` model +
+  `track_metric` decorator + `apply_metrics_to_all_tools(mcp)`
+  bulk wrapper. Applied at `register_all_tools` BEFORE
+  `apply_structured_errors_to_all_tools` so metrics see the real
+  `RancherMCPError` (not the translated ToolError). Log-based
+  approach (no /metrics HTTP endpoint) keeps stdio transport
+  unaffected — log aggregation pipelines derive Prometheus
+  histograms/counters from the records. 273 tests pass, 85.81%
+  coverage.
 - **H-2 rate-limit landed.** New `src/rancher_mcp/rate_limit.py`
   with `TokenBucket` + singleton state + `rate_limit_writes`
   decorator. New `RancherRateLimitError` exception (distinct

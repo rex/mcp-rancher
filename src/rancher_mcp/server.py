@@ -14,6 +14,7 @@ def register_all_tools(mcp: FastMCP) -> None:
     handshake to complete before the heavy imports begin.
     """
     # Local imports are intentional: keep module-level import cost near-zero.
+    from rancher_mcp.metrics import apply_metrics_to_all_tools
     from rancher_mcp.tools.alerts import register_alerts_tools
     from rancher_mcp.tools.apps_catalogs import register_app_catalog_tools
     from rancher_mcp.tools.auth_identity import register_auth_identity_tools
@@ -70,6 +71,10 @@ def register_all_tools(mcp: FastMCP) -> None:
     register_policy_reports_tools(mcp)
     register_mcp_resources(mcp)
     register_mcp_prompts(mcp)
+    # Order: metrics is INNER so it sees the original RancherMCPError;
+    # structured_errors is OUTER and translates that to ToolError at the
+    # MCP boundary.
+    apply_metrics_to_all_tools(mcp)
     apply_structured_errors_to_all_tools(mcp)
 
 

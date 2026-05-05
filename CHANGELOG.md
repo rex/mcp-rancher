@@ -2,6 +2,40 @@
 
 ## [2026-05-04] - Agent: Claude Opus 4.7
 
+### Added (C-3 — tool-call metrics as structured log lines)
+- New **`src/rancher_mcp/metrics.py`** module with:
+  - `MetricEntry` Pydantic model (extra=forbid). Fields:
+    `tool_name`, `outcome`, `duration_ms`, `error_code` (opt).
+  - `emit_metric(entry)` — emits one record on the
+    `rancher_mcp.metrics` structlog logger with `event="metric"`.
+  - `track_metric(fn)` decorator — measures wall-clock duration,
+    emits one record per call. Success → `outcome=success`;
+    `RancherMCPError` → `outcome=error` with `error_code`.
+    Non-`RancherMCPError` exceptions pass through unmetered
+    (programming errors should bubble up to the MCP boundary).
+  - `apply_metrics_to_all_tools(mcp)` — bulk-wraps every
+    registered tool's `fn`. Called from `server.register_all_tools`
+    BEFORE `apply_structured_errors_to_all_tools` so that:
+    - structured-error wrapper is OUTER (translates to ToolError)
+    - metric wrapper is INNER (sees real `RancherMCPError` with
+      its real `error_code` before translation)
+    - tool body is innermost
+- **Why log lines, not /metrics**: the MCP server runs over stdio
+  in production. A Prometheus `/metrics` HTTP endpoint would
+  require a side-channel HTTP server thread that interferes with
+  the stdio transport. Log-based metrics work with all log
+  pipelines (Promtail → Loki recording rules, Vector + Prometheus,
+  fluentd + file-based exporter, etc.). Documented in module
+  docstring.
+- 6 new unit tests in `tests/unit/test_metrics.py` covering
+  `emit_metric` direct emission, decorator success path,
+  `RancherCapabilityError` and `RancherAPIError` (verify
+  error_code), pass-through of non-`RancherMCPError` exceptions
+  (no metric record emitted), and `apply_metrics_to_all_tools`
+  bulk wrapping.
+- 273 tests pass, 85.81% coverage. Lint + pyright + codegen
+  drift all clean.
+
 ### Added (H-2 — token-bucket rate limiting on writes)
 - New **`src/rancher_mcp/rate_limit.py`** with:
   - `TokenBucket` — thread-safe monotonic-clock token bucket.
