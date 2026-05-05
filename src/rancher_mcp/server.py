@@ -46,6 +46,7 @@ def register_all_tools(mcp: FastMCP) -> None:
     from rancher_mcp.tools.provisioning import register_provisioning_tools
     from rancher_mcp.tools.rbac import register_rbac_tools
     from rancher_mcp.tools.resources import register_resource_tools
+    from rancher_mcp.tools.scheduling import register_scheduling_tools
     from rancher_mcp.tools.settings_features import register_settings_feature_tools
     from rancher_mcp.tools.storage import register_storage_tools
     from rancher_mcp.tools.support.errors import apply_structured_errors_to_all_tools
@@ -81,6 +82,7 @@ def register_all_tools(mcp: FastMCP) -> None:
     register_cert_manager_tools(mcp)
     register_batch_workloads_tools(mcp)
     register_governance_tools(mcp)
+    register_scheduling_tools(mcp)
     register_mcp_resources(mcp)
     register_mcp_prompts(mcp)
     # Order: metrics is INNER so it sees the original RancherMCPError;

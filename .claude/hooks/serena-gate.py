@@ -142,6 +142,7 @@ _CODEGEN_PACKS = frozenset(
         "prometheus_monitoring",
         "provisioning",
         "rbac",
+        "scheduling",
         "settings_features",
         "storage",
         "workloads",

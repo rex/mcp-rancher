@@ -1,0 +1,5 @@
+schema_version: 1
+id: scheduling
+register_function: register_scheduling_tools
+docstring: Curated Kubernetes scheduling tools (PriorityClass, RuntimeClass).
+register_docstring: Register curated scheduling tools with the FastMCP server.

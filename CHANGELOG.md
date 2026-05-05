@@ -2,6 +2,34 @@
 
 ## [2026-05-04] - Agent: Claude Opus 4.7
 
+### Added (scheduling pack — PriorityClass, RuntimeClass)
+- New **`scheduling`** pack with 4 tools across 2 cluster-scoped
+  scheduling primitives:
+  - `rancher_priority_classes_list` /
+    `rancher_priority_class_get` — PriorityClass at
+    `scheduling.k8s.io/v1`. Summary exposes value (priority
+    integer), globalDefault flag, preemptionPolicy,
+    description. Filters: global_default (bool),
+    preemption_policy.
+  - `rancher_runtime_classes_list` /
+    `rancher_runtime_class_get` — RuntimeClass at
+    `node.k8s.io/v1`. Summary exposes handler (CRI runtime,
+    e.g. `kata-qemu`), `overhead_pod_fixed_keys` (sorted
+    resource names with overhead set, e.g.
+    `["cpu", "memory"]`), `scheduling_node_selector_keys`
+    (sorted nodeSelector keys for runtime-to-node binding).
+    Filter: handler.
+- New path helpers: `scheduling_v1_collection_path` /
+  `scheduling_v1_resource_path` and `node_v1_collection_path`
+  / `node_v1_resource_path`.
+- 4 new unit tests covering list+get for both types with
+  realistic fixtures (system-critical PriorityClass with
+  PreemptLowerPriority policy; Kata Containers RuntimeClass
+  with cpu+memory overhead and node-tier selector).
+- 309 tests pass, 85.95% coverage. Codegen: 99 files match
+  descriptors. Public tool surface 180 → 184.
+- Standard Kubernetes primitives — no optional-chart caveat.
+
 ### Added (governance pack — HPA, ResourceQuota, LimitRange)
 - New **`governance`** pack with 6 tools across 3
   cluster-governance / capacity-planning primitives:

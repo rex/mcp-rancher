@@ -29,7 +29,7 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 - Canonical plan: `PERFECT_RANCHER_MCP_IMPLEMENTATION_PLAN.md`
 - Operational roadmap (track-level work breakdown): `ROADMAP.md`
 - Primary compatibility target: Rancher `2.6.5`
-- Public tool surface: 180 tools
+- Public tool surface: 184 tools
 - Completion gate: `make check-if-the-agent-can-consider-this-task-completed`
 - Active quality gates:
   `make check-architecture`
@@ -57,6 +57,12 @@ E destructive writes, H-3 broader confirmation, H-5 streaming
 under load). See "Tracks ticked this session" and "NEXT
 options" below.
 
+- **scheduling pack landed.** 4 new tools for PriorityClass
+  (scheduling.k8s.io/v1) and RuntimeClass (node.k8s.io/v1) —
+  both cluster-scoped k8s scheduling primitives. RuntimeClass
+  summary derives sorted `overhead_pod_fixed_keys` and
+  `scheduling_node_selector_keys`. Tool surface 180 → 184.
+  309 tests pass, 85.95% coverage.
 - **governance pack landed.** 6 new tools for HPA
   (autoscaling/v2), ResourceQuota and LimitRange (core/v1).
   HPA summary derives `able_to_scale` and `scaling_active`
