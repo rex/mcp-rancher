@@ -29,7 +29,7 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 - Canonical plan: `PERFECT_RANCHER_MCP_IMPLEMENTATION_PLAN.md`
 - Operational roadmap (track-level work breakdown): `ROADMAP.md`
 - Primary compatibility target: Rancher `2.6.5`
-- Public tool surface: 204 tools
+- Public tool surface: 212 tools
 - Completion gate: `make check-if-the-agent-can-consider-this-task-completed`
 - Active quality gates:
   `make check-architecture`
@@ -49,28 +49,107 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
   risks, active phase slices).
 - **User-visible changes** → `CHANGELOG.md`
 
-## Next Slice (post-compaction-ready)
+## Next Slice
 
-**Read this first if you just rehydrated.**
+Batch 3 landed cleanly. Next candidate batch (per Serena
+memo `tasks/post_compaction_resume_2026_05_05` "What's after
+Batch 3"):
 
-- **Slice**: Batch 3 — narrow annotation-set patches across 8
-  packs via parallel Sonnet subagents.
-- **Status**: shared brief is fully written and pushed at HEAD
-  (commit `517d098`). Catalog ready. Just launch the 8 agents.
-- **Resume memo (full handoff)**:
-  Serena memory `tasks/post_compaction_resume_2026_05_05` —
-  load with `mcp__serena__read_memory`. Contains the agent
-  prompt template, the launch sequence, the merge protocol,
-  and the post-Batch-3 roadmap.
-- **Quick verify before launch**: `git rev-parse HEAD` should
-  match `517d098` (or whatever commit the resume memo
-  references); `make validate` should pass; tool surface
-  should be 204.
-- **Predicted outcome**: 8 agents, ~4-5 min wall-clock, +8
-  tools, +16 tests. Each adds a SECOND patches entry to a
-  Batch-2 descriptor, exercising the multi-patch substrate.
+- **Batch 4**: workloads multi-patch —
+  `D-1-deployment-set-annotations`,
+  `D-1-statefulset-set-labels`,
+  `D-1-statefulset-set-annotations`,
+  `D-4-deployment-pause`, `D-4-deployment-restart`. Five
+  slices on ONE pack (workloads); cannot trivially parallelize
+  within the pack because each agent regenerates
+  `workloads/__init__.py` independently. Either run sequentially
+  (5× Sonnet, ~15 min total) or run parallel and accept that
+  cherry-pick will need a post-merge `make codegen` to
+  reconcile the regenerated files.
+- **Batch 5+** (mechanical adds, unrelated packs): cron_job,
+  daemonset, configmap label/annotation patches. Spread across
+  packs so parallel-orchestration applies cleanly.
+- **Batch 6**: shared brief for "Standard k8s create" —
+  `namespace_create`, `project_create` (Norman),
+  `service_account_create`. New shared brief required.
+- **Batch 7**: shared brief for "DESTRUCTIVE delete" —
+  `namespace_delete`, `project_delete`, `statefulset_delete`,
+  etc.
+
+Tool surface 212; substrate proven across narrow patches
+(`set_labels`, `set_annotations`, `scale`, `suspend`),
+single-narrow-arg multi-patch coexistence (deployments has
+scale + set_labels), and 8 different packs (incl. cluster-scoped
+and optional-chart resources). Substrate is feature-complete.
 
 ## Latest Logical Step
+
+- **Batch 3 landed: 8 parallel Sonnet agents shipped 8
+  annotation-set patches in ~4.8 min wall-clock.** First
+  production use of the multi-patch substrate at scale —
+  every slice ADDED a second `patches:` entry alongside the
+  Batch-2 `set_labels` entry. Validates that the substrate
+  evolution from `J-3-extension-multi-patch` is byte-stable
+  across 8 different descriptors.
+  - **Slices shipped (each k8s-proxy or transport-agnostic
+    Steve, IDEMPOTENT_WRITE patch on `metadata.annotations`)**:
+    - `D-1-ingress-set-annotations` (commit `09e819c`)
+    - `D-1-flow-set-annotations` (commit `8f0b8c3`,
+      optional Banzai chart)
+    - `D-1-longhorn-volume-set-annotations` (commit `8dbb878`,
+      optional Longhorn chart)
+    - `D-1-runtime-class-set-annotations` (commit `607c99b`,
+      cluster-scoped)
+    - `D-1-backup-set-annotations` (commit `9e03fd1`,
+      cluster-scoped — Rancher Backup operator CRD)
+    - `D-1-service-monitor-set-annotations` (commit `32f8fc6`,
+      optional kube-prometheus-stack)
+    - `D-1-cert-manager-certificate-set-annotations` (commit
+      `c6acd10`, optional cert-manager chart)
+    - `D-1-hpa-set-annotations` (commit `3754c89`)
+  - **Substrate proof**: every Batch-2 descriptor's
+    `tools.patches:` list grew from 1 to 2 entries, paired by
+    index with the corresponding `patches:` entry. Generated
+    code for each pack now emits BOTH `_patch_<X>_set_labels`
+    and `_patch_<X>_set_annotations` private helpers + both
+    public functions + both MCP tool wrappers. Multi-patch
+    is fully production at 8-pack scale.
+  - **Defensive `metadata_annotations` rename across all 8**:
+    every descriptor had a `get.locals.annotations` entry that
+    would have shadowed the new patch arg `annotations:
+    dict[str, str]`. Each agent applied the same prescribed
+    rename (per the shared brief's pitfall section). Shared
+    brief authoring captured this defensively — zero agents
+    were blocked by the shadow issue. (Earlier J-3 slices on
+    secrets / replicasets / configmaps had hit this same
+    issue and embedded the fix; Batch 3 confirms the pattern
+    generalizes.)
+  - **Lint substrate adjustment** (one-time): cert_manager and
+    hpa agents both noticed the long display_name_singular
+    values (`cert_manager_certificate`,
+    `horizontal_pod_autoscaler`) produce generated docstrings
+    that exceed the 100-char E501 limit. Both added a
+    per-file-ignore in `pyproject.toml`. Cert-manager used
+    `"src/**/_generated_*.py"`; hpa used `"**/_generated_*.py"`.
+    Cherry-pick conflict resolved by keeping the narrower
+    `src/**` pattern. Future generated files for any long-name
+    resource benefit going forward.
+  - **Wall-clock leverage**: 8 slices × ~3-4 min = ~24-32 min
+    sequential vs ~4.8 min parallel = **~5-6× speedup**. With
+    Opus orchestration overhead (catalog brief authoring was
+    pre-staged before compaction; merge + validate +
+    status-doc updates ~5 min) ≈ ~10 min total wall-clock for
+    8 net new tools.
+  - **374 tests pass** (was 358 → +16: 8 slices × 2 tests
+    each), 85.79% coverage, 108 files match descriptors,
+    all gates green.
+  - **Tool surface 204 → 212** (+8).
+  - **Cumulative session run rate** through this batch:
+    tool surface 184 → 212 (+28), tests 309 → 374 (+65).
+    Spans Batches 1, 2, 3, J-3 (create / apply / delete /
+    patch / multi-patch substrate), priority_class
+    cluster-scoped, secret_create masked-payload proof, plus
+    statefulset_scale + deployment_delete launchers.
 
 - **J-3-extension-multi-patch landed (substrate evolution).**
   Unblocks `D-1-deployment-set-labels` (which Sonnet correctly

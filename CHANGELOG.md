@@ -2,6 +2,62 @@
 
 ## [2026-05-05] - Agent: Claude Opus 4.7
 
+### Added (Batch 3 — 8 parallel Sonnet subagents shipped annotation-set patches across 8 packs)
+
+First production exercise of the multi-patch substrate at
+scale. Each slice ADDED a second `patches:` entry alongside
+the Batch-2 `set_labels` entry on the same descriptor — proves
+multi-patch coexistence works across cluster-scoped, namespaced,
+and optional-chart resources. Tool surface 204 → 212 (+8);
+374 tests pass (was 358; +16 = 8 × 2 per slice); 85.79% coverage.
+
+Slices (all narrow JSON merge-patch on `metadata.annotations`,
+IDEMPOTENT_WRITE):
+
+- `rancher_ingress_set_annotations` (networking) — `09e819c`
+- `rancher_flow_set_annotations` (logging_pipeline; optional
+  Banzai chart) — `8f0b8c3`
+- `rancher_longhorn_volume_set_annotations` (longhorn; optional
+  Longhorn chart) — `8dbb878`
+- `rancher_runtime_class_set_annotations` (scheduling;
+  cluster-scoped) — `607c99b`
+- `rancher_backup_set_annotations` (backup_operator;
+  cluster-scoped Rancher Backup operator CRD) — `9e03fd1`
+- `rancher_service_monitor_set_annotations`
+  (prometheus_monitoring; optional kube-prometheus-stack) —
+  `32f8fc6`
+- `rancher_cert_manager_certificate_set_annotations`
+  (cert_manager; optional cert-manager chart) — `c6acd10`
+- `rancher_horizontal_pod_autoscaler_set_annotations`
+  (governance) — `3754c89`
+
+Wall-clock: ~4.8 min for the longest agent; ~5-6× speedup
+over sequential. Total Opus orchestration overhead ~5 min
+(merge + validate + status updates).
+
+### Changed
+
+- `pyproject.toml`: added per-file E501 ignore for
+  `src/**/_generated_*.py`. Two agents (cert_manager_certificate
+  and hpa) hit a generated-docstring length issue caused by
+  long `display_name_singular` values. The fix is forward-
+  compatible — any generated file for a long-name resource
+  bypasses the 100-char limit.
+
+### Pattern lessons reinforced
+
+- Multi-patch substrate works identically across 8 different
+  packs, including cluster-scoped (backup, runtime_class) and
+  optional-chart (longhorn, service_monitor, cert_manager,
+  flow) — no per-pack adaptation needed.
+- The `metadata_annotations` rename for `get.locals` is the
+  canonical defensive pattern when adding annotation-set
+  patches; shared brief captures this in "Common pitfalls"
+  and every Batch 3 agent applied it without prompting.
+- Cherry-pick is the right merge strategy for parallel
+  file-disjoint commits with one shared lint-config touch
+  point — single conflict, single edit, ~30s to resolve.
+
 ### Added (J-3-extension-multi-patch — substrate now allows multiple narrow patches per descriptor)
 
 Substrate evolution. Unblocks any resource that needs more than

@@ -66,7 +66,7 @@ table. The [Status legend](#status-legend) explains the icons.
 
 ## Quick start
 
-- **Tool surface today: 204 registered.** See
+- **Tool surface today: 212 registered.** See
   [Tool registry](#tool-registry).
 - **Estimated target: ~380 tools** at "perfect" coverage of
   the 25-domain canonical plan. We're roughly 50% of the way.
@@ -121,7 +121,7 @@ descriptor migration commit). That's fine — Slice IDs map
 
 | Bucket | Count |
 |---|---|
-| ✅ Built (registered tools) | **204** |
+| ✅ Built (registered tools) | **212** |
 | 🟡 Planned (gap from plan) | ~190 |
 | 🟠 Partial (documented limitations) | ~10 |
 | 🔴 Blocked (external dep / design) | ~12 |
@@ -1835,3 +1835,12 @@ Batch 2. Predicted Tool surface delta: 204 → 212 (+8).
 | 2026-05-05 | D-1-cert-manager-certificate-set-labels (Batch 2) | `f1bcc51` | Sonnet, 3.3 min — optional cert-manager chart |
 | 2026-05-05 | D-1-runtime-class-set-labels (Batch 2) | `fc3d6a7` | Sonnet, 3.1 min — second cluster-scoped substrate proof |
 | 2026-05-05 | D-1-flow-set-labels (Batch 2) | `e1a66eb` | Sonnet, 4.2 min — optional Banzai logging chart |
+| 2026-05-05 | J-3-extension-multi-patch (substrate evolution) | `517d098` | unblocks deployment_set_labels + future multi-narrow-patch resources |
+| 2026-05-05 | D-1-ingress-set-annotations (Batch 3) | `09e819c` | Sonnet, 2.9 min — first multi-patch slice in Batch 3 |
+| 2026-05-05 | D-1-flow-set-annotations (Batch 3) | `8f0b8c3` | Sonnet, 2.4 min — optional Banzai chart |
+| 2026-05-05 | D-1-longhorn-volume-set-annotations (Batch 3) | `8dbb878` | Sonnet, 2.8 min — optional Longhorn chart |
+| 2026-05-05 | D-1-runtime-class-set-annotations (Batch 3) | `607c99b` | Sonnet, 2.5 min — cluster-scoped |
+| 2026-05-05 | D-1-backup-set-annotations (Batch 3) | `9e03fd1` | Sonnet, 3.2 min — cluster-scoped |
+| 2026-05-05 | D-1-service-monitor-set-annotations (Batch 3) | `32f8fc6` | Sonnet, 3.6 min — optional kube-prometheus-stack |
+| 2026-05-05 | D-1-cert-manager-certificate-set-annotations (Batch 3) | `c6acd10` | Sonnet, 4.4 min — optional cert-manager; first agent to add E501 ignore for `_generated_*.py` (long names) |
+| 2026-05-05 | D-1-hpa-set-annotations (Batch 3) | `3754c89` | Sonnet, 4.8 min — same E501 fix; merge resolved by orchestrator (kept narrower `src/**` glob) |
