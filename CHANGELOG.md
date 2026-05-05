@@ -2,6 +2,19 @@
 
 ## [2026-05-05] - Agent: Claude Opus 4.7
 
+### Added (Batch 7 — 9 parallel Sonnet subagents, set_annotations follow-ups across 9 packs)
+
+Tool surface 236 → 245 (+9). Tests 422 → 440 (+18). Coverage 85.46%. Wall-clock ~3.5 min for the longest agent.
+
+Slices: service_set_annotations (`d267fd0`), daemonset_set_annotations (`c42793c`), job_set_annotations (`545fcf4`), secret_set_annotations (`11bd4b1`), limit_range_set_annotations (`d498215`), endpoint_slice_set_annotations (`6632dc5`), persistent_volume_claim_set_annotations (`6fb498c`), longhorn_node_set_annotations (`e2c80b4`), configmap_set_annotations (`ebd1e0a` — manually applied after merge conflict in test file).
+
+**Configmap milestone**: configmaps now has 5 write operations (create + apply + delete + set_labels + set_annotations) — the most comprehensive write surface on any descriptor.
+
+### Pattern lessons reinforced (and learned)
+
+- **Sonnet inconsistency on git commit step**: 8 of 9 Batch 7 agents stopped after `make validate` without running `git commit`. Their working tree changes were intact in their worktrees. Orchestrator recovered by committing each worktree's changes manually (excluding TASK_STATE.md which agents had also touched in violation of constraint), then cherry-picking. Going forward, prompts MUST explicitly require `git commit` AND verify the commit landed (e.g., return summary asks "what does `git log -1` show?").
+- **2-agents-per-pack merge conflicts**: secrets + configmaps both modified `tests/unit/test_config_secrets_tools.py` at adjacent positions. The merge conflict was on docstring boilerplate that diverged subtly between classes. Resolution: skip the second cherry-pick, manually apply the descriptor change, run codegen, copy the test additions surgically.
+
 ### Added (Batch 6 — 8 parallel Sonnet subagents, fourth consecutive ZERO-conflict batch + small substrate fix)
 
 Tool surface 228 → 236 (+8). 422 tests pass (was 406; +16
