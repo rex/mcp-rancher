@@ -22,6 +22,8 @@ from rancher_mcp.tools.batch_workloads._generated_cron_jobs import (
 from rancher_mcp.tools.batch_workloads._generated_jobs import (
     rancher_job_get,
     rancher_job_get_tool,
+    rancher_job_set_labels,
+    rancher_job_set_labels_tool,
     rancher_jobs_list,
     rancher_jobs_list_tool,
 )
@@ -34,6 +36,7 @@ __all__ = [
     "rancher_cron_job_suspend",
     "rancher_cron_jobs_list",
     "rancher_job_get",
+    "rancher_job_set_labels",
     "rancher_jobs_list",
     "register_batch_workloads_tools",
 ]
@@ -55,3 +58,6 @@ def register_batch_workloads_tools(mcp: FastMCP) -> None:
     )
     mcp.tool(name="rancher_jobs_list", annotations=READ_ONLY)(rancher_jobs_list_tool)
     mcp.tool(name="rancher_job_get", annotations=READ_ONLY)(rancher_job_get_tool)
+    mcp.tool(name="rancher_job_set_labels", annotations=IDEMPOTENT_WRITE)(
+        rancher_job_set_labels_tool
+    )

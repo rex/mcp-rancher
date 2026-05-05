@@ -28,7 +28,7 @@ summary_function: job_summary_from_payload
 query_builder_function: build_list_query_params
 query_builder_in_shared: true
 
-operations: [list, get]
+operations: [list, get, patch]
 
 list:
   query_params: [limit, continue_token, label_selector, field_selector]
@@ -66,6 +66,18 @@ get:
     - rancher_jobs_list
     - rancher_pods_list
 
+patches:
+  - verb: set_labels
+    target_path: metadata
+    audit_operation: job_set_labels
+    args:
+      - name: labels
+        type: dict_str_str
+        required: true
+        description: Replacement metadata.labels map (merge-patch semantics — passing this REPLACES the labels map; pass an empty dict to remove all labels).
+    next_steps:
+      - rancher_job_get
+
 tools:
   list:
     name: rancher_jobs_list
@@ -75,3 +87,7 @@ tools:
     name: rancher_job_get
     description: Fetch one Kubernetes Job by namespace and name. Returns the curated summary plus container_images list (from spec.template.spec.containers), annotation keys, and full payload.
     annotation_set: READ_ONLY
+  patches:
+    - name: rancher_job_set_labels
+      description: Replace metadata.labels on one Kubernetes Job via JSON merge-patch. The `labels` arg is a complete replacement map. Returns the curated detail.
+      annotation_set: IDEMPOTENT_WRITE
