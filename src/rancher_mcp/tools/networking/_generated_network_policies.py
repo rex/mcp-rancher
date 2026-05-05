@@ -119,13 +119,13 @@ async def _fetch_network_policy_get(
     summary = network_policy_summary_from_payload(payload)
 
     metadata = mapping_value(payload, "metadata") or {}
-    annotations = mapping_value(metadata, "annotations") or {}
+    metadata_annotations = mapping_value(metadata, "annotations") or {}
     detail = RancherNetworkPolicyDetail.model_validate(payload)
     return detail.model_copy(
         update={
             "ingress_rule_count": summary.ingress_rule_count,
             "egress_rule_count": summary.egress_rule_count,
-            "annotation_keys": sorted(string_dict(annotations)),
+            "annotation_keys": sorted(string_dict(metadata_annotations)),
             "payload": dict(payload),
             "suggested_next_steps": ["rancher_network_policies_list", "rancher_pods_list"],
         }
@@ -182,13 +182,13 @@ async def _patch_network_policy_set_labels(
     summary = network_policy_summary_from_payload(payload)
 
     metadata = mapping_value(payload, "metadata") or {}
-    annotations = mapping_value(metadata, "annotations") or {}
+    metadata_annotations = mapping_value(metadata, "annotations") or {}
     detail = RancherNetworkPolicyDetail.model_validate(payload)
     return detail.model_copy(
         update={
             "ingress_rule_count": summary.ingress_rule_count,
             "egress_rule_count": summary.egress_rule_count,
-            "annotation_keys": sorted(string_dict(annotations)),
+            "annotation_keys": sorted(string_dict(metadata_annotations)),
             "payload": dict(payload),
             "suggested_next_steps": ["rancher_network_policy_get", "rancher_network_policies_list"],
         }
@@ -227,6 +227,79 @@ async def rancher_network_policy_set_labels(
             namespace,
             network_policy_name,
             labels,
+            managed_client,
+        )
+
+
+async def _patch_network_policy_set_annotations(
+    instance_name: str,
+    cluster_id: str,
+    namespace: str,
+    network_policy_name: str,
+    annotations: dict[str, str],
+    client: ManagementDiscoveryClient,
+) -> RancherNetworkPolicyDetail:
+    """Set_annotations one network_policy via JSON merge-patch; returns the curated detail."""
+
+    patch_subtree: dict[str, object] = {}
+    patch_subtree["annotations"] = annotations
+    if not patch_subtree:
+        raise RancherCapabilityError(
+            "No patch fields provided; every arg was None. Pass at least one field to update."
+        )
+    request_payload: dict[str, object] = {"metadata": patch_subtree}
+    payload = await client.patch_json(
+        networking_v1_resource_path(cluster_id, namespace, "networkpolicies", network_policy_name),
+        payload=request_payload,
+    )
+    summary = network_policy_summary_from_payload(payload)
+
+    metadata = mapping_value(payload, "metadata") or {}
+    metadata_annotations = mapping_value(metadata, "annotations") or {}
+    detail = RancherNetworkPolicyDetail.model_validate(payload)
+    return detail.model_copy(
+        update={
+            "ingress_rule_count": summary.ingress_rule_count,
+            "egress_rule_count": summary.egress_rule_count,
+            "annotation_keys": sorted(string_dict(metadata_annotations)),
+            "payload": dict(payload),
+            "suggested_next_steps": ["rancher_network_policy_get"],
+        }
+    )
+
+
+@audit_mutation(operation="network_policy_set_annotations", plane="steve")
+@rate_limit_writes
+async def rancher_network_policy_set_annotations(
+    namespace: str,
+    network_policy_name: str,
+    annotations: dict[str, str],
+    cluster_id: str = "local",
+    instance: str | None = None,
+    settings: AppSettings | None = None,
+    client: ManagementDiscoveryClient | None = None,
+) -> RancherNetworkPolicyDetail:
+    """Set_annotations one network_policy via JSON merge-patch."""
+
+    resolved_settings = settings or get_settings()
+    instance_name, instance_config = resolve_instance(resolved_settings, instance)
+    ensure_instance_writable(instance_name, instance_config)
+    if client is not None:
+        return await _patch_network_policy_set_annotations(
+            instance_name,
+            cluster_id,
+            namespace,
+            network_policy_name,
+            annotations,
+            client,
+        )
+    async with RancherManagementClient(instance_name, instance_config) as managed_client:
+        return await _patch_network_policy_set_annotations(
+            instance_name,
+            cluster_id,
+            namespace,
+            network_policy_name,
+            annotations,
             managed_client,
         )
 
@@ -282,6 +355,24 @@ async def rancher_network_policy_set_labels_tool(
         namespace=namespace,
         network_policy_name=network_policy_name,
         labels=labels,
+        cluster_id=cluster_id,
+        instance=instance,
+    )
+
+
+async def rancher_network_policy_set_annotations_tool(
+    namespace: str,
+    network_policy_name: str,
+    annotations: dict[str, str],
+    cluster_id: str = "local",
+    instance: str | None = None,
+) -> RancherNetworkPolicyDetail:
+    """Public MCP wrapper for curated network_policy set_annotations."""
+
+    return await rancher_network_policy_set_annotations(
+        namespace=namespace,
+        network_policy_name=network_policy_name,
+        annotations=annotations,
         cluster_id=cluster_id,
         instance=instance,
     )

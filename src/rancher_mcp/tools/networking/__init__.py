@@ -28,6 +28,8 @@ from rancher_mcp.tools.networking._generated_network_policies import (
     rancher_network_policies_list_tool,
     rancher_network_policy_get,
     rancher_network_policy_get_tool,
+    rancher_network_policy_set_annotations,
+    rancher_network_policy_set_annotations_tool,
     rancher_network_policy_set_labels,
     rancher_network_policy_set_labels_tool,
 )
@@ -42,6 +44,7 @@ __all__ = [
     "rancher_ingresses_list",
     "rancher_network_policies_list",
     "rancher_network_policy_get",
+    "rancher_network_policy_set_annotations",
     "rancher_network_policy_set_labels",
     "register_networking_tools",
 ]
@@ -72,4 +75,7 @@ def register_networking_tools(mcp: FastMCP) -> None:
     )
     mcp.tool(name="rancher_network_policy_set_labels", annotations=IDEMPOTENT_WRITE)(
         rancher_network_policy_set_labels_tool
+    )
+    mcp.tool(name="rancher_network_policy_set_annotations", annotations=IDEMPOTENT_WRITE)(
+        rancher_network_policy_set_annotations_tool
     )
