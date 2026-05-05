@@ -26,7 +26,7 @@ summary_function: pdb_summary_from_payload
 query_builder_function: build_list_query_params
 query_builder_in_shared: true
 
-operations: [list, get, patch]
+operations: [list, get, delete, patch]
 
 list:
   query_params: [limit, continue_token]
@@ -55,6 +55,12 @@ get:
     - rancher_pod_disruption_budgets_list
     - rancher_pods_list
     - rancher_deployments_list
+
+delete:
+  audit_operation: pod_disruption_budget_delete
+  confirmation_phrase: "delete pod_disruption_budget {budget_name} in namespace {namespace}"
+  next_steps:
+    - rancher_pod_disruption_budgets_list
 
 patches:
   - verb: set_labels
@@ -88,6 +94,10 @@ tools:
     name: rancher_pod_disruption_budget_get
     description: Fetch one pod disruption budget by namespace and name via Rancher's raw Kubernetes proxy. Returns the curated summary plus full payload, conditions, and annotation keys.
     annotation_set: READ_ONLY
+  delete:
+    name: rancher_pod_disruption_budget_delete
+    description: Delete one Kubernetes PodDisruptionBudget. The `confirmation` arg must equal the exact phrase "delete pod_disruption_budget NAME in namespace NS" (substituting the actual values). Returns a typed delete result. Subject to write rate limiting and audit logging.
+    annotation_set: DESTRUCTIVE
   patches:
     - name: rancher_pod_disruption_budget_set_labels
       description: Replace metadata.labels on one PodDisruptionBudget via JSON merge-patch. The `labels` arg is a complete replacement map. Returns the curated detail.

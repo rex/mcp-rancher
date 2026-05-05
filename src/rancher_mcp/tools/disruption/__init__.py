@@ -8,6 +8,8 @@
 from mcp.server.fastmcp import FastMCP
 
 from rancher_mcp.tools.disruption._generated_pod_disruption_budgets import (
+    rancher_pod_disruption_budget_delete,
+    rancher_pod_disruption_budget_delete_tool,
     rancher_pod_disruption_budget_get,
     rancher_pod_disruption_budget_get_tool,
     rancher_pod_disruption_budget_set_annotations,
@@ -17,9 +19,10 @@ from rancher_mcp.tools.disruption._generated_pod_disruption_budgets import (
     rancher_pod_disruption_budgets_list,
     rancher_pod_disruption_budgets_list_tool,
 )
-from rancher_mcp.tools.support.annotations import IDEMPOTENT_WRITE, READ_ONLY
+from rancher_mcp.tools.support.annotations import DESTRUCTIVE, IDEMPOTENT_WRITE, READ_ONLY
 
 __all__ = [
+    "rancher_pod_disruption_budget_delete",
     "rancher_pod_disruption_budget_get",
     "rancher_pod_disruption_budget_set_annotations",
     "rancher_pod_disruption_budget_set_labels",
@@ -36,6 +39,9 @@ def register_disruption_tools(mcp: FastMCP) -> None:
     )
     mcp.tool(name="rancher_pod_disruption_budget_get", annotations=READ_ONLY)(
         rancher_pod_disruption_budget_get_tool
+    )
+    mcp.tool(name="rancher_pod_disruption_budget_delete", annotations=DESTRUCTIVE)(
+        rancher_pod_disruption_budget_delete_tool
     )
     mcp.tool(name="rancher_pod_disruption_budget_set_labels", annotations=IDEMPOTENT_WRITE)(
         rancher_pod_disruption_budget_set_labels_tool
