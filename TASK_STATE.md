@@ -29,7 +29,7 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 - Canonical plan: `PERFECT_RANCHER_MCP_IMPLEMENTATION_PLAN.md`
 - Operational roadmap (track-level work breakdown): `ROADMAP.md`
 - Primary compatibility target: Rancher `2.6.5`
-- Public tool surface: 187 tools
+- Public tool surface: 188 tools
 - Completion gate: `make check-if-the-agent-can-consider-this-task-completed`
 - Active quality gates:
   `make check-architecture`
@@ -47,6 +47,61 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 - **User-visible changes** → `CHANGELOG.md`
 
 ## Latest Logical Step
+
+- **J-3 third slice landed (narrow typed-arg patches via
+  PatchConfig).** Substrate is now feature-complete for ALL
+  five write verbs (create / apply / patch / delete; list / get
+  on the read side). Track D safe writes can now ship as
+  descriptor authorship.
+  - **`PatchConfig`** Pydantic model in
+    `scripts/codegen/descriptor.py`: declares `verb` (tool-name
+    suffix), `args` (typed args, ≥1 required), `target_path`
+    (dot-delimited JSON path under which args land as object
+    keys), `audit_operation` (defaults `<id>_<verb>`),
+    `next_steps`. Validators enforce: `tools.patch.name ==
+    rancher_<singular>_<verb>` (kept in sync), get config
+    required (response shape reuse), at least one arg.
+  - **One narrow patch per descriptor** in v1. Multi-verb
+    resources (e.g. deployment with both scale and pause)
+    need separate descriptors per verb. Substrate evolution
+    path is `patches: list[PatchConfig]` — punt until needed.
+  - **PATCH OPERATION block** in `tool_module.py.j2`:
+    - `_patch_<singular>_<verb>` private helper builds
+      `patch_subtree` from non-None args (required args land
+      unconditionally, optional args conditionally), refuses
+      with `RancherCapabilityError` if all-None, wraps in
+      `target_path` (or top-level if empty), PATCHes via
+      `client.patch_json` (merge-patch+json content type),
+      shapes response through get pipeline.
+    - `rancher_<singular>_<verb>` decorated with
+      `@audit_mutation(operation=...)` outer +
+      `@rate_limit_writes` inner; `ensure_instance_writable`
+      in body. Same decorator stack as create/apply/delete.
+    - `rancher_<singular>_<verb>_tool` MCP wrapper.
+  - **Client protocol** extended with `patch_json` (matches
+    existing `RancherManagementClient.patch_json` signature).
+  - **Worked example**: `rancher_deployment_scale` on
+    `catalog/curated_tools/deployments.yml`. `verb: scale`,
+    `target_path: spec`, single arg `replicas: int (required)`.
+    Generated tool sends `{spec: {replicas: N}}` merge-patch to
+    the deployment detail path. `IDEMPOTENT_WRITE` annotation
+    (scale converges on a target state).
+  - **Tests** (2 new in
+    `tests/unit/test_workloads_tools.py`):
+    - Round-trip: PATCH path is detail (not collection); body
+      is exactly `{spec: {replicas: 5}}`; response parses
+      through curated detail model.
+    - Audit emits `operation=deployment_scale` (not generic
+      `_patch`); arg-name capture; arg values never leak.
+  - **Docs**: extended Section 12 of
+    `docs/codegen-curated-tools.md` with the patch recipe
+    (descriptor + generated body shape + test pattern).
+    Updated "still pending" list — multi-patch-per-resource
+    and Norman/Steve write transport coverage are the
+    remaining gaps.
+  - **Tool surface 187 → 188** (+1: rancher_deployment_scale).
+  - **324 tests pass, 85.97% coverage**, 99 files match
+    descriptors, all gates green.
 
 - **J-3 second slice landed (apply + delete operations on the
   codegen substrate).** Substrate is now feature-complete for

@@ -2,6 +2,56 @@
 
 ## [2026-05-05] - Agent: Claude Opus 4.7
 
+### Added (J-3 third slice — narrow typed-arg patches via PatchConfig)
+
+Substrate is now **feature-complete for all five write verbs**
+(create / apply / patch / delete) plus the read pair (list / get).
+Track D safe writes can now ship as descriptor authorship.
+
+- **`PatchConfig`** Pydantic model: declares `verb` (tool-name
+  suffix), `args` (typed args, ≥1 required), `target_path`
+  (dot-delimited JSON path under which args land as object keys),
+  `audit_operation` (defaults `<id>_<verb>`), `next_steps`.
+  Validators enforce `tools.patch.name == rancher_<singular>_<verb>`
+  (kept in sync), get config required (response reuse), and ≥1 arg.
+- **One narrow patch per descriptor** in v1. Multi-verb resources
+  (e.g. deployment with separate scale and pause tools) need
+  multiple descriptors per verb. Substrate evolution path is
+  `patches: list[PatchConfig]` — deferred until needed.
+- **PATCH OPERATION block** in `scripts/codegen/templates/tool_module.py.j2`:
+  - `_patch_<singular>_<verb>` private helper builds
+    `patch_subtree` from non-None args (required: unconditional;
+    optional: conditional), refuses with `RancherCapabilityError`
+    if all-None, wraps in `target_path` (or top-level if empty),
+    PATCHes via `client.patch_json` (`application/merge-patch+json`),
+    shapes response through the get pipeline.
+  - `rancher_<singular>_<verb>` decorated `@audit_mutation` outer +
+    `@rate_limit_writes` inner; `ensure_instance_writable` in body.
+    Same decorator stack as create / apply / delete.
+  - `rancher_<singular>_<verb>_tool` MCP wrapper.
+- **Client protocol** (`ManagementDiscoveryClient`) extended with
+  `patch_json` matching the existing `RancherManagementClient.patch_json`.
+- **Worked example**: `rancher_deployment_scale` —
+  - `verb: scale`, `target_path: spec`, single arg
+    `replicas: int (required)`.
+  - Generated tool sends `{spec: {replicas: N}}` merge-patch to
+    the deployment detail path.
+  - `IDEMPOTENT_WRITE` annotation — scale converges on a target
+    state.
+  - 2 new tests: round-trip (path is detail, body is the narrow
+    patch only); audit emits `operation=deployment_scale`.
+- **Documentation**: extended `docs/codegen-curated-tools.md`
+  Section 12 with the patch recipe (descriptor + generated body
+  shape + test pattern). Updated remaining-pending list:
+  multi-patch-per-resource and Norman/Steve write transport
+  coverage are the only known gaps.
+
+### Stats
+
+- Tool surface 187 → 188 (+1: rancher_deployment_scale).
+- 324 tests pass (was 322), 85.97% coverage (essentially unchanged).
+- 99 files match descriptors. All gates green.
+
 ### Added (J-3 second slice — apply + delete on the codegen substrate)
 
 Substrate is now feature-complete for canonical CRUD writes

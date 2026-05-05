@@ -1001,21 +1001,104 @@ Reasoning:
   wrong confirmation phrase gets the phrase requirement back first
   (most actionable feedback).
 
+### Patch operation
+
+`patch` is HTTP `application/merge-patch+json` PATCH on the resource
+detail path. Curated patches are NARROW — each patch tool targets a
+specific JSON merge-patch subtree and accepts typed args that are
+written into that subtree. Distinct from create / apply, which build a
+full resource payload.
+
+#### Descriptor
+
+```yaml
+operations: [list, get, patch]
+
+patch:
+  verb: scale                # tool-name suffix: rancher_<singular>_<verb>
+  target_path: spec          # args land in {spec: {...}}; "" for top-level
+  audit_operation: deployment_scale
+  args:
+    - name: replicas
+      type: int
+      required: true
+      description: Desired replica count for the deployment.
+  next_steps:
+    - rancher_deployment_get
+    - rancher_pods_list
+
+tools:
+  patch:
+    name: rancher_deployment_scale  # MUST equal rancher_<singular>_<verb>
+    description: |
+      Scale one Kubernetes Deployment to a target `replicas` count
+      via JSON merge-patch on `spec.replicas`. Returns the curated
+      detail of the patched resource.
+    annotation_set: IDEMPOTENT_WRITE
+```
+
+Notes:
+- `verb` is `lower_snake_case`. The descriptor validator requires
+  `tools.patch.name == "rancher_<singular>_<verb>"`. Rename either
+  side to keep them in sync.
+- `target_path` is a single dot-delimited path. Args land as object
+  keys under that path. For nested writes use the deepest object
+  parent, e.g. `target_path: spec` with arg `replicas: int` produces
+  `{spec: {replicas: 5}}`. Use `""` for top-level patches (rare).
+- All `args` are honored — required args land unconditionally,
+  optional args land only when the caller passes a non-`None`
+  value. If ALL args are `None` (impossible when at least one is
+  required), the tool refuses with `RancherCapabilityError` rather
+  than sending an empty patch.
+- `annotation_set: IDEMPOTENT_WRITE` is the right default for narrow
+  patches that converge on a target state (scale, suspend, set
+  label). Use `SAFE_WRITE` for non-idempotent narrow patches.
+- One narrow patch per descriptor today. Multi-narrow-patch
+  resources (e.g. deployment with separate `scale` and `pause`
+  tools) currently need one descriptor file per verb. Future
+  substrate work may extend this to `patches: list[PatchConfig]`.
+
+#### Generated tool body shape
+
+```python
+async def _patch_<singular>_<verb>(...):
+    patch_subtree: dict[str, object] = {}
+    patch_subtree["replicas"] = replicas    # required arg → unconditional
+    if optional_arg is not None:            # optional arg → conditional
+        patch_subtree["optional_arg"] = optional_arg
+    if not patch_subtree:
+        raise RancherCapabilityError(...)
+    request_payload = {"spec": patch_subtree}  # wrapped in target_path
+    payload = await client.patch_json(detail_path, payload=request_payload)
+    # ... response shaped through get pipeline ...
+```
+
+#### Test pattern
+
+Stub a client whose `patch_json` captures `last_patch_path` and
+`last_patch_payload`. Assert:
+1. The path is the resource **detail** path (not the collection).
+2. The body is exactly the narrow patch (`{<target_path>: {<args>}}`).
+3. The response is parsed back through the curated detail model.
+4. The audit record has `operation=<id>_<verb>` (or the explicit
+   `audit_operation` if set) and `outcome=success`.
+
+The `rancher_deployment_scale` example
+(`tests/unit/test_workloads_tools.py`) is the worked reference.
+
 ### What's still pending in J-3
 
-- `patch` operation — narrow typed-arg patches (e.g.
-  `rancher_deployment_scale(replicas)`) need a different descriptor
-  shape than create/apply. Each patch tool targets a specific JSON
-  path; the substrate work is bigger than just a new template block.
-  Plan: design `PatchConfig` with `target_path: str` and a typed
-  args list whose values are written into that path. Defer until a
-  concrete need arises.
-- Norman / Steve transports — the create/apply/delete templates
-  handle all three transports identically (POST/PUT/DELETE to
-  `list_path`/`detail_path` for steve/norman, equivalent path-helper
-  call for k8s-proxy). The configmap example exercises k8s-proxy
-  only; Steve / Norman writes need a curated example before relying
-  on the substrate for those planes.
+- Multi-patch-per-resource — one narrow patch per descriptor today.
+  When a resource needs N narrow patches (e.g. deployment with
+  scale + pause + restart), we need one descriptor file per verb,
+  or substrate evolution to `patches: list[PatchConfig]`.
+- Norman / Steve transports — the create / apply / delete / patch
+  templates handle all three transports identically (POST / PUT /
+  DELETE / PATCH to `list_path` or `detail_path` for steve/norman,
+  equivalent path-helper call for k8s-proxy). The configmap and
+  deployment examples exercise k8s-proxy only; Steve / Norman
+  writes need a curated example before relying on the substrate
+  for those planes.
 - `dict_str_object` arg type — declared in the literal but no
   example yet. Add when the first descriptor needs nested struct
-  args (e.g. `spec` for a CRD).
+  args (e.g. a partial `spec` patch for a CRD).

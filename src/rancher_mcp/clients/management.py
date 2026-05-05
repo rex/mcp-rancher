@@ -55,6 +55,20 @@ class ManagementDiscoveryClient(Protocol):
         """Perform a JSON PUT request (used by curated apply / replace flows)."""
         ...
 
+    async def patch_json(
+        self,
+        path: str,
+        payload: Mapping[str, object] | None = None,
+        params: Mapping[str, str | int | bool] | None = None,
+    ) -> dict[str, object]:
+        """Perform a JSON merge-patch request (used by curated narrow patches).
+
+        Sends ``Content-Type: application/merge-patch+json`` so partial
+        bodies replace only the declared subtree (and ``null`` values
+        unset fields).
+        """
+        ...
+
     async def delete_json(
         self,
         path: str,

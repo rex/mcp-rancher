@@ -239,6 +239,7 @@ class ModuleContext:
             "create": descriptor.create,
             "apply": descriptor.apply,
             "delete": descriptor.delete,
+            "patch": descriptor.patch,
             "tools": descriptor.tools,
             "fetch_docstring_phrase": fetch_docstring_phrase,
         }
@@ -343,6 +344,14 @@ def _public_names(descriptor: Descriptor) -> list[str]:
                 f"rancher_{singular}_delete_tool",
             ]
         )
+    if "patch" in descriptor.operations and descriptor.patch is not None:
+        verb = descriptor.patch.verb
+        names.extend(
+            [
+                f"rancher_{singular}_{verb}",
+                f"rancher_{singular}_{verb}_tool",
+            ]
+        )
     return names
 
 
@@ -359,6 +368,8 @@ def _tool_metas(descriptor: Descriptor) -> Iterator[ToolMeta]:
         yield descriptor.tools.apply
     if descriptor.tools.delete is not None:
         yield descriptor.tools.delete
+    if descriptor.tools.patch is not None:
+        yield descriptor.tools.patch
 
 
 def _registrations(descriptor: Descriptor) -> list[RegistrationEntry]:
@@ -405,6 +416,14 @@ def _registrations(descriptor: Descriptor) -> list[RegistrationEntry]:
                 tool_name=descriptor.tools.delete.name,
                 annotation=descriptor.tools.delete.annotation_set,
                 callable=f"rancher_{singular}_delete_tool",
+            )
+        )
+    if descriptor.tools.patch is not None and descriptor.patch is not None:
+        entries.append(
+            RegistrationEntry(
+                tool_name=descriptor.tools.patch.name,
+                annotation=descriptor.tools.patch.annotation_set,
+                callable=f"rancher_{singular}_{descriptor.patch.verb}_tool",
             )
         )
     return entries

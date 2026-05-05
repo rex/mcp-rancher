@@ -25,7 +25,7 @@ support_value_imports:
   - string_dict
 summary_function: deployment_summary_from_payload
 
-operations: [list, get]
+operations: [list, get, patch]
 
 list:
   query_params: [limit, continue_token, label_selector, field_selector]
@@ -62,6 +62,19 @@ get:
     - rancher_pods_list
     - rancher_workload_readiness
 
+patch:
+  verb: scale
+  target_path: spec
+  audit_operation: deployment_scale
+  args:
+    - name: replicas
+      type: int
+      required: true
+      description: Desired replica count for the deployment.
+  next_steps:
+    - rancher_deployment_get
+    - rancher_pods_list
+
 tools:
   list:
     name: rancher_deployments_list
@@ -71,3 +84,7 @@ tools:
     name: rancher_deployment_get
     description: Fetch one deployment by namespace and name via Rancher's raw Kubernetes proxy. Returns the curated summary plus full payload and annotation keys.
     annotation_set: READ_ONLY
+  patch:
+    name: rancher_deployment_scale
+    description: Scale one Kubernetes Deployment to a target `replicas` count via JSON merge-patch on `spec.replicas`. Returns the curated detail of the patched resource. Subject to write rate limiting and audit logging.
+    annotation_set: IDEMPOTENT_WRITE

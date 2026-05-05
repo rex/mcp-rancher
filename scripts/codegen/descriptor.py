@@ -381,6 +381,62 @@ class DeleteConfig(BaseModel):
     resource is gone."""
 
 
+class PatchConfig(BaseModel):
+    """Patch operation configuration.
+
+    Curated patches are NARROW — each patch tool targets a specific
+    JSON merge-patch subtree on the resource and accepts typed args
+    that are written into that subtree. Distinct from create / apply
+    which build a full resource payload.
+
+    Args with ``None`` values are omitted from the patch body so the
+    agent can selectively update fields. If ALL args are ``None``,
+    the operation refuses with ``RancherCapabilityError`` — no-op
+    patches aren't valuable; explicit refusal is more agent-
+    actionable than a silent success.
+
+    The HTTP request is JSON merge-patch (``Content-Type:
+    application/merge-patch+json``) on the resource detail path,
+    with a body that contains only the path + new values being
+    changed. The response is shaped through the same ``get``
+    pipeline as create / apply, so ``get`` is required when
+    ``patch`` is in operations.
+
+    Multi-narrow-patch resources (e.g. deployment with separate
+    scale and pause tools) currently require one descriptor per
+    patch verb. Future substrate work may extend this to
+    ``patches: list[PatchConfig]`` for tool consolidation.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    verb: str
+    """Action verb that becomes the tool-name suffix:
+    ``rancher_<singular>_<verb>``. Examples: ``scale``, ``suspend``,
+    ``annotate``. Use ``lower_snake_case``. The descriptor's
+    ``tools.patch.name`` must be ``rancher_<singular>_<verb>``;
+    codegen validates this to keep the two in sync."""
+
+    args: list[ArgSpec]
+    """Typed args. At least one required. Their values are written
+    into the patch body's ``target_path`` subtree, with ``None``
+    values omitted. Marking every arg ``required: true`` is
+    encouraged when the verb has a single semantic meaning (e.g.
+    ``scale`` always provides ``replicas``)."""
+
+    target_path: str
+    """Dot-delimited JSON path under which args become object keys.
+    Examples: ``spec`` means args land in ``{spec: {<arg>: <value>}}``.
+    Use ``""`` (empty string) for top-level patches (rare; useful
+    for patching ``metadata`` directly without nesting)."""
+
+    audit_operation: str = ""
+    """Operation name passed to ``@audit_mutation``. Default:
+    ``<descriptor.id>_<verb>``."""
+
+    next_steps: list[str] = []
+
+
 class ToolMeta(BaseModel):
     """MCP tool metadata for one operation."""
 
@@ -508,6 +564,7 @@ class Descriptor(BaseModel):
     create: CreateConfig | None = None
     apply: ApplyConfig | None = None
     delete: DeleteConfig | None = None
+    patch: PatchConfig | None = None
 
     # --- MCP tool metadata -----------------------------------------
 
@@ -569,6 +626,30 @@ class Descriptor(BaseModel):
                     "operations includes 'delete' but 'get' config is missing — "
                     "delete uses get.arg_name as the resource-name argument. "
                     "Add 'get' to operations and provide a get config."
+                )
+        if "patch" in self.operations:
+            if self.patch is None:
+                raise ValueError("operations includes 'patch' but patch config is missing")
+            if self.tools.patch is None:
+                raise ValueError("operations includes 'patch' but tools.patch metadata is missing")
+            if "get" not in self.operations or self.get is None:
+                raise ValueError(
+                    "operations includes 'patch' but 'get' is missing — "
+                    "patch reuses get's response-shaping pipeline. Add 'get' "
+                    "to operations and provide a get config."
+                )
+            if not self.patch.args:
+                raise ValueError(
+                    "patch.args must include at least one ArgSpec — "
+                    "narrow patches are defined by which fields they update."
+                )
+            expected_tool_name = f"rancher_{self.display_name_singular}_{self.patch.verb}"
+            if self.tools.patch.name != expected_tool_name:
+                raise ValueError(
+                    f"tools.patch.name must be {expected_tool_name!r} "
+                    f"(rancher_<singular>_<verb>), got {self.tools.patch.name!r}. "
+                    f"Either update tools.patch.name or change patch.verb to keep "
+                    f"them in sync."
                 )
         if self.transport == "steve":
             if not self.list_path:

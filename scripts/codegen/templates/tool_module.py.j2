@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-{% set has_mutation = ('create' in operations) or ('apply' in operations) or ('delete' in operations) -%}
-{% set needs_capability_error = (('create' in operations) and create.confirmation_required) or (('apply' in operations) and apply.confirmation_required) or ('delete' in operations) -%}
+{% set has_mutation = ('create' in operations) or ('apply' in operations) or ('delete' in operations) or ('patch' in operations) -%}
+{% set needs_capability_error = (('create' in operations) and create.confirmation_required) or (('apply' in operations) and apply.confirmation_required) or ('delete' in operations) or ('patch' in operations) -%}
 {% if has_mutation -%}
 from rancher_mcp.audit import audit_mutation
 {% endif -%}
@@ -685,6 +685,145 @@ async def rancher_{{ display_name_singular }}_delete(
 
 
 {% endif -%}
+{# ===================== PATCH OPERATION ===================== #}
+{% if 'patch' in operations -%}
+async def _patch_{{ display_name_singular }}_{{ patch.verb }}(
+    instance_name: str,
+    {% if cluster_id_required -%}
+    cluster_id: str,
+    {% endif -%}
+    {% if namespaced -%}
+    namespace: str,
+    {% endif -%}
+    {{ get.arg_name }}: str,
+    {%- for arg in patch.args %}
+    {{ arg.name }}: {{ arg_python_type(arg.type) }}{% if not arg.required %} | None{% endif %},
+    {%- endfor %}
+    client: {{ client_protocol }},
+) -> {{ detail_model_name }}:
+    """{{ patch.verb|capitalize }} one {{ display_name_singular }} via JSON merge-patch; returns the curated detail."""
+
+    patch_subtree: dict[str, object] = {}
+    {%- for arg in patch.args %}
+    {%- if arg.required %}
+    patch_subtree["{{ arg.name }}"] = {{ arg.name }}
+    {%- else %}
+    if {{ arg.name }} is not None:
+        patch_subtree["{{ arg.name }}"] = {{ arg.name }}
+    {%- endif %}
+    {%- endfor %}
+    if not patch_subtree:
+        raise RancherCapabilityError(
+            "No patch fields provided; every arg was None. Pass at least one field to update."
+        )
+    {% if patch.target_path -%}
+    request_payload: dict[str, object] = {"{{ patch.target_path }}": patch_subtree}
+    {%- else -%}
+    request_payload: dict[str, object] = patch_subtree
+    {%- endif %}
+    {% if transport == 'k8s-proxy' -%}
+    payload = await client.patch_json(
+        {{ path_helper.detail_function }}(cluster_id{% if namespaced %}, namespace{% endif %}{% if path_helper.resource_kind %}, "{{ path_helper.resource_kind }}"{% endif %}, {{ get.arg_name }}),
+        payload=request_payload,
+    )
+    {%- elif transport == 'steve' or transport == 'norman' -%}
+    payload = await client.patch_json(f"{{ detail_path }}", payload=request_payload)
+    {%- endif %}
+    {% if get.summary_copy_fields -%}
+    summary = {{ summary_function }}(payload)
+    {% endif -%}
+    {%- for local in get.locals %}
+    {{ local.name }} = {{ local.expression }}
+    {%- endfor %}
+    detail = {{ detail_model_name }}.model_validate(payload)
+    return detail.model_copy(
+        update={
+            {%- for field in get.summary_copy_fields %}
+            "{{ field }}": summary.{{ field }},
+            {%- endfor %}
+            {%- for extra in get.extras %}
+            "{{ extra.field }}": {{ extra.expression }},
+            {%- endfor %}
+            {%- if get.include_action_keys %}
+            "action_keys": sorted(mapping_value(payload, "actions") or {}),
+            {%- endif %}
+            {%- if get.include_link_keys %}
+            "link_keys": sorted(mapping_value(payload, "links") or {}),
+            {%- endif %}
+            {%- if get.include_payload %}
+            "payload": dict(payload),
+            {%- endif %}
+            "suggested_next_steps": [{% for step in patch.next_steps %}"{{ step }}"{% if not loop.last %}, {% endif %}{% endfor %}],
+        }
+    )
+
+
+@audit_mutation(operation="{{ patch.audit_operation or (id ~ '_' ~ patch.verb) }}", plane="{{ plane }}")
+@rate_limit_writes
+async def rancher_{{ display_name_singular }}_{{ patch.verb }}(
+    {% if namespaced -%}
+    namespace: str,
+    {% endif -%}
+    {{ get.arg_name }}: str,
+    {%- for arg in patch.args if arg.required %}
+    {{ arg.name }}: {{ arg_python_type(arg.type) }},
+    {%- endfor %}
+    {%- for arg in patch.args if not arg.required %}
+    {{ arg.name }}: {{ arg_python_type(arg.type) }} | None = None,
+    {%- endfor %}
+    {% if cluster_id_required -%}
+    cluster_id: str = "local",
+    {% endif -%}
+    instance: str | None = None,
+    settings: AppSettings | None = None,
+    client: {{ client_protocol }} | None = None,
+) -> {{ detail_model_name }}:
+    """{{ patch.verb|capitalize }} one {{ display_name_singular }} via JSON merge-patch."""
+
+    resolved_settings = settings or get_settings()
+    instance_name, instance_config = resolve_instance(resolved_settings, instance)
+    ensure_instance_writable(instance_name, instance_config)
+    if client is not None:
+        return await _patch_{{ display_name_singular }}_{{ patch.verb }}(
+            instance_name,
+            {% if cluster_id_required -%}
+            cluster_id,
+            {% endif -%}
+            {% if namespaced -%}
+            namespace,
+            {% endif -%}
+            {{ get.arg_name }},
+            {%- for arg in patch.args %}
+            {{ arg.name }},
+            {%- endfor %}
+            client,
+        )
+    {% if transport == 'steve' -%}
+    async with {{ client_class }}(
+        instance_name,
+        instance_config,
+        cluster_id=cluster_id,
+    ) as {{ client_var }}:
+    {%- elif transport == 'k8s-proxy' or transport == 'norman' -%}
+    async with {{ client_class }}(instance_name, instance_config) as {{ client_var }}:
+    {%- endif %}
+        return await _patch_{{ display_name_singular }}_{{ patch.verb }}(
+            instance_name,
+            {% if cluster_id_required -%}
+            cluster_id,
+            {% endif -%}
+            {% if namespaced -%}
+            namespace,
+            {% endif -%}
+            {{ get.arg_name }},
+            {%- for arg in patch.args %}
+            {{ arg.name }},
+            {%- endfor %}
+            {{ client_var }},
+        )
+
+
+{% endif -%}
 {# ===================== TOOL WRAPPERS ===================== #}
 {% if 'list' in operations -%}
 async def rancher_{{ display_name_plural }}_list_tool(
@@ -856,6 +995,41 @@ async def rancher_{{ display_name_singular }}_delete_tool(
         {% endif -%}
         {{ get.arg_name }}={{ get.arg_name }},
         confirmation=confirmation,
+        {% if cluster_id_required -%}
+        cluster_id=cluster_id,
+        {% endif -%}
+        instance=instance,
+    )
+
+
+{% endif -%}
+{% if 'patch' in operations -%}
+async def rancher_{{ display_name_singular }}_{{ patch.verb }}_tool(
+    {% if namespaced -%}
+    namespace: str,
+    {% endif -%}
+    {{ get.arg_name }}: str,
+    {%- for arg in patch.args if arg.required %}
+    {{ arg.name }}: {{ arg_python_type(arg.type) }},
+    {%- endfor %}
+    {%- for arg in patch.args if not arg.required %}
+    {{ arg.name }}: {{ arg_python_type(arg.type) }} | None = None,
+    {%- endfor %}
+    {% if cluster_id_required -%}
+    cluster_id: str = "local",
+    {% endif -%}
+    instance: str | None = None,
+) -> {{ detail_model_name }}:
+    """Public MCP wrapper for curated {{ display_name_singular }} {{ patch.verb }}."""
+
+    return await rancher_{{ display_name_singular }}_{{ patch.verb }}(
+        {% if namespaced -%}
+        namespace=namespace,
+        {% endif -%}
+        {{ get.arg_name }}={{ get.arg_name }},
+        {%- for arg in patch.args %}
+        {{ arg.name }}={{ arg.name }},
+        {%- endfor %}
         {% if cluster_id_required -%}
         cluster_id=cluster_id,
         {% endif -%}
