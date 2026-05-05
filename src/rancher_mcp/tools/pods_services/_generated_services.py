@@ -11,6 +11,7 @@ from rancher_mcp.clients.steve import RancherSteveClient, SteveMutationClient
 from rancher_mcp.config import AppSettings, get_settings
 from rancher_mcp.exceptions import RancherCapabilityError
 from rancher_mcp.models.pods_services import RancherServiceDetail, RancherServiceList
+from rancher_mcp.models.resources import RancherCuratedDeleteResult
 from rancher_mcp.rate_limit import rate_limit_writes
 from rancher_mcp.services.instances import resolve_instance
 from rancher_mcp.services.resource_queries import build_steve_list_query_params
@@ -147,6 +148,76 @@ async def rancher_service_get(
             cluster_id,
             namespace,
             service_name,
+            steve_client,
+        )
+
+
+async def _delete_service(
+    instance_name: str,
+    cluster_id: str,
+    namespace: str,
+    service_name: str,
+    confirmation_phrase_used: str,
+    client: SteveMutationClient,
+) -> RancherCuratedDeleteResult:
+    """Delete one service; returns a typed delete result."""
+
+    response_payload = await client.delete_json(f"/services/{namespace}/{service_name}")
+    return RancherCuratedDeleteResult(
+        instance=instance_name,
+        plane="steve",
+        resource_kind="service",
+        resource_name=service_name,
+        namespace=namespace,
+        cluster_id=cluster_id,
+        deleted=True,
+        confirmation_phrase_used=confirmation_phrase_used,
+        response_payload=dict(response_payload),
+        suggested_next_steps=["rancher_services_list"],
+    )
+
+
+@audit_mutation(operation="service_delete", plane="steve")
+@rate_limit_writes
+async def rancher_service_delete(
+    namespace: str,
+    service_name: str,
+    confirmation: str,
+    cluster_id: str = "local",
+    instance: str | None = None,
+    settings: AppSettings | None = None,
+    client: SteveMutationClient | None = None,
+) -> RancherCuratedDeleteResult:
+    """Delete one service after the agent echoes the required confirmation phrase."""
+
+    expected_phrase = f"delete service {service_name} in namespace {namespace}"
+    if confirmation != expected_phrase:
+        raise RancherCapabilityError(
+            f"Delete confirmation did not match the required phrase: {expected_phrase!r}"
+        )
+    resolved_settings = settings or get_settings()
+    instance_name, instance_config = resolve_instance(resolved_settings, instance)
+    ensure_instance_writable(instance_name, instance_config)
+    if client is not None:
+        return await _delete_service(
+            instance_name,
+            cluster_id,
+            namespace,
+            service_name,
+            expected_phrase,
+            client,
+        )
+    async with RancherSteveClient(
+        instance_name,
+        instance_config,
+        cluster_id=cluster_id,
+    ) as steve_client:
+        return await _delete_service(
+            instance_name,
+            cluster_id,
+            namespace,
+            service_name,
+            expected_phrase,
             steve_client,
         )
 
@@ -332,6 +403,24 @@ async def rancher_service_get_tool(
     return await rancher_service_get(
         namespace=namespace,
         service_name=service_name,
+        cluster_id=cluster_id,
+        instance=instance,
+    )
+
+
+async def rancher_service_delete_tool(
+    namespace: str,
+    service_name: str,
+    confirmation: str,
+    cluster_id: str = "local",
+    instance: str | None = None,
+) -> RancherCuratedDeleteResult:
+    """Public MCP wrapper for curated service delete."""
+
+    return await rancher_service_delete(
+        namespace=namespace,
+        service_name=service_name,
+        confirmation=confirmation,
         cluster_id=cluster_id,
         instance=instance,
     )
