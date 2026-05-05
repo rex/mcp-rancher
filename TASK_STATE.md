@@ -29,7 +29,7 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 - Canonical plan: `PERFECT_RANCHER_MCP_IMPLEMENTATION_PLAN.md`
 - Operational roadmap (track-level work breakdown): `ROADMAP.md`
 - Primary compatibility target: Rancher `2.6.5`
-- Public tool surface: 134 tools
+- Public tool surface: 138 tools
 - Completion gate: `make check-if-the-agent-can-consider-this-task-completed`
 - Active quality gates:
   `make check-architecture`
@@ -48,7 +48,14 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 
 ## Latest Logical Step
 
-- **Session complete: Track A + J-2 (B-1..B-4) landed in 5 commits.**
+- **J-2 / B-8 backup_operator pack landed.** 4 new tools for
+  Rancher Backup Operator's Backup + Restore CRDs (cluster-scoped
+  in resources.cattle.io/v1). Storage location rendered as
+  `s3://bucket (region)` or `default`. Tool surface 134 → 138.
+  241 tests pass, 85.46% coverage. First descriptor-driven pack
+  to re-export `condition_types_true` from
+  `tools.support.conditions` via shared.py.
+- **Session progress: Track A + J-2 (B-1..B-4, B-8) landed in 6 commits.**
   - `bb07d26` — Track A (4 quick fixes: A-1 Norman→Steve fix,
     A-2 mutation-guard ToolError, A-3 anyio deprecation,
     A-4 server-name env vars)

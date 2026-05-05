@@ -17,6 +17,7 @@ def register_all_tools(mcp: FastMCP) -> None:
     from rancher_mcp.tools.alerts import register_alerts_tools
     from rancher_mcp.tools.apps_catalogs import register_app_catalog_tools
     from rancher_mcp.tools.auth_identity import register_auth_identity_tools
+    from rancher_mcp.tools.backup_operator import register_backup_operator_tools
     from rancher_mcp.tools.certificates import register_certificates_tools
     from rancher_mcp.tools.clusters_nodes import register_cluster_node_tools
     from rancher_mcp.tools.compliance import register_compliance_tools
@@ -62,6 +63,7 @@ def register_all_tools(mcp: FastMCP) -> None:
     register_config_secrets_tools(mcp)
     register_provisioning_tools(mcp)
     register_certificates_tools(mcp)
+    register_backup_operator_tools(mcp)
     register_mcp_resources(mcp)
     register_mcp_prompts(mcp)
     apply_structured_errors_to_all_tools(mcp)

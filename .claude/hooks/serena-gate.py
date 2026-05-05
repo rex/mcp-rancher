@@ -122,6 +122,7 @@ _CODEGEN_PACKS = frozenset(
         "alerts",
         "apps_catalogs",
         "auth_identity",
+        "backup_operator",
         "certificates",
         "clusters_nodes",
         "compliance",

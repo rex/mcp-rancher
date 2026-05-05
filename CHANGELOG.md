@@ -2,6 +2,38 @@
 
 ## [2026-05-04] - Agent: Claude Opus 4.7
 
+### Added (J-2 / B-8 — backup_operator pack via descriptors)
+- New **`backup_operator`** pack with 4 tools across 2
+  cluster-scoped CRDs in `resources.cattle.io/v1`:
+  - `rancher_backups_list` / `rancher_backup_get`
+  - `rancher_restores_list` / `rancher_restore_get`
+- Targets the Rancher Backup Operator CRDs (live on the local
+  cluster where the chart is installed). Distinct from RKE
+  etcd backups (Norman `etcdbackup`, in `logging_backups` pack).
+- Curated summaries expose schedule, retention_count,
+  resource_set_name, encryption_config_secret_name,
+  storage_location_summary (rendered as `s3://bucket (region)`,
+  `s3://bucket`, or `default`), latest backup_filename,
+  last_backup_time, and a coarse summary_state derived from
+  status.conditions (Ready / Reconciling / status.summary).
+- Detail adds `condition_types_true` (sorted condition types
+  with status=True), `annotation_keys`, `storage_location_summary`,
+  and full payload.
+- New path helpers (cluster-scoped k8s-proxy):
+  `resources_cattle_io_v1_collection_path` /
+  `resources_cattle_io_v1_resource_path`.
+- `backup_operator` shared.py re-exports `condition_types_true`
+  so descriptor extras can call it directly. (First pack to
+  re-export from `tools.support.conditions`.)
+- 4 new unit tests in `tests/unit/test_backup_operator_tools.py`
+  covering list+get for both types with realistic payload
+  fixtures (s3 storage on Backup, default storage on Restore,
+  Ready condition).
+- 241 tests pass, 85.46% coverage. Codegen: 68 files match
+  descriptors. Public tool surface 134 → 138.
+- Restore writes are P7 (Track E destructive); only inspection
+  ships here.
+
 ### Added (J-2 / B-4 — certificates pack via descriptors, partial)
 - New **`certificates`** pack with 4 tools across 2 Norman
   resource types:

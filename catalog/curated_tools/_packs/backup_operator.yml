@@ -1,0 +1,5 @@
+schema_version: 1
+id: backup_operator
+register_function: register_backup_operator_tools
+docstring: Curated Rancher Backup Operator tools (Backup, Restore on local cluster).
+register_docstring: Register curated Rancher Backup Operator tools with the FastMCP server.

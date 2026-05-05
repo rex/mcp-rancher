@@ -1,0 +1,74 @@
+schema_version: 1
+
+id: backups
+pack: backup_operator
+display_name_singular: backup
+display_name_plural: backups
+
+plane: steve
+transport: k8s-proxy
+namespaced: false
+
+path_helper:
+  module: rancher_mcp.tools.backup_operator.paths
+  list_function: resources_cattle_io_v1_collection_path
+  detail_function: resources_cattle_io_v1_resource_path
+  resource_kind: backups
+
+list_response_model: rancher_mcp.models.backup_operator.RancherBackupList
+detail_response_model: rancher_mcp.models.backup_operator.RancherBackupDetail
+
+shared_imports:
+  - backup_summary_from_payload
+  - condition_types_true
+  - conditions_from_payload
+  - items
+  - storage_location_summary
+support_value_imports:
+  - string_dict
+summary_function: backup_summary_from_payload
+query_builder_function: build_list_query_params
+query_builder_in_shared: true
+
+operations: [list, get]
+
+list:
+  query_params: [limit, continue_token]
+  filters: []
+  count_field: backup_count
+  collection_field: backups
+  next_steps:
+    - rancher_backup_get
+    - rancher_restores_list
+
+get:
+  arg_name: backup_name
+  summary_copy_fields:
+    - summary_state
+  locals:
+    - name: metadata
+      expression: 'mapping_value(payload, "metadata") or {}'
+    - name: annotations
+      expression: 'mapping_value(metadata, "annotations") or {}'
+  extras:
+    - field: annotation_keys
+      expression: sorted(string_dict(annotations))
+    - field: condition_types_true
+      expression: condition_types_true(conditions_from_payload(payload))
+    - field: storage_location_summary
+      expression: storage_location_summary(payload)
+  include_link_keys: false
+  include_payload: true
+  next_steps:
+    - rancher_backups_list
+    - rancher_restores_list
+
+tools:
+  list:
+    name: rancher_backups_list
+    description: List Rancher Backup Operator Backup resources on the local cluster (cluster-scoped CRDs in resources.cattle.io/v1). Distinct from Norman /v3/etcdbackups (RKE etcd backups).
+    annotation_set: READ_ONLY
+  get:
+    name: rancher_backup_get
+    description: Fetch one Rancher Backup Operator Backup by name. Returns the curated summary plus storage location, condition states, annotation keys, and full payload.
+    annotation_set: READ_ONLY

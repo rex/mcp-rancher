@@ -315,10 +315,17 @@ domain at the depth defined in the plan.
   - Currently: CIS scan profiles + scans.
   - Add: scheduled-scan visibility, Kubewarden detection (where
     installed), policy-report reads.
-- [ ] **B-8** Deepen backup-restore pack (P4 / overlap P8)
-  - Currently: etcd backups (RKE).
-  - Add: Rancher backup operator backups + restore inspection (read
-    side; restore writes are P7).
+- [x] **B-8** Backup operator pack (P4 / overlap P8) — landed via J-2
+  - New pack `backup_operator`. 2 CRDs:
+    - Backup (`resources.cattle.io/v1`, cluster-scoped) —
+      list+get with schedule, retention, encryption-config,
+      resource-set, storage-location summary, latest filename
+      and timestamp, coarse summary_state from conditions.
+    - Restore (same group) — list+get with backupFilename,
+      prune flag, restoreCompletionTs, conditions.
+  - Distinct from RKE etcd backups (Norman, in `logging_backups`).
+  - Restore writes are P7 (Track E destructive); only read-side
+    inspection ships here.
 
 Definition of done for Phase 4: every catalog domain has at least one
 curated read tool, and the gaps doc (Track H) confirms parity.
