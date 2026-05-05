@@ -48,6 +48,42 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 
 ## Latest Logical Step
 
+- **Session complete: Track A + J-2 (B-1..B-4) landed in 5 commits.**
+  - `bb07d26` — Track A (4 quick fixes: A-1 Norman→Steve fix,
+    A-2 mutation-guard ToolError, A-3 anyio deprecation,
+    A-4 server-name env vars)
+  - `c9fbf3c` — J-2/B-2 networking (6 tools: ingresses,
+    network_policies, endpoint_slices)
+  - `0f4a214` — J-2/B-3 config_secrets (6 tools: configmaps,
+    secrets [masked], service_accounts)
+  - `f4fe9c3` — J-2/B-1 provisioning (8 tools: cluster_drivers,
+    node_drivers, cloud_credentials [masked], node_templates)
+  - `10a307c` — J-2/B-4 certificates (4 tools: certificates,
+    namespaced_certificates [PEM masked])
+  - Tool surface: 110 → 134 (+24 net new). Tests: 210 → 237.
+  - Coverage: 85.45%. All gates green every commit.
+  - Codegen: 49 → 65 files match descriptors (+16).
+  - Schema extensions during J-2: `active`, `driver`,
+    `cloud_credential_id` query kwargs.
+  - 4 new packs added to `_CODEGEN_PACKS`: `networking`,
+    `config_secrets`, `provisioning`, `certificates`.
+- **NEXT options (require user direction or design work)**:
+  - **J-2 / B-5..B-8** — deepening existing packs (monitoring,
+    logging, compliance, backup-restore). Each touches an
+    optional Rancher chart's CRDs (Banzai Logging, Rancher Backup
+    Operator, Kubewarden). Need capability-detection design
+    before shipping per-CRD tools that would 404 on clusters
+    where the chart isn't installed. Could ship "best-effort"
+    tools that return clean errors, or extend codegen schema
+    with a `requires_capability` field.
+  - **Track C** — Phase 5 stretch (elicitation, OAuth, metrics,
+    audit-trail). Each is a substantial standalone feature.
+  - **Track G** — live-validation matrix. Requires populated
+    lab + read-only prod access.
+  - **J-3** — extend codegen schema for write operations
+    (create/apply/patch/delete). Largest scope; biggest value
+    for Track D/E (safe writes / destructive writes via codegen).
+
 - **J-2 / B-4 certificates pack landed (partial).** 4 new tools
   for project-scoped and namespaced Rancher certificate
   inventory. Both Detail models omit payload (the Norman cert
