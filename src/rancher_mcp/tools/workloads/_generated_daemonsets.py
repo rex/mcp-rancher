@@ -122,14 +122,14 @@ async def _fetch_daemonset_get(
     summary = daemonset_summary_from_payload(payload)
 
     metadata = mapping_value(payload, "metadata") or {}
-    annotations = mapping_value(metadata, "annotations") or {}
+    metadata_annotations = mapping_value(metadata, "annotations") or {}
     detail = RancherDaemonSetDetail.model_validate(payload)
     return detail.model_copy(
         update={
             "id": summary.id,
             "ready": summary.ready,
             "container_images": summary.container_images,
-            "annotation_keys": sorted(string_dict(annotations)),
+            "annotation_keys": sorted(string_dict(metadata_annotations)),
             "payload": dict(payload),
             "suggested_next_steps": ["rancher_daemonsets_list", "rancher_pods_list"],
         }
@@ -186,14 +186,14 @@ async def _patch_daemonset_set_labels(
     summary = daemonset_summary_from_payload(payload)
 
     metadata = mapping_value(payload, "metadata") or {}
-    annotations = mapping_value(metadata, "annotations") or {}
+    metadata_annotations = mapping_value(metadata, "annotations") or {}
     detail = RancherDaemonSetDetail.model_validate(payload)
     return detail.model_copy(
         update={
             "id": summary.id,
             "ready": summary.ready,
             "container_images": summary.container_images,
-            "annotation_keys": sorted(string_dict(annotations)),
+            "annotation_keys": sorted(string_dict(metadata_annotations)),
             "payload": dict(payload),
             "suggested_next_steps": ["rancher_daemonset_get", "rancher_pods_list"],
         }
@@ -232,6 +232,80 @@ async def rancher_daemonset_set_labels(
             namespace,
             daemonset_name,
             labels,
+            managed_client,
+        )
+
+
+async def _patch_daemonset_set_annotations(
+    instance_name: str,
+    cluster_id: str,
+    namespace: str,
+    daemonset_name: str,
+    annotations: dict[str, str],
+    client: ManagementDiscoveryClient,
+) -> RancherDaemonSetDetail:
+    """Set_annotations one daemonset via JSON merge-patch; returns the curated detail."""
+
+    patch_subtree: dict[str, object] = {}
+    patch_subtree["annotations"] = annotations
+    if not patch_subtree:
+        raise RancherCapabilityError(
+            "No patch fields provided; every arg was None. Pass at least one field to update."
+        )
+    request_payload: dict[str, object] = {"metadata": patch_subtree}
+    payload = await client.patch_json(
+        workload_resource_path(cluster_id, namespace, "daemonsets", daemonset_name),
+        payload=request_payload,
+    )
+    summary = daemonset_summary_from_payload(payload)
+
+    metadata = mapping_value(payload, "metadata") or {}
+    metadata_annotations = mapping_value(metadata, "annotations") or {}
+    detail = RancherDaemonSetDetail.model_validate(payload)
+    return detail.model_copy(
+        update={
+            "id": summary.id,
+            "ready": summary.ready,
+            "container_images": summary.container_images,
+            "annotation_keys": sorted(string_dict(metadata_annotations)),
+            "payload": dict(payload),
+            "suggested_next_steps": ["rancher_daemonset_get"],
+        }
+    )
+
+
+@audit_mutation(operation="daemonset_set_annotations", plane="steve")
+@rate_limit_writes
+async def rancher_daemonset_set_annotations(
+    namespace: str,
+    daemonset_name: str,
+    annotations: dict[str, str],
+    cluster_id: str = "local",
+    instance: str | None = None,
+    settings: AppSettings | None = None,
+    client: ManagementDiscoveryClient | None = None,
+) -> RancherDaemonSetDetail:
+    """Set_annotations one daemonset via JSON merge-patch."""
+
+    resolved_settings = settings or get_settings()
+    instance_name, instance_config = resolve_instance(resolved_settings, instance)
+    ensure_instance_writable(instance_name, instance_config)
+    if client is not None:
+        return await _patch_daemonset_set_annotations(
+            instance_name,
+            cluster_id,
+            namespace,
+            daemonset_name,
+            annotations,
+            client,
+        )
+    async with RancherManagementClient(instance_name, instance_config) as managed_client:
+        return await _patch_daemonset_set_annotations(
+            instance_name,
+            cluster_id,
+            namespace,
+            daemonset_name,
+            annotations,
             managed_client,
         )
 
@@ -289,6 +363,24 @@ async def rancher_daemonset_set_labels_tool(
         namespace=namespace,
         daemonset_name=daemonset_name,
         labels=labels,
+        cluster_id=cluster_id,
+        instance=instance,
+    )
+
+
+async def rancher_daemonset_set_annotations_tool(
+    namespace: str,
+    daemonset_name: str,
+    annotations: dict[str, str],
+    cluster_id: str = "local",
+    instance: str | None = None,
+) -> RancherDaemonSetDetail:
+    """Public MCP wrapper for curated daemonset set_annotations."""
+
+    return await rancher_daemonset_set_annotations(
+        namespace=namespace,
+        daemonset_name=daemonset_name,
+        annotations=annotations,
         cluster_id=cluster_id,
         instance=instance,
     )
