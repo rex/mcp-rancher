@@ -7,6 +7,10 @@ codebase audit. Update it whenever a track item lands.
 
 - **Strategic intent** lives in `PERFECT_RANCHER_MCP_IMPLEMENTATION_PLAN.md`
   (read-mostly, defines what "perfect" means and the canonical phases).
+- **Tool-level inventory** lives in `docs/tool-catalog.md` (every
+  tool has a row with status; every gap has a Slice ID an agent can
+  be instructed against). Use the tool catalog when picking the
+  next slice; use this file for narrative context on the Track.
 - **Session state** lives in `TASK_STATE.md` (the resume file: latest
   logical step, current risks, active phase slices).
 - **Track-level execution plan** lives here.

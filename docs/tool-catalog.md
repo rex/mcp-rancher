@@ -1,0 +1,886 @@
+# Rancher MCP Tool Catalog
+
+**Authoritative, flat, per-tool registry.** This file enumerates
+every tool the server ultimately should provide, tracks which are
+built, and assigns an addressable slice ID to each gap so an agent
+can be instructed to ship a specific row without first reverse-
+engineering the codebase.
+
+Last updated: 2026-05-05 (after J-3 fifth slice).
+
+---
+
+## How to use this document
+
+### If you're an operator
+
+Search for a tool name (e.g. `rancher_pods_list`) to see what it
+does, what plane it uses, and whether it's built yet. The
+[Tool registry](#tool-registry) section is a flat searchable
+table. The [Status legend](#status-legend) explains the icons.
+
+### If you're an agent picking up work
+
+1. Read [Quick start](#quick-start) below for orientation.
+2. Read the **Status summary** for current totals.
+3. If the user gave you a specific Slice ID (e.g. "implement
+   `D-4-deployment-pause`"), jump to
+   [Slice queue](#slice-queue) and find the row. The slice
+   row has acceptance criteria, predecessor links, and a
+   complexity estimate. Do not read other planning files
+   first — the slice row is self-contained.
+4. If the user said "pick the next available slice", scan
+   [Slice queue](#slice-queue) for the first 🟢 unblocked row
+   in the current Track and take it.
+5. After landing a slice, update this file's status icon for
+   the affected tools AND the
+   [Status summary](#status-summary) counts.
+
+### If you're maintaining the catalog
+
+- **Adding a built tool**: change its row's status icon from
+  `🟡` to `✅`, fill in the descriptor file path, and update
+  the Status summary counts.
+- **Adding a planned tool**: insert a row in the right Track
+  section, assign a Slice ID following the naming convention
+  in [Slice ID convention](#slice-id-convention), and add
+  the row to [Slice queue](#slice-queue) if it's
+  agent-ready.
+- **Marking blocked / deferred / out-of-scope**: change the
+  status icon and add a one-line `Notes` entry. If blocked,
+  state on what.
+
+### Cross-references
+
+| File | Purpose | When to consult |
+|---|---|---|
+| `PERFECT_RANCHER_MCP_IMPLEMENTATION_PLAN.md` | Canonical strategic intent and Phase definitions | When questioning what "ultimately" means |
+| `catalog/capabilities.yaml` | Domain-level capability catalog (machine-readable) | When mapping tools to Rancher domains |
+| `ROADMAP.md` | Track-level work breakdown with check-state | When you need narrative context for a Track |
+| `TASK_STATE.md` | Session resume state, Latest Logical Step | When picking up a session |
+| `docs/codegen-curated-tools.md` | Codegen substrate — how to add new tools | When authoring a descriptor |
+| `docs/known-gaps.md` | Deferred / out-of-scope items (editorial) | When deciding why a tool wasn't built |
+| `CHANGELOG.md` | User-visible changes by date | When tracing when a tool landed |
+
+---
+
+## Quick start
+
+- **Tool surface today: 191 registered.** See
+  [Tool registry](#tool-registry).
+- **Estimated target: ~380 tools** at "perfect" coverage of
+  the 25-domain canonical plan. We're roughly 50% of the way.
+- **Substrate is feature-complete** for all 5 write verbs
+  (create / apply / patch / delete + read pair) — see
+  `docs/codegen-curated-tools.md`. Adding the next curated
+  tool is descriptor authorship + tests, not Python plumbing.
+- **Work is unblocked along Tracks B, D, F**: Phase 4 read
+  closure, Phase 6 safe writes, Phase 8 subsystem depth all
+  ship via descriptors today.
+- **Live-validation, OAuth, and elicitation** are blocked on
+  external dependencies — see [Blocked work](#blocked-work).
+
+---
+
+## Status legend
+
+| Icon | Meaning |
+|---|---|
+| ✅ | **Built** — registered and tested, descriptor or hand-written code committed |
+| 🟡 | **Planned** — gap from canonical plan / catalog; agent-ready when slice is in queue |
+| 🟠 | **Partial** — built but with documented limitations (see Notes) |
+| 🔴 | **Blocked** — needs external dep, design decision, or refactor before shipping |
+| ⚫ | **Deferred** — explicitly punted, see `docs/known-gaps.md` |
+| 🚫 | **Out of scope** — won't be built (workflow, websocket, etc.) |
+
+## Slice ID convention
+
+`<TRACK>-<INDEX>-<SHORT_SLUG>`:
+
+- **TRACK**: A-J letter from `ROADMAP.md` (A quick-fixes,
+  B Phase-4 reads, C Phase-5 stretch, D Phase-6 safe writes,
+  E Phase-7 destructive, F Phase-8 subsystems, G Phase-9
+  validation, H Phase-10 hardening, I Phase-11 gap closure,
+  J codegen substrate).
+- **INDEX**: numeric sequence within the track.
+- **SHORT_SLUG**: kebab-case description, primarily for
+  searchability (e.g. `D-4-deployment-pause`).
+
+Slice IDs are **stable** — never renumber, never reuse a
+deleted ID. If a slice is abandoned, mark it ⚫ deferred and
+keep the ID. New work gets the next available index.
+
+Some tools share a Slice ID (e.g. all Phase-4 read tools for
+the workloads pack share `B-?` because they landed in one
+descriptor migration commit). That's fine — Slice IDs map
+1:N to tool rows.
+
+---
+
+## Status summary
+
+| Bucket | Count |
+|---|---|
+| ✅ Built (registered tools) | **191** |
+| 🟡 Planned (gap from plan) | ~190 |
+| 🟠 Partial (documented limitations) | ~10 |
+| 🔴 Blocked (external dep / design) | ~12 |
+| ⚫ Deferred / accessible-elsewhere | see `docs/known-gaps.md` |
+| 🚫 Out-of-scope (workflow / websocket) | ~8 |
+| **Estimated target tool surface** | ~380 |
+| **Coverage** | ~50% |
+
+By plane:
+
+- **Norman** (`/v3`): 60+ tools
+- **Steve** (`/v1` + k8s-proxy): 110+ tools
+- **MCP-protocol** (resources, prompts): 4
+- **Generic** (escape hatches): 17 (Norman + Steve resource ops + watch)
+- **Operational rollups** (`ops` pack): 9 (composition, hand-written by design)
+
+---
+
+## Tool registry
+
+Built tools, organized by pack. Each row is one tool. The
+**Source** column points to the descriptor file (codegen) or
+the source module (hand-written).
+
+### Discovery and schema (16 tools — Phase 2 + 3)
+
+| Status | Tool | Plane | Verb | Source |
+|---|---|---|---|---|
+| ✅ | rancher_api_plane_list | both | discovery | `tools/discovery/` |
+| ✅ | rancher_capability_domain_list | meta | discovery | `tools/discovery/` |
+| ✅ | rancher_instance_list | meta | discovery | `tools/discovery/` |
+| ✅ | rancher_norman_schema_list | norman | discovery | `tools/discovery/` |
+| ✅ | rancher_norman_schema_get | norman | discovery | `tools/discovery/` |
+| ✅ | rancher_steve_schema_list | steve | discovery | `tools/discovery/` |
+| ✅ | rancher_steve_schema_get | steve | discovery | `tools/discovery/` |
+| ✅ | rancher_norman_resource_list | norman | list-generic | `tools/resources.py` |
+| ✅ | rancher_norman_resource_get | norman | get-generic | `tools/resources.py` |
+| ✅ | rancher_norman_resource_create | norman | create-generic | `tools/resource_mutations/` |
+| ✅ | rancher_norman_resource_apply | norman | apply-generic | `tools/resource_mutations/` |
+| ✅ | rancher_norman_resource_patch | norman | patch-generic | `tools/resource_mutations/` |
+| ✅ | rancher_norman_resource_delete | norman | delete-generic | `tools/resource_mutations/` |
+| ✅ | rancher_norman_resource_action_invoke | norman | action | `tools/resources.py` |
+| ✅ | rancher_norman_resource_link_follow | norman | link | `tools/resources.py` |
+| ✅ | rancher_steve_resource_list | steve | list-generic | `tools/resources.py` |
+| ✅ | rancher_steve_resource_get | steve | get-generic | `tools/resources.py` |
+| ✅ | rancher_steve_resource_create | steve | create-generic | `tools/resource_mutations/` |
+| ✅ | rancher_steve_resource_apply | steve | apply-generic | `tools/resource_mutations/` |
+| ✅ | rancher_steve_resource_patch | steve | patch-generic | `tools/resource_mutations/` |
+| ✅ | rancher_steve_resource_delete | steve | delete-generic | `tools/resource_mutations/` |
+| ✅ | rancher_steve_resource_action_invoke | steve | action | `tools/resources.py` |
+| ✅ | rancher_steve_resource_link_follow | steve | link | `tools/resources.py` |
+| ✅ | rancher_steve_resource_watch | steve | watch | `tools/resource_watch.py` |
+
+### Server / settings / features (5 tools — Phase 4)
+
+| Status | Tool | Plane | Verb | Source |
+|---|---|---|---|---|
+| ✅ | rancher_server_health | norman | health | `tools/discovery/` |
+| ✅ | rancher_server_version | norman | version | `tools/discovery/` |
+| ✅ | rancher_server_profile_get | norman | profile | `tools/discovery/` |
+| ✅ | rancher_settings_list | norman | list | `catalog/curated_tools/settings.yml` |
+| ✅ | rancher_setting_get | norman | get | `catalog/curated_tools/settings.yml` |
+| ✅ | rancher_features_list | norman | list | `catalog/curated_tools/features.yml` |
+| ✅ | rancher_feature_get | norman | get | `catalog/curated_tools/features.yml` |
+
+### Auth and identity (8 tools — Phase 4)
+
+| Status | Tool | Plane | Verb | Source |
+|---|---|---|---|---|
+| ✅ | rancher_users_list | norman | list | `catalog/curated_tools/users.yml` |
+| ✅ | rancher_user_get | norman | get | `catalog/curated_tools/users.yml` |
+| ✅ | rancher_groups_list | norman | list | `catalog/curated_tools/groups.yml` |
+| ✅ | rancher_group_get | norman | get | `catalog/curated_tools/groups.yml` |
+| ✅ | rancher_auth_configs_list | norman | list | `catalog/curated_tools/auth_configs.yml` |
+| ✅ | rancher_auth_config_get | norman | get | `catalog/curated_tools/auth_configs.yml` |
+
+### Global RBAC (10 tools — Phase 4)
+
+| Status | Tool | Plane | Verb | Source |
+|---|---|---|---|---|
+| ✅ | rancher_global_roles_list | norman | list | `catalog/curated_tools/global_roles.yml` |
+| ✅ | rancher_global_role_get | norman | get | `catalog/curated_tools/global_roles.yml` |
+| ✅ | rancher_role_templates_list | norman | list | `catalog/curated_tools/role_templates.yml` |
+| ✅ | rancher_role_template_get | norman | get | `catalog/curated_tools/role_templates.yml` |
+| ✅ | rancher_global_role_bindings_list | norman | list | `catalog/curated_tools/global_role_bindings.yml` |
+| ✅ | rancher_global_role_binding_get | norman | get | `catalog/curated_tools/global_role_bindings.yml` |
+| ✅ | rancher_cluster_role_template_bindings_list | norman | list | `catalog/curated_tools/cluster_role_template_bindings.yml` |
+| ✅ | rancher_cluster_role_template_binding_get | norman | get | `catalog/curated_tools/cluster_role_template_bindings.yml` |
+| ✅ | rancher_project_role_template_bindings_list | norman | list | `catalog/curated_tools/project_role_template_bindings.yml` |
+| ✅ | rancher_project_role_template_binding_get | norman | get | `catalog/curated_tools/project_role_template_bindings.yml` |
+
+### Clusters and nodes (8 tools — Phase 4)
+
+| Status | Tool | Plane | Verb | Source |
+|---|---|---|---|---|
+| ✅ | rancher_clusters_list | norman | list | `catalog/curated_tools/clusters.yml` |
+| ✅ | rancher_cluster_get | norman | get | `catalog/curated_tools/clusters.yml` |
+| ✅ | rancher_nodes_list | norman | list | `catalog/curated_tools/nodes.yml` |
+| ✅ | rancher_node_get | norman | get | `catalog/curated_tools/nodes.yml` |
+| ✅ | rancher_clusters_health_summary | norman | aggregate | `tools/ops/` |
+| ✅ | rancher_cluster_health_check | both | aggregate | `tools/ops/` |
+| ✅ | rancher_cluster_nodes_summary | both | aggregate | `tools/ops/` |
+| ✅ | rancher_cluster_events_list | steve | list-curated | `tools/ops/` |
+
+### Projects and namespaces (5 tools — Phase 4)
+
+| Status | Tool | Plane | Verb | Source |
+|---|---|---|---|---|
+| ✅ | rancher_projects_list | norman | list | `catalog/curated_tools/projects.yml` |
+| ✅ | rancher_project_get | norman | get | `catalog/curated_tools/projects.yml` |
+| ✅ | rancher_namespaces_list | steve | list | `catalog/curated_tools/namespaces.yml` |
+| ✅ | rancher_namespace_get | steve | get | `catalog/curated_tools/namespaces.yml` |
+| 🟠 | rancher_project_health_summary | mixed | aggregate | `tools/ops/rollups.py` (A-1 fix landed) |
+| ✅ | rancher_namespace_workloads_summary | both | aggregate | `tools/ops/` |
+
+### Provisioning (8 tools — Phase 4 / Track B-1)
+
+| Status | Tool | Plane | Verb | Source |
+|---|---|---|---|---|
+| ✅ | rancher_cluster_drivers_list | norman | list | `catalog/curated_tools/cluster_drivers.yml` |
+| ✅ | rancher_cluster_driver_get | norman | get | `catalog/curated_tools/cluster_drivers.yml` |
+| ✅ | rancher_node_drivers_list | norman | list | `catalog/curated_tools/node_drivers.yml` |
+| ✅ | rancher_node_driver_get | norman | get | `catalog/curated_tools/node_drivers.yml` |
+| ✅ | rancher_cloud_credentials_list | norman | list | `catalog/curated_tools/cloud_credentials.yml` |
+| ✅ | rancher_cloud_credential_get | norman | get | `catalog/curated_tools/cloud_credentials.yml` |
+| ✅ | rancher_node_templates_list | norman | list | `catalog/curated_tools/node_templates.yml` |
+| ✅ | rancher_node_template_get | norman | get | `catalog/curated_tools/node_templates.yml` |
+
+### Workloads (6 tools — Phase 4 + this session's writes)
+
+| Status | Tool | Plane | Verb | Source |
+|---|---|---|---|---|
+| ✅ | rancher_deployments_list | k8s-proxy | list | `catalog/curated_tools/deployments.yml` |
+| ✅ | rancher_deployment_get | k8s-proxy | get | `catalog/curated_tools/deployments.yml` |
+| ✅ | rancher_deployment_scale | k8s-proxy | patch | `catalog/curated_tools/deployments.yml` (J-3) |
+| ✅ | rancher_deployment_delete | k8s-proxy | delete | `catalog/curated_tools/deployments.yml` (J-3) |
+| ✅ | rancher_daemonsets_list | k8s-proxy | list | `catalog/curated_tools/daemonsets.yml` |
+| ✅ | rancher_daemonset_get | k8s-proxy | get | `catalog/curated_tools/daemonsets.yml` |
+| ✅ | rancher_statefulsets_list | k8s-proxy | list | `catalog/curated_tools/statefulsets.yml` |
+| ✅ | rancher_statefulset_get | k8s-proxy | get | `catalog/curated_tools/statefulsets.yml` |
+| ✅ | rancher_statefulset_scale | k8s-proxy | patch | `catalog/curated_tools/statefulsets.yml` (J-3) |
+
+### Batch workloads — Job, CronJob (4 tools — Phase 4 / Track B)
+
+| Status | Tool | Plane | Verb | Source |
+|---|---|---|---|---|
+| ✅ | rancher_jobs_list | k8s-proxy | list | `catalog/curated_tools/jobs.yml` |
+| ✅ | rancher_job_get | k8s-proxy | get | `catalog/curated_tools/jobs.yml` |
+| ✅ | rancher_cron_jobs_list | k8s-proxy | list | `catalog/curated_tools/cron_jobs.yml` |
+| ✅ | rancher_cron_job_get | k8s-proxy | get | `catalog/curated_tools/cron_jobs.yml` |
+
+### Pods and services (5 tools — Phase 4)
+
+| Status | Tool | Plane | Verb | Source |
+|---|---|---|---|---|
+| ✅ | rancher_pods_list | steve | list | `catalog/curated_tools/pods.yml` |
+| ✅ | rancher_pod_get | steve | get | `catalog/curated_tools/pods.yml` |
+| ✅ | rancher_services_list | steve | list | `catalog/curated_tools/services.yml` |
+| ✅ | rancher_service_get | steve | get | `catalog/curated_tools/services.yml` |
+| ✅ | rancher_find_failing_pods | both | aggregate | `tools/ops/` |
+| ✅ | rancher_find_services_without_endpoints | k8s-proxy | aggregate | `tools/ops/` |
+| ✅ | rancher_find_stalled_rollouts | k8s-proxy | aggregate | `tools/ops/` |
+
+### Networking (6 tools — Phase 4 / Track B-2)
+
+| Status | Tool | Plane | Verb | Source |
+|---|---|---|---|---|
+| ✅ | rancher_ingresses_list | k8s-proxy | list | `catalog/curated_tools/ingresses.yml` |
+| ✅ | rancher_ingress_get | k8s-proxy | get | `catalog/curated_tools/ingresses.yml` |
+| ✅ | rancher_network_policies_list | k8s-proxy | list | `catalog/curated_tools/network_policies.yml` |
+| ✅ | rancher_network_policy_get | k8s-proxy | get | `catalog/curated_tools/network_policies.yml` |
+| ✅ | rancher_endpoint_slices_list | k8s-proxy | list | `catalog/curated_tools/endpoint_slices.yml` |
+| ✅ | rancher_endpoint_slice_get | k8s-proxy | get | `catalog/curated_tools/endpoint_slices.yml` |
+
+### Storage (7 tools — Phase 4)
+
+| Status | Tool | Plane | Verb | Source |
+|---|---|---|---|---|
+| ✅ | rancher_storage_classes_list | k8s-proxy | list | `catalog/curated_tools/storage_classes.yml` |
+| ✅ | rancher_storage_class_get | k8s-proxy | get | `catalog/curated_tools/storage_classes.yml` |
+| ✅ | rancher_persistent_volumes_list | k8s-proxy | list | `catalog/curated_tools/persistent_volumes.yml` |
+| ✅ | rancher_persistent_volume_get | k8s-proxy | get | `catalog/curated_tools/persistent_volumes.yml` |
+| ✅ | rancher_persistent_volume_claims_list | k8s-proxy | list | `catalog/curated_tools/persistent_volume_claims.yml` |
+| ✅ | rancher_persistent_volume_claim_get | k8s-proxy | get | `catalog/curated_tools/persistent_volume_claims.yml` |
+| ✅ | rancher_find_unbound_pvcs | k8s-proxy | aggregate | `tools/ops/` |
+
+### Disruption — PodDisruptionBudget (3 tools — Phase 4)
+
+| Status | Tool | Plane | Verb | Source |
+|---|---|---|---|---|
+| ✅ | rancher_pod_disruption_budgets_list | k8s-proxy | list | `catalog/curated_tools/pod_disruption_budgets.yml` |
+| ✅ | rancher_pod_disruption_budget_get | k8s-proxy | get | `catalog/curated_tools/pod_disruption_budgets.yml` |
+| ✅ | rancher_find_pdbs_blocking | k8s-proxy | aggregate | `tools/ops/` |
+
+### Config and secrets (10 tools — Phase 4 + this session's writes)
+
+| Status | Tool | Plane | Verb | Source |
+|---|---|---|---|---|
+| ✅ | rancher_config_maps_list | k8s-proxy | list | `catalog/curated_tools/configmaps.yml` |
+| ✅ | rancher_config_map_get | k8s-proxy | get | `catalog/curated_tools/configmaps.yml` |
+| ✅ | rancher_config_map_create | k8s-proxy | create | `catalog/curated_tools/configmaps.yml` (J-3) |
+| ✅ | rancher_config_map_apply | k8s-proxy | apply | `catalog/curated_tools/configmaps.yml` (J-3) |
+| ✅ | rancher_config_map_delete | k8s-proxy | delete | `catalog/curated_tools/configmaps.yml` (J-3) |
+| ✅ | rancher_secrets_list | k8s-proxy | list | `catalog/curated_tools/secrets.yml` |
+| ✅ | rancher_secret_get | k8s-proxy | get | `catalog/curated_tools/secrets.yml` |
+| ✅ | rancher_secret_create | k8s-proxy | create | `catalog/curated_tools/secrets.yml` (J-3) |
+| ✅ | rancher_service_accounts_list | k8s-proxy | list | `catalog/curated_tools/service_accounts.yml` |
+| ✅ | rancher_service_account_get | k8s-proxy | get | `catalog/curated_tools/service_accounts.yml` |
+
+### Apps and catalogs (6 tools — Phase 4)
+
+| Status | Tool | Plane | Verb | Source |
+|---|---|---|---|---|
+| ✅ | rancher_catalogs_list | norman | list | `catalog/curated_tools/catalogs.yml` |
+| ✅ | rancher_catalog_get | norman | get | `catalog/curated_tools/catalogs.yml` |
+| ✅ | rancher_templates_list | norman | list | `catalog/curated_tools/templates.yml` |
+| ✅ | rancher_template_get | norman | get | `catalog/curated_tools/templates.yml` |
+| ✅ | rancher_template_versions_list | norman | list | `catalog/curated_tools/template_versions.yml` |
+| ✅ | rancher_template_version_get | norman | get | `catalog/curated_tools/template_versions.yml` |
+
+### Fleet registration (4 tools — Phase 4)
+
+| Status | Tool | Plane | Verb | Source |
+|---|---|---|---|---|
+| ✅ | rancher_fleet_workspaces_list | norman | list | `catalog/curated_tools/fleet_workspaces.yml` |
+| ✅ | rancher_fleet_workspace_get | norman | get | `catalog/curated_tools/fleet_workspaces.yml` |
+| ✅ | rancher_cluster_registration_tokens_list | norman | list | `catalog/curated_tools/cluster_registration_tokens.yml` |
+| ✅ | rancher_cluster_registration_token_get | norman | get | `catalog/curated_tools/cluster_registration_tokens.yml` |
+
+### Logging and backups — Rancher legacy (6 tools — Phase 4)
+
+| Status | Tool | Plane | Verb | Source |
+|---|---|---|---|---|
+| ✅ | rancher_cluster_loggings_list | norman | list | `catalog/curated_tools/cluster_loggings.yml` |
+| ✅ | rancher_cluster_logging_get | norman | get | `catalog/curated_tools/cluster_loggings.yml` |
+| ✅ | rancher_project_loggings_list | norman | list | `catalog/curated_tools/project_loggings.yml` |
+| ✅ | rancher_project_logging_get | norman | get | `catalog/curated_tools/project_loggings.yml` |
+| ✅ | rancher_etcd_backups_list | norman | list | `catalog/curated_tools/etcd_backups.yml` |
+| ✅ | rancher_etcd_backup_get | norman | get | `catalog/curated_tools/etcd_backups.yml` |
+
+### Logging pipeline — Banzai (8 tools — Track B-6)
+
+| Status | Tool | Plane | Verb | Source |
+|---|---|---|---|---|
+| ✅ | rancher_outputs_list | k8s-proxy | list | `catalog/curated_tools/outputs.yml` |
+| ✅ | rancher_output_get | k8s-proxy | get | `catalog/curated_tools/outputs.yml` |
+| ✅ | rancher_cluster_outputs_list | k8s-proxy | list | `catalog/curated_tools/cluster_outputs.yml` |
+| ✅ | rancher_cluster_output_get | k8s-proxy | get | `catalog/curated_tools/cluster_outputs.yml` |
+| ✅ | rancher_flows_list | k8s-proxy | list | `catalog/curated_tools/flows.yml` |
+| ✅ | rancher_flow_get | k8s-proxy | get | `catalog/curated_tools/flows.yml` |
+| ✅ | rancher_cluster_flows_list | k8s-proxy | list | `catalog/curated_tools/cluster_flows.yml` |
+| ✅ | rancher_cluster_flow_get | k8s-proxy | get | `catalog/curated_tools/cluster_flows.yml` |
+
+Note: optional Banzai chart — tools 404 if chart isn't installed.
+
+### Monitoring and alerting (5 tools — Phase 4)
+
+| Status | Tool | Plane | Verb | Source |
+|---|---|---|---|---|
+| ✅ | rancher_monitoring_status | both | capability | `tools/monitoring.py` (hand-written) |
+| ✅ | rancher_notifiers_list | norman | list | `catalog/curated_tools/notifiers.yml` |
+| ✅ | rancher_notifier_get | norman | get | `catalog/curated_tools/notifiers.yml` |
+| ✅ | rancher_cluster_alert_rules_list | norman | list | `catalog/curated_tools/cluster_alert_rules.yml` |
+| ✅ | rancher_cluster_alert_rule_get | norman | get | `catalog/curated_tools/cluster_alert_rules.yml` |
+
+### Prometheus monitoring CRDs — kube-prometheus-stack (6 tools — Track B-5)
+
+| Status | Tool | Plane | Verb | Source |
+|---|---|---|---|---|
+| ✅ | rancher_prometheus_rules_list | k8s-proxy | list | `catalog/curated_tools/prometheus_rules.yml` |
+| ✅ | rancher_prometheus_rule_get | k8s-proxy | get | `catalog/curated_tools/prometheus_rules.yml` |
+| ✅ | rancher_service_monitors_list | k8s-proxy | list | `catalog/curated_tools/service_monitors.yml` |
+| ✅ | rancher_service_monitor_get | k8s-proxy | get | `catalog/curated_tools/service_monitors.yml` |
+| ✅ | rancher_pod_monitors_list | k8s-proxy | list | `catalog/curated_tools/pod_monitors.yml` |
+| ✅ | rancher_pod_monitor_get | k8s-proxy | get | `catalog/curated_tools/pod_monitors.yml` |
+
+Note: optional kube-prometheus-stack chart — tools 404 if chart isn't installed.
+
+### Compliance — CIS scans + PolicyReports (8 tools — Phase 4 / Track B-7)
+
+| Status | Tool | Plane | Verb | Source |
+|---|---|---|---|---|
+| ✅ | rancher_cis_scan_profiles_list | norman | list | `catalog/curated_tools/cis_scan_profiles.yml` |
+| ✅ | rancher_cis_scan_profile_get | norman | get | `catalog/curated_tools/cis_scan_profiles.yml` |
+| ✅ | rancher_cis_scans_list | norman | list | `catalog/curated_tools/cis_scans.yml` |
+| ✅ | rancher_cis_scan_get | norman | get | `catalog/curated_tools/cis_scans.yml` |
+| ✅ | rancher_policy_reports_list | k8s-proxy | list | `catalog/curated_tools/policy_reports.yml` |
+| ✅ | rancher_policy_report_get | k8s-proxy | get | `catalog/curated_tools/policy_reports.yml` |
+| ✅ | rancher_cluster_policy_reports_list | k8s-proxy | list | `catalog/curated_tools/cluster_policy_reports.yml` |
+| ✅ | rancher_cluster_policy_report_get | k8s-proxy | get | `catalog/curated_tools/cluster_policy_reports.yml` |
+
+### Certificates — Rancher Norman (4 tools — Track B-4)
+
+| Status | Tool | Plane | Verb | Source |
+|---|---|---|---|---|
+| ✅ | rancher_certificates_list | norman | list | `catalog/curated_tools/certificates.yml` |
+| ✅ | rancher_certificate_get | norman | get | `catalog/curated_tools/certificates.yml` |
+| ✅ | rancher_namespaced_certificates_list | norman | list | `catalog/curated_tools/namespaced_certificates.yml` |
+| ✅ | rancher_namespaced_certificate_get | norman | get | `catalog/curated_tools/namespaced_certificates.yml` |
+
+### Cert-manager CRDs (6 tools — Track B-4)
+
+| Status | Tool | Plane | Verb | Source |
+|---|---|---|---|---|
+| ✅ | rancher_cert_manager_certificates_list | k8s-proxy | list | `catalog/curated_tools/cert_manager_certificates.yml` |
+| ✅ | rancher_cert_manager_certificate_get | k8s-proxy | get | `catalog/curated_tools/cert_manager_certificates.yml` |
+| ✅ | rancher_cert_manager_issuers_list | k8s-proxy | list | `catalog/curated_tools/cert_manager_issuers.yml` |
+| ✅ | rancher_cert_manager_issuer_get | k8s-proxy | get | `catalog/curated_tools/cert_manager_issuers.yml` |
+| ✅ | rancher_cert_manager_cluster_issuers_list | k8s-proxy | list | `catalog/curated_tools/cert_manager_cluster_issuers.yml` |
+| ✅ | rancher_cert_manager_cluster_issuer_get | k8s-proxy | get | `catalog/curated_tools/cert_manager_cluster_issuers.yml` |
+
+### Backup operator — Rancher Backup (4 tools — Track B-8)
+
+| Status | Tool | Plane | Verb | Source |
+|---|---|---|---|---|
+| ✅ | rancher_backups_list | k8s-proxy | list | `catalog/curated_tools/backups.yml` |
+| ✅ | rancher_backup_get | k8s-proxy | get | `catalog/curated_tools/backups.yml` |
+| ✅ | rancher_restores_list | k8s-proxy | list | `catalog/curated_tools/restores.yml` |
+| ✅ | rancher_restore_get | k8s-proxy | get | `catalog/curated_tools/restores.yml` |
+
+### Longhorn (8 tools — Track F-1)
+
+| Status | Tool | Plane | Verb | Source |
+|---|---|---|---|---|
+| ✅ | rancher_longhorn_volumes_list | k8s-proxy | list | `catalog/curated_tools/longhorn_volumes.yml` |
+| ✅ | rancher_longhorn_volume_get | k8s-proxy | get | `catalog/curated_tools/longhorn_volumes.yml` |
+| ✅ | rancher_longhorn_nodes_list | k8s-proxy | list | `catalog/curated_tools/longhorn_nodes.yml` |
+| ✅ | rancher_longhorn_node_get | k8s-proxy | get | `catalog/curated_tools/longhorn_nodes.yml` |
+| ✅ | rancher_longhorn_backups_list | k8s-proxy | list | `catalog/curated_tools/longhorn_backups.yml` |
+| ✅ | rancher_longhorn_backup_get | k8s-proxy | get | `catalog/curated_tools/longhorn_backups.yml` |
+| ✅ | rancher_longhorn_snapshots_list | k8s-proxy | list | `catalog/curated_tools/longhorn_snapshots.yml` |
+| ✅ | rancher_longhorn_snapshot_get | k8s-proxy | get | `catalog/curated_tools/longhorn_snapshots.yml` |
+
+Note: optional Longhorn chart — tools 404 if chart isn't installed.
+
+### Governance — HPA / ResourceQuota / LimitRange (6 tools — Phase 4)
+
+| Status | Tool | Plane | Verb | Source |
+|---|---|---|---|---|
+| ✅ | rancher_horizontal_pod_autoscalers_list | k8s-proxy | list | `catalog/curated_tools/horizontal_pod_autoscalers.yml` |
+| ✅ | rancher_horizontal_pod_autoscaler_get | k8s-proxy | get | `catalog/curated_tools/horizontal_pod_autoscalers.yml` |
+| ✅ | rancher_resource_quotas_list | k8s-proxy | list | `catalog/curated_tools/resource_quotas.yml` |
+| ✅ | rancher_resource_quota_get | k8s-proxy | get | `catalog/curated_tools/resource_quotas.yml` |
+| ✅ | rancher_limit_ranges_list | k8s-proxy | list | `catalog/curated_tools/limit_ranges.yml` |
+| ✅ | rancher_limit_range_get | k8s-proxy | get | `catalog/curated_tools/limit_ranges.yml` |
+
+### Scheduling — PriorityClass / RuntimeClass (4 tools — Phase 4)
+
+| Status | Tool | Plane | Verb | Source |
+|---|---|---|---|---|
+| ✅ | rancher_priority_classes_list | k8s-proxy | list | `catalog/curated_tools/priority_classes.yml` |
+| ✅ | rancher_priority_class_get | k8s-proxy | get | `catalog/curated_tools/priority_classes.yml` |
+| ✅ | rancher_runtime_classes_list | k8s-proxy | list | `catalog/curated_tools/runtime_classes.yml` |
+| ✅ | rancher_runtime_class_get | k8s-proxy | get | `catalog/curated_tools/runtime_classes.yml` |
+
+### Diagnostics ops aggregates (5 tools — Phase 4)
+
+| Status | Tool | Plane | Verb | Source |
+|---|---|---|---|---|
+| ✅ | rancher_find_failing_pods | both | aggregate | `tools/ops/` |
+| ✅ | rancher_find_unbound_pvcs | k8s-proxy | aggregate | `tools/ops/` |
+| ✅ | rancher_find_unready_nodes | norman | aggregate | `tools/ops/` |
+| ✅ | rancher_find_pdbs_blocking | k8s-proxy | aggregate | `tools/ops/` |
+| ✅ | rancher_find_services_without_endpoints | k8s-proxy | aggregate | `tools/ops/` |
+| ✅ | rancher_find_stalled_rollouts | k8s-proxy | aggregate | `tools/ops/` |
+
+---
+
+## Planned tools
+
+Tools enumerated in the canonical plan (Sections 1-26) that are
+not yet built. Each row carries a Slice ID. Use the Slice ID to
+direct an agent: "implement `D-2-namespace-create`".
+
+### Track D — Phase 6 safe writes (~25 planned)
+
+These leverage the J-3 substrate. Each is descriptor authorship
++ tests. Decorator stack and confirmation patterns are already
+established.
+
+| Slice ID | Tool | Plane | Verb | Notes |
+|---|---|---|---|---|
+| D-1-pod-label-write | rancher_pod_set_labels | k8s-proxy | patch | target_path: metadata.labels; replace map |
+| D-1-deployment-set-labels | rancher_deployment_set_labels | k8s-proxy | patch | same pattern, different resource |
+| D-1-namespace-set-labels | rancher_namespace_set_labels | k8s-proxy or steve | patch | namespace metadata.labels |
+| D-1-pod-set-annotations | rancher_pod_set_annotations | k8s-proxy | patch | target_path: metadata.annotations |
+| D-1-node-set-labels | rancher_node_set_labels | both | patch | norman first; node labels |
+| D-2-namespace-create | rancher_namespace_create | steve | create | cluster-scoped; **steve write reliability needs verification on 2.6.5** |
+| D-2-namespace-apply | rancher_namespace_apply | steve | apply | mirror of create |
+| D-2-namespace-delete | rancher_namespace_delete | steve | delete | DESTRUCTIVE |
+| D-2-project-create | rancher_project_create | norman | create | Norman plane; live-validated as working |
+| D-2-project-apply | rancher_project_apply | norman | apply | mirror of create |
+| D-2-project-delete | rancher_project_delete | norman | delete | DESTRUCTIVE; cascades to namespaces |
+| D-3-cluster-member-add | rancher_cluster_member_add | norman | create-binding | creates ClusterRoleTemplateBinding |
+| D-3-cluster-member-remove | rancher_cluster_member_remove | norman | delete-binding | deletes binding by id |
+| D-3-project-member-add | rancher_project_member_add | norman | create-binding | mirror for project |
+| D-3-project-member-remove | rancher_project_member_remove | norman | delete-binding | mirror for project |
+| D-3-crtb-create | rancher_cluster_role_template_binding_create | norman | create | low-level CRTB write |
+| D-3-crtb-delete | rancher_cluster_role_template_binding_delete | norman | delete | DESTRUCTIVE |
+| D-3-prtb-create | rancher_project_role_template_binding_create | norman | create | low-level PRTB write |
+| D-3-prtb-delete | rancher_project_role_template_binding_delete | norman | delete | DESTRUCTIVE |
+| D-4-deployment-pause | rancher_deployment_pause | k8s-proxy | patch | verb=pause, target_path=spec, paused: bool. Currently needs separate descriptor file (substrate evolution: `patches: list[PatchConfig]` would consolidate) |
+| D-4-deployment-resume | rancher_deployment_resume | k8s-proxy | patch | mirror of pause; paused=false. Could be single tool with bool arg instead. |
+| D-4-deployment-restart | rancher_deployment_restart | k8s-proxy | patch | sets `spec.template.metadata.annotations.kubectl.kubernetes.io/restartedAt`; needs deeper target_path or composer |
+| D-4-daemonset-restart | rancher_daemonset_restart | k8s-proxy | patch | same restart pattern |
+| D-4-cronjob-suspend | rancher_cronjob_suspend | k8s-proxy | patch | spec.suspend=true |
+| D-4-cronjob-resume | rancher_cronjob_resume | k8s-proxy | patch | spec.suspend=false |
+| D-4-cronjob-trigger | rancher_cronjob_trigger | k8s-proxy | create-job | creates child Job from CronJob spec; **needs custom composer** |
+| D-5-catalog-refresh | rancher_catalog_refresh | norman | action | Norman action invocation; existing generic action tool covers this — possibly a thin wrapper |
+| D-5-app-upgrade | rancher_app_upgrade | norman | action | safe upgrades only; chart contract guarantees |
+
+### Track E — Phase 7 destructive writes (~15 planned)
+
+Higher risk. Each requires confirmation phrase OR (preferred)
+Track C-1 elicitation. The current confirmation-phrase pattern
+is acceptable as a v1.
+
+| Slice ID | Tool | Plane | Verb | Notes |
+|---|---|---|---|---|
+| E-1-node-cordon | rancher_node_cordon | both | patch / action | spec.unschedulable=true |
+| E-1-node-uncordon | rancher_node_uncordon | both | patch / action | spec.unschedulable=false |
+| E-1-node-drain | rancher_node_drain | norman | action | long-running; needs progress notifications |
+| E-1-node-drain-status | rancher_node_drain_status | norman | get | poll companion |
+| E-1-node-delete | rancher_node_delete | norman | delete | DESTRUCTIVE; replaces machine in CAPI clusters |
+| E-2-app-rollback | rancher_app_rollback | norman | action | revert to prior chart revision |
+| E-2-app-delete | rancher_app_delete | norman | delete | DESTRUCTIVE |
+| E-3-cluster-cert-rotate | rancher_cluster_cert_rotate | norman | action | cluster-wide cert rotation |
+| E-3-service-cert-rotate | rancher_service_cert_rotate | norman | action | per-service rotation |
+| E-4-etcd-backup-create | rancher_etcd_backup_create | norman | create | snapshot now |
+| E-4-etcd-restore | rancher_etcd_restore | norman | action | RKE etcd restore |
+| E-5-rancher-backup-restore | rancher_backup_operator_restore | k8s-proxy | create-restore | apply Restore CR |
+| E-6-cluster-delete | rancher_cluster_delete | norman | delete | DESTRUCTIVE; orphans downstream |
+| E-6-cluster-upgrade | rancher_cluster_upgrade | norman | action | bump cluster version |
+| E-6-feature-flag-toggle | rancher_feature_flag_set | norman | patch | risky flags require Tier-3 confirmation |
+
+### Track F — Phase 8 subsystem depth (~20 planned)
+
+Beyond the Track B/D/E core. These open new subsystem packs.
+
+| Slice ID | Tool | Plane | Verb | Notes |
+|---|---|---|---|---|
+| F-1-longhorn-volume-expand | rancher_longhorn_volume_expand | k8s-proxy | patch | Longhorn volume expand workflow |
+| F-1-longhorn-snapshot-create | rancher_longhorn_snapshot_create | k8s-proxy | create | Longhorn snapshot |
+| F-1-longhorn-snapshot-delete | rancher_longhorn_snapshot_delete | k8s-proxy | delete | DESTRUCTIVE |
+| F-1-longhorn-backup-create | rancher_longhorn_backup_create | k8s-proxy | create | Longhorn backup |
+| F-1-longhorn-settings-list | rancher_longhorn_settings_list | k8s-proxy | list | Setting CRD inspection |
+| F-1-longhorn-backup-target-get | rancher_longhorn_backup_target_get | k8s-proxy | get | BackupTarget CRD |
+| F-1-longhorn-recurring-job-list | rancher_longhorn_recurring_jobs_list | k8s-proxy | list | RecurringJob CRD |
+| F-2-rancher-backup-config-get | rancher_backup_config_get | k8s-proxy | get | backup operator config |
+| F-2-rancher-backup-encryption-get | rancher_backup_encryption_get | k8s-proxy | get | encryption config |
+| F-3-extension-catalog-list | rancher_extensions_list | norman | list | UI extension catalog |
+| F-3-extension-install | rancher_extension_install | norman | action | install extension |
+| F-3-extension-remove | rancher_extension_remove | norman | action | remove extension |
+| F-4-kubewarden-policy-list | rancher_kubewarden_admission_policies_list | k8s-proxy | list | AdmissionPolicy CRD |
+| F-4-kubewarden-policy-get | rancher_kubewarden_admission_policy_get | k8s-proxy | get | AdmissionPolicy detail |
+| F-4-kubewarden-cluster-policy-list | rancher_kubewarden_cluster_admission_policies_list | k8s-proxy | list | ClusterAdmissionPolicy |
+| F-4-kubewarden-cluster-policy-get | rancher_kubewarden_cluster_admission_policy_get | k8s-proxy | get | ClusterAdmissionPolicy detail |
+| F-5-fleet-cluster-list | rancher_fleet_clusters_list | k8s-proxy | list | Fleet cluster Custom Resource |
+| F-5-fleet-cluster-get | rancher_fleet_cluster_get | k8s-proxy | get | Fleet cluster detail |
+| F-5-fleet-gitrepos-list | rancher_fleet_gitrepos_list | k8s-proxy | list | Fleet GitRepo CR |
+| F-5-fleet-gitrepo-get | rancher_fleet_gitrepo_get | k8s-proxy | get | Fleet GitRepo detail |
+| F-5-fleet-bundles-list | rancher_fleet_bundles_list | k8s-proxy | list | Fleet Bundle CR |
+| F-5-fleet-bundle-get | rancher_fleet_bundle_get | k8s-proxy | get | Fleet Bundle detail |
+| F-5-fleet-bundle-deployments-list | rancher_fleet_bundle_deployments_list | k8s-proxy | list | BundleDeployment CR |
+| F-5-fleet-cluster-groups-list | rancher_fleet_cluster_groups_list | k8s-proxy | list | ClusterGroup CR |
+
+### Track B-residual — Phase 4 close-out (~15 planned)
+
+Plan-level Phase 4 items not yet built. These close the read
+surface to parity with `catalog/capabilities.yaml`.
+
+| Slice ID | Tool | Plane | Verb | Notes |
+|---|---|---|---|---|
+| B-9-replicasets-list | rancher_replicasets_list | k8s-proxy | list | apps/v1 ReplicaSet (rarely-curated; may be left to generic) |
+| B-9-replicaset-get | rancher_replicaset_get | k8s-proxy | get | as above |
+| B-10-volume-snapshot-list | rancher_volume_snapshots_list | k8s-proxy | list | VolumeSnapshot CRD (snapshot.storage.k8s.io) |
+| B-10-volume-snapshot-get | rancher_volume_snapshot_get | k8s-proxy | get | as above |
+| B-10-volume-snapshot-class-list | rancher_volume_snapshot_classes_list | k8s-proxy | list | VolumeSnapshotClass |
+| B-10-volume-snapshot-class-get | rancher_volume_snapshot_class_get | k8s-proxy | get | as above |
+| B-11-api-keys-list | rancher_api_keys_list | norman | list | Norman tokens |
+| B-11-api-key-get | rancher_api_key_get | norman | get | Norman token detail |
+| B-11-principal-search | rancher_principal_search | norman | action | search auth-provider users/groups |
+| B-12-machine-configs-list | rancher_machine_configs_list | k8s-proxy | list | rke-machine-config.cattle.io CRD; deferred per ROADMAP |
+| B-12-machine-pools-list | rancher_machine_pools_list | k8s-proxy | list | provisioning.cattle.io clusters machinePools field |
+| B-13-component-status-list | rancher_component_statuses_list | k8s-proxy | list | core/v1 ComponentStatus (legacy but still appears) |
+| B-13-cluster-conditions-get | rancher_cluster_conditions_get | norman | aggregate | could enhance existing rancher_cluster_get |
+| B-14-pod-events-list | rancher_pod_events_list | k8s-proxy | list | events filtered to one pod (already accessible via cluster_events) |
+
+### Track C-residual — Phase 5 stretch (3 blocked)
+
+| Slice ID | Tool / Feature | Status | Notes |
+|---|---|---|---|
+| C-1-elicitation | MCP elicitation flow | 🔴 BLOCKED | Needs MCP SDK 1.1+ feature check |
+| C-2-oauth-pkce | OAuth 2.0 PKCE | 🔴 BLOCKED | Multi-day refactor; needs design |
+| C-3-metrics-http | `/metrics` HTTP endpoint | 🚫 OUT-OF-SCOPE | Stdio MCP transport; log-based metrics already landed |
+
+### Track G — Phase 9 live validation (4 blocked on lab/prod)
+
+| Slice ID | Item | Status | Notes |
+|---|---|---|---|
+| G-1-prod-read-validation | Live-validate every Phase 4 read pack against populated lab + read-only prod | 🔴 BLOCKED | Needs populated lab cluster + prod read access |
+| G-2-compatibility-matrix | Per-feature × per-Rancher-version matrix | 🔴 BLOCKED | Lab `2.6.5` vs prod `2.9.3`; needs both accessible |
+| G-3-contract-fixture-capture | Sanitize and capture more contract fixtures | 🔴 BLOCKED | Needs prod access |
+| G-4-streaming-validation | Validate streaming under realistic load | 🔴 BLOCKED | Needs lab + load harness |
+
+### Track H — Phase 10 hardening (3 remaining)
+
+| Slice ID | Item | Status | Notes |
+|---|---|---|---|
+| H-3-broader-write-confirmation | Broader confirmation patterns | 🟡 | Apply current confirmation-phrase or C-1 elicitation to non-delete writes |
+| H-5-streaming-load-verification | Streaming-load harness | 🔴 BLOCKED on G-4 | Same gating |
+| H-1-curated-write-audit-finish | Apply `@audit_mutation` to every curated write | 🟡 | Currently applied via codegen for create/apply/patch/delete. Tick fully when Track D is shipped |
+
+### Track I — Phase 11 gap closure
+
+| Slice ID | Item | Status | Notes |
+|---|---|---|---|
+| I-1-runtime-coverage-report | Live-discovered surface vs curated coverage | 🔴 BLOCKED | Needs runtime schema crawl against lab |
+
+### Track J — Codegen substrate (substantially complete)
+
+| Slice ID | Item | Status |
+|---|---|---|
+| J-0 | Scaffolding + pods proof of equivalence | ✅ |
+| J-1 | Migrate existing read-only packs (35 resource types, 14 packs) | ✅ |
+| J-2 | Track B new read tools via descriptors | ✅ |
+| J-3 | Write substrate (create / apply / patch / delete) | ✅ feature-complete |
+| J-3-extension-multi-patch | Substrate evolution: `patches: list[PatchConfig]` for multi-narrow-patch resources | 🟡 |
+| J-3-extension-steve-norman-writes | Verify Steve / Norman write paths under 2.6.5 | 🔴 BLOCKED on lab access |
+| J-3-extension-dict-str-object | Worked example using `dict_str_object` arg type for nested struct args | 🟡 |
+| J-4 | Track D safe writes via descriptors | 🟡 unblocked — substrate is ready |
+| J-5 | Track E destructive writes via descriptors | 🟡 unblocked — substrate is ready |
+| J-6 | Track F subsystem packs via descriptors | 🟡 unblocked — substrate is ready |
+
+### Out of scope (workflow / websocket — won't be tools)
+
+These appear in the canonical plan but are explicitly NOT
+single-tool work — they need workflow state machines or
+streaming primitives that don't fit the curated-tool shape.
+
+| Slice ID | Item | Status |
+|---|---|---|
+| OOS-1-pod-logs-stream | Pod log streaming | 🚫 hand-written; existing `tools/streaming.py` |
+| OOS-2-pod-exec | Pod exec | 🚫 needs websocket session; out-of-scope |
+| OOS-3-pod-port-forward | Pod port-forward | 🚫 same; out-of-scope |
+| OOS-4-app-install-wait | App install with wait/status | 🚫 workflow; goes in `tools/workflows/` if built |
+| OOS-5-cluster-provision-wait | Cluster provisioning with wait | 🚫 workflow |
+| OOS-6-deployment-rollout-wait | Rollout-status polling | 🚫 workflow |
+| OOS-7-alertmanager-routes | Alertmanager routes / silences | 🚫 needs Alertmanager API access (port-forward / pod-exec) |
+| OOS-8-shibboleth-saml-config | Shibboleth SAML auth provider config | 🚫 covered via generic Norman patch on auth_config |
+
+---
+
+## Slice queue (agent-ready next slices)
+
+These are the most-actionable next slices, ordered by leverage.
+Each has self-contained acceptance criteria. An agent given a
+Slice ID can ship it without first reading other planning docs.
+
+### `D-4-deployment-pause` — separate-descriptor multi-patch proof
+
+**Why this matters**: Current substrate enforces "one narrow
+patch per descriptor". Shipping deployment_pause as a separate
+descriptor (deployment_pause.yml) proves the multi-narrow-patch
+pattern works without substrate evolution. Concrete value: pause
+during incidents.
+
+**Predecessors**: J-3 (done).
+
+**Acceptance**:
+1. New descriptor `catalog/curated_tools/deployment_pause.yml`
+   with `id: deployment_pause`, `pack: workloads`,
+   `display_name_singular: deployment` (note: re-uses
+   workloads pack and deployment naming).
+2. `operations: [list, get, patch]` — list/get duplicated from
+   `deployments.yml` so the pack `__init__.py` doesn't conflict
+   on imports. (Or: substrate evolution — `patches: list` —
+   prefer this iff scope allows.)
+3. Patch config: `verb: pause, target_path: spec, args:
+   [{name: paused, type: bool, required: true}]`.
+4. Tool name: `rancher_deployment_pause` (or
+   `rancher_deployment_set_paused` if the verb-name conflict
+   matters).
+5. 1 round-trip test confirming PATCH body
+   `{spec: {paused: true}}` lands on detail path.
+6. Tool surface +1.
+
+**Complexity**: Small (~30-line YAML + ~50-line test).
+
+**Pitfall**: file-naming collision with `deployments.yml` —
+they share the workloads pack. Watch for `__init__.py`
+duplicate-import conflicts. May need to choose between
+"separate descriptor with shared list/get duplicated" or
+"substrate evolution to allow multiple patches per resource".
+Recommend the substrate evolution if total scope ≤ +1 commit
+size.
+
+### `D-2-namespace-create` — cluster-scoped Steve write
+
+**Why this matters**: Operators create namespaces constantly.
+Current options are clumsy generic Steve mutation tool. Curated
+namespace_create unblocks Track D-2 entirely.
+
+**Predecessors**: J-3 (done). **Caveat**: Steve writes are
+unreliable on Rancher 2.6.5 per `TASK_STATE.md` and the
+canonical plan. Verify the create path works first, OR design
+substrate to route the write through k8s-proxy while keeping
+reads on Steve.
+
+**Acceptance**:
+1. `build_namespace_payload` composer in
+   `tools/projects_namespaces/shared.py`.
+2. Add `create` block to `catalog/curated_tools/namespaces.yml`.
+3. Args: `labels: dict_str_str`, `annotations: dict_str_str`,
+   `project_id: str` (optional — assigns namespace to project
+   via `field.cattle.io/projectId` annotation).
+4. Tool: `rancher_namespace_create`, SAFE_WRITE.
+5. Round-trip test against stub steve client.
+6. **Live-validation step**: actually create + delete a
+   namespace against the lab cluster. If Steve write fails on
+   2.6.5, escalate substrate evolution: descriptor needs
+   `transport_writes: k8s-proxy` override.
+
+**Complexity**: Medium. The transport question gates this.
+
+### `D-2-project-create` — Norman plane write
+
+**Why this matters**: Project creation is one of the most
+common Rancher write operations. Norman writes are
+live-validated as working on 2.6.5 (per session 2025-05-03).
+
+**Predecessors**: J-3 (done).
+
+**Acceptance**:
+1. `build_project_payload` composer in
+   `tools/projects_namespaces/shared.py`.
+2. Add `create` block to `catalog/curated_tools/projects.yml`.
+3. Args: `cluster_id: str (required)`, `description: str`,
+   `labels: dict_str_str`, `annotations: dict_str_str`,
+   `resource_quota: dict_str_object` (optional, k8s-style
+   ResourceQuota spec).
+4. Tool: `rancher_project_create`, SAFE_WRITE.
+5. Round-trip test against stub Norman client.
+
+**Complexity**: Medium-low. The Norman create payload shape
+needs care (cluster scope, owner, container default policy).
+
+### `D-4-cronjob-suspend` + `D-4-cronjob-resume`
+
+**Why this matters**: Operators frequently suspend cron jobs
+during incidents (especially batch processors). Trivial patch
+verb on `spec.suspend`.
+
+**Predecessors**: J-3 (done).
+
+**Acceptance**:
+1. Add `patch` block to `catalog/curated_tools/cron_jobs.yml`
+   with verb=suspend, target_path=spec, args=[suspend: bool
+   required].
+2. OR: separate descriptor for suspend/resume mirror-pair if
+   single-arg-bool tool feels confusing.
+3. Annotation: IDEMPOTENT_WRITE.
+4. Round-trip test.
+
+**Complexity**: Small.
+
+### `J-3-extension-multi-patch` — substrate evolution
+
+**Why this matters**: One narrow patch per descriptor forces
+duplicated list/get config across descriptor files when a
+resource needs multiple narrow patches (deployment scale +
+pause + restart). Cleanup makes Track D ship as fewer commits.
+
+**Predecessors**: J-3 (done).
+
+**Acceptance**:
+1. `Descriptor.patch: PatchConfig | None` becomes
+   `Descriptor.patches: list[PatchConfig] = []`.
+2. Validator: each patch's `tools.patches[i].name == rancher_<singular>_<verb>`.
+3. Planner emits multiple `_patch_<singular>_<verb>` private
+   helpers + public functions + tool wrappers.
+4. Migrate `deployments.yml` from `patch:` to `patches:` (one
+   entry initially).
+5. All existing tests pass; new test exercising 2 patches in
+   one descriptor.
+
+**Complexity**: Medium. Schema migration + template multi-loop
++ existing-descriptor refactor.
+
+### `B-9-replicasets` — close Phase 4 read-pack residual
+
+**Why this matters**: ReplicaSet is in the canonical plan
+section 12 (Workloads). Currently only accessible via generic
+Steve. Adding curated read closes one of the remaining
+Phase-4 gaps. Low priority because few operators interact
+with ReplicaSets directly (Deployment owns them).
+
+**Predecessors**: none (J-1 substrate handles reads).
+
+**Acceptance**:
+1. Add `RancherReplicaSetSummary` + `RancherReplicaSetList` +
+   `RancherReplicaSetDetail` to `models/workloads/`.
+2. Add `replicaset_summary_from_payload` to
+   `tools/workloads/shared.py`.
+3. New descriptor `catalog/curated_tools/replicasets.yml`
+   (mirror of daemonsets — same shape).
+4. Tests (mirror daemonset tests).
+5. Tool surface +2 (`rancher_replicasets_list`,
+   `rancher_replicaset_get`).
+
+**Complexity**: Small.
+
+---
+
+## Blocked work
+
+These items have an explicit blocker. Do not pick them up
+without addressing the blocker first.
+
+| Item | Blocker | Resolution path |
+|---|---|---|
+| C-1 elicitation | MCP SDK 1.1+ feature check | Check `pip show mcp` or canonical SDK source for `elicitation` primitive availability |
+| C-2 OAuth PKCE | Auth-system refactor scope | Multi-day work; needs explicit user approval |
+| G-1..G-4 live validation | Lab + prod access | Needs populated lab cluster and prod read-only credentials |
+| H-5 streaming load | G-4 | Same gating |
+| I-1 runtime coverage report | Lab schema crawl | Needs running lab cluster |
+| J-3-extension-steve-norman-writes | Lab access for verification | Steve writes claimed unreliable on 2.6.5; need to confirm |
+| D-2-namespace-create live-validation | Same | Once code lands, need to test against live Rancher |
+
+---
+
+## Update protocol
+
+When a slice lands:
+
+1. Change the affected tool row's status icon from `🟡` →
+   `✅`. Fill in the descriptor file path under Source.
+2. Update the [Status summary](#status-summary) tool count.
+3. Update [TASK_STATE.md](../TASK_STATE.md) "Public tool
+   surface" line.
+4. If the slice was in [Slice queue](#slice-queue), remove its
+   row (or move to a "Recently shipped" subsection if you want
+   short-term traceability).
+5. If new tools were added that weren't in the planned list,
+   insert their rows in the appropriate Track section with
+   the next available Slice ID.
+6. Update `CHANGELOG.md` with the user-visible change.
+7. Update `ROADMAP.md` track-item check-state if a Track-level
+   item closed.
+
+When a slice is blocked or deferred:
+
+1. Change the icon to `🔴` or `⚫`.
+2. Add a one-line note under the row explaining why.
+3. If it's deferred until external dep / decision, also list
+   it under [Blocked work](#blocked-work).
+
+When a Slice ID is renamed or deleted:
+
+1. **Don't.** Slice IDs are stable. Mark abandoned slices
+   `⚫ deferred` and keep the ID. Future agents may reference
+   the old ID in commits or user instructions.

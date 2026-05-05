@@ -39,6 +39,9 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 
 ## Where Work Is Tracked
 
+- **Tool-level inventory + addressable slice queue** → `docs/tool-catalog.md`
+  (read this first if instructed to ship a specific tool or asked
+  "what's next" — every tool has a row, every gap has a Slice ID).
 - **Strategic intent and phase definitions** → `PERFECT_RANCHER_MCP_IMPLEMENTATION_PLAN.md`
 - **Track-level work items, with check-state** → `ROADMAP.md` (Tracks A-I,
   plus a generation-potential appendix). Update ROADMAP when items land.

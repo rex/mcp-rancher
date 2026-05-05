@@ -54,6 +54,7 @@ Required. `make test` runs the full suite with coverage (60% minimum). Contract 
 
 - Canonical plan: `PERFECT_RANCHER_MCP_IMPLEMENTATION_PLAN.md`
 - Capability catalog: `catalog/capabilities.yaml`
+- **Tool catalog (flat, per-tool, addressable): `docs/tool-catalog.md`** — start here when picking what to build next or when given a Slice ID.
 - Tool layers: discovery-and-schema → generic-resource-and-action → curated-operator-workflows (keep separate)
 - Multi-instance is first-class. Prefer capability detection over version assumptions.
 
