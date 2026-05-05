@@ -11,6 +11,7 @@ from rancher_mcp.rate_limit import reset_rate_limit_state
 from rancher_mcp.tools.batch_workloads import (
     rancher_cron_job_delete,
     rancher_cron_job_get,
+    rancher_cron_job_resume,
     rancher_cron_job_set_annotations,
     rancher_cron_job_set_labels,
     rancher_cron_job_suspend,
@@ -1146,3 +1147,73 @@ async def test_rancher_cron_job_delete_emits_audit_with_outcome() -> None:
     assert len(reject_audits) == 1
     assert reject_audits[0]["operation"] == "cron_job_delete"
     assert reject_audits[0]["outcome"] == "error"
+
+
+# =====================================================================
+# rancher_cron_job_resume (argless PatchConfig substrate — target_value)
+# =====================================================================
+
+
+@pytest.mark.asyncio
+async def test_rancher_cron_job_resume_round_trip_emits_argless_target_value() -> None:
+    """Argless patches use target_value: body must be exactly {spec: {suspend: false}}.
+
+    This validates substrate slice 2 (target_value support). The
+    function takes no toggle arg — the verb itself encodes the
+    change. Reuses StubCronJobSuspendClient since it echoes the
+    submitted spec.suspend value.
+    """
+
+    reset_rate_limit_state()
+    client = StubCronJobSuspendClient()
+
+    result = await rancher_cron_job_resume(
+        namespace="demo",
+        cron_job_name="nightly-cleanup",
+        cluster_id="local",
+        instance="work",
+        settings=build_settings(),
+        client=client,
+    )
+
+    assert client.last_patch_path == (
+        "/k8s/clusters/local/apis/batch/v1/namespaces/demo/cronjobs/nightly-cleanup"
+    )
+    # Body shape proves argless target_value works AND nested target_path works.
+    # target_path: spec, target_value: {suspend: false} -> {spec: {suspend: false}}
+    assert client.last_patch_payload == {"spec": {"suspend": False}}
+
+    assert result.name == "nightly-cleanup"
+    assert result.payload is not None
+    spec = result.payload.get("spec")
+    assert isinstance(spec, dict)
+    assert spec["suspend"] is False
+
+
+@pytest.mark.asyncio
+async def test_rancher_cron_job_resume_emits_audit_with_resume_op() -> None:
+    """Argless resume audit records carry operation='cron_job_resume'."""
+
+    reset_rate_limit_state()
+
+    with capture_logs() as logs:
+        await rancher_cron_job_resume(
+            namespace="demo",
+            cron_job_name="nightly-cleanup",
+            cluster_id="local",
+            instance="work",
+            settings=build_settings(),
+            client=StubCronJobSuspendClient(),
+        )
+
+    audit_records = [r for r in logs if r.get("event") == "audit"]
+    assert len(audit_records) == 1
+    record = audit_records[0]
+    assert record["tool_name"] == "rancher_cron_job_resume"
+    assert record["operation"] == "cron_job_resume"
+    assert record["outcome"] == "success"
+    # Argless patches have no slice-specific args — only infrastructure kwargs.
+    # Specifically: no `suspend`, no `labels`, no `annotations`.
+    assert "suspend" not in record["arg_keys"]
+    assert "labels" not in record["arg_keys"]
+    assert "annotations" not in record["arg_keys"]

@@ -103,6 +103,14 @@ patches:
         description: Replacement metadata.annotations map (merge-patch semantics — passing this REPLACES the annotations map; pass an empty dict to remove all annotations).
     next_steps:
       - rancher_cron_job_get
+  - verb: resume
+    target_path: spec
+    target_value:
+      suspend: false
+    audit_operation: cron_job_resume
+    next_steps:
+      - rancher_cron_job_get
+      - rancher_jobs_list
 
 tools:
   list:
@@ -126,4 +134,7 @@ tools:
       annotation_set: IDEMPOTENT_WRITE
     - name: rancher_cron_job_set_annotations
       description: Replace metadata.annotations on one Kubernetes CronJob via JSON merge-patch. The `annotations` arg is a complete replacement map. Returns the curated detail.
+      annotation_set: IDEMPOTENT_WRITE
+    - name: rancher_cron_job_resume
+      description: Resume a paused CronJob by setting spec.suspend=false via JSON merge-patch. Argless toggle — counterpart to rancher_cron_job_suspend. Returns the curated detail.
       annotation_set: IDEMPOTENT_WRITE

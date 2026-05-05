@@ -421,12 +421,19 @@ class PatchConfig(BaseModel):
     ``rancher_<singular>_<verb>``; codegen validates this to keep
     the two in sync."""
 
-    args: list[ArgSpec]
-    """Typed args. At least one required. Their values are written
-    into the patch body's ``target_path`` subtree, with ``None``
-    values omitted. Marking every arg ``required: true`` is
-    encouraged when the verb has a single semantic meaning (e.g.
-    ``scale`` always provides ``replicas``)."""
+    args: list[ArgSpec] = []
+    """Typed args. Either ``args`` or ``target_value`` must be set
+    (not both). Args' values are written into the patch body's
+    ``target_path`` subtree, with ``None`` values omitted. Marking
+    every arg ``required: true`` is encouraged when the verb has a
+    single semantic meaning (e.g. ``scale`` always provides
+    ``replicas``)."""
+
+    target_value: dict[str, object] | None = None
+    """Literal subtree to inject under ``target_path`` for argless
+    verbs. Mutually exclusive with ``args``. Used by toggle-style
+    patches where the verb encodes the change (e.g. cron_job_resume
+    sets spec.suspend=false). Leaf values must be JSON-compatible."""
 
     target_path: str
     """Dot-delimited JSON path under which args become object keys.
@@ -651,11 +658,17 @@ class Descriptor(BaseModel):
                 )
             verbs_seen: list[str] = []
             for index, patch in enumerate(self.patches):
-                if not patch.args:
+                if not patch.args and patch.target_value is None:
                     raise ValueError(
-                        f"patches[{index}].args must include at least one "
-                        f"ArgSpec — narrow patches are defined by which "
-                        f"fields they update."
+                        f"patches[{index}] must declare either non-empty "
+                        f"args or a target_value — narrow patches need a "
+                        f"defined subtree to inject."
+                    )
+                if patch.args and patch.target_value is not None:
+                    raise ValueError(
+                        f"patches[{index}] cannot declare both args and "
+                        f"target_value — choose one. Use args for typed "
+                        f"input; target_value for argless toggles."
                     )
                 if patch.verb in verbs_seen:
                     raise ValueError(

@@ -46,6 +46,11 @@ def make_environment() -> jinja2.Environment:
     env.globals["qp_type"] = qp_type  # pyright: ignore[reportArgumentType]
     env.globals["qp_kwarg"] = qp_kwarg  # pyright: ignore[reportArgumentType]
     env.globals["arg_python_type"] = arg_python_type  # pyright: ignore[reportArgumentType]
+    # python_literal filter: emit a Python-source-compatible literal of a
+    # value (dict / list / scalars). Distinct from `tojson` which emits
+    # JSON syntax (lowercase true/false/null) — generated code needs
+    # Python literals (True / False / None).
+    env.filters["python_literal"] = repr  # pyright: ignore[reportArgumentType]
     return env
 
 
