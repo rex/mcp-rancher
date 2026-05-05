@@ -332,6 +332,80 @@ async def rancher_secret_set_labels(
         )
 
 
+async def _patch_secret_set_annotations(
+    instance_name: str,
+    cluster_id: str,
+    namespace: str,
+    secret_name: str,
+    annotations: dict[str, str],
+    client: ManagementDiscoveryClient,
+) -> RancherSecretDetail:
+    """Set_annotations one secret via JSON merge-patch; returns the curated detail."""
+
+    patch_subtree: dict[str, object] = {}
+    patch_subtree["annotations"] = annotations
+    if not patch_subtree:
+        raise RancherCapabilityError(
+            "No patch fields provided; every arg was None. Pass at least one field to update."
+        )
+    request_payload: dict[str, object] = {"metadata": patch_subtree}
+    payload = await client.patch_json(
+        core_v1_resource_path(cluster_id, namespace, "secrets", secret_name),
+        payload=request_payload,
+    )
+    summary = secret_summary_from_payload(payload)
+
+    metadata = mapping_value(payload, "metadata") or {}
+    metadata_annotations = mapping_value(metadata, "annotations") or {}
+    data_dict = mapping_value(payload, "data") or {}
+    detail = RancherSecretDetail.model_validate(payload)
+    return detail.model_copy(
+        update={
+            "data_key_count": summary.data_key_count,
+            "immutable": summary.immutable,
+            "annotation_keys": sorted(string_dict(metadata_annotations)),
+            "data_keys": sorted(string_dict(data_dict)),
+            "suggested_next_steps": ["rancher_secret_get", "rancher_steve_resource_get"],
+        }
+    )
+
+
+@audit_mutation(operation="secret_set_annotations", plane="steve")
+@rate_limit_writes
+async def rancher_secret_set_annotations(
+    namespace: str,
+    secret_name: str,
+    annotations: dict[str, str],
+    cluster_id: str = "local",
+    instance: str | None = None,
+    settings: AppSettings | None = None,
+    client: ManagementDiscoveryClient | None = None,
+) -> RancherSecretDetail:
+    """Set_annotations one secret via JSON merge-patch."""
+
+    resolved_settings = settings or get_settings()
+    instance_name, instance_config = resolve_instance(resolved_settings, instance)
+    ensure_instance_writable(instance_name, instance_config)
+    if client is not None:
+        return await _patch_secret_set_annotations(
+            instance_name,
+            cluster_id,
+            namespace,
+            secret_name,
+            annotations,
+            client,
+        )
+    async with RancherManagementClient(instance_name, instance_config) as managed_client:
+        return await _patch_secret_set_annotations(
+            instance_name,
+            cluster_id,
+            namespace,
+            secret_name,
+            annotations,
+            managed_client,
+        )
+
+
 async def rancher_secrets_list_tool(
     namespace: str,
     cluster_id: str = "local",
@@ -413,6 +487,24 @@ async def rancher_secret_set_labels_tool(
         namespace=namespace,
         secret_name=secret_name,
         labels=labels,
+        cluster_id=cluster_id,
+        instance=instance,
+    )
+
+
+async def rancher_secret_set_annotations_tool(
+    namespace: str,
+    secret_name: str,
+    annotations: dict[str, str],
+    cluster_id: str = "local",
+    instance: str | None = None,
+) -> RancherSecretDetail:
+    """Public MCP wrapper for curated secret set_annotations."""
+
+    return await rancher_secret_set_annotations(
+        namespace=namespace,
+        secret_name=secret_name,
+        annotations=annotations,
         cluster_id=cluster_id,
         instance=instance,
     )
