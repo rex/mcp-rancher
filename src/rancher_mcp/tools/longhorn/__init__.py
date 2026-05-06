@@ -10,6 +10,8 @@ from mcp.server.fastmcp import FastMCP
 from rancher_mcp.tools.longhorn._generated_longhorn_backups import (
     rancher_longhorn_backup_get,
     rancher_longhorn_backup_get_tool,
+    rancher_longhorn_backup_set_annotations,
+    rancher_longhorn_backup_set_annotations_tool,
     rancher_longhorn_backup_set_labels,
     rancher_longhorn_backup_set_labels_tool,
     rancher_longhorn_backups_list,
@@ -45,6 +47,7 @@ from rancher_mcp.tools.support.annotations import IDEMPOTENT_WRITE, READ_ONLY
 
 __all__ = [
     "rancher_longhorn_backup_get",
+    "rancher_longhorn_backup_set_annotations",
     "rancher_longhorn_backup_set_labels",
     "rancher_longhorn_backups_list",
     "rancher_longhorn_node_get",
@@ -72,6 +75,9 @@ def register_longhorn_tools(mcp: FastMCP) -> None:
     )
     mcp.tool(name="rancher_longhorn_backup_set_labels", annotations=IDEMPOTENT_WRITE)(
         rancher_longhorn_backup_set_labels_tool
+    )
+    mcp.tool(name="rancher_longhorn_backup_set_annotations", annotations=IDEMPOTENT_WRITE)(
+        rancher_longhorn_backup_set_annotations_tool
     )
     mcp.tool(name="rancher_longhorn_nodes_list", annotations=READ_ONLY)(
         rancher_longhorn_nodes_list_tool
