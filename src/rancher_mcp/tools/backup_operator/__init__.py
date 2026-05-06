@@ -20,6 +20,8 @@ from rancher_mcp.tools.backup_operator._generated_backups import (
 from rancher_mcp.tools.backup_operator._generated_restores import (
     rancher_restore_get,
     rancher_restore_get_tool,
+    rancher_restore_set_labels,
+    rancher_restore_set_labels_tool,
     rancher_restores_list,
     rancher_restores_list_tool,
 )
@@ -31,6 +33,7 @@ __all__ = [
     "rancher_backup_set_labels",
     "rancher_backups_list",
     "rancher_restore_get",
+    "rancher_restore_set_labels",
     "rancher_restores_list",
     "register_backup_operator_tools",
 ]
@@ -49,3 +52,6 @@ def register_backup_operator_tools(mcp: FastMCP) -> None:
     )
     mcp.tool(name="rancher_restores_list", annotations=READ_ONLY)(rancher_restores_list_tool)
     mcp.tool(name="rancher_restore_get", annotations=READ_ONLY)(rancher_restore_get_tool)
+    mcp.tool(name="rancher_restore_set_labels", annotations=IDEMPOTENT_WRITE)(
+        rancher_restore_set_labels_tool
+    )
