@@ -6,12 +6,16 @@
 
 from __future__ import annotations
 
-from rancher_mcp.clients.steve import RancherSteveClient, SteveDiscoveryClient
+from rancher_mcp.audit import audit_mutation
+from rancher_mcp.clients.steve import RancherSteveClient, SteveMutationClient
 from rancher_mcp.config import AppSettings, get_settings
+from rancher_mcp.exceptions import RancherCapabilityError
 from rancher_mcp.models.pods_services import RancherPodDetail, RancherPodList
+from rancher_mcp.rate_limit import rate_limit_writes
 from rancher_mcp.services.instances import resolve_instance
 from rancher_mcp.services.resource_queries import build_steve_list_query_params
 from rancher_mcp.services.resources.builders_pagination import next_page_token_from_payload
+from rancher_mcp.services.safety import ensure_instance_writable
 from rancher_mcp.tools.pods_services.shared import (
     data_items,
     pod_summary_from_payload,
@@ -27,7 +31,7 @@ async def _fetch_pods_list(
     limit: int | None,
     label_selector: str | None,
     field_selector: str | None,
-    client: SteveDiscoveryClient,
+    client: SteveMutationClient,
     page_token: str | None = None,
 ) -> RancherPodList:
     """Fetch and normalize the pods collection for one namespace."""
@@ -68,7 +72,7 @@ async def rancher_pods_list(
     page_token: str | None = None,
     instance: str | None = None,
     settings: AppSettings | None = None,
-    client: SteveDiscoveryClient | None = None,
+    client: SteveMutationClient | None = None,
 ) -> RancherPodList:
     """List pods in one namespace with typed summaries."""
 
@@ -109,7 +113,7 @@ async def _fetch_pod_get(
     cluster_id: str,
     namespace: str,
     pod_name: str,
-    client: SteveDiscoveryClient,
+    client: SteveMutationClient,
 ) -> RancherPodDetail:
     """Fetch and normalize one pod."""
 
@@ -137,7 +141,7 @@ async def rancher_pod_get(
     cluster_id: str = "local",
     instance: str | None = None,
     settings: AppSettings | None = None,
-    client: SteveDiscoveryClient | None = None,
+    client: SteveMutationClient | None = None,
 ) -> RancherPodDetail:
     """Fetch one pod by namespace and name."""
 
@@ -155,6 +159,83 @@ async def rancher_pod_get(
             cluster_id,
             namespace,
             pod_name,
+            steve_client,
+        )
+
+
+async def _patch_pod_set_labels(
+    instance_name: str,
+    cluster_id: str,
+    namespace: str,
+    pod_name: str,
+    labels: dict[str, str],
+    client: SteveMutationClient,
+) -> RancherPodDetail:
+    """Set_labels one pod via JSON merge-patch; returns the curated detail."""
+
+    patch_subtree: dict[str, object] = {}
+    patch_subtree["labels"] = labels
+    if not patch_subtree:
+        raise RancherCapabilityError(
+            "No patch fields provided; every arg was None. Pass at least one field to update."
+        )
+    request_payload: dict[str, object] = patch_subtree
+    request_payload = {"metadata": request_payload}
+
+    payload = await client.patch_json(f"/pods/{namespace}/{pod_name}", payload=request_payload)
+    summary = pod_summary_from_payload(payload)
+
+    detail = RancherPodDetail.model_validate(payload)
+    return detail.model_copy(
+        update={
+            "id": summary.id,
+            "ready": summary.ready,
+            "ready_containers": summary.ready_containers,
+            "total_containers": summary.total_containers,
+            "restart_count": summary.restart_count,
+            "link_keys": sorted(mapping_value(payload, "links") or {}),
+            "payload": dict(payload),
+            "suggested_next_steps": ["rancher_pod_get", "rancher_pods_list"],
+        }
+    )
+
+
+@audit_mutation(operation="pod_set_labels", plane="steve")
+@rate_limit_writes
+async def rancher_pod_set_labels(
+    namespace: str,
+    pod_name: str,
+    labels: dict[str, str],
+    cluster_id: str = "local",
+    instance: str | None = None,
+    settings: AppSettings | None = None,
+    client: SteveMutationClient | None = None,
+) -> RancherPodDetail:
+    """Set_labels one pod via JSON merge-patch."""
+
+    resolved_settings = settings or get_settings()
+    instance_name, instance_config = resolve_instance(resolved_settings, instance)
+    ensure_instance_writable(instance_name, instance_config)
+    if client is not None:
+        return await _patch_pod_set_labels(
+            instance_name,
+            cluster_id,
+            namespace,
+            pod_name,
+            labels,
+            client,
+        )
+    async with RancherSteveClient(
+        instance_name,
+        instance_config,
+        cluster_id=cluster_id,
+    ) as steve_client:
+        return await _patch_pod_set_labels(
+            instance_name,
+            cluster_id,
+            namespace,
+            pod_name,
+            labels,
             steve_client,
         )
 
@@ -194,6 +275,24 @@ async def rancher_pod_get_tool(
     return await rancher_pod_get(
         namespace=namespace,
         pod_name=pod_name,
+        cluster_id=cluster_id,
+        instance=instance,
+    )
+
+
+async def rancher_pod_set_labels_tool(
+    namespace: str,
+    pod_name: str,
+    labels: dict[str, str],
+    cluster_id: str = "local",
+    instance: str | None = None,
+) -> RancherPodDetail:
+    """Public MCP wrapper for curated pod set_labels."""
+
+    return await rancher_pod_set_labels(
+        namespace=namespace,
+        pod_name=pod_name,
+        labels=labels,
         cluster_id=cluster_id,
         instance=instance,
     )
