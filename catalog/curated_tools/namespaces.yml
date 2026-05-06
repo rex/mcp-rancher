@@ -26,7 +26,19 @@ summary_function: namespace_summary_from_payload
 query_builder_function: build_namespace_query_params
 query_builder_in_shared: true
 
-operations: [list, get]
+operations: [list, get, patch]
+
+patches:
+  - verb: set_labels
+    target_path: metadata
+    audit_operation: namespace_set_labels
+    args:
+      - name: labels
+        type: dict_str_str
+        required: true
+        description: Replacement metadata.labels map (merge-patch semantics — passing this REPLACES the labels map; pass an empty dict to remove all labels).
+    next_steps:
+      - rancher_namespace_get
 
 list:
   query_params: [project_id, limit, label_selector, field_selector, continue_token]
@@ -50,13 +62,13 @@ get:
       expression: 'mapping_value(payload, "metadata") or {}'
     - name: annotations
       expression: 'mapping_value(metadata, "annotations") or {}'
-    - name: labels
+    - name: metadata_labels
       expression: 'mapping_value(metadata, "labels") or {}'
   extras:
     - field: cluster_id
       expression: cluster_id
     - field: label_keys
-      expression: sorted(string_dict(labels))
+      expression: sorted(string_dict(metadata_labels))
     - field: annotation_keys
       expression: sorted(string_dict(annotations))
     - field: cattle_conditions
@@ -78,3 +90,7 @@ tools:
     name: rancher_namespace_get
     description: Fetch one downstream namespace by name via the Rancher Steve API. Returns the curated summary, label/annotation keys, cattle conditions, link keys, and full payload.
     annotation_set: READ_ONLY
+  patches:
+    - name: rancher_namespace_set_labels
+      description: Replace metadata.labels on one Rancher namespace via JSON merge-patch. The `labels` arg is a complete replacement map. Returns the curated detail.
+      annotation_set: IDEMPOTENT_WRITE

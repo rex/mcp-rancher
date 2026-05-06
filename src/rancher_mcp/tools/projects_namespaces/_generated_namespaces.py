@@ -6,11 +6,15 @@
 
 from __future__ import annotations
 
-from rancher_mcp.clients.steve import RancherSteveClient, SteveDiscoveryClient
+from rancher_mcp.audit import audit_mutation
+from rancher_mcp.clients.steve import RancherSteveClient, SteveMutationClient
 from rancher_mcp.config import AppSettings, get_settings
+from rancher_mcp.exceptions import RancherCapabilityError
 from rancher_mcp.models.projects_namespaces import RancherNamespaceDetail, RancherNamespaceList
+from rancher_mcp.rate_limit import rate_limit_writes
 from rancher_mcp.services.instances import resolve_instance
 from rancher_mcp.services.resources.builders_pagination import next_page_token_from_payload
+from rancher_mcp.services.safety import ensure_instance_writable
 from rancher_mcp.tools.projects_namespaces.shared import (
     build_namespace_query_params,
     data_items,
@@ -29,7 +33,7 @@ async def _fetch_namespaces_list(
     limit: int | None,
     label_selector: str | None,
     field_selector: str | None,
-    client: SteveDiscoveryClient,
+    client: SteveMutationClient,
     page_token: str | None = None,
 ) -> RancherNamespaceList:
     """Fetch and normalize the namespaces collection."""
@@ -70,7 +74,7 @@ async def rancher_namespaces_list(
     page_token: str | None = None,
     instance: str | None = None,
     settings: AppSettings | None = None,
-    client: SteveDiscoveryClient | None = None,
+    client: SteveMutationClient | None = None,
 ) -> RancherNamespaceList:
     """List namespaces with typed summaries."""
 
@@ -110,7 +114,7 @@ async def _fetch_namespace_get(
     instance_name: str,
     cluster_id: str,
     namespace: str,
-    client: SteveDiscoveryClient,
+    client: SteveMutationClient,
 ) -> RancherNamespaceDetail:
     """Fetch and normalize one namespace."""
 
@@ -119,14 +123,14 @@ async def _fetch_namespace_get(
 
     metadata = mapping_value(payload, "metadata") or {}
     annotations = mapping_value(metadata, "annotations") or {}
-    labels = mapping_value(metadata, "labels") or {}
+    metadata_labels = mapping_value(metadata, "labels") or {}
     detail = RancherNamespaceDetail.model_validate(payload)
     return detail.model_copy(
         update={
             "id": summary.id,
             "finalizer_count": summary.finalizer_count,
             "cluster_id": cluster_id,
-            "label_keys": sorted(string_dict(labels)),
+            "label_keys": sorted(string_dict(metadata_labels)),
             "annotation_keys": sorted(string_dict(annotations)),
             "cattle_conditions": namespace_cattle_conditions(metadata),
             "link_keys": sorted(mapping_value(payload, "links") or {}),
@@ -145,7 +149,7 @@ async def rancher_namespace_get(
     cluster_id: str = "local",
     instance: str | None = None,
     settings: AppSettings | None = None,
-    client: SteveDiscoveryClient | None = None,
+    client: SteveMutationClient | None = None,
 ) -> RancherNamespaceDetail:
     """Fetch one namespace by name."""
 
@@ -162,6 +166,83 @@ async def rancher_namespace_get(
             instance_name,
             cluster_id,
             namespace,
+            steve_client,
+        )
+
+
+async def _patch_namespace_set_labels(
+    instance_name: str,
+    cluster_id: str,
+    namespace: str,
+    labels: dict[str, str],
+    client: SteveMutationClient,
+) -> RancherNamespaceDetail:
+    """Set_labels one namespace via JSON merge-patch; returns the curated detail."""
+
+    patch_subtree: dict[str, object] = {}
+    patch_subtree["labels"] = labels
+    if not patch_subtree:
+        raise RancherCapabilityError(
+            "No patch fields provided; every arg was None. Pass at least one field to update."
+        )
+    request_payload: dict[str, object] = patch_subtree
+    request_payload = {"metadata": request_payload}
+
+    payload = await client.patch_json(f"/namespaces/{namespace}", payload=request_payload)
+    summary = namespace_summary_from_payload(payload)
+
+    metadata = mapping_value(payload, "metadata") or {}
+    annotations = mapping_value(metadata, "annotations") or {}
+    metadata_labels = mapping_value(metadata, "labels") or {}
+    detail = RancherNamespaceDetail.model_validate(payload)
+    return detail.model_copy(
+        update={
+            "id": summary.id,
+            "finalizer_count": summary.finalizer_count,
+            "cluster_id": cluster_id,
+            "label_keys": sorted(string_dict(metadata_labels)),
+            "annotation_keys": sorted(string_dict(annotations)),
+            "cattle_conditions": namespace_cattle_conditions(metadata),
+            "link_keys": sorted(mapping_value(payload, "links") or {}),
+            "payload": dict(payload),
+            "suggested_next_steps": ["rancher_namespace_get"],
+        }
+    )
+
+
+@audit_mutation(operation="namespace_set_labels", plane="steve")
+@rate_limit_writes
+async def rancher_namespace_set_labels(
+    namespace: str,
+    labels: dict[str, str],
+    cluster_id: str = "local",
+    instance: str | None = None,
+    settings: AppSettings | None = None,
+    client: SteveMutationClient | None = None,
+) -> RancherNamespaceDetail:
+    """Set_labels one namespace via JSON merge-patch."""
+
+    resolved_settings = settings or get_settings()
+    instance_name, instance_config = resolve_instance(resolved_settings, instance)
+    ensure_instance_writable(instance_name, instance_config)
+    if client is not None:
+        return await _patch_namespace_set_labels(
+            instance_name,
+            cluster_id,
+            namespace,
+            labels,
+            client,
+        )
+    async with RancherSteveClient(
+        instance_name,
+        instance_config,
+        cluster_id=cluster_id,
+    ) as steve_client:
+        return await _patch_namespace_set_labels(
+            instance_name,
+            cluster_id,
+            namespace,
+            labels,
             steve_client,
         )
 
@@ -199,6 +280,22 @@ async def rancher_namespace_get_tool(
 
     return await rancher_namespace_get(
         namespace=namespace,
+        cluster_id=cluster_id,
+        instance=instance,
+    )
+
+
+async def rancher_namespace_set_labels_tool(
+    namespace: str,
+    labels: dict[str, str],
+    cluster_id: str = "local",
+    instance: str | None = None,
+) -> RancherNamespaceDetail:
+    """Public MCP wrapper for curated namespace set_labels."""
+
+    return await rancher_namespace_set_labels(
+        namespace=namespace,
+        labels=labels,
         cluster_id=cluster_id,
         instance=instance,
     )
