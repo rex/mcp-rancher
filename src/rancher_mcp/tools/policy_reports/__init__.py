@@ -16,15 +16,18 @@ from rancher_mcp.tools.policy_reports._generated_cluster_policy_reports import (
 from rancher_mcp.tools.policy_reports._generated_policy_reports import (
     rancher_policy_report_get,
     rancher_policy_report_get_tool,
+    rancher_policy_report_set_labels,
+    rancher_policy_report_set_labels_tool,
     rancher_policy_reports_list,
     rancher_policy_reports_list_tool,
 )
-from rancher_mcp.tools.support.annotations import READ_ONLY
+from rancher_mcp.tools.support.annotations import IDEMPOTENT_WRITE, READ_ONLY
 
 __all__ = [
     "rancher_cluster_policy_report_get",
     "rancher_cluster_policy_reports_list",
     "rancher_policy_report_get",
+    "rancher_policy_report_set_labels",
     "rancher_policy_reports_list",
     "register_policy_reports_tools",
 ]
@@ -44,4 +47,7 @@ def register_policy_reports_tools(mcp: FastMCP) -> None:
     )
     mcp.tool(name="rancher_policy_report_get", annotations=READ_ONLY)(
         rancher_policy_report_get_tool
+    )
+    mcp.tool(name="rancher_policy_report_set_labels", annotations=IDEMPOTENT_WRITE)(
+        rancher_policy_report_set_labels_tool
     )
