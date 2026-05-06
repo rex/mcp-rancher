@@ -6,12 +6,16 @@
 
 from __future__ import annotations
 
+from rancher_mcp.audit import audit_mutation
 from rancher_mcp.clients.management import ManagementDiscoveryClient, RancherManagementClient
 from rancher_mcp.config import AppSettings, get_settings
+from rancher_mcp.exceptions import RancherCapabilityError
 from rancher_mcp.models.workloads import RancherReplicaSetDetail, RancherReplicaSetList
+from rancher_mcp.rate_limit import rate_limit_writes
 from rancher_mcp.services.instances import resolve_instance
 from rancher_mcp.services.resource_queries import build_steve_list_query_params
 from rancher_mcp.services.resources.builders_pagination import next_page_token_from_payload
+from rancher_mcp.services.safety import ensure_instance_writable
 from rancher_mcp.tools.support.values import mapping_value, string_dict
 from rancher_mcp.tools.workloads.paths import workload_collection_path, workload_resource_path
 from rancher_mcp.tools.workloads.shared import (
@@ -158,6 +162,82 @@ async def rancher_replica_set_get(
         )
 
 
+async def _patch_replica_set_set_labels(
+    instance_name: str,
+    cluster_id: str,
+    namespace: str,
+    replica_set_name: str,
+    labels: dict[str, str],
+    client: ManagementDiscoveryClient,
+) -> RancherReplicaSetDetail:
+    """Set_labels one replica_set via JSON merge-patch; returns the curated detail."""
+
+    patch_subtree: dict[str, object] = {}
+    patch_subtree["labels"] = labels
+    if not patch_subtree:
+        raise RancherCapabilityError(
+            "No patch fields provided; every arg was None. Pass at least one field to update."
+        )
+    request_payload: dict[str, object] = patch_subtree
+    request_payload = {"metadata": request_payload}
+
+    payload = await client.patch_json(
+        workload_resource_path(cluster_id, namespace, "replicasets", replica_set_name),
+        payload=request_payload,
+    )
+    summary = replicaset_summary_from_payload(payload)
+
+    metadata = mapping_value(payload, "metadata") or {}
+    metadata_annotations = mapping_value(metadata, "annotations") or {}
+    detail = RancherReplicaSetDetail.model_validate(payload)
+    return detail.model_copy(
+        update={
+            "id": summary.id,
+            "ready": summary.ready,
+            "container_images": summary.container_images,
+            "annotation_keys": sorted(string_dict(metadata_annotations)),
+            "payload": dict(payload),
+            "suggested_next_steps": ["rancher_replica_set_get"],
+        }
+    )
+
+
+@audit_mutation(operation="replicaset_set_labels", plane="steve")
+@rate_limit_writes
+async def rancher_replica_set_set_labels(
+    namespace: str,
+    replica_set_name: str,
+    labels: dict[str, str],
+    cluster_id: str = "local",
+    instance: str | None = None,
+    settings: AppSettings | None = None,
+    client: ManagementDiscoveryClient | None = None,
+) -> RancherReplicaSetDetail:
+    """Set_labels one replica_set via JSON merge-patch."""
+
+    resolved_settings = settings or get_settings()
+    instance_name, instance_config = resolve_instance(resolved_settings, instance)
+    ensure_instance_writable(instance_name, instance_config)
+    if client is not None:
+        return await _patch_replica_set_set_labels(
+            instance_name,
+            cluster_id,
+            namespace,
+            replica_set_name,
+            labels,
+            client,
+        )
+    async with RancherManagementClient(instance_name, instance_config) as managed_client:
+        return await _patch_replica_set_set_labels(
+            instance_name,
+            cluster_id,
+            namespace,
+            replica_set_name,
+            labels,
+            managed_client,
+        )
+
+
 async def rancher_replica_sets_list_tool(
     namespace: str,
     cluster_id: str = "local",
@@ -193,6 +273,24 @@ async def rancher_replica_set_get_tool(
     return await rancher_replica_set_get(
         namespace=namespace,
         replica_set_name=replica_set_name,
+        cluster_id=cluster_id,
+        instance=instance,
+    )
+
+
+async def rancher_replica_set_set_labels_tool(
+    namespace: str,
+    replica_set_name: str,
+    labels: dict[str, str],
+    cluster_id: str = "local",
+    instance: str | None = None,
+) -> RancherReplicaSetDetail:
+    """Public MCP wrapper for curated replica_set set_labels."""
+
+    return await rancher_replica_set_set_labels(
+        namespace=namespace,
+        replica_set_name=replica_set_name,
+        labels=labels,
         cluster_id=cluster_id,
         instance=instance,
     )

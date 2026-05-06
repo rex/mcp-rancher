@@ -25,7 +25,7 @@ support_value_imports:
   - string_dict
 summary_function: replicaset_summary_from_payload
 
-operations: [list, get]
+operations: [list, get, patch]
 
 list:
   query_params: [limit, continue_token, label_selector, field_selector]
@@ -59,6 +59,18 @@ get:
     - rancher_replica_sets_list
     - rancher_pods_list
 
+patches:
+  - verb: set_labels
+    target_path: metadata
+    audit_operation: replicaset_set_labels
+    args:
+      - name: labels
+        type: dict_str_str
+        required: true
+        description: Replacement metadata.labels map (merge-patch semantics — passing this REPLACES the labels map; pass an empty dict to remove all labels).
+    next_steps:
+      - rancher_replica_set_get
+
 tools:
   list:
     name: rancher_replica_sets_list
@@ -68,3 +80,7 @@ tools:
     name: rancher_replica_set_get
     description: Fetch one ReplicaSet by namespace and name via Rancher's raw Kubernetes proxy. Returns the curated summary plus full payload and annotation keys.
     annotation_set: READ_ONLY
+  patches:
+    - name: rancher_replica_set_set_labels
+      description: Replace metadata.labels on one Kubernetes ReplicaSet via JSON merge-patch. The `labels` arg is a complete replacement map. Returns the curated detail.
+      annotation_set: IDEMPOTENT_WRITE
