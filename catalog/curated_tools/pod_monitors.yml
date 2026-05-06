@@ -28,7 +28,7 @@ summary_function: pod_monitor_summary_from_payload
 query_builder_function: build_list_query_params
 query_builder_in_shared: true
 
-operations: [list, get]
+operations: [list, get, patch]
 
 list:
   query_params: [limit, continue_token, label_selector]
@@ -60,6 +60,19 @@ get:
     - rancher_pod_monitors_list
     - rancher_pods_list
 
+patches:
+  - verb: set_labels
+    target_path: metadata
+    audit_operation: pod_monitor_set_labels
+    args:
+      - name: labels
+        type: dict_str_str
+        required: true
+        description: Replacement metadata.labels map (merge-patch semantics — passing this REPLACES the labels map; pass an empty dict to remove all labels).
+    next_steps:
+      - rancher_pod_monitor_get
+      - rancher_pod_monitors_list
+
 tools:
   list:
     name: rancher_pod_monitors_list
@@ -69,3 +82,7 @@ tools:
     name: rancher_pod_monitor_get
     description: Fetch one PodMonitor by namespace and name. Returns the curated summary plus the list of endpoint ports being scraped, annotation keys, and full payload.
     annotation_set: READ_ONLY
+  patches:
+    - name: rancher_pod_monitor_set_labels
+      description: Replace metadata.labels on one PodMonitor via JSON merge-patch. The `labels` arg is a complete replacement map. Returns the curated detail.
+      annotation_set: IDEMPOTENT_WRITE
