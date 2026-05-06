@@ -26,6 +26,8 @@ from rancher_mcp.tools.cert_manager._generated_cert_manager_cluster_issuers impo
 from rancher_mcp.tools.cert_manager._generated_cert_manager_issuers import (
     rancher_cert_manager_issuer_get,
     rancher_cert_manager_issuer_get_tool,
+    rancher_cert_manager_issuer_set_labels,
+    rancher_cert_manager_issuer_set_labels_tool,
     rancher_cert_manager_issuers_list,
     rancher_cert_manager_issuers_list_tool,
 )
@@ -39,6 +41,7 @@ __all__ = [
     "rancher_cert_manager_cluster_issuer_get",
     "rancher_cert_manager_cluster_issuers_list",
     "rancher_cert_manager_issuer_get",
+    "rancher_cert_manager_issuer_set_labels",
     "rancher_cert_manager_issuers_list",
     "register_cert_manager_tools",
 ]
@@ -70,4 +73,7 @@ def register_cert_manager_tools(mcp: FastMCP) -> None:
     )
     mcp.tool(name="rancher_cert_manager_issuer_get", annotations=READ_ONLY)(
         rancher_cert_manager_issuer_get_tool
+    )
+    mcp.tool(name="rancher_cert_manager_issuer_set_labels", annotations=IDEMPOTENT_WRITE)(
+        rancher_cert_manager_issuer_set_labels_tool
     )
