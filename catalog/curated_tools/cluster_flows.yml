@@ -27,7 +27,7 @@ summary_function: cluster_flow_summary_from_payload
 query_builder_function: build_list_query_params
 query_builder_in_shared: true
 
-operations: [list, get]
+operations: [list, get, patch]
 
 list:
   query_params: [limit, continue_token, label_selector]
@@ -57,6 +57,19 @@ get:
     - rancher_cluster_flows_list
     - rancher_cluster_outputs_list
 
+patches:
+  - verb: set_labels
+    target_path: metadata
+    audit_operation: cluster_flow_set_labels
+    args:
+      - name: labels
+        type: dict_str_str
+        required: true
+        description: Replacement metadata.labels map (merge-patch semantics — passing this REPLACES the labels map; pass an empty dict to remove all labels).
+    next_steps:
+      - rancher_cluster_flow_get
+      - rancher_cluster_outputs_list
+
 tools:
   list:
     name: rancher_cluster_flows_list
@@ -66,3 +79,7 @@ tools:
     name: rancher_cluster_flow_get
     description: Fetch one Banzai logging ClusterFlow by name. Returns the curated summary plus full payload and annotation keys.
     annotation_set: READ_ONLY
+  patches:
+    - name: rancher_cluster_flow_set_labels
+      description: Replace metadata.labels on one Banzai logging ClusterFlow via JSON merge-patch. The `labels` arg is a complete replacement map.
+      annotation_set: IDEMPOTENT_WRITE
