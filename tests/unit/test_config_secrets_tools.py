@@ -27,6 +27,7 @@ from rancher_mcp.tools.config_secrets import (
     rancher_secret_set_labels,
     rancher_secrets_list,
     rancher_service_account_get,
+    rancher_service_account_set_annotations,
     rancher_service_account_set_labels,
     rancher_service_accounts_list,
 )
@@ -1735,3 +1736,113 @@ async def test_rancher_service_account_set_labels_emits_audit() -> None:
     assert record["plane"] == "steve"
     assert record["outcome"] == "success"
     assert "labels" in record["arg_keys"]
+
+
+# =====================================================================
+# rancher_service_account_set_annotations (PatchConfig substrate — metadata target)
+# =====================================================================
+
+
+class StubServiceAccountSetAnnotationsClient:
+    """Patch-capable raw Kubernetes proxy stub for the service_account set_annotations tests.
+
+    Captures the most recent ``patch_json`` request so tests can
+    assert on the merge-patch body and path, then echoes the ServiceAccount
+    payload back with the supplied annotations applied.
+    """
+
+    def __init__(self) -> None:
+        """Initialize a fresh per-test capture buffer for patch requests."""
+
+        self.last_patch_path: str | None = None
+        self.last_patch_payload: dict[str, object] | None = None
+
+    async def get_json(self, path: str, params: object = None) -> dict[str, object]:
+        """The set_annotations tests don't need GET; raise to surface accidental usage."""
+
+        raise AssertionError(f"unexpected get on {path!r} (params={params!r})")
+
+    async def patch_json(
+        self,
+        path: str,
+        payload: dict[str, object] | None = None,
+        params: object = None,
+    ) -> dict[str, object]:
+        """Capture the merge-patch and echo a Kubernetes-shaped ServiceAccount response."""
+
+        self.last_patch_path = path
+        assert payload is not None
+        self.last_patch_payload = dict(payload)
+
+        detail_path = "/k8s/clusters/local/api/v1/namespaces/demo/serviceaccounts/demo-sa"
+        if path == detail_path:
+            assert params is None
+            meta = payload.get("metadata")
+            assert isinstance(meta, dict)
+            new_annotations = meta.get("annotations", {})
+            return {
+                "metadata": {
+                    "name": "demo-sa",
+                    "namespace": "demo",
+                    "labels": {},
+                    "annotations": new_annotations,
+                },
+                "secrets": [{"name": "demo-sa-token-abc"}],
+                "imagePullSecrets": [],
+            }
+
+        raise AssertionError(f"unexpected patch path {path!r}")
+
+
+@pytest.mark.asyncio
+async def test_rancher_service_account_set_annotations_round_trip() -> None:
+    """PATCH body must be exactly {metadata: {annotations: <dict>}} at the detail path."""
+
+    reset_rate_limit_state()
+    client = StubServiceAccountSetAnnotationsClient()
+
+    result = await rancher_service_account_set_annotations(
+        namespace="demo",
+        service_account_name="demo-sa",
+        annotations={"app.kubernetes.io/managed-by": "helm", "env": "prod"},
+        cluster_id="local",
+        instance="work",
+        settings=build_settings(),
+        client=client,
+    )
+
+    assert client.last_patch_path == (
+        "/k8s/clusters/local/api/v1/namespaces/demo/serviceaccounts/demo-sa"
+    )
+    expected_annotations = {"app.kubernetes.io/managed-by": "helm", "env": "prod"}
+    assert client.last_patch_payload == {"metadata": {"annotations": expected_annotations}}
+
+    assert result.name == "demo-sa"
+    assert result.namespace == "demo"
+
+
+@pytest.mark.asyncio
+async def test_rancher_service_account_set_annotations_emits_audit() -> None:
+    """Audit record must carry operation='service_account_set_annotations'."""
+
+    reset_rate_limit_state()
+
+    with capture_logs() as logs:
+        await rancher_service_account_set_annotations(
+            namespace="demo",
+            service_account_name="demo-sa",
+            annotations={"team": "platform"},
+            cluster_id="local",
+            instance="work",
+            settings=build_settings(),
+            client=StubServiceAccountSetAnnotationsClient(),
+        )
+
+    audit_records = [r for r in logs if r.get("event") == "audit"]
+    assert len(audit_records) == 1
+    record = audit_records[0]
+    assert record["tool_name"] == "rancher_service_account_set_annotations"
+    assert record["operation"] == "service_account_set_annotations"
+    assert record["plane"] == "steve"
+    assert record["outcome"] == "success"
+    assert "annotations" in record["arg_keys"]
