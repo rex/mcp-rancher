@@ -2,6 +2,7 @@ SHELL := /opt/homebrew/bin/zsh
 .DEFAULT_GOAL := help
 
 .PHONY: help setup install env hooks dev start lint typecheck fix test test-unit \
+        live-health live-read-matrix live-steve live-lifecycle \
         build clean clean-all info update validate check-architecture \
         check-if-the-agent-can-consider-this-task-completed capture-fixtures \
         lab-up lab-down lab-reset lab-status lab-logs lab-tools lab-rancher-up \
@@ -45,6 +46,12 @@ help:
 	@echo "  \033[32mlab-kind-down\033[0m Stop both managed kind clusters"
 	@echo "  \033[32mcapture-fixtures\033[0m Capture sanitized Rancher contract fixtures from the live devlab"
 	@echo "  \033[32mmock-rancher\033[0m   Run a fixture-backed mock Rancher server for provider config testing"
+	@echo ""
+	@echo "\033[1;36mLive diagnostics (Track G)\033[0m"
+	@echo "  \033[32mlive-health\033[0m         Probe server_version + server_health on every configured instance"
+	@echo "  \033[32mlive-read-matrix\033[0m    Run the broad read-only smoke matrix on every configured instance"
+	@echo "  \033[32mlive-steve\033[0m          Run Steve-plane probes (INSTANCE=… CLUSTER=… [NAMESPACE=…])"
+	@echo "  \033[32mlive-lifecycle\033[0m      Full create/patch/apply/delete smoke (lab-only; refuses read-only instances)"
 	@echo ""
 	@echo "\033[1;36mQuality\033[0m"
 	@echo "  \033[32mlint\033[0m           Run ruff check"
@@ -142,6 +149,25 @@ capture-fixtures:
 ## Run the fixture-backed mock Rancher server for local provider validation
 mock-rancher:
 	$(PYTHON) -m devtools.mock_rancher
+
+# ─── Live diagnostics (Track G) ───────────────────────────────────────────────
+## Probe server_version + server_health on every configured instance
+live-health:
+	$(PYTHON) -m scripts.live_probe health
+
+## Run the broad read-only smoke matrix on every configured instance
+live-read-matrix:
+	$(PYTHON) -m scripts.live_probe read-matrix
+
+## Run Steve-plane (k8s-proxy) probes; INSTANCE and CLUSTER required
+##   make live-steve INSTANCE=lab CLUSTER=local [NAMESPACE=cattle-system]
+live-steve:
+	$(PYTHON) -m scripts.live_probe steve --instance $(INSTANCE) --cluster $(CLUSTER) $(if $(NAMESPACE),--namespace $(NAMESPACE),)
+
+## Full create/patch/apply/delete smoke (refuses read-only instances)
+##   make live-lifecycle INSTANCE=lab [CLUSTER=local]
+live-lifecycle:
+	$(PYTHON) -m scripts.live_probe lifecycle --instance $(INSTANCE) $(if $(CLUSTER),--cluster $(CLUSTER),)
 
 # ─── Quality ──────────────────────────────────────────────────────────────────
 ## Run ruff linter

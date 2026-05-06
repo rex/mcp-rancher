@@ -4,17 +4,26 @@ import json
 
 import pytest
 
-from rancher_mcp.config import AppSettings, get_settings
+from rancher_mcp.config import AppSettings
 
 
 def test_single_instance_shorthand_builds_default_instance(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Single-instance shorthand should produce a default instance map."""
+    """Single-instance shorthand should produce a default instance map.
 
+    Bypasses the repo's `.env` file (which may contain a populated
+    multi-instance JSON in real-user environments — see Track G live
+    validation 2026-05-06) and the `get_settings()` lru_cache by
+    instantiating ``AppSettings(_env_file=None)`` directly. Otherwise
+    pydantic-settings reads `.env` and `RANCHER_INSTANCES_JSON`
+    overrides the shorthand under test.
+    """
+
+    monkeypatch.delenv("RANCHER_INSTANCES_JSON", raising=False)
     monkeypatch.setenv("RANCHER_URL", "https://rancher.example.com")
     monkeypatch.setenv("RANCHER_TOKEN", "token-xxxxx:yyyyyyyyy")
     monkeypatch.setenv("RANCHER_DEFAULT_INSTANCE", "work")
 
-    settings = get_settings()
+    settings = AppSettings(_env_file=None)
 
     assert settings.default_instance == "work"
     assert "work" in settings.instances
@@ -45,7 +54,7 @@ def test_multi_instance_json_is_supported(monkeypatch: pytest.MonkeyPatch) -> No
     )
     monkeypatch.setenv("RANCHER_DEFAULT_INSTANCE", "lab")
 
-    settings = get_settings()
+    settings = AppSettings(_env_file=None)
 
     assert settings.default_instance == "lab"
     assert sorted(settings.instances) == ["lab", "work"]
