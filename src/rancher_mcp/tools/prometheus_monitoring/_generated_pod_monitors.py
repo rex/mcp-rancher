@@ -115,13 +115,13 @@ async def _fetch_pod_monitor_get(
     summary = pod_monitor_summary_from_payload(payload)
 
     metadata = mapping_value(payload, "metadata") or {}
-    annotations = mapping_value(metadata, "annotations") or {}
+    metadata_annotations = mapping_value(metadata, "annotations") or {}
     detail = RancherPodMonitorDetail.model_validate(payload)
     return detail.model_copy(
         update={
             "endpoint_count": summary.endpoint_count,
             "target_namespaces": summary.target_namespaces,
-            "annotation_keys": sorted(string_dict(annotations)),
+            "annotation_keys": sorted(string_dict(metadata_annotations)),
             "endpoint_ports": pod_monitor_endpoint_ports(payload),
             "payload": dict(payload),
             "suggested_next_steps": ["rancher_pod_monitors_list", "rancher_pods_list"],
@@ -181,13 +181,13 @@ async def _patch_pod_monitor_set_labels(
     summary = pod_monitor_summary_from_payload(payload)
 
     metadata = mapping_value(payload, "metadata") or {}
-    annotations = mapping_value(metadata, "annotations") or {}
+    metadata_annotations = mapping_value(metadata, "annotations") or {}
     detail = RancherPodMonitorDetail.model_validate(payload)
     return detail.model_copy(
         update={
             "endpoint_count": summary.endpoint_count,
             "target_namespaces": summary.target_namespaces,
-            "annotation_keys": sorted(string_dict(annotations)),
+            "annotation_keys": sorted(string_dict(metadata_annotations)),
             "endpoint_ports": pod_monitor_endpoint_ports(payload),
             "payload": dict(payload),
             "suggested_next_steps": ["rancher_pod_monitor_get", "rancher_pod_monitors_list"],
@@ -227,6 +227,82 @@ async def rancher_pod_monitor_set_labels(
             namespace,
             pod_monitor_name,
             labels,
+            managed_client,
+        )
+
+
+async def _patch_pod_monitor_set_annotations(
+    instance_name: str,
+    cluster_id: str,
+    namespace: str,
+    pod_monitor_name: str,
+    annotations: dict[str, str],
+    client: ManagementDiscoveryClient,
+) -> RancherPodMonitorDetail:
+    """Set_annotations one pod_monitor via JSON merge-patch; returns the curated detail."""
+
+    patch_subtree: dict[str, object] = {}
+    patch_subtree["annotations"] = annotations
+    if not patch_subtree:
+        raise RancherCapabilityError(
+            "No patch fields provided; every arg was None. Pass at least one field to update."
+        )
+    request_payload: dict[str, object] = patch_subtree
+    request_payload = {"metadata": request_payload}
+
+    payload = await client.patch_json(
+        monitoring_namespaced_resource_path(cluster_id, namespace, "podmonitors", pod_monitor_name),
+        payload=request_payload,
+    )
+    summary = pod_monitor_summary_from_payload(payload)
+
+    metadata = mapping_value(payload, "metadata") or {}
+    metadata_annotations = mapping_value(metadata, "annotations") or {}
+    detail = RancherPodMonitorDetail.model_validate(payload)
+    return detail.model_copy(
+        update={
+            "endpoint_count": summary.endpoint_count,
+            "target_namespaces": summary.target_namespaces,
+            "annotation_keys": sorted(string_dict(metadata_annotations)),
+            "endpoint_ports": pod_monitor_endpoint_ports(payload),
+            "payload": dict(payload),
+            "suggested_next_steps": ["rancher_pod_monitor_get"],
+        }
+    )
+
+
+@audit_mutation(operation="pod_monitor_set_annotations", plane="steve")
+@rate_limit_writes
+async def rancher_pod_monitor_set_annotations(
+    namespace: str,
+    pod_monitor_name: str,
+    annotations: dict[str, str],
+    cluster_id: str = "local",
+    instance: str | None = None,
+    settings: AppSettings | None = None,
+    client: ManagementDiscoveryClient | None = None,
+) -> RancherPodMonitorDetail:
+    """Set_annotations one pod_monitor via JSON merge-patch."""
+
+    resolved_settings = settings or get_settings()
+    instance_name, instance_config = resolve_instance(resolved_settings, instance)
+    ensure_instance_writable(instance_name, instance_config)
+    if client is not None:
+        return await _patch_pod_monitor_set_annotations(
+            instance_name,
+            cluster_id,
+            namespace,
+            pod_monitor_name,
+            annotations,
+            client,
+        )
+    async with RancherManagementClient(instance_name, instance_config) as managed_client:
+        return await _patch_pod_monitor_set_annotations(
+            instance_name,
+            cluster_id,
+            namespace,
+            pod_monitor_name,
+            annotations,
             managed_client,
         )
 
@@ -280,6 +356,24 @@ async def rancher_pod_monitor_set_labels_tool(
         namespace=namespace,
         pod_monitor_name=pod_monitor_name,
         labels=labels,
+        cluster_id=cluster_id,
+        instance=instance,
+    )
+
+
+async def rancher_pod_monitor_set_annotations_tool(
+    namespace: str,
+    pod_monitor_name: str,
+    annotations: dict[str, str],
+    cluster_id: str = "local",
+    instance: str | None = None,
+) -> RancherPodMonitorDetail:
+    """Public MCP wrapper for curated pod_monitor set_annotations."""
+
+    return await rancher_pod_monitor_set_annotations(
+        namespace=namespace,
+        pod_monitor_name=pod_monitor_name,
+        annotations=annotations,
         cluster_id=cluster_id,
         instance=instance,
     )
