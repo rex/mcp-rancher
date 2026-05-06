@@ -225,6 +225,74 @@ async def rancher_persistent_volume_set_labels(
         )
 
 
+async def _patch_persistent_volume_set_annotations(
+    instance_name: str,
+    cluster_id: str,
+    volume_name: str,
+    annotations: dict[str, str],
+    client: ManagementDiscoveryClient,
+) -> RancherPersistentVolumeDetail:
+    """Set_annotations one persistent_volume via JSON merge-patch; returns the curated detail."""
+
+    patch_subtree: dict[str, object] = {}
+    patch_subtree["annotations"] = annotations
+    if not patch_subtree:
+        raise RancherCapabilityError(
+            "No patch fields provided; every arg was None. Pass at least one field to update."
+        )
+    request_payload: dict[str, object] = patch_subtree
+    request_payload = {"metadata": request_payload}
+
+    payload = await client.patch_json(
+        persistent_volume_resource_path(cluster_id, volume_name),
+        payload=request_payload,
+    )
+    summary = persistent_volume_summary_from_payload(payload)
+
+    detail = RancherPersistentVolumeDetail.model_validate(payload)
+    return detail.model_copy(
+        update={
+            "volume_source_type": summary.volume_source_type,
+            "node_hostnames": persistent_volume_node_hostnames(payload),
+            "payload": dict(payload),
+            "suggested_next_steps": ["rancher_persistent_volume_get"],
+        }
+    )
+
+
+@audit_mutation(operation="persistent_volume_set_annotations", plane="steve")
+@rate_limit_writes
+async def rancher_persistent_volume_set_annotations(
+    volume_name: str,
+    annotations: dict[str, str],
+    cluster_id: str = "local",
+    instance: str | None = None,
+    settings: AppSettings | None = None,
+    client: ManagementDiscoveryClient | None = None,
+) -> RancherPersistentVolumeDetail:
+    """Set_annotations one persistent_volume via JSON merge-patch."""
+
+    resolved_settings = settings or get_settings()
+    instance_name, instance_config = resolve_instance(resolved_settings, instance)
+    ensure_instance_writable(instance_name, instance_config)
+    if client is not None:
+        return await _patch_persistent_volume_set_annotations(
+            instance_name,
+            cluster_id,
+            volume_name,
+            annotations,
+            client,
+        )
+    async with RancherManagementClient(instance_name, instance_config) as managed_client:
+        return await _patch_persistent_volume_set_annotations(
+            instance_name,
+            cluster_id,
+            volume_name,
+            annotations,
+            managed_client,
+        )
+
+
 async def rancher_persistent_volumes_list_tool(
     cluster_id: str = "local",
     phase: str | None = None,
@@ -270,6 +338,22 @@ async def rancher_persistent_volume_set_labels_tool(
     return await rancher_persistent_volume_set_labels(
         volume_name=volume_name,
         labels=labels,
+        cluster_id=cluster_id,
+        instance=instance,
+    )
+
+
+async def rancher_persistent_volume_set_annotations_tool(
+    volume_name: str,
+    annotations: dict[str, str],
+    cluster_id: str = "local",
+    instance: str | None = None,
+) -> RancherPersistentVolumeDetail:
+    """Public MCP wrapper for curated persistent_volume set_annotations."""
+
+    return await rancher_persistent_volume_set_annotations(
+        volume_name=volume_name,
+        annotations=annotations,
         cluster_id=cluster_id,
         instance=instance,
     )
