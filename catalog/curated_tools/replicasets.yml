@@ -70,6 +70,16 @@ patches:
         description: Replacement metadata.labels map (merge-patch semantics — passing this REPLACES the labels map; pass an empty dict to remove all labels).
     next_steps:
       - rancher_replica_set_get
+  - verb: set_annotations
+    target_path: metadata
+    audit_operation: replica_set_set_annotations
+    args:
+      - name: annotations
+        type: dict_str_str
+        required: true
+        description: Replacement metadata.annotations map (merge-patch semantics — passing this REPLACES the annotations map; pass an empty dict to remove all annotations).
+    next_steps:
+      - rancher_replica_set_get
 
 tools:
   list:
@@ -83,4 +93,7 @@ tools:
   patches:
     - name: rancher_replica_set_set_labels
       description: Replace metadata.labels on one Kubernetes ReplicaSet via JSON merge-patch. The `labels` arg is a complete replacement map. Returns the curated detail.
+      annotation_set: IDEMPOTENT_WRITE
+    - name: rancher_replica_set_set_annotations
+      description: Replace metadata.annotations on one Kubernetes ReplicaSet via JSON merge-patch. The `annotations` arg is a complete replacement map. Returns the curated detail.
       annotation_set: IDEMPOTENT_WRITE
