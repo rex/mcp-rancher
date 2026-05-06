@@ -106,12 +106,12 @@ async def _fetch_restore_get(
     summary = restore_summary_from_payload(payload)
 
     metadata = mapping_value(payload, "metadata") or {}
-    annotations = mapping_value(metadata, "annotations") or {}
+    metadata_annotations = mapping_value(metadata, "annotations") or {}
     detail = RancherRestoreDetail.model_validate(payload)
     return detail.model_copy(
         update={
             "summary_state": summary.summary_state,
-            "annotation_keys": sorted(string_dict(annotations)),
+            "annotation_keys": sorted(string_dict(metadata_annotations)),
             "condition_types_true": condition_types_true(conditions_from_payload(payload)),
             "storage_location_summary": storage_location_summary(payload),
             "payload": dict(payload),
@@ -167,12 +167,12 @@ async def _patch_restore_set_labels(
     summary = restore_summary_from_payload(payload)
 
     metadata = mapping_value(payload, "metadata") or {}
-    annotations = mapping_value(metadata, "annotations") or {}
+    metadata_annotations = mapping_value(metadata, "annotations") or {}
     detail = RancherRestoreDetail.model_validate(payload)
     return detail.model_copy(
         update={
             "summary_state": summary.summary_state,
-            "annotation_keys": sorted(string_dict(annotations)),
+            "annotation_keys": sorted(string_dict(metadata_annotations)),
             "condition_types_true": condition_types_true(conditions_from_payload(payload)),
             "storage_location_summary": storage_location_summary(payload),
             "payload": dict(payload),
@@ -210,6 +210,78 @@ async def rancher_restore_set_labels(
             cluster_id,
             restore_name,
             labels,
+            managed_client,
+        )
+
+
+async def _patch_restore_set_annotations(
+    instance_name: str,
+    cluster_id: str,
+    restore_name: str,
+    annotations: dict[str, str],
+    client: ManagementDiscoveryClient,
+) -> RancherRestoreDetail:
+    """Set_annotations one restore via JSON merge-patch; returns the curated detail."""
+
+    patch_subtree: dict[str, object] = {}
+    patch_subtree["annotations"] = annotations
+    if not patch_subtree:
+        raise RancherCapabilityError(
+            "No patch fields provided; every arg was None. Pass at least one field to update."
+        )
+    request_payload: dict[str, object] = patch_subtree
+    request_payload = {"metadata": request_payload}
+
+    payload = await client.patch_json(
+        resources_cattle_io_v1_resource_path(cluster_id, "restores", restore_name),
+        payload=request_payload,
+    )
+    summary = restore_summary_from_payload(payload)
+
+    metadata = mapping_value(payload, "metadata") or {}
+    metadata_annotations = mapping_value(metadata, "annotations") or {}
+    detail = RancherRestoreDetail.model_validate(payload)
+    return detail.model_copy(
+        update={
+            "summary_state": summary.summary_state,
+            "annotation_keys": sorted(string_dict(metadata_annotations)),
+            "condition_types_true": condition_types_true(conditions_from_payload(payload)),
+            "storage_location_summary": storage_location_summary(payload),
+            "payload": dict(payload),
+            "suggested_next_steps": ["rancher_restore_get"],
+        }
+    )
+
+
+@audit_mutation(operation="restore_set_annotations", plane="steve")
+@rate_limit_writes
+async def rancher_restore_set_annotations(
+    restore_name: str,
+    annotations: dict[str, str],
+    cluster_id: str = "local",
+    instance: str | None = None,
+    settings: AppSettings | None = None,
+    client: ManagementDiscoveryClient | None = None,
+) -> RancherRestoreDetail:
+    """Set_annotations one restore via JSON merge-patch."""
+
+    resolved_settings = settings or get_settings()
+    instance_name, instance_config = resolve_instance(resolved_settings, instance)
+    ensure_instance_writable(instance_name, instance_config)
+    if client is not None:
+        return await _patch_restore_set_annotations(
+            instance_name,
+            cluster_id,
+            restore_name,
+            annotations,
+            client,
+        )
+    async with RancherManagementClient(instance_name, instance_config) as managed_client:
+        return await _patch_restore_set_annotations(
+            instance_name,
+            cluster_id,
+            restore_name,
+            annotations,
             managed_client,
         )
 
@@ -255,6 +327,22 @@ async def rancher_restore_set_labels_tool(
     return await rancher_restore_set_labels(
         restore_name=restore_name,
         labels=labels,
+        cluster_id=cluster_id,
+        instance=instance,
+    )
+
+
+async def rancher_restore_set_annotations_tool(
+    restore_name: str,
+    annotations: dict[str, str],
+    cluster_id: str = "local",
+    instance: str | None = None,
+) -> RancherRestoreDetail:
+    """Public MCP wrapper for curated restore set_annotations."""
+
+    return await rancher_restore_set_annotations(
+        restore_name=restore_name,
+        annotations=annotations,
         cluster_id=cluster_id,
         instance=instance,
     )
