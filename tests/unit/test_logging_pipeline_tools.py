@@ -22,6 +22,7 @@ from rancher_mcp.tools.logging_pipeline import (
     rancher_flow_set_labels,
     rancher_flows_list,
     rancher_output_get,
+    rancher_output_set_labels,
     rancher_outputs_list,
 )
 
@@ -876,3 +877,90 @@ async def test_rancher_cluster_output_set_labels_emits_audit() -> None:
     assert record["plane"] == "steve"
     assert record["outcome"] == "success"
     assert "labels" in record["arg_keys"]
+
+
+# rancher_output_set_labels (PatchConfig substrate — namespaced)
+# ==============================================================
+
+
+class StubOutputSetLabelsClient:
+    """Stub for output set_labels tests."""
+
+    def __init__(self) -> None:
+        self.last_patch_path: str | None = None
+        self.last_patch_payload: dict[str, object] | None = None
+
+    async def get_json(self, path: str, params: object = None) -> dict[str, object]:
+        raise AssertionError(f"unexpected get on {path!r}")
+
+    async def patch_json(
+        self,
+        path: str,
+        payload: dict[str, object] | None = None,
+        params: object = None,
+    ) -> dict[str, object]:
+        self.last_patch_path = path
+        assert payload is not None
+        self.last_patch_payload = dict(payload)
+        detail_path = (
+            "/k8s/clusters/local/apis/logging.banzaicloud.io/v1beta1"
+            "/namespaces/logging/outputs/s3-out"
+        )
+        if path == detail_path:
+            assert params is None
+            meta = payload.get("metadata")
+            assert isinstance(meta, dict)
+            new_labels = meta.get("labels", {})
+            return {
+                "metadata": {
+                    "name": "s3-out",
+                    "namespace": "logging",
+                    "labels": new_labels,
+                    "annotations": {"app": "logging"},
+                },
+                "spec": {"loggingRef": "default"},
+            }
+        raise AssertionError(f"unexpected patch path {path!r}")
+
+
+@pytest.mark.asyncio
+async def test_rancher_output_set_labels_round_trip() -> None:
+    reset_rate_limit_state()
+    client = StubOutputSetLabelsClient()
+    result = await rancher_output_set_labels(
+        namespace="logging",
+        output_name="s3-out",
+        labels={"env": "prod", "team": "platform"},
+        cluster_id="local",
+        instance="work",
+        settings=build_settings(),
+        client=client,
+    )
+    assert client.last_patch_path == (
+        "/k8s/clusters/local/apis/logging.banzaicloud.io/v1beta1/namespaces/logging/outputs/s3-out"
+    )
+    assert client.last_patch_payload == {
+        "metadata": {"labels": {"env": "prod", "team": "platform"}}
+    }
+    assert result.name == "s3-out"
+    assert result.namespace == "logging"
+
+
+@pytest.mark.asyncio
+async def test_rancher_output_set_labels_emits_audit() -> None:
+    reset_rate_limit_state()
+    with capture_logs() as logs:
+        await rancher_output_set_labels(
+            namespace="logging",
+            output_name="s3-out",
+            labels={"app": "web"},
+            cluster_id="local",
+            instance="work",
+            settings=build_settings(),
+            client=StubOutputSetLabelsClient(),
+        )
+    audit_records = [r for r in logs if r.get("event") == "audit"]
+    assert len(audit_records) == 1
+    record = audit_records[0]
+    assert record["tool_name"] == "rancher_output_set_labels"
+    assert record["operation"] == "output_set_labels"

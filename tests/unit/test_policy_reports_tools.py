@@ -7,6 +7,7 @@ from rancher_mcp.config import AppSettings
 from rancher_mcp.rate_limit import reset_rate_limit_state
 from rancher_mcp.tools.policy_reports import (
     rancher_cluster_policy_report_get,
+    rancher_cluster_policy_report_set_labels,
     rancher_cluster_policy_reports_list,
     rancher_policy_report_get,
     rancher_policy_report_set_labels,
@@ -291,3 +292,85 @@ async def test_rancher_policy_report_set_labels_emits_audit() -> None:
     assert record["plane"] == "steve"
     assert record["outcome"] == "success"
     assert "labels" in record["arg_keys"]
+
+
+_PATCHED_CLUSTER_POLICY_REPORT_PAYLOAD = {
+    "metadata": {
+        "name": "system-report",
+        "labels": {"env": "prod"},
+        "annotations": {},
+    },
+    "summary": {"pass": 12, "fail": 0, "warn": 0, "error": 0, "skip": 1},
+    "results": [{"policy": "node-baseline", "result": "pass", "rule": "audit"}],
+}
+
+
+class StubClusterPolicyReportSetLabelsClient:
+    """Cluster-scoped patch stub for ClusterPolicyReport set_labels."""
+
+    def __init__(self) -> None:
+        self.last_patch_path: str | None = None
+        self.last_patch_payload: dict[str, object] | None = None
+
+    async def get_json(self, path: str, params: object = None) -> dict[str, object]:
+        raise AssertionError(f"unexpected get on {path!r}")
+
+    async def patch_json(
+        self,
+        path: str,
+        payload: dict[str, object] | None = None,
+        params: object = None,
+    ) -> dict[str, object]:
+        self.last_patch_path = path
+        assert payload is not None
+        self.last_patch_payload = dict(payload)
+        expected_path = (
+            "/k8s/clusters/local/apis/wgpolicyk8s.io/v1alpha2/clusterpolicyreports/system-report"
+        )
+        if path == expected_path:
+            assert params is None
+            return _PATCHED_CLUSTER_POLICY_REPORT_PAYLOAD
+        raise AssertionError(f"unexpected patch path {path!r}")
+
+
+@pytest.mark.asyncio
+async def test_rancher_cluster_policy_report_set_labels_round_trip() -> None:
+    """Cluster-scoped path; body is {metadata: {labels: <map>}}."""
+
+    reset_rate_limit_state()
+    client = StubClusterPolicyReportSetLabelsClient()
+    result = await rancher_cluster_policy_report_set_labels(
+        report_name="system-report",
+        labels={"env": "prod"},
+        cluster_id="local",
+        instance="work",
+        settings=build_settings(),
+        client=client,
+    )
+    assert client.last_patch_path == (
+        "/k8s/clusters/local/apis/wgpolicyk8s.io/v1alpha2/clusterpolicyreports/system-report"
+    )
+    assert client.last_patch_payload == {"metadata": {"labels": {"env": "prod"}}}
+    assert result.name == "system-report"
+
+
+@pytest.mark.asyncio
+async def test_rancher_cluster_policy_report_set_labels_emits_audit() -> None:
+    """Audit op: cluster_policy_report_set_labels."""
+
+    reset_rate_limit_state()
+    with capture_logs() as logs:
+        await rancher_cluster_policy_report_set_labels(
+            report_name="system-report",
+            labels={"env": "prod"},
+            cluster_id="local",
+            instance="work",
+            settings=build_settings(),
+            client=StubClusterPolicyReportSetLabelsClient(),
+        )
+    audit_records = [r for r in logs if r.get("event") == "audit"]
+    assert len(audit_records) == 1
+    record = audit_records[0]
+    assert record["tool_name"] == "rancher_cluster_policy_report_set_labels"
+    assert record["operation"] == "cluster_policy_report_set_labels"
+    assert record["outcome"] == "success"
