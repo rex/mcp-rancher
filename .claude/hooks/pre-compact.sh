@@ -1,32 +1,47 @@
 #!/usr/bin/env bash
 # PreCompact hook — fires before Claude Code compacts the conversation.
-# Dumps TASK_STATE.md + PROGRESS.md + CLAUDE.md so they're in the pre-compact
-# window and show up in the summary. This is the third layer of compaction
-# defense (first is on-disk files, second is SessionStart re-inject).
+#
+# Writes a forensic snapshot of TASK_STATE.md + PROGRESS.md to disk so we
+# have a record of what state was active right before each compaction.
+#
+# Does NOT emit additionalContext: the PreCompact event has no injection
+# mechanism for that. Its only honored top-level fields are `continue`,
+# `stopReason`, and `suppressOutput`. The compacted summary is produced by
+# Claude itself; SessionStart re-injects TASK_STATE / PROGRESS on the
+# post-compact resume path, so no in-band injection is needed here.
 #
 # Fires on: PreCompact
-# Emits:    JSON with hookSpecificOutput.additionalContext
+# Emits:    nothing on stdout (silent success — exits 0)
+# Side effect: rewrites .claude/last-pre-compact-snapshot.md
 
 set -euo pipefail
 
 cd "${CLAUDE_PROJECT_DIR:-.}"
 
-ctx="## Pre-compact snapshot\n\n"
+mkdir -p .claude
+snapshot=".claude/last-pre-compact-snapshot.md"
 
-if [ -f TASK_STATE.md ]; then
-  ctx+="### TASK_STATE.md (full)\n"
-  ctx+="$(cat TASK_STATE.md)\n\n"
-fi
+{
+  echo "# Pre-compact snapshot"
+  echo
+  echo "Captured: $(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+  echo
 
-if [ -f PROGRESS.md ]; then
-  ctx+="### PROGRESS.md\n"
-  ctx+="$(cat PROGRESS.md)\n\n"
-fi
+  if [ -f TASK_STATE.md ]; then
+    echo "## TASK_STATE.md (full)"
+    echo
+    cat TASK_STATE.md
+    echo
+  fi
 
-# Don't dump AGENTS.md/CLAUDE.md in full — they're re-loaded on session start
-# anyway, and inclusion here would balloon the pre-compact context.
-ctx+="### Note\n"
-ctx+="AGENTS.md and CLAUDE.md are re-loaded by SessionStart hook after compaction.\n"
+  if [ -f PROGRESS.md ]; then
+    echo "## PROGRESS.md"
+    echo
+    cat PROGRESS.md
+    echo
+  fi
 
-jq -n --arg c "$ctx" \
-  '{hookSpecificOutput:{hookEventName:"PreCompact", additionalContext:$c}}'
+  echo "## Note"
+  echo
+  echo "AGENTS.md and CLAUDE.md are re-loaded by the SessionStart hook after compaction."
+} > "$snapshot"
