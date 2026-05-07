@@ -27,7 +27,7 @@ summary_function: cluster_flow_summary_from_payload
 query_builder_function: build_list_query_params
 query_builder_in_shared: true
 
-operations: [list, get, patch]
+operations: [list, get, delete, patch]
 
 list:
   query_params: [limit, continue_token, label_selector]
@@ -56,6 +56,12 @@ get:
   next_steps:
     - rancher_cluster_flows_list
     - rancher_cluster_outputs_list
+
+delete:
+  audit_operation: cluster_flow_delete
+  confirmation_phrase: "delete cluster_flow {cluster_flow_name}"
+  next_steps:
+    - rancher_cluster_flows_list
 
 patches:
   - verb: set_labels
@@ -89,6 +95,10 @@ tools:
     name: rancher_cluster_flow_get
     description: Fetch one Banzai logging ClusterFlow by name. Returns the curated summary plus full payload and annotation keys.
     annotation_set: READ_ONLY
+  delete:
+    name: rancher_cluster_flow_delete
+    description: Delete one Banzai logging ClusterFlow (cluster-scoped). The `confirmation` arg must equal the exact phrase "delete cluster_flow NAME" (substituting the actual name; no namespace suffix because the resource is cluster-scoped). Returns a typed delete result with the rendered confirmation phrase. Subject to write rate limiting and audit logging.
+    annotation_set: DESTRUCTIVE
   patches:
     - name: rancher_cluster_flow_set_labels
       description: Replace metadata.labels on one Banzai logging ClusterFlow via JSON merge-patch. The `labels` arg is a complete replacement map.
