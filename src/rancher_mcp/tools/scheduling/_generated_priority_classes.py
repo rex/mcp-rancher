@@ -10,6 +10,7 @@ from rancher_mcp.audit import audit_mutation
 from rancher_mcp.clients.management import ManagementDiscoveryClient, RancherManagementClient
 from rancher_mcp.config import AppSettings, get_settings
 from rancher_mcp.exceptions import RancherCapabilityError
+from rancher_mcp.models.resources import RancherCuratedDeleteResult
 from rancher_mcp.models.scheduling import RancherPriorityClassDetail, RancherPriorityClassList
 from rancher_mcp.rate_limit import rate_limit_writes
 from rancher_mcp.services.instances import resolve_instance
@@ -161,6 +162,69 @@ async def rancher_priority_class_get(
             instance_name,
             cluster_id,
             priority_class_name,
+            managed_client,
+        )
+
+
+async def _delete_priority_class(
+    instance_name: str,
+    cluster_id: str,
+    priority_class_name: str,
+    confirmation_phrase_used: str,
+    client: ManagementDiscoveryClient,
+) -> RancherCuratedDeleteResult:
+    """Delete one priority_class; returns a typed delete result."""
+
+    response_payload = await client.delete_json(
+        scheduling_v1_resource_path(cluster_id, "priorityclasses", priority_class_name),
+    )
+    return RancherCuratedDeleteResult(
+        instance=instance_name,
+        plane="steve",
+        resource_kind="priority_class",
+        resource_name=priority_class_name,
+        cluster_id=cluster_id,
+        deleted=True,
+        confirmation_phrase_used=confirmation_phrase_used,
+        response_payload=dict(response_payload),
+        suggested_next_steps=["rancher_priority_classes_list"],
+    )
+
+
+@audit_mutation(operation="priority_class_delete", plane="steve")
+@rate_limit_writes
+async def rancher_priority_class_delete(
+    priority_class_name: str,
+    confirmation: str,
+    cluster_id: str = "local",
+    instance: str | None = None,
+    settings: AppSettings | None = None,
+    client: ManagementDiscoveryClient | None = None,
+) -> RancherCuratedDeleteResult:
+    """Delete one priority_class after the agent echoes the required confirmation phrase."""
+
+    expected_phrase = f"delete priority_class {priority_class_name}"
+    if confirmation != expected_phrase:
+        raise RancherCapabilityError(
+            f"Delete confirmation did not match the required phrase: {expected_phrase!r}"
+        )
+    resolved_settings = settings or get_settings()
+    instance_name, instance_config = resolve_instance(resolved_settings, instance)
+    ensure_instance_writable(instance_name, instance_config)
+    if client is not None:
+        return await _delete_priority_class(
+            instance_name,
+            cluster_id,
+            priority_class_name,
+            expected_phrase,
+            client,
+        )
+    async with RancherManagementClient(instance_name, instance_config) as managed_client:
+        return await _delete_priority_class(
+            instance_name,
+            cluster_id,
+            priority_class_name,
+            expected_phrase,
             managed_client,
         )
 
@@ -338,6 +402,22 @@ async def rancher_priority_class_get_tool(
 
     return await rancher_priority_class_get(
         priority_class_name=priority_class_name,
+        cluster_id=cluster_id,
+        instance=instance,
+    )
+
+
+async def rancher_priority_class_delete_tool(
+    priority_class_name: str,
+    confirmation: str,
+    cluster_id: str = "local",
+    instance: str | None = None,
+) -> RancherCuratedDeleteResult:
+    """Public MCP wrapper for curated priority_class delete."""
+
+    return await rancher_priority_class_delete(
+        priority_class_name=priority_class_name,
+        confirmation=confirmation,
         cluster_id=cluster_id,
         instance=instance,
     )

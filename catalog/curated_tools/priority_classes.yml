@@ -27,7 +27,7 @@ summary_function: priority_class_summary_from_payload
 query_builder_function: build_list_query_params
 query_builder_in_shared: true
 
-operations: [list, get, patch]
+operations: [list, get, delete, patch]
 
 patches:
   - verb: set_labels
@@ -84,6 +84,12 @@ get:
     - rancher_priority_classes_list
     - rancher_pods_list
 
+delete:
+  audit_operation: priority_class_delete
+  confirmation_phrase: "delete priority_class {priority_class_name}"
+  next_steps:
+    - rancher_priority_classes_list
+
 tools:
   list:
     name: rancher_priority_classes_list
@@ -93,6 +99,10 @@ tools:
     name: rancher_priority_class_get
     description: Fetch one PriorityClass by name. Returns the curated summary plus annotation keys and full payload.
     annotation_set: READ_ONLY
+  delete:
+    name: rancher_priority_class_delete
+    description: Delete one Kubernetes PriorityClass (cluster-scoped). The `confirmation` arg must equal the exact phrase "delete priority_class NAME" (substituting the actual value; no namespace segment because PriorityClasses are cluster-scoped). Returns a typed delete result with the rendered confirmation phrase. Subject to write rate limiting and audit logging.
+    annotation_set: DESTRUCTIVE
   patches:
     - name: rancher_priority_class_set_labels
       description: Replace metadata.labels on one Kubernetes PriorityClass (cluster-scoped) via JSON merge-patch. The `labels` arg is a complete replacement map. Returns the curated detail.
