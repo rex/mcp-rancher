@@ -27,7 +27,7 @@ summary_function: output_summary_from_payload
 query_builder_function: build_list_query_params
 query_builder_in_shared: true
 
-operations: [list, get, patch]
+operations: [list, get, delete, patch]
 
 list:
   query_params: [limit, continue_token, label_selector]
@@ -57,6 +57,12 @@ get:
   next_steps:
     - rancher_outputs_list
     - rancher_flows_list
+
+delete:
+  audit_operation: output_delete
+  confirmation_phrase: "delete output {output_name} in namespace {namespace}"
+  next_steps:
+    - rancher_outputs_list
 
 patches:
   - verb: set_labels
@@ -90,6 +96,10 @@ tools:
     name: rancher_output_get
     description: Fetch one Banzai logging Output by namespace and name. Returns the curated summary plus full payload and annotation keys.
     annotation_set: READ_ONLY
+  delete:
+    name: rancher_output_delete
+    description: Delete one Banzai logging Output. The `confirmation` arg must equal the exact phrase "delete output NAME in namespace NS" (substituting the actual values). Returns a typed delete result with the rendered confirmation phrase. Subject to write rate limiting and audit logging.
+    annotation_set: DESTRUCTIVE
   patches:
     - name: rancher_output_set_labels
       description: Replace metadata.labels on one Banzai logging Output via JSON merge-patch. Returns the curated detail.
