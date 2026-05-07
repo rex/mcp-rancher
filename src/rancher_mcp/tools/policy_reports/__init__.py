@@ -8,6 +8,8 @@
 from mcp.server.fastmcp import FastMCP
 
 from rancher_mcp.tools.policy_reports._generated_cluster_policy_reports import (
+    rancher_cluster_policy_report_delete,
+    rancher_cluster_policy_report_delete_tool,
     rancher_cluster_policy_report_get,
     rancher_cluster_policy_report_get_tool,
     rancher_cluster_policy_report_set_annotations,
@@ -32,6 +34,7 @@ from rancher_mcp.tools.policy_reports._generated_policy_reports import (
 from rancher_mcp.tools.support.annotations import DESTRUCTIVE, IDEMPOTENT_WRITE, READ_ONLY
 
 __all__ = [
+    "rancher_cluster_policy_report_delete",
     "rancher_cluster_policy_report_get",
     "rancher_cluster_policy_report_set_annotations",
     "rancher_cluster_policy_report_set_labels",
@@ -53,6 +56,9 @@ def register_policy_reports_tools(mcp: FastMCP) -> None:
     )
     mcp.tool(name="rancher_cluster_policy_report_get", annotations=READ_ONLY)(
         rancher_cluster_policy_report_get_tool
+    )
+    mcp.tool(name="rancher_cluster_policy_report_delete", annotations=DESTRUCTIVE)(
+        rancher_cluster_policy_report_delete_tool
     )
     mcp.tool(name="rancher_cluster_policy_report_set_labels", annotations=IDEMPOTENT_WRITE)(
         rancher_cluster_policy_report_set_labels_tool
