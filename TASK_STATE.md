@@ -30,7 +30,7 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 - Operational roadmap (track-level work breakdown): `ROADMAP.md`
 - Primary target: Rancher `2.9.3` (production)
 - Compat floor: Rancher `2.6.5` (devlab; never regress)
-- Public tool surface: 292 tools
+- Public tool surface: 300 tools
 - Completion gate: `make check-if-the-agent-can-consider-this-task-completed`
 - Active quality gates:
   `make check-architecture`
@@ -103,6 +103,24 @@ scale + set_labels), and 8 different packs (incl. cluster-scoped
 and optional-chart resources). Substrate is feature-complete.
 
 ## Latest Logical Step
+
+- **Batch 15 landed (`d103c05`)** — 8 set_annotations follow-ups
+  on Batch 14 descriptors. Tool surface **292 → 300 (+8)**.
+  Tests **552 → 568 (+16)**. 85.14% coverage, all gates green.
+  Slices: cert_manager_cluster_issuer, cluster_output, cluster_policy_report,
+  longhorn_snapshot, namespace (Steve transport), output (manual apply
+  for same-pack test conflict), pod, policy_report. All 8 agents
+  used the defensive `metadata_annotations` rename in `get.locals`
+  per the shared brief. Single manual-apply needed (output) due to
+  same-pack test-file conflict with cluster_output;
+  the policy_reports pair auto-merged cleanly because git found
+  non-overlapping additions.
+
+- **Pre-compact hook fixed (`bbe8dce`).** Was emitting invalid
+  schema for years. Rewritten as silent disk-checkpoint — writes
+  to `.claude/last-pre-compact-snapshot.md` (gitignored), exits 0
+  with no stdout. SessionStart already covers context re-injection
+  on the post-compact resume path.
 
 - **DEFAULT SCOPE COMPLETE.** All 9 Q&A defaults from session
   start landed. Tool surface 184 → 268 (+84) since post-

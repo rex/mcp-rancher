@@ -1,5 +1,24 @@
 # Changelog
 
+## [2026-05-06] - Agent: Claude Opus 4.7
+
+### Fixed (PreCompact hook)
+
+The `pre-compact.sh` hook had been emitting `{"hookSpecificOutput": {"hookEventName": "PreCompact", ...}}`, which the Claude Code hook output validator does not accept — `PreCompact` is not a valid `hookSpecificOutput` discriminator (only `PreToolUse / UserPromptSubmit / PostToolUse / PostToolBatch / SessionStart`). PreCompact events have no in-band context-injection mechanism; their only honored fields are `continue / stopReason / suppressOutput`. The hook had been failing schema validation on every fire.
+
+Rewritten as a silent disk-checkpoint: writes a forensic snapshot to `.claude/last-pre-compact-snapshot.md` (timestamp + TASK_STATE.md + PROGRESS.md), exits 0 with no stdout. The "re-inject TASK_STATE on resume" role is already covered by the SessionStart hook on the post-compact resume path. Snapshot file gitignored. (`bbe8dce`)
+
+### Added (Batch 15 — 8 parallel Sonnet subagents, set_annotations follow-ups on Batch 14 descriptors)
+
+Tool surface **292 → 300 (+8)**. Tests **552 → 568 (+16)**. 85.14% coverage. All gates green.
+
+Slices: cert_manager_cluster_issuer_set_annotations (`33c21a3`), longhorn_snapshot_set_annotations (`08b3d7f`), namespace_set_annotations (`7ccb077`, Steve transport), pod_set_annotations (`ea0c369`), cluster_output_set_annotations (`fca52d4`), output_set_annotations (`6c13893`, manual apply due to same-pack test conflict), cluster_policy_report_set_annotations (`31a08a5`), policy_report_set_annotations (`d103c05`).
+
+**Pattern observations**:
+- All 8 agents applied the defensive `annotations` → `metadata_annotations` rename in `get.locals` per the shared brief's prescribed pitfall workaround. Pattern is now uniformly enforced — agents recognize and resolve the shadow without hand-holding.
+- Single manual-apply needed (logging_pipeline pair) when both agents' new test blocks landed at the same end-of-file position. The policy_reports pair auto-merged cleanly because git found non-overlapping addition points.
+- All 8 agents returned `git log --oneline -1` output verbatim per the prompt-template requirement, confirming the Batch 7 commit-step regression is permanently mitigated.
+
 ## [2026-05-05] - Agent: Claude Opus 4.7
 
 ### Added (Batch 7 — 9 parallel Sonnet subagents, set_annotations follow-ups across 9 packs)
