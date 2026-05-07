@@ -1875,6 +1875,21 @@ Eight multi-patch annotation follow-ups on Batch 6 set_labels descriptors. Each 
 | `D-1-longhorn-node-set-annotations` | `longhorn_nodes.yml` | longhorn | longhorn_node | longhorn_node_set_annotations | Longhorn Node CR | namespaced; multi-patch; optional Longhorn chart |
 | `D-1-configmap-set-annotations` | `configmaps.yml` | config_secrets | config_map | configmap_set_annotations | ConfigMap | namespaced; multi-patch (APPEND alongside set_labels — configmap will end at create + apply + delete + set_labels + set_annotations); 9th agent — pack-pairs with secret in same batch |
 
+#### Slice-specific rows — Batch 15 set_annotations (2026-05-06, post-Batch-14)
+
+Eight multi-patch annotation follow-ups on Batch 14 set_labels descriptors. Each adds `set_annotations` as a SECOND entry on the existing `patches:` list (descriptor only has `set_labels` from Batch 14). Predicted Tool surface delta: 292 → 300 (+8). Same-pack conflicts expected on cherry-pick: logging_pipeline pair (`cluster_output` + `output`) and policy_reports pair (`cluster_policy_report` + `policy_report`) will conflict on the shared test files in their packs — apply the manual-merge pattern documented in the cookbook (`docs/codegen-write-tools-cookbook.md`).
+
+| Slice ID | Descriptor file | Pack | display_name_singular | audit_operation | Resource | Notes |
+|---|---|---|---|---|---|---|
+| `D-1-cert-manager-cluster-issuer-set-annotations` | `cert_manager_cluster_issuers.yml` | cert_manager | cert_manager_cluster_issuer | cert_manager_cluster_issuer_set_annotations | ClusterIssuer | cluster-scoped; multi-patch (APPEND alongside set_labels); optional cert-manager chart |
+| `D-1-cluster-output-set-annotations` | `cluster_outputs.yml` | logging_pipeline | cluster_output | cluster_output_set_annotations | ClusterOutput | cluster-scoped; multi-patch (APPEND); optional Banzai chart; pack-pairs with output in same batch |
+| `D-1-cluster-policy-report-set-annotations` | `cluster_policy_reports.yml` | policy_reports | cluster_policy_report | cluster_policy_report_set_annotations | ClusterPolicyReport | cluster-scoped; multi-patch (APPEND); pack-pairs with policy_report in same batch |
+| `D-1-longhorn-snapshot-set-annotations` | `longhorn_snapshots.yml` | longhorn | longhorn_snapshot | longhorn_snapshot_set_annotations | Longhorn Snapshot CR | namespaced; multi-patch (APPEND); optional Longhorn chart |
+| `D-1-namespace-set-annotations` | `namespaces.yml` | projects_namespaces | namespace | namespace_set_annotations | Namespace | cluster-scoped; **Steve transport** (matches Batch 14 set_labels); multi-patch (APPEND) |
+| `D-1-output-set-annotations` | `outputs.yml` | logging_pipeline | output | output_set_annotations | Output | namespaced; multi-patch (APPEND); optional Banzai chart; pack-pairs with cluster_output |
+| `D-1-pod-set-annotations` | `pods.yml` | pods_services | pod | pod_set_annotations | Pod | namespaced; multi-patch (APPEND alongside set_labels) |
+| `D-1-policy-report-set-annotations` | `policy_reports.yml` | policy_reports | policy_report | policy_report_set_annotations | PolicyReport | namespaced; multi-patch (APPEND); pack-pairs with cluster_policy_report |
+
 ---
 
 ### Shared brief — Destructive delete (`D-3-*-delete`)
