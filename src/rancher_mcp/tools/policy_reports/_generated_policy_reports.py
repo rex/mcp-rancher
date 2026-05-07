@@ -11,6 +11,7 @@ from rancher_mcp.clients.management import ManagementDiscoveryClient, RancherMan
 from rancher_mcp.config import AppSettings, get_settings
 from rancher_mcp.exceptions import RancherCapabilityError
 from rancher_mcp.models.policy_reports import RancherPolicyReportDetail, RancherPolicyReportList
+from rancher_mcp.models.resources import RancherCuratedDeleteResult
 from rancher_mcp.rate_limit import rate_limit_writes
 from rancher_mcp.services.instances import resolve_instance
 from rancher_mcp.services.resources.builders_pagination import next_page_token_from_payload
@@ -152,6 +153,74 @@ async def rancher_policy_report_get(
             cluster_id,
             namespace,
             report_name,
+            managed_client,
+        )
+
+
+async def _delete_policy_report(
+    instance_name: str,
+    cluster_id: str,
+    namespace: str,
+    report_name: str,
+    confirmation_phrase_used: str,
+    client: ManagementDiscoveryClient,
+) -> RancherCuratedDeleteResult:
+    """Delete one policy_report; returns a typed delete result."""
+
+    response_payload = await client.delete_json(
+        policy_namespaced_resource_path(cluster_id, namespace, "policyreports", report_name),
+    )
+    return RancherCuratedDeleteResult(
+        instance=instance_name,
+        plane="steve",
+        resource_kind="policy_report",
+        resource_name=report_name,
+        namespace=namespace,
+        cluster_id=cluster_id,
+        deleted=True,
+        confirmation_phrase_used=confirmation_phrase_used,
+        response_payload=dict(response_payload),
+        suggested_next_steps=["rancher_policy_reports_list"],
+    )
+
+
+@audit_mutation(operation="policy_report_delete", plane="steve")
+@rate_limit_writes
+async def rancher_policy_report_delete(
+    namespace: str,
+    report_name: str,
+    confirmation: str,
+    cluster_id: str = "local",
+    instance: str | None = None,
+    settings: AppSettings | None = None,
+    client: ManagementDiscoveryClient | None = None,
+) -> RancherCuratedDeleteResult:
+    """Delete one policy_report after the agent echoes the required confirmation phrase."""
+
+    expected_phrase = f"delete policy_report {report_name} in namespace {namespace}"
+    if confirmation != expected_phrase:
+        raise RancherCapabilityError(
+            f"Delete confirmation did not match the required phrase: {expected_phrase!r}"
+        )
+    resolved_settings = settings or get_settings()
+    instance_name, instance_config = resolve_instance(resolved_settings, instance)
+    ensure_instance_writable(instance_name, instance_config)
+    if client is not None:
+        return await _delete_policy_report(
+            instance_name,
+            cluster_id,
+            namespace,
+            report_name,
+            expected_phrase,
+            client,
+        )
+    async with RancherManagementClient(instance_name, instance_config) as managed_client:
+        return await _delete_policy_report(
+            instance_name,
+            cluster_id,
+            namespace,
+            report_name,
+            expected_phrase,
             managed_client,
         )
 
@@ -337,6 +406,24 @@ async def rancher_policy_report_get_tool(
     return await rancher_policy_report_get(
         namespace=namespace,
         report_name=report_name,
+        cluster_id=cluster_id,
+        instance=instance,
+    )
+
+
+async def rancher_policy_report_delete_tool(
+    namespace: str,
+    report_name: str,
+    confirmation: str,
+    cluster_id: str = "local",
+    instance: str | None = None,
+) -> RancherCuratedDeleteResult:
+    """Public MCP wrapper for curated policy_report delete."""
+
+    return await rancher_policy_report_delete(
+        namespace=namespace,
+        report_name=report_name,
+        confirmation=confirmation,
         cluster_id=cluster_id,
         instance=instance,
     )

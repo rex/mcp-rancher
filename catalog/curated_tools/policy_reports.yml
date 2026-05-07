@@ -27,7 +27,7 @@ summary_function: policy_report_summary_from_payload
 query_builder_function: build_list_query_params
 query_builder_in_shared: true
 
-operations: [list, get, patch]
+operations: [list, get, delete, patch]
 
 list:
   query_params: [limit, continue_token, label_selector]
@@ -56,6 +56,12 @@ get:
   next_steps:
     - rancher_policy_reports_list
     - rancher_cluster_policy_reports_list
+
+delete:
+  audit_operation: policy_report_delete
+  confirmation_phrase: "delete policy_report {report_name} in namespace {namespace}"
+  next_steps:
+    - rancher_policy_reports_list
 
 patches:
   - verb: set_labels
@@ -89,6 +95,10 @@ tools:
     name: rancher_policy_report_get
     description: Fetch one PolicyReport by namespace and name. Returns the curated summary plus full payload (with all results).
     annotation_set: READ_ONLY
+  delete:
+    name: rancher_policy_report_delete
+    description: Delete one PolicyReport (wgpolicyk8s.io/v1alpha2) by namespace and name. The `confirmation` arg must equal the exact phrase "delete policy_report {report_name} in namespace {namespace}" (substituting the actual values). Returns a typed delete result with the rendered confirmation phrase. Subject to write rate limiting and audit logging.
+    annotation_set: DESTRUCTIVE
   patches:
     - name: rancher_policy_report_set_labels
       description: Replace metadata.labels on one PolicyReport (wgpolicyk8s.io/v1alpha2) via JSON merge-patch. The `labels` arg is a complete replacement map.
