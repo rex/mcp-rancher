@@ -123,11 +123,11 @@ async def _fetch_longhorn_snapshot_get(
     )
 
     metadata = mapping_value(payload, "metadata") or {}
-    annotations = mapping_value(metadata, "annotations") or {}
+    metadata_annotations = mapping_value(metadata, "annotations") or {}
     detail = RancherLonghornSnapshotDetail.model_validate(payload)
     return detail.model_copy(
         update={
-            "annotation_keys": sorted(string_dict(annotations)),
+            "annotation_keys": sorted(string_dict(metadata_annotations)),
             "payload": dict(payload),
             "suggested_next_steps": [
                 "rancher_longhorn_snapshots_list",
@@ -188,11 +188,11 @@ async def _patch_longhorn_snapshot_set_labels(
     )
 
     metadata = mapping_value(payload, "metadata") or {}
-    annotations = mapping_value(metadata, "annotations") or {}
+    metadata_annotations = mapping_value(metadata, "annotations") or {}
     detail = RancherLonghornSnapshotDetail.model_validate(payload)
     return detail.model_copy(
         update={
-            "annotation_keys": sorted(string_dict(annotations)),
+            "annotation_keys": sorted(string_dict(metadata_annotations)),
             "payload": dict(payload),
             "suggested_next_steps": [
                 "rancher_longhorn_snapshot_get",
@@ -234,6 +234,78 @@ async def rancher_longhorn_snapshot_set_labels(
             namespace,
             snapshot_name,
             labels,
+            managed_client,
+        )
+
+
+async def _patch_longhorn_snapshot_set_annotations(
+    instance_name: str,
+    cluster_id: str,
+    namespace: str,
+    snapshot_name: str,
+    annotations: dict[str, str],
+    client: ManagementDiscoveryClient,
+) -> RancherLonghornSnapshotDetail:
+    """Set_annotations one longhorn_snapshot via JSON merge-patch; returns the curated detail."""
+
+    patch_subtree: dict[str, object] = {}
+    patch_subtree["annotations"] = annotations
+    if not patch_subtree:
+        raise RancherCapabilityError(
+            "No patch fields provided; every arg was None. Pass at least one field to update."
+        )
+    request_payload: dict[str, object] = patch_subtree
+    request_payload = {"metadata": request_payload}
+
+    payload = await client.patch_json(
+        longhorn_namespaced_resource_path(cluster_id, namespace, "snapshots", snapshot_name),
+        payload=request_payload,
+    )
+
+    metadata = mapping_value(payload, "metadata") or {}
+    metadata_annotations = mapping_value(metadata, "annotations") or {}
+    detail = RancherLonghornSnapshotDetail.model_validate(payload)
+    return detail.model_copy(
+        update={
+            "annotation_keys": sorted(string_dict(metadata_annotations)),
+            "payload": dict(payload),
+            "suggested_next_steps": ["rancher_longhorn_snapshot_get"],
+        }
+    )
+
+
+@audit_mutation(operation="longhorn_snapshot_set_annotations", plane="steve")
+@rate_limit_writes
+async def rancher_longhorn_snapshot_set_annotations(
+    namespace: str,
+    snapshot_name: str,
+    annotations: dict[str, str],
+    cluster_id: str = "local",
+    instance: str | None = None,
+    settings: AppSettings | None = None,
+    client: ManagementDiscoveryClient | None = None,
+) -> RancherLonghornSnapshotDetail:
+    """Set_annotations one longhorn_snapshot via JSON merge-patch."""
+
+    resolved_settings = settings or get_settings()
+    instance_name, instance_config = resolve_instance(resolved_settings, instance)
+    ensure_instance_writable(instance_name, instance_config)
+    if client is not None:
+        return await _patch_longhorn_snapshot_set_annotations(
+            instance_name,
+            cluster_id,
+            namespace,
+            snapshot_name,
+            annotations,
+            client,
+        )
+    async with RancherManagementClient(instance_name, instance_config) as managed_client:
+        return await _patch_longhorn_snapshot_set_annotations(
+            instance_name,
+            cluster_id,
+            namespace,
+            snapshot_name,
+            annotations,
             managed_client,
         )
 
@@ -289,6 +361,24 @@ async def rancher_longhorn_snapshot_set_labels_tool(
         namespace=namespace,
         snapshot_name=snapshot_name,
         labels=labels,
+        cluster_id=cluster_id,
+        instance=instance,
+    )
+
+
+async def rancher_longhorn_snapshot_set_annotations_tool(
+    namespace: str,
+    snapshot_name: str,
+    annotations: dict[str, str],
+    cluster_id: str = "local",
+    instance: str | None = None,
+) -> RancherLonghornSnapshotDetail:
+    """Public MCP wrapper for curated longhorn_snapshot set_annotations."""
+
+    return await rancher_longhorn_snapshot_set_annotations(
+        namespace=namespace,
+        snapshot_name=snapshot_name,
+        annotations=annotations,
         cluster_id=cluster_id,
         instance=instance,
     )
