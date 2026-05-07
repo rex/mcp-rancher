@@ -25,7 +25,7 @@ support_value_imports:
   - string_dict
 summary_function: replicaset_summary_from_payload
 
-operations: [list, get, patch]
+operations: [list, get, patch, delete]
 
 list:
   query_params: [limit, continue_token, label_selector, field_selector]
@@ -58,6 +58,12 @@ get:
   next_steps:
     - rancher_replica_sets_list
     - rancher_pods_list
+
+delete:
+  audit_operation: replica_set_delete
+  confirmation_phrase: "delete replica_set {replica_set_name} in namespace {namespace}"
+  next_steps:
+    - rancher_replica_sets_list
 
 patches:
   - verb: set_labels
@@ -97,3 +103,7 @@ tools:
     - name: rancher_replica_set_set_annotations
       description: Replace metadata.annotations on one Kubernetes ReplicaSet via JSON merge-patch. The `annotations` arg is a complete replacement map. Returns the curated detail.
       annotation_set: IDEMPOTENT_WRITE
+  delete:
+    name: rancher_replica_set_delete
+    description: Delete one Kubernetes ReplicaSet. ReplicaSets are typically managed by an owning Deployment, which will recreate them automatically; direct delete is legitimate for orphan ReplicaSets or cleanup of leftovers from a failed rollout. The `confirmation` arg must equal the exact phrase "delete replica_set NAME in namespace NS" (substituting the actual values). Returns a typed delete result with the rendered confirmation phrase. Subject to write rate limiting and audit logging.
+    annotation_set: DESTRUCTIVE
