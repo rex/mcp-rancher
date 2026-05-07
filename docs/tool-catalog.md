@@ -1950,6 +1950,21 @@ Per Q2 default (b): namespaced "owned" resources only. **Skipped** (use `rancher
 | `D-3-pdb-delete` | `pod_disruption_budgets.yml` | disruption | pod_disruption_budget | pod_disruption_budget_delete | PodDisruptionBudget | namespaced |
 | `D-3-secret-delete` | `secrets.yml` | config_secrets | secret | secret_delete | Secret | namespaced |
 
+#### Slice-specific rows — Batch 16 deletes (2026-05-06)
+
+Eight namespaced "owned" deletes for descriptors not yet covered. Per Q2 default. **Skipped** (cluster-scoped, recovery artifacts, or generally bad practice — use `rancher_steve_resource_delete` escape hatch instead): pod_delete, replica_set_delete (managed by Deployment), longhorn_node_delete, longhorn_snapshot_delete, restore_delete, backup_delete, cluster_flow_delete (cluster-scoped), cluster_output_delete (cluster-scoped), cluster_policy_report_delete (cluster-scoped), cert_manager_cluster_issuer_delete (cluster-scoped). Predicted Tool surface delta: 300 → 308 (+8).
+
+| Slice ID | Descriptor file | Pack | display_name_singular | audit_operation | Resource | Notes |
+|---|---|---|---|---|---|---|
+| `D-3-pod-monitor-delete` | `pod_monitors.yml` | prometheus_monitoring | pod_monitor | pod_monitor_delete | PodMonitor | namespaced; optional kube-prometheus-stack |
+| `D-3-service-account-delete` | `service_accounts.yml` | config_secrets | service_account | service_account_delete | ServiceAccount | namespaced |
+| `D-3-policy-report-delete` | `policy_reports.yml` | policy_reports | policy_report | policy_report_delete | PolicyReport | namespaced; wgpolicyk8s.io/v1alpha2 |
+| `D-3-flow-delete` | `flows.yml` | logging_pipeline | flow | flow_delete | Flow | namespaced; optional Banzai chart |
+| `D-3-output-delete` | `outputs.yml` | logging_pipeline | output | output_delete | Output | namespaced; optional Banzai chart |
+| `D-3-cert-manager-issuer-delete` | `cert_manager_issuers.yml` | cert_manager | cert_manager_issuer | cert_manager_issuer_delete | Issuer | namespaced; optional cert-manager chart |
+| `D-3-replica-set-delete` | `replica_sets.yml` | workloads | replica_set | replica_set_delete | ReplicaSet | namespaced; typically managed by Deployment but legitimate for orphans/cleanup |
+| `D-3-cert-manager-certificate-delete` | `cert_manager_certificates.yml` | cert_manager | cert_manager_certificate | cert_manager_certificate_delete | Certificate | namespaced; optional cert-manager chart; certs are recreatable from Issuer so risk is recoverable |
+
 #### Slice-specific rows — Batch 10 deletes (2026-05-05)
 
 | Slice ID | Descriptor file | Pack | display_name_singular | audit_operation | Resource | Notes |
