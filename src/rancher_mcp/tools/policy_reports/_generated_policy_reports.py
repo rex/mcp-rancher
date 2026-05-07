@@ -114,13 +114,13 @@ async def _fetch_policy_report_get(
     summary = policy_report_summary_from_payload(payload)
 
     metadata = mapping_value(payload, "metadata") or {}
-    annotations = mapping_value(metadata, "annotations") or {}
+    metadata_annotations = mapping_value(metadata, "annotations") or {}
     detail = RancherPolicyReportDetail.model_validate(payload)
     return detail.model_copy(
         update={
             "result_count": summary.result_count,
             "top_failing_policies": summary.top_failing_policies,
-            "annotation_keys": sorted(string_dict(annotations)),
+            "annotation_keys": sorted(string_dict(metadata_annotations)),
             "payload": dict(payload),
             "suggested_next_steps": [
                 "rancher_policy_reports_list",
@@ -182,13 +182,13 @@ async def _patch_policy_report_set_labels(
     summary = policy_report_summary_from_payload(payload)
 
     metadata = mapping_value(payload, "metadata") or {}
-    annotations = mapping_value(metadata, "annotations") or {}
+    metadata_annotations = mapping_value(metadata, "annotations") or {}
     detail = RancherPolicyReportDetail.model_validate(payload)
     return detail.model_copy(
         update={
             "result_count": summary.result_count,
             "top_failing_policies": summary.top_failing_policies,
-            "annotation_keys": sorted(string_dict(annotations)),
+            "annotation_keys": sorted(string_dict(metadata_annotations)),
             "payload": dict(payload),
             "suggested_next_steps": ["rancher_policy_report_get", "rancher_policy_reports_list"],
         }
@@ -227,6 +227,81 @@ async def rancher_policy_report_set_labels(
             namespace,
             report_name,
             labels,
+            managed_client,
+        )
+
+
+async def _patch_policy_report_set_annotations(
+    instance_name: str,
+    cluster_id: str,
+    namespace: str,
+    report_name: str,
+    annotations: dict[str, str],
+    client: ManagementDiscoveryClient,
+) -> RancherPolicyReportDetail:
+    """Set_annotations one policy_report via JSON merge-patch; returns the curated detail."""
+
+    patch_subtree: dict[str, object] = {}
+    patch_subtree["annotations"] = annotations
+    if not patch_subtree:
+        raise RancherCapabilityError(
+            "No patch fields provided; every arg was None. Pass at least one field to update."
+        )
+    request_payload: dict[str, object] = patch_subtree
+    request_payload = {"metadata": request_payload}
+
+    payload = await client.patch_json(
+        policy_namespaced_resource_path(cluster_id, namespace, "policyreports", report_name),
+        payload=request_payload,
+    )
+    summary = policy_report_summary_from_payload(payload)
+
+    metadata = mapping_value(payload, "metadata") or {}
+    metadata_annotations = mapping_value(metadata, "annotations") or {}
+    detail = RancherPolicyReportDetail.model_validate(payload)
+    return detail.model_copy(
+        update={
+            "result_count": summary.result_count,
+            "top_failing_policies": summary.top_failing_policies,
+            "annotation_keys": sorted(string_dict(metadata_annotations)),
+            "payload": dict(payload),
+            "suggested_next_steps": ["rancher_policy_report_get"],
+        }
+    )
+
+
+@audit_mutation(operation="policy_report_set_annotations", plane="steve")
+@rate_limit_writes
+async def rancher_policy_report_set_annotations(
+    namespace: str,
+    report_name: str,
+    annotations: dict[str, str],
+    cluster_id: str = "local",
+    instance: str | None = None,
+    settings: AppSettings | None = None,
+    client: ManagementDiscoveryClient | None = None,
+) -> RancherPolicyReportDetail:
+    """Set_annotations one policy_report via JSON merge-patch."""
+
+    resolved_settings = settings or get_settings()
+    instance_name, instance_config = resolve_instance(resolved_settings, instance)
+    ensure_instance_writable(instance_name, instance_config)
+    if client is not None:
+        return await _patch_policy_report_set_annotations(
+            instance_name,
+            cluster_id,
+            namespace,
+            report_name,
+            annotations,
+            client,
+        )
+    async with RancherManagementClient(instance_name, instance_config) as managed_client:
+        return await _patch_policy_report_set_annotations(
+            instance_name,
+            cluster_id,
+            namespace,
+            report_name,
+            annotations,
             managed_client,
         )
 
@@ -280,6 +355,24 @@ async def rancher_policy_report_set_labels_tool(
         namespace=namespace,
         report_name=report_name,
         labels=labels,
+        cluster_id=cluster_id,
+        instance=instance,
+    )
+
+
+async def rancher_policy_report_set_annotations_tool(
+    namespace: str,
+    report_name: str,
+    annotations: dict[str, str],
+    cluster_id: str = "local",
+    instance: str | None = None,
+) -> RancherPolicyReportDetail:
+    """Public MCP wrapper for curated policy_report set_annotations."""
+
+    return await rancher_policy_report_set_annotations(
+        namespace=namespace,
+        report_name=report_name,
+        annotations=annotations,
         cluster_id=cluster_id,
         instance=instance,
     )
