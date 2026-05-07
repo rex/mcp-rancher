@@ -1965,6 +1965,25 @@ Eight namespaced "owned" deletes for descriptors not yet covered. Per Q2 default
 | `D-3-replica-set-delete` | `replica_sets.yml` | workloads | replica_set | replica_set_delete | ReplicaSet | namespaced; typically managed by Deployment but legitimate for orphans/cleanup |
 | `D-3-cert-manager-certificate-delete` | `cert_manager_certificates.yml` | cert_manager | cert_manager_certificate | cert_manager_certificate_delete | Certificate | namespaced; optional cert-manager chart; certs are recreatable from Issuer so risk is recoverable |
 
+#### Slice-specific rows — Batch 17 (2026-05-06)
+
+One Steve set_annotations gap closer (statefulsets) + 7 cluster-scoped destructive deletes. Q2 default is widened slightly here to include cluster-scoped resources (initially "namespaced owned only" — but the prior memo's "best candidates" list itself included `cluster_flow_delete` / `cluster_output_delete`, and `cert_manager_certificate_delete` shipped Batch 16 even though it was on the original skip list). Cluster-scoped deletes are conventional for these resource kinds (admins delete them via kubectl daily). Predicted Tool surface delta: 308 → 316 (+8).
+
+Pre-facts verified per descriptor — note the non-obvious `arg_name` values:
+- `cluster_policy_reports.yml` → `report_name` (not `cluster_policy_report_name`)
+- `cert_manager_cluster_issuers.yml` → `cluster_issuer_name` (not `cert_manager_cluster_issuer_name`)
+
+| Slice ID | Descriptor | Pack | display_name_singular | audit_operation | Resource | Notes |
+|---|---|---|---|---|---|---|
+| `D-1-statefulset-set-annotations` | `statefulsets.yml` | workloads | statefulset | statefulset_set_annotations | StatefulSet | namespaced; multi-patch APPEND (existing has scale + set_labels — set_annotations is the 3rd entry; closes the last Steve set_annotations gap) |
+| `D-3-cluster-flow-delete` | `cluster_flows.yml` | logging_pipeline | cluster_flow | cluster_flow_delete | ClusterFlow | cluster-scoped; optional Banzai chart; phrase: `"delete cluster_flow {cluster_flow_name}"` |
+| `D-3-cluster-output-delete` | `cluster_outputs.yml` | logging_pipeline | cluster_output | cluster_output_delete | ClusterOutput | cluster-scoped; optional Banzai chart; pack-pairs with cluster_flow |
+| `D-3-cluster-policy-report-delete` | `cluster_policy_reports.yml` | policy_reports | cluster_policy_report | cluster_policy_report_delete | ClusterPolicyReport | cluster-scoped; **arg_name: `report_name`**; phrase: `"delete cluster_policy_report {report_name}"` |
+| `D-3-cert-manager-cluster-issuer-delete` | `cert_manager_cluster_issuers.yml` | cert_manager | cert_manager_cluster_issuer | cert_manager_cluster_issuer_delete | ClusterIssuer | cluster-scoped; **arg_name: `cluster_issuer_name`**; phrase: `"delete cert_manager_cluster_issuer {cluster_issuer_name}"`; optional cert-manager chart |
+| `D-3-storage-class-delete` | `storage_classes.yml` | storage | storage_class | storage_class_delete | StorageClass | cluster-scoped; storage.k8s.io/v1; conventional kubectl operation |
+| `D-3-priority-class-delete` | `priority_classes.yml` | scheduling | priority_class | priority_class_delete | PriorityClass | cluster-scoped; scheduling.k8s.io/v1 |
+| `D-3-runtime-class-delete` | `runtime_classes.yml` | scheduling | runtime_class | runtime_class_delete | RuntimeClass | cluster-scoped; node.k8s.io/v1 |
+
 #### Slice-specific rows — Batch 10 deletes (2026-05-05)
 
 | Slice ID | Descriptor file | Pack | display_name_singular | audit_operation | Resource | Notes |
