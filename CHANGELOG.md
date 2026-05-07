@@ -1,5 +1,23 @@
 # Changelog
 
+## [2026-05-06] - Agent: Claude Opus 4.7 (continued)
+
+### Added (Batch 16 — 8 parallel Opus subagents, namespaced destructive deletes; 100% quality bar)
+
+Tool surface **300 → 308 (+8)**. Tests **568 → 592 (+24)**. 85.08% coverage. All gates green.
+
+Slices: pod_monitor_delete (`95497ce`), service_account_delete (`503cf7d`), output_delete (`6436ee9`), flow_delete (`496c43e` — manual apply for same-pack test conflict with output), policy_report_delete (`ff92bb8` — orchestrator excluded TASK_STATE.md edit), replica_set_delete (`1ca6aad`), cert_manager_issuer_delete (`3699946`), cert_manager_certificate_delete (`95dc7c2` — manual apply for same-pack test conflict with issuer).
+
+**Process upgrades on this batch**:
+- All agents now run on Opus (not Sonnet) per the user's quality directive.
+- Each agent must return both `git log --oneline -1` and `git show --stat HEAD` so the orchestrator can diff-review every commit before cherry-pick.
+- Pre-fact verification of `get.arg_name` for the three descriptors where the arg_name doesn't match the singular naming convention (`report_name` for policy_report, `issuer_name` for cert_manager_issuer, `certificate_name` for cert_manager_certificate). Pre-fact also corrected the `replicasets.yml` filename (no underscore — historical naming). Zero arg_name regressions in the batch.
+- The first Sonnet attempt at Batch 16 was killed mid-flight when the user mandated Opus + 100% quality. The 8 Opus re-runs incorporated all pre-facts and shipped clean.
+
+### Fixed (lint scope)
+
+Ruff's `extend-exclude` now excludes `.claude/worktrees/`. Killed parallel-orchestration agents leave half-built worktrees on disk; without the exclude, ruff was scanning their abandoned generated files and flagging F821/F401 errors from incomplete state. (`07fd1eb`)
+
 ## [2026-05-06] - Agent: Claude Opus 4.7
 
 ### Fixed (PreCompact hook)

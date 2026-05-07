@@ -30,7 +30,7 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 - Operational roadmap (track-level work breakdown): `ROADMAP.md`
 - Primary target: Rancher `2.9.3` (production)
 - Compat floor: Rancher `2.6.5` (devlab; never regress)
-- Public tool surface: 300 tools
+- Public tool surface: 308 tools
 - Completion gate: `make check-if-the-agent-can-consider-this-task-completed`
 - Active quality gates:
   `make check-architecture`
@@ -103,6 +103,24 @@ scale + set_labels), and 8 different packs (incl. cluster-scoped
 and optional-chart resources). Substrate is feature-complete.
 
 ## Latest Logical Step
+
+- **Batch 16 landed (`95dc7c2`)** — 8 destructive deletes (Opus
+  agents, 100% quality bar with explicit per-commit diff review).
+  Tool surface **300 → 308 (+8)**. Tests **568 → 592 (+24)**.
+  85.08% coverage, all gates green. Slices: pod_monitor_delete,
+  service_account_delete, output_delete, flow_delete (manual apply
+  for same-pack test conflict), policy_report_delete (TASK_STATE
+  edit excluded by orchestrator), replica_set_delete,
+  cert_manager_issuer_delete, cert_manager_certificate_delete
+  (manual apply for same-pack test conflict).
+  - **Quality bar**: every Opus agent returned both
+    `git log --oneline -1` and `git show --stat HEAD`; orchestrator
+    diff-reviewed every descriptor + test diff before cherry-pick.
+    Three corrected arg_name prefacts in the prompts (report_name,
+    issuer_name, certificate_name, replicasets.yml filename) caught
+    in advance — zero arg_name regressions.
+  - **Substrate**: ruff exclude added for `.claude/worktrees` so
+    killed-worktree leftovers don't break lint going forward.
 
 - **Batch 15 landed (`d103c05`)** — 8 set_annotations follow-ups
   on Batch 14 descriptors. Tool surface **292 → 300 (+8)**.
