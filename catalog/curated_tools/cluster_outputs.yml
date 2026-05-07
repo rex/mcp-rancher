@@ -27,7 +27,13 @@ summary_function: cluster_output_summary_from_payload
 query_builder_function: build_list_query_params
 query_builder_in_shared: true
 
-operations: [list, get, patch]
+operations: [list, get, delete, patch]
+
+delete:
+  audit_operation: cluster_output_delete
+  confirmation_phrase: "delete cluster_output {cluster_output_name}"
+  next_steps:
+    - rancher_cluster_outputs_list
 
 patches:
   - verb: set_labels
@@ -90,6 +96,10 @@ tools:
     name: rancher_cluster_output_get
     description: Fetch one Banzai logging ClusterOutput by name. Returns the curated summary plus full payload and annotation keys.
     annotation_set: READ_ONLY
+  delete:
+    name: rancher_cluster_output_delete
+    description: Delete one Banzai logging ClusterOutput (cluster-scoped). The `confirmation` arg must equal the exact phrase "delete cluster_output NAME" (substituting the actual name). Returns a typed delete result with the rendered confirmation phrase. Subject to write rate limiting and audit logging.
+    annotation_set: DESTRUCTIVE
   patches:
     - name: rancher_cluster_output_set_labels
       description: Replace metadata.labels on one Banzai logging ClusterOutput (cluster-scoped) via JSON merge-patch. The `labels` arg is a complete replacement map.

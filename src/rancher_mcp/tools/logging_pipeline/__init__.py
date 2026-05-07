@@ -18,6 +18,8 @@ from rancher_mcp.tools.logging_pipeline._generated_cluster_flows import (
     rancher_cluster_flows_list_tool,
 )
 from rancher_mcp.tools.logging_pipeline._generated_cluster_outputs import (
+    rancher_cluster_output_delete,
+    rancher_cluster_output_delete_tool,
     rancher_cluster_output_get,
     rancher_cluster_output_get_tool,
     rancher_cluster_output_set_annotations,
@@ -58,6 +60,7 @@ __all__ = [
     "rancher_cluster_flow_set_annotations",
     "rancher_cluster_flow_set_labels",
     "rancher_cluster_flows_list",
+    "rancher_cluster_output_delete",
     "rancher_cluster_output_get",
     "rancher_cluster_output_set_annotations",
     "rancher_cluster_output_set_labels",
@@ -94,6 +97,9 @@ def register_logging_pipeline_tools(mcp: FastMCP) -> None:
     )
     mcp.tool(name="rancher_cluster_output_get", annotations=READ_ONLY)(
         rancher_cluster_output_get_tool
+    )
+    mcp.tool(name="rancher_cluster_output_delete", annotations=DESTRUCTIVE)(
+        rancher_cluster_output_delete_tool
     )
     mcp.tool(name="rancher_cluster_output_set_labels", annotations=IDEMPOTENT_WRITE)(
         rancher_cluster_output_set_labels_tool
