@@ -240,6 +240,83 @@ async def rancher_pod_set_labels(
         )
 
 
+async def _patch_pod_set_annotations(
+    instance_name: str,
+    cluster_id: str,
+    namespace: str,
+    pod_name: str,
+    annotations: dict[str, str],
+    client: SteveMutationClient,
+) -> RancherPodDetail:
+    """Set_annotations one pod via JSON merge-patch; returns the curated detail."""
+
+    patch_subtree: dict[str, object] = {}
+    patch_subtree["annotations"] = annotations
+    if not patch_subtree:
+        raise RancherCapabilityError(
+            "No patch fields provided; every arg was None. Pass at least one field to update."
+        )
+    request_payload: dict[str, object] = patch_subtree
+    request_payload = {"metadata": request_payload}
+
+    payload = await client.patch_json(f"/pods/{namespace}/{pod_name}", payload=request_payload)
+    summary = pod_summary_from_payload(payload)
+
+    detail = RancherPodDetail.model_validate(payload)
+    return detail.model_copy(
+        update={
+            "id": summary.id,
+            "ready": summary.ready,
+            "ready_containers": summary.ready_containers,
+            "total_containers": summary.total_containers,
+            "restart_count": summary.restart_count,
+            "link_keys": sorted(mapping_value(payload, "links") or {}),
+            "payload": dict(payload),
+            "suggested_next_steps": ["rancher_pod_get"],
+        }
+    )
+
+
+@audit_mutation(operation="pod_set_annotations", plane="steve")
+@rate_limit_writes
+async def rancher_pod_set_annotations(
+    namespace: str,
+    pod_name: str,
+    annotations: dict[str, str],
+    cluster_id: str = "local",
+    instance: str | None = None,
+    settings: AppSettings | None = None,
+    client: SteveMutationClient | None = None,
+) -> RancherPodDetail:
+    """Set_annotations one pod via JSON merge-patch."""
+
+    resolved_settings = settings or get_settings()
+    instance_name, instance_config = resolve_instance(resolved_settings, instance)
+    ensure_instance_writable(instance_name, instance_config)
+    if client is not None:
+        return await _patch_pod_set_annotations(
+            instance_name,
+            cluster_id,
+            namespace,
+            pod_name,
+            annotations,
+            client,
+        )
+    async with RancherSteveClient(
+        instance_name,
+        instance_config,
+        cluster_id=cluster_id,
+    ) as steve_client:
+        return await _patch_pod_set_annotations(
+            instance_name,
+            cluster_id,
+            namespace,
+            pod_name,
+            annotations,
+            steve_client,
+        )
+
+
 async def rancher_pods_list_tool(
     namespace: str,
     cluster_id: str = "local",
@@ -293,6 +370,24 @@ async def rancher_pod_set_labels_tool(
         namespace=namespace,
         pod_name=pod_name,
         labels=labels,
+        cluster_id=cluster_id,
+        instance=instance,
+    )
+
+
+async def rancher_pod_set_annotations_tool(
+    namespace: str,
+    pod_name: str,
+    annotations: dict[str, str],
+    cluster_id: str = "local",
+    instance: str | None = None,
+) -> RancherPodDetail:
+    """Public MCP wrapper for curated pod set_annotations."""
+
+    return await rancher_pod_set_annotations(
+        namespace=namespace,
+        pod_name=pod_name,
+        annotations=annotations,
         cluster_id=cluster_id,
         instance=instance,
     )
