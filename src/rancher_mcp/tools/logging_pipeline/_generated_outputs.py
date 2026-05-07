@@ -120,12 +120,12 @@ async def _fetch_output_get(
     summary = output_summary_from_payload(payload)
 
     metadata = mapping_value(payload, "metadata") or {}
-    annotations = mapping_value(metadata, "annotations") or {}
+    metadata_annotations = mapping_value(metadata, "annotations") or {}
     detail = RancherLoggingOutputDetail.model_validate(payload)
     return detail.model_copy(
         update={
             "output_type": summary.output_type,
-            "annotation_keys": sorted(string_dict(annotations)),
+            "annotation_keys": sorted(string_dict(metadata_annotations)),
             "payload": dict(payload),
             "suggested_next_steps": ["rancher_outputs_list", "rancher_flows_list"],
         }
@@ -182,12 +182,12 @@ async def _patch_output_set_labels(
     summary = output_summary_from_payload(payload)
 
     metadata = mapping_value(payload, "metadata") or {}
-    annotations = mapping_value(metadata, "annotations") or {}
+    metadata_annotations = mapping_value(metadata, "annotations") or {}
     detail = RancherLoggingOutputDetail.model_validate(payload)
     return detail.model_copy(
         update={
             "output_type": summary.output_type,
-            "annotation_keys": sorted(string_dict(annotations)),
+            "annotation_keys": sorted(string_dict(metadata_annotations)),
             "payload": dict(payload),
             "suggested_next_steps": ["rancher_output_get", "rancher_flows_list"],
         }
@@ -226,6 +226,80 @@ async def rancher_output_set_labels(
             namespace,
             output_name,
             labels,
+            managed_client,
+        )
+
+
+async def _patch_output_set_annotations(
+    instance_name: str,
+    cluster_id: str,
+    namespace: str,
+    output_name: str,
+    annotations: dict[str, str],
+    client: ManagementDiscoveryClient,
+) -> RancherLoggingOutputDetail:
+    """Set_annotations one output via JSON merge-patch; returns the curated detail."""
+
+    patch_subtree: dict[str, object] = {}
+    patch_subtree["annotations"] = annotations
+    if not patch_subtree:
+        raise RancherCapabilityError(
+            "No patch fields provided; every arg was None. Pass at least one field to update."
+        )
+    request_payload: dict[str, object] = patch_subtree
+    request_payload = {"metadata": request_payload}
+
+    payload = await client.patch_json(
+        logging_namespaced_resource_path(cluster_id, namespace, "outputs", output_name),
+        payload=request_payload,
+    )
+    summary = output_summary_from_payload(payload)
+
+    metadata = mapping_value(payload, "metadata") or {}
+    metadata_annotations = mapping_value(metadata, "annotations") or {}
+    detail = RancherLoggingOutputDetail.model_validate(payload)
+    return detail.model_copy(
+        update={
+            "output_type": summary.output_type,
+            "annotation_keys": sorted(string_dict(metadata_annotations)),
+            "payload": dict(payload),
+            "suggested_next_steps": ["rancher_output_get"],
+        }
+    )
+
+
+@audit_mutation(operation="output_set_annotations", plane="steve")
+@rate_limit_writes
+async def rancher_output_set_annotations(
+    namespace: str,
+    output_name: str,
+    annotations: dict[str, str],
+    cluster_id: str = "local",
+    instance: str | None = None,
+    settings: AppSettings | None = None,
+    client: ManagementDiscoveryClient | None = None,
+) -> RancherLoggingOutputDetail:
+    """Set_annotations one output via JSON merge-patch."""
+
+    resolved_settings = settings or get_settings()
+    instance_name, instance_config = resolve_instance(resolved_settings, instance)
+    ensure_instance_writable(instance_name, instance_config)
+    if client is not None:
+        return await _patch_output_set_annotations(
+            instance_name,
+            cluster_id,
+            namespace,
+            output_name,
+            annotations,
+            client,
+        )
+    async with RancherManagementClient(instance_name, instance_config) as managed_client:
+        return await _patch_output_set_annotations(
+            instance_name,
+            cluster_id,
+            namespace,
+            output_name,
+            annotations,
             managed_client,
         )
 
@@ -281,6 +355,24 @@ async def rancher_output_set_labels_tool(
         namespace=namespace,
         output_name=output_name,
         labels=labels,
+        cluster_id=cluster_id,
+        instance=instance,
+    )
+
+
+async def rancher_output_set_annotations_tool(
+    namespace: str,
+    output_name: str,
+    annotations: dict[str, str],
+    cluster_id: str = "local",
+    instance: str | None = None,
+) -> RancherLoggingOutputDetail:
+    """Public MCP wrapper for curated output set_annotations."""
+
+    return await rancher_output_set_annotations(
+        namespace=namespace,
+        output_name=output_name,
+        annotations=annotations,
         cluster_id=cluster_id,
         instance=instance,
     )

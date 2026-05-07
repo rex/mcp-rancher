@@ -47,11 +47,11 @@ get:
   locals:
     - name: metadata
       expression: 'mapping_value(payload, "metadata") or {}'
-    - name: annotations
+    - name: metadata_annotations
       expression: 'mapping_value(metadata, "annotations") or {}'
   extras:
     - field: annotation_keys
-      expression: sorted(string_dict(annotations))
+      expression: sorted(string_dict(metadata_annotations))
   include_link_keys: false
   include_payload: true
   next_steps:
@@ -70,6 +70,16 @@ patches:
     next_steps:
       - rancher_output_get
       - rancher_flows_list
+  - verb: set_annotations
+    target_path: metadata
+    audit_operation: output_set_annotations
+    args:
+      - name: annotations
+        type: dict_str_str
+        required: true
+        description: Replacement metadata.annotations map (merge-patch semantics — passing this REPLACES the annotations map; pass an empty dict to remove all annotations).
+    next_steps:
+      - rancher_output_get
 
 tools:
   list:
@@ -83,4 +93,7 @@ tools:
   patches:
     - name: rancher_output_set_labels
       description: Replace metadata.labels on one Banzai logging Output via JSON merge-patch. Returns the curated detail.
+      annotation_set: IDEMPOTENT_WRITE
+    - name: rancher_output_set_annotations
+      description: Replace metadata.annotations on one Banzai logging Output via JSON merge-patch. Returns the curated detail.
       annotation_set: IDEMPOTENT_WRITE
