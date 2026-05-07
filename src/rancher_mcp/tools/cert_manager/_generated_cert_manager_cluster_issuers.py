@@ -134,13 +134,13 @@ async def _fetch_cert_manager_cluster_issuer_get(
     summary = cluster_issuer_summary_from_payload(payload)
 
     metadata = mapping_value(payload, "metadata") or {}
-    annotations = mapping_value(metadata, "annotations") or {}
+    metadata_annotations = mapping_value(metadata, "annotations") or {}
     detail = RancherCertManagerClusterIssuerDetail.model_validate(payload)
     return detail.model_copy(
         update={
             "ready": summary.ready,
             "issuer_kind_used": summary.issuer_kind_used,
-            "annotation_keys": sorted(string_dict(annotations)),
+            "annotation_keys": sorted(string_dict(metadata_annotations)),
             "condition_types_true": condition_types_true_from_payload(payload),
             "payload": dict(payload),
             "suggested_next_steps": [
@@ -200,13 +200,13 @@ async def _patch_cert_manager_cluster_issuer_set_labels(
     summary = cluster_issuer_summary_from_payload(payload)
 
     metadata = mapping_value(payload, "metadata") or {}
-    annotations = mapping_value(metadata, "annotations") or {}
+    metadata_annotations = mapping_value(metadata, "annotations") or {}
     detail = RancherCertManagerClusterIssuerDetail.model_validate(payload)
     return detail.model_copy(
         update={
             "ready": summary.ready,
             "issuer_kind_used": summary.issuer_kind_used,
-            "annotation_keys": sorted(string_dict(annotations)),
+            "annotation_keys": sorted(string_dict(metadata_annotations)),
             "condition_types_true": condition_types_true_from_payload(payload),
             "payload": dict(payload),
             "suggested_next_steps": [
@@ -246,6 +246,78 @@ async def rancher_cert_manager_cluster_issuer_set_labels(
             cluster_id,
             cluster_issuer_name,
             labels,
+            managed_client,
+        )
+
+
+async def _patch_cert_manager_cluster_issuer_set_annotations(
+    instance_name: str,
+    cluster_id: str,
+    cluster_issuer_name: str,
+    annotations: dict[str, str],
+    client: ManagementDiscoveryClient,
+) -> RancherCertManagerClusterIssuerDetail:
+    """Set_annotations one cert_manager_cluster_issuer via JSON merge-patch; returns the curated detail."""
+
+    patch_subtree: dict[str, object] = {}
+    patch_subtree["annotations"] = annotations
+    if not patch_subtree:
+        raise RancherCapabilityError(
+            "No patch fields provided; every arg was None. Pass at least one field to update."
+        )
+    request_payload: dict[str, object] = patch_subtree
+    request_payload = {"metadata": request_payload}
+
+    payload = await client.patch_json(
+        cert_manager_cluster_resource_path(cluster_id, "clusterissuers", cluster_issuer_name),
+        payload=request_payload,
+    )
+    summary = cluster_issuer_summary_from_payload(payload)
+
+    metadata = mapping_value(payload, "metadata") or {}
+    metadata_annotations = mapping_value(metadata, "annotations") or {}
+    detail = RancherCertManagerClusterIssuerDetail.model_validate(payload)
+    return detail.model_copy(
+        update={
+            "ready": summary.ready,
+            "issuer_kind_used": summary.issuer_kind_used,
+            "annotation_keys": sorted(string_dict(metadata_annotations)),
+            "condition_types_true": condition_types_true_from_payload(payload),
+            "payload": dict(payload),
+            "suggested_next_steps": ["rancher_cert_manager_cluster_issuer_get"],
+        }
+    )
+
+
+@audit_mutation(operation="cert_manager_cluster_issuer_set_annotations", plane="steve")
+@rate_limit_writes
+async def rancher_cert_manager_cluster_issuer_set_annotations(
+    cluster_issuer_name: str,
+    annotations: dict[str, str],
+    cluster_id: str = "local",
+    instance: str | None = None,
+    settings: AppSettings | None = None,
+    client: ManagementDiscoveryClient | None = None,
+) -> RancherCertManagerClusterIssuerDetail:
+    """Set_annotations one cert_manager_cluster_issuer via JSON merge-patch."""
+
+    resolved_settings = settings or get_settings()
+    instance_name, instance_config = resolve_instance(resolved_settings, instance)
+    ensure_instance_writable(instance_name, instance_config)
+    if client is not None:
+        return await _patch_cert_manager_cluster_issuer_set_annotations(
+            instance_name,
+            cluster_id,
+            cluster_issuer_name,
+            annotations,
+            client,
+        )
+    async with RancherManagementClient(instance_name, instance_config) as managed_client:
+        return await _patch_cert_manager_cluster_issuer_set_annotations(
+            instance_name,
+            cluster_id,
+            cluster_issuer_name,
+            annotations,
             managed_client,
         )
 
@@ -297,6 +369,22 @@ async def rancher_cert_manager_cluster_issuer_set_labels_tool(
     return await rancher_cert_manager_cluster_issuer_set_labels(
         cluster_issuer_name=cluster_issuer_name,
         labels=labels,
+        cluster_id=cluster_id,
+        instance=instance,
+    )
+
+
+async def rancher_cert_manager_cluster_issuer_set_annotations_tool(
+    cluster_issuer_name: str,
+    annotations: dict[str, str],
+    cluster_id: str = "local",
+    instance: str | None = None,
+) -> RancherCertManagerClusterIssuerDetail:
+    """Public MCP wrapper for curated cert_manager_cluster_issuer set_annotations."""
+
+    return await rancher_cert_manager_cluster_issuer_set_annotations(
+        cluster_issuer_name=cluster_issuer_name,
+        annotations=annotations,
         cluster_id=cluster_id,
         instance=instance,
     )
