@@ -20,6 +20,8 @@ from rancher_mcp.tools.scheduling._generated_priority_classes import (
     rancher_priority_classes_list_tool,
 )
 from rancher_mcp.tools.scheduling._generated_runtime_classes import (
+    rancher_runtime_class_delete,
+    rancher_runtime_class_delete_tool,
     rancher_runtime_class_get,
     rancher_runtime_class_get_tool,
     rancher_runtime_class_set_annotations,
@@ -37,6 +39,7 @@ __all__ = [
     "rancher_priority_class_set_annotations",
     "rancher_priority_class_set_labels",
     "rancher_priority_classes_list",
+    "rancher_runtime_class_delete",
     "rancher_runtime_class_get",
     "rancher_runtime_class_set_annotations",
     "rancher_runtime_class_set_labels",
@@ -68,6 +71,9 @@ def register_scheduling_tools(mcp: FastMCP) -> None:
     )
     mcp.tool(name="rancher_runtime_class_get", annotations=READ_ONLY)(
         rancher_runtime_class_get_tool
+    )
+    mcp.tool(name="rancher_runtime_class_delete", annotations=DESTRUCTIVE)(
+        rancher_runtime_class_delete_tool
     )
     mcp.tool(name="rancher_runtime_class_set_labels", annotations=IDEMPOTENT_WRITE)(
         rancher_runtime_class_set_labels_tool
