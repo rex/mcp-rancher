@@ -28,7 +28,7 @@ summary_function: cluster_issuer_summary_from_payload
 query_builder_function: build_list_query_params
 query_builder_in_shared: true
 
-operations: [list, get, patch]
+operations: [list, get, delete, patch]
 
 list:
   query_params: [limit, continue_token, label_selector]
@@ -65,6 +65,12 @@ get:
     - rancher_cert_manager_cluster_issuers_list
     - rancher_cert_manager_certificates_list
 
+delete:
+  audit_operation: cert_manager_cluster_issuer_delete
+  confirmation_phrase: "delete cert_manager_cluster_issuer {cluster_issuer_name}"
+  next_steps:
+    - rancher_cert_manager_cluster_issuers_list
+
 patches:
   - verb: set_labels
     target_path: metadata
@@ -97,6 +103,10 @@ tools:
     name: rancher_cert_manager_cluster_issuer_get
     description: Fetch one cert-manager ClusterIssuer by name. Returns the curated summary plus condition_types_true, annotation keys, and full payload.
     annotation_set: READ_ONLY
+  delete:
+    name: rancher_cert_manager_cluster_issuer_delete
+    description: Delete one cert-manager ClusterIssuer (cert-manager.io/v1, cluster-scoped) via Rancher's raw Kubernetes proxy. The `confirmation` arg must equal the exact phrase "delete cert_manager_cluster_issuer NAME" (substituting the actual name). Risk is cluster-wide — every Certificate that references this ClusterIssuer will fail to renew until the ClusterIssuer is recreated. Returns a typed delete result with the rendered confirmation phrase. Subject to write rate limiting and audit logging.
+    annotation_set: DESTRUCTIVE
   patches:
     - name: rancher_cert_manager_cluster_issuer_set_labels
       description: Replace metadata.labels on one cert-manager ClusterIssuer via JSON merge-patch. The `labels` arg is a complete replacement map.

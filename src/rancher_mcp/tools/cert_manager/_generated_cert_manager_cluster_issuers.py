@@ -14,6 +14,7 @@ from rancher_mcp.models.cert_manager import (
     RancherCertManagerClusterIssuerDetail,
     RancherCertManagerClusterIssuerList,
 )
+from rancher_mcp.models.resources import RancherCuratedDeleteResult
 from rancher_mcp.rate_limit import rate_limit_writes
 from rancher_mcp.services.instances import resolve_instance
 from rancher_mcp.services.resources.builders_pagination import next_page_token_from_payload
@@ -171,6 +172,69 @@ async def rancher_cert_manager_cluster_issuer_get(
             instance_name,
             cluster_id,
             cluster_issuer_name,
+            managed_client,
+        )
+
+
+async def _delete_cert_manager_cluster_issuer(
+    instance_name: str,
+    cluster_id: str,
+    cluster_issuer_name: str,
+    confirmation_phrase_used: str,
+    client: ManagementDiscoveryClient,
+) -> RancherCuratedDeleteResult:
+    """Delete one cert_manager_cluster_issuer; returns a typed delete result."""
+
+    response_payload = await client.delete_json(
+        cert_manager_cluster_resource_path(cluster_id, "clusterissuers", cluster_issuer_name),
+    )
+    return RancherCuratedDeleteResult(
+        instance=instance_name,
+        plane="steve",
+        resource_kind="cert_manager_cluster_issuer",
+        resource_name=cluster_issuer_name,
+        cluster_id=cluster_id,
+        deleted=True,
+        confirmation_phrase_used=confirmation_phrase_used,
+        response_payload=dict(response_payload),
+        suggested_next_steps=["rancher_cert_manager_cluster_issuers_list"],
+    )
+
+
+@audit_mutation(operation="cert_manager_cluster_issuer_delete", plane="steve")
+@rate_limit_writes
+async def rancher_cert_manager_cluster_issuer_delete(
+    cluster_issuer_name: str,
+    confirmation: str,
+    cluster_id: str = "local",
+    instance: str | None = None,
+    settings: AppSettings | None = None,
+    client: ManagementDiscoveryClient | None = None,
+) -> RancherCuratedDeleteResult:
+    """Delete one cert_manager_cluster_issuer after the agent echoes the required confirmation phrase."""
+
+    expected_phrase = f"delete cert_manager_cluster_issuer {cluster_issuer_name}"
+    if confirmation != expected_phrase:
+        raise RancherCapabilityError(
+            f"Delete confirmation did not match the required phrase: {expected_phrase!r}"
+        )
+    resolved_settings = settings or get_settings()
+    instance_name, instance_config = resolve_instance(resolved_settings, instance)
+    ensure_instance_writable(instance_name, instance_config)
+    if client is not None:
+        return await _delete_cert_manager_cluster_issuer(
+            instance_name,
+            cluster_id,
+            cluster_issuer_name,
+            expected_phrase,
+            client,
+        )
+    async with RancherManagementClient(instance_name, instance_config) as managed_client:
+        return await _delete_cert_manager_cluster_issuer(
+            instance_name,
+            cluster_id,
+            cluster_issuer_name,
+            expected_phrase,
             managed_client,
         )
 
@@ -353,6 +417,22 @@ async def rancher_cert_manager_cluster_issuer_get_tool(
 
     return await rancher_cert_manager_cluster_issuer_get(
         cluster_issuer_name=cluster_issuer_name,
+        cluster_id=cluster_id,
+        instance=instance,
+    )
+
+
+async def rancher_cert_manager_cluster_issuer_delete_tool(
+    cluster_issuer_name: str,
+    confirmation: str,
+    cluster_id: str = "local",
+    instance: str | None = None,
+) -> RancherCuratedDeleteResult:
+    """Public MCP wrapper for curated cert_manager_cluster_issuer delete."""
+
+    return await rancher_cert_manager_cluster_issuer_delete(
+        cluster_issuer_name=cluster_issuer_name,
+        confirmation=confirmation,
         cluster_id=cluster_id,
         instance=instance,
     )
