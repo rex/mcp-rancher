@@ -28,7 +28,7 @@ summary_function: certificate_summary_from_payload
 query_builder_function: build_list_query_params
 query_builder_in_shared: true
 
-operations: [list, get, patch]
+operations: [list, get, delete, patch]
 
 list:
   query_params: [limit, continue_token, label_selector]
@@ -64,6 +64,12 @@ get:
     - rancher_cert_manager_certificates_list
     - rancher_cert_manager_issuers_list
 
+delete:
+  audit_operation: cert_manager_certificate_delete
+  confirmation_phrase: "delete cert_manager_certificate {certificate_name} in namespace {namespace}"
+  next_steps:
+    - rancher_cert_manager_certificates_list
+
 patches:
   - verb: set_labels
     target_path: metadata
@@ -96,6 +102,10 @@ tools:
     name: rancher_cert_manager_certificate_get
     description: Fetch one cert-manager Certificate by namespace and name. Returns the curated summary plus condition_types_true (sorted list of condition types whose status is True), annotation keys, and full payload.
     annotation_set: READ_ONLY
+  delete:
+    name: rancher_cert_manager_certificate_delete
+    description: Delete one cert-manager Certificate (cert-manager.io/v1) via Rancher's raw Kubernetes proxy. The `confirmation` arg must equal the exact phrase "delete cert_manager_certificate NAME in namespace NS" (substituting the actual values). Risk is recoverable — Certificates are recreatable from the owning Issuer/ClusterIssuer (cert-manager will reissue once the Certificate spec is reapplied), but the linked TLS Secret may be reissued with a new key. Returns a typed delete result with the rendered confirmation phrase. Subject to write rate limiting and audit logging.
+    annotation_set: DESTRUCTIVE
   patches:
     - name: rancher_cert_manager_certificate_set_labels
       description: Replace metadata.labels on one cert-manager Certificate via JSON merge-patch. The `labels` arg is a complete replacement map. Returns the curated detail.

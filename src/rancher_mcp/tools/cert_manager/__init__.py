@@ -8,6 +8,8 @@
 from mcp.server.fastmcp import FastMCP
 
 from rancher_mcp.tools.cert_manager._generated_cert_manager_certificates import (
+    rancher_cert_manager_certificate_delete,
+    rancher_cert_manager_certificate_delete_tool,
     rancher_cert_manager_certificate_get,
     rancher_cert_manager_certificate_get_tool,
     rancher_cert_manager_certificate_set_annotations,
@@ -42,6 +44,7 @@ from rancher_mcp.tools.cert_manager._generated_cert_manager_issuers import (
 from rancher_mcp.tools.support.annotations import DESTRUCTIVE, IDEMPOTENT_WRITE, READ_ONLY
 
 __all__ = [
+    "rancher_cert_manager_certificate_delete",
     "rancher_cert_manager_certificate_get",
     "rancher_cert_manager_certificate_set_annotations",
     "rancher_cert_manager_certificate_set_labels",
@@ -67,6 +70,9 @@ def register_cert_manager_tools(mcp: FastMCP) -> None:
     )
     mcp.tool(name="rancher_cert_manager_certificate_get", annotations=READ_ONLY)(
         rancher_cert_manager_certificate_get_tool
+    )
+    mcp.tool(name="rancher_cert_manager_certificate_delete", annotations=DESTRUCTIVE)(
+        rancher_cert_manager_certificate_delete_tool
     )
     mcp.tool(name="rancher_cert_manager_certificate_set_labels", annotations=IDEMPOTENT_WRITE)(
         rancher_cert_manager_certificate_set_labels_tool
