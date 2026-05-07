@@ -19,6 +19,7 @@ from rancher_mcp.tools.storage import (
     rancher_persistent_volume_set_annotations,
     rancher_persistent_volume_set_labels,
     rancher_persistent_volumes_list,
+    rancher_storage_class_delete,
     rancher_storage_class_get,
     rancher_storage_class_set_annotations,
     rancher_storage_class_set_labels,
@@ -1366,3 +1367,131 @@ async def test_rancher_persistent_volume_set_annotations_emits_audit() -> None:
     assert record["operation"] == "persistent_volume_set_annotations"
     assert record["outcome"] == "success"
     assert "annotations" in record["arg_keys"]
+
+
+# =====================================================================
+# StorageClass delete
+# =====================================================================
+
+
+class StubStorageClassDeleteClient:
+    """Delete-capable stub for StorageClass delete.
+
+    Cluster-scoped: no namespace segment in the path.
+    Captures the most recent ``delete_json`` call for assertion.
+    """
+
+    def __init__(self) -> None:
+        """Initialize capture buffers."""
+
+        self.last_delete_path: str | None = None
+
+    async def get_json(self, path: str, params: object = None) -> dict[str, object]:
+        """delete tests do not call GET."""
+
+        raise AssertionError(f"unexpected get on {path!r}")
+
+    async def delete_json(
+        self,
+        path: str,
+        payload: dict[str, object] | None = None,
+        params: object = None,
+    ) -> dict[str, object]:
+        """Capture the delete request and return a Kubernetes Status object."""
+
+        del payload  # unused for k8s storage class deletes
+        self.last_delete_path = path
+        return {"apiVersion": "v1", "kind": "Status", "status": "Success"}
+
+
+@pytest.mark.asyncio
+async def test_rancher_storage_class_delete_refuses_wrong_confirmation() -> None:
+    """Mismatched confirmation must refuse the delete BEFORE any HTTP call."""
+
+    reset_rate_limit_state()
+    client = StubStorageClassDeleteClient()
+
+    with pytest.raises(RancherCapabilityError) as excinfo:
+        await rancher_storage_class_delete(
+            storage_class_name="standard",
+            confirmation="wrong phrase",
+            cluster_id="local",
+            instance="work",
+            settings=build_settings(),
+            client=client,
+        )
+
+    assert "delete storage_class standard" in str(excinfo.value)
+    assert client.last_delete_path is None
+
+
+@pytest.mark.asyncio
+async def test_rancher_storage_class_delete_routes_to_delete_json() -> None:
+    """Correct confirmation phrase routes to delete_json on the cluster-scoped detail path."""
+
+    reset_rate_limit_state()
+    client = StubStorageClassDeleteClient()
+
+    result = await rancher_storage_class_delete(
+        storage_class_name="standard",
+        confirmation="delete storage_class standard",
+        cluster_id="local",
+        instance="work",
+        settings=build_settings(),
+        client=client,
+    )
+
+    # Cluster-scoped path — no namespace segment.
+    assert client.last_delete_path == (
+        "/k8s/clusters/local/apis/storage.k8s.io/v1/storageclasses/standard"
+    )
+    assert result.deleted is True
+    assert result.resource_kind == "storage_class"
+    assert result.resource_name == "standard"
+    assert result.cluster_id == "local"
+    assert result.confirmation_phrase_used == "delete storage_class standard"
+    assert result.response_payload["kind"] == "Status"
+    assert result.response_payload["status"] == "Success"
+    assert result.suggested_next_steps == ["rancher_storage_classes_list"]
+
+
+@pytest.mark.asyncio
+async def test_rancher_storage_class_delete_emits_audit() -> None:
+    """Delete success and rejection both write audit records."""
+
+    reset_rate_limit_state()
+
+    _good_phrase = "delete storage_class standard"
+    with capture_logs() as success_logs:
+        await rancher_storage_class_delete(
+            storage_class_name="standard",
+            confirmation=_good_phrase,
+            cluster_id="local",
+            instance="work",
+            settings=build_settings(),
+            client=StubStorageClassDeleteClient(),
+        )
+
+    success_audits = [r for r in success_logs if r.get("event") == "audit"]
+    assert len(success_audits) == 1
+    assert success_audits[0]["operation"] == "storage_class_delete"
+    assert success_audits[0]["outcome"] == "success"
+
+    reset_rate_limit_state()
+    with (
+        capture_logs() as reject_logs,
+        pytest.raises(RancherCapabilityError),
+    ):
+        await rancher_storage_class_delete(
+            storage_class_name="standard",
+            confirmation="bad",
+            cluster_id="local",
+            instance="work",
+            settings=build_settings(),
+            client=StubStorageClassDeleteClient(),
+        )
+
+    reject_audits = [r for r in reject_logs if r.get("event") == "audit"]
+    assert len(reject_audits) == 1
+    assert reject_audits[0]["operation"] == "storage_class_delete"
+    assert reject_audits[0]["outcome"] == "error"

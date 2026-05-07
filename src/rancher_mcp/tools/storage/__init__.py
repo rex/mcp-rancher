@@ -32,6 +32,8 @@ from rancher_mcp.tools.storage._generated_persistent_volumes import (
     rancher_persistent_volumes_list_tool,
 )
 from rancher_mcp.tools.storage._generated_storage_classes import (
+    rancher_storage_class_delete,
+    rancher_storage_class_delete_tool,
     rancher_storage_class_get,
     rancher_storage_class_get_tool,
     rancher_storage_class_set_annotations,
@@ -54,6 +56,7 @@ __all__ = [
     "rancher_persistent_volume_set_annotations",
     "rancher_persistent_volume_set_labels",
     "rancher_persistent_volumes_list",
+    "rancher_storage_class_delete",
     "rancher_storage_class_get",
     "rancher_storage_class_set_annotations",
     "rancher_storage_class_set_labels",
@@ -100,6 +103,9 @@ def register_storage_tools(mcp: FastMCP) -> None:
     )
     mcp.tool(name="rancher_storage_class_get", annotations=READ_ONLY)(
         rancher_storage_class_get_tool
+    )
+    mcp.tool(name="rancher_storage_class_delete", annotations=DESTRUCTIVE)(
+        rancher_storage_class_delete_tool
     )
     mcp.tool(name="rancher_storage_class_set_labels", annotations=IDEMPOTENT_WRITE)(
         rancher_storage_class_set_labels_tool
