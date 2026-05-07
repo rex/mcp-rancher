@@ -7,6 +7,7 @@ from rancher_mcp.config import AppSettings
 from rancher_mcp.rate_limit import reset_rate_limit_state
 from rancher_mcp.tools.policy_reports import (
     rancher_cluster_policy_report_get,
+    rancher_cluster_policy_report_set_annotations,
     rancher_cluster_policy_report_set_labels,
     rancher_cluster_policy_reports_list,
     rancher_policy_report_get,
@@ -373,4 +374,99 @@ async def test_rancher_cluster_policy_report_set_labels_emits_audit() -> None:
     record = audit_records[0]
     assert record["tool_name"] == "rancher_cluster_policy_report_set_labels"
     assert record["operation"] == "cluster_policy_report_set_labels"
+    assert record["outcome"] == "success"
+
+
+# rancher_cluster_policy_report_set_annotations (cluster-scoped, no namespace)
+# ============================================================================
+
+_PATCHED_CLUSTER_POLICY_REPORT_ANNOTATIONS_PAYLOAD = {
+    "metadata": {
+        "name": "system-report",
+        "labels": {},
+        "annotations": {"owner": "platform-team"},
+    },
+    "summary": {"pass": 12, "fail": 0, "warn": 0, "error": 0, "skip": 1},
+    "results": [{"policy": "node-baseline", "result": "pass", "rule": "audit"}],
+}
+
+
+class StubClusterPolicyReportSetAnnotationsClient:
+    """Cluster-scoped patch stub for ClusterPolicyReport set_annotations.
+
+    Captures the most recent ``patch_json`` request so tests can assert on
+    the merge-patch body and path, then echoes back a shaped response.
+    """
+
+    def __init__(self) -> None:
+        """Initialize capture buffers."""
+
+        self.last_patch_path: str | None = None
+        self.last_patch_payload: dict[str, object] | None = None
+
+    async def get_json(self, path: str, params: object = None) -> dict[str, object]:
+        """The set_annotations tests don't need GET; raise to surface accidental usage."""
+
+        raise AssertionError(f"unexpected get on {path!r} (params={params!r})")
+
+    async def patch_json(
+        self,
+        path: str,
+        payload: dict[str, object] | None = None,
+        params: object = None,
+    ) -> dict[str, object]:
+        """Capture the merge-patch and echo a ClusterPolicyReport response."""
+
+        self.last_patch_path = path
+        assert payload is not None
+        self.last_patch_payload = dict(payload)
+        expected_path = (
+            "/k8s/clusters/local/apis/wgpolicyk8s.io/v1alpha2/clusterpolicyreports/system-report"
+        )
+        if path == expected_path:
+            assert params is None
+            return _PATCHED_CLUSTER_POLICY_REPORT_ANNOTATIONS_PAYLOAD
+        raise AssertionError(f"unexpected patch path {path!r}")
+
+
+@pytest.mark.asyncio
+async def test_rancher_cluster_policy_report_set_annotations_round_trip() -> None:
+    """Cluster-scoped path; body is {metadata: {annotations: <map>}}."""
+
+    reset_rate_limit_state()
+    client = StubClusterPolicyReportSetAnnotationsClient()
+    result = await rancher_cluster_policy_report_set_annotations(
+        report_name="system-report",
+        annotations={"owner": "platform-team"},
+        cluster_id="local",
+        instance="work",
+        settings=build_settings(),
+        client=client,
+    )
+    assert client.last_patch_path == (
+        "/k8s/clusters/local/apis/wgpolicyk8s.io/v1alpha2/clusterpolicyreports/system-report"
+    )
+    assert client.last_patch_payload == {"metadata": {"annotations": {"owner": "platform-team"}}}
+    assert result.name == "system-report"
+
+
+@pytest.mark.asyncio
+async def test_rancher_cluster_policy_report_set_annotations_emits_audit() -> None:
+    """Audit op: cluster_policy_report_set_annotations."""
+
+    reset_rate_limit_state()
+    with capture_logs() as logs:
+        await rancher_cluster_policy_report_set_annotations(
+            report_name="system-report",
+            annotations={"owner": "platform-team"},
+            cluster_id="local",
+            instance="work",
+            settings=build_settings(),
+            client=StubClusterPolicyReportSetAnnotationsClient(),
+        )
+    audit_records = [r for r in logs if r.get("event") == "audit"]
+    assert len(audit_records) == 1
+    record = audit_records[0]
+    assert record["tool_name"] == "rancher_cluster_policy_report_set_annotations"
+    assert record["operation"] == "cluster_policy_report_set_annotations"
     assert record["outcome"] == "success"
