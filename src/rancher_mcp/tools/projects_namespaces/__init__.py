@@ -10,6 +10,8 @@ from mcp.server.fastmcp import FastMCP
 from rancher_mcp.tools.projects_namespaces._generated_namespaces import (
     rancher_namespace_get,
     rancher_namespace_get_tool,
+    rancher_namespace_set_annotations,
+    rancher_namespace_set_annotations_tool,
     rancher_namespace_set_labels,
     rancher_namespace_set_labels_tool,
     rancher_namespaces_list,
@@ -25,6 +27,7 @@ from rancher_mcp.tools.support.annotations import IDEMPOTENT_WRITE, READ_ONLY
 
 __all__ = [
     "rancher_namespace_get",
+    "rancher_namespace_set_annotations",
     "rancher_namespace_set_labels",
     "rancher_namespaces_list",
     "rancher_project_get",
@@ -40,6 +43,9 @@ def register_project_namespace_tools(mcp: FastMCP) -> None:
     mcp.tool(name="rancher_namespace_get", annotations=READ_ONLY)(rancher_namespace_get_tool)
     mcp.tool(name="rancher_namespace_set_labels", annotations=IDEMPOTENT_WRITE)(
         rancher_namespace_set_labels_tool
+    )
+    mcp.tool(name="rancher_namespace_set_annotations", annotations=IDEMPOTENT_WRITE)(
+        rancher_namespace_set_annotations_tool
     )
     mcp.tool(name="rancher_projects_list", annotations=READ_ONLY)(rancher_projects_list_tool)
     mcp.tool(name="rancher_project_get", annotations=READ_ONLY)(rancher_project_get_tool)
