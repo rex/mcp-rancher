@@ -28,7 +28,7 @@ summary_function: pod_monitor_summary_from_payload
 query_builder_function: build_list_query_params
 query_builder_in_shared: true
 
-operations: [list, get, patch]
+operations: [list, get, delete, patch]
 
 list:
   query_params: [limit, continue_token, label_selector]
@@ -59,6 +59,12 @@ get:
   next_steps:
     - rancher_pod_monitors_list
     - rancher_pods_list
+
+delete:
+  audit_operation: pod_monitor_delete
+  confirmation_phrase: "delete pod_monitor {pod_monitor_name} in namespace {namespace}"
+  next_steps:
+    - rancher_pod_monitors_list
 
 patches:
   - verb: set_labels
@@ -92,6 +98,10 @@ tools:
     name: rancher_pod_monitor_get
     description: Fetch one PodMonitor by namespace and name. Returns the curated summary plus the list of endpoint ports being scraped, annotation keys, and full payload.
     annotation_set: READ_ONLY
+  delete:
+    name: rancher_pod_monitor_delete
+    description: Delete one PodMonitor (monitoring.coreos.com/v1). The `confirmation` arg must equal the exact phrase "delete pod_monitor NAME in namespace NS" (substituting the actual values). Returns a typed delete result. Subject to write rate limiting and audit logging.
+    annotation_set: DESTRUCTIVE
   patches:
     - name: rancher_pod_monitor_set_labels
       description: Replace metadata.labels on one PodMonitor via JSON merge-patch. The `labels` arg is a complete replacement map. Returns the curated detail.

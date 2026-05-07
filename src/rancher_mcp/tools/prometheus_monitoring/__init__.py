@@ -8,6 +8,8 @@
 from mcp.server.fastmcp import FastMCP
 
 from rancher_mcp.tools.prometheus_monitoring._generated_pod_monitors import (
+    rancher_pod_monitor_delete,
+    rancher_pod_monitor_delete_tool,
     rancher_pod_monitor_get,
     rancher_pod_monitor_get_tool,
     rancher_pod_monitor_set_annotations,
@@ -44,6 +46,7 @@ from rancher_mcp.tools.prometheus_monitoring._generated_service_monitors import 
 from rancher_mcp.tools.support.annotations import DESTRUCTIVE, IDEMPOTENT_WRITE, READ_ONLY
 
 __all__ = [
+    "rancher_pod_monitor_delete",
     "rancher_pod_monitor_get",
     "rancher_pod_monitor_set_annotations",
     "rancher_pod_monitor_set_labels",
@@ -69,6 +72,9 @@ def register_prometheus_monitoring_tools(mcp: FastMCP) -> None:
         rancher_pod_monitors_list_tool
     )
     mcp.tool(name="rancher_pod_monitor_get", annotations=READ_ONLY)(rancher_pod_monitor_get_tool)
+    mcp.tool(name="rancher_pod_monitor_delete", annotations=DESTRUCTIVE)(
+        rancher_pod_monitor_delete_tool
+    )
     mcp.tool(name="rancher_pod_monitor_set_labels", annotations=IDEMPOTENT_WRITE)(
         rancher_pod_monitor_set_labels_tool
     )
