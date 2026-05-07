@@ -30,7 +30,7 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 - Operational roadmap (track-level work breakdown): `ROADMAP.md`
 - Primary target: Rancher `2.9.3` (production)
 - Compat floor: Rancher `2.6.5` (devlab; never regress)
-- Public tool surface: 308 tools
+- Public tool surface: 316 tools
 - Completion gate: `make check-if-the-agent-can-consider-this-task-completed`
 - Active quality gates:
   `make check-architecture`
@@ -103,6 +103,28 @@ scale + set_labels), and 8 different packs (incl. cluster-scoped
 and optional-chart resources). Substrate is feature-complete.
 
 ## Latest Logical Step
+
+- **Batch 17 landed (`62ff54d`)** — 1 set_annotations gap +
+  7 cluster-scoped deletes (Opus agents, 100% quality bar with
+  per-commit diff review). Tool surface **308 → 316 (+8)**.
+  Tests **592 → 615 (+23)**. 85% coverage, all gates green.
+  - Closes the last Steve set_annotations gap (statefulsets;
+    every Steve descriptor now has BOTH set_labels and
+    set_annotations).
+  - Cluster-scoped deletes: cluster_flow, cluster_output,
+    cluster_policy_report, cert_manager_cluster_issuer,
+    storage_class, priority_class, runtime_class.
+  - Q2 default widened mid-batch to include cluster-scoped
+    deletes since the prior memo's "best candidates" list
+    explicitly mentioned several (cluster_flow, cluster_output)
+    and Batch 16 already shipped a previously-skipped resource
+    (cert_manager_certificate).
+  - 2 same-pack pairs needed manual-apply (logging_pipeline +
+    scheduling) — handled clean.
+  - 1 agent (cluster_policy_report) committed directly to main
+    rather than its worktree — orchestrator detected the
+    out-of-band commit (`dc6120c`) and accepted it; commit
+    diff verified.
 
 - **Batch 16 landed (`95dc7c2`)** — 8 destructive deletes (Opus
   agents, 100% quality bar with explicit per-commit diff review).

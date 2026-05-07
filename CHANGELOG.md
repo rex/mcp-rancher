@@ -1,5 +1,18 @@
 # Changelog
 
+## [2026-05-06] - Agent: Claude Opus 4.7 (Batch 17)
+
+### Added (Batch 17 — 8 parallel Opus subagents, statefulset annotations + 7 cluster-scoped deletes)
+
+Tool surface **308 → 316 (+8)**. Tests **592 → 615 (+23)**. 85% coverage. All gates green.
+
+Slices: statefulset_set_annotations (`c703d65`), cluster_policy_report_delete (`dc6120c` — agent committed direct-to-main, orchestrator-verified post-hoc), cert_manager_cluster_issuer_delete (`568f5cc`), cluster_output_delete (`369c106`), priority_class_delete (`d7d2f5a`), storage_class_delete (`dc82f51`), cluster_flow_delete (`b4104dd` — manual apply for same-pack test conflict), runtime_class_delete (`62ff54d` — manual apply for same-pack test conflict).
+
+**Milestones**:
+- Closes the last Steve `set_annotations` gap (statefulsets) — every Steve descriptor in the catalog now has both `set_labels` and `set_annotations`.
+- Q2 default widened mid-session to include cluster-scoped deletes for kinds that are conventionally deleted via kubectl (storage_class, priority_class, runtime_class) and CRDs that follow standard delete semantics (cluster_flow, cluster_output, cluster_policy_report, cert_manager_cluster_issuer).
+- Quality bar: every Opus agent diff-reviewed before cherry-pick. Three non-obvious arg_names pre-fact'd into the prompts (`report_name` for cluster_policy_report, `cluster_issuer_name` for cert_manager_cluster_issuer; both confirmed in pre-batch descriptor inspection). Zero arg_name regressions.
+
 ## [2026-05-06] - Agent: Claude Opus 4.7 (continued)
 
 ### Added (Batch 16 — 8 parallel Opus subagents, namespaced destructive deletes; 100% quality bar)
