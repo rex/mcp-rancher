@@ -2,7 +2,7 @@
 
 ## 1. Project snapshot
 
-- **What**: Capability-aware Rancher MCP server; 100+ tools across discovery, generic fallbacks, and curated operator workflows. Primary target: Rancher 2.6.5.
+- **What**: Capability-aware Rancher MCP server; 230+ tools across discovery, generic fallbacks, and curated operator workflows. **Primary target: Rancher 2.9.3** (production). **Compat floor: 2.6.5** (devlab) — capability detection bridges the gap; never regress 2.6.5 behavior.
 - **Runtime**: Python 3.12 · FastMCP · uv · httpx · structlog
 - **Non-goals**: Does not manage Rancher itself; does not support non-Rancher Kubernetes APIs directly.
 
@@ -48,7 +48,7 @@ Required. `make test` runs the full suite with coverage (60% minimum). Contract 
 - No secrets committed. `detect-secrets` + gitleaks enforce.
 - Never log secrets or tokens to any output stream.
 - All write operations require destructive confirmation guard.
-- Do not regress Rancher 2.6.5 compatibility to chase newer APIs.
+- Do not regress Rancher 2.6.5 (compat floor) compatibility to chase newer 2.9.3 APIs. Capability detection is the bridge; both versions stay green.
 
 ## 8. Architectural decisions
 
