@@ -205,12 +205,12 @@ B/D/E/F locks in technical debt the migration would later remove.
     - Template makes `summary = ...` conditional on
       summary_copy_fields being non-empty (avoids ruff F841 for
       packs whose detail get just adds payload).
-- [ ] **J-2** Track B new read tools via descriptors only
+- [x] **J-2** Track B new read tools via descriptors only
   - Provisioning (B-1), networking expansion (B-2),
     config-and-secrets (B-3), certificates (B-4), and the
     deepenings (B-5..B-8) all land via descriptor authorship.
   - No new mechanical-plumbing files.
-- [ ] **J-3** Extend descriptor schema for write operations
+- [x] **J-3** Extend descriptor schema for write operations
   - Add `create`, `apply`, `patch`, `delete` template support.
   - Wire read-only-instance guard and confirmation guard via
     shared services.
@@ -231,14 +231,14 @@ or action workflows, no live-schema-driven generation in v1.
 Should be taken as soon as touched, regardless of which larger track is
 active. Each is a 1-2-commit unit.
 
-- [ ] **A-1** Fix `rancher_project_health_summary` (P4)
+- [x] **A-1** Fix `rancher_project_health_summary` (P4)
   - Currently calls Norman `/v3/namespaces?projectId=...` which 404s on
     downstream clusters.
   - Switch to Steve
     `/k8s/clusters/{cluster_id}/v1/namespaces?labelSelector=field.cattle.io/projectId={short_id}`.
   - Live-validated as broken on 2025-05-03; re-validate against lab.
   - File: `src/rancher_mcp/tools/ops/rollups.py`.
-- [ ] **A-2** Fix mutation-guard error shape (P5, P10)
+- [x] **A-2** Fix mutation-guard error shape (P5, P10)
   - Read-only-instance guard and delete-confirmation guard both return
     rejection as a JSON-encoded *string* instead of a structured
     `GenericResourceMutationResult`, so the MCP boundary trips on Pydantic
@@ -249,10 +249,10 @@ active. Each is a 1-2-commit unit.
     structured error response, OR return a properly-typed result the
     Pydantic model accepts.
   - Apply to both Norman and Steve mutation tools.
-- [ ] **A-3** Fix `cancellable=` deprecation in `__main__.py` (P10)
+- [x] **A-3** Fix `cancellable=` deprecation in `__main__.py` (P10)
   - `to_thread.run_sync(..., cancellable=True)` → `abandon_on_cancel=True`
     per anyio 4.1+. Cosmetic but pollutes stderr on every startup.
-- [ ] **A-4** Add server-identity env-var config (captured user request)
+- [x] **A-4** Add server-identity env-var config (captured user request)
   - `RANCHER_MCP_SERVER_NAME`, `RANCHER_MCP_SERVER_DESCRIPTION` env vars
     wired through `config.py` → `FastMCP(name=..., instructions=...)`.
   - Defaults to current "rancher-mcp" / "Capability-aware Rancher MCP
@@ -419,7 +419,7 @@ Reversible / lower-risk writes for the curated packs that already have
 read tools. Gate items behind `read_only` instance checks (already done
 for the generic mutation tools) and `tool_annotations.destructive=false`.
 
-- [ ] **D-1** Label / annotation / config writes for existing curated
+- [~] **D-1** Label / annotation / config writes for existing curated
   resources (P6)
   - Pods, services, deployments, daemonsets, statefulsets, namespaces,
     projects, nodes (labels only — no taints/cordon here, those are P7).
@@ -431,7 +431,7 @@ for the generic mutation tools) and `tool_annotations.destructive=false`.
   - Project member add/remove
   - ClusterRoleTemplateBinding create/delete
   - ProjectRoleTemplateBinding create/delete
-- [ ] **D-4** Workload non-destructive ops (P6)
+- [~] **D-4** Workload non-destructive ops (P6)
   - Deployment scale, restart, pause, resume.
   - DaemonSet restart.
   - StatefulSet scale, restart.
@@ -450,6 +450,12 @@ for the generic mutation tools) and `tool_annotations.destructive=false`.
 All require either Track A-2 fixed (so the rejection path is sane), Track
 C-1 elicitation (preferred), or the existing confirmation-phrase pattern
 as a fallback.
+
+**Status (2026-06-06):** A-2 is fixed (structured-error boundary), so the
+rejection path is sane and Track E is unblocked. Resource-level curated
+deletes already shipped via the codegen substrate; the remaining Track E
+scope is the hand-written stateful **workflows** below. Work started this
+session with E-1 (node lifecycle).
 
 - [ ] **E-1** Node disruptive ops (P7)
   - Cordon, uncordon, drain (with grace period + drain-status polling),

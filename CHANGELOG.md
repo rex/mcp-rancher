@@ -26,6 +26,27 @@ behavior with tests:
   `RANCHER_MCP_SERVER_NAME` / `RANCHER_MCP_SERVER_DESCRIPTION` env overrides were
   already wired; added `tests/unit/test_config.py` coverage for both.
 
+### Documentation reconciliation
+
+The audit found the narrative docs had drifted badly from reality (the root
+cause of "I don't know the project's status"). Synced them to the source of
+truth (git + tests + this changelog):
+
+- `README.md` — "100 tools" -> 316; "Primary target 2.6.5" -> "primary 2.9.3,
+  floor 2.6.5"; added a note that the curated write surface + Phase-5 protocol
+  features bring the total to 316, with `docs/tool-catalog.md` as the
+  authoritative per-tool registry.
+- `docs/tool-catalog.md` — "292 registered" -> 316; last-updated date; status
+  summary counts.
+- `ROADMAP.md` — ticked A-1..A-4 and J-2/J-3 (shipped earlier, never ticked);
+  marked D-1/D-4 partial; noted Track E now unblocked and started.
+- `TASK_STATE.md`, `project_overview` memory, in-package `AGENTS.md` — refreshed
+  tool count and target.
+- Flagged (not changed): `catalog/capabilities.yaml` still declares
+  `primary_target: 2.6.5` as the capability baseline — left to a user decision
+  (it differs in meaning from the 2.9.3 product target and changing it shifts
+  capability semantics and breaks two tests).
+
 ## [2026-05-06] - Agent: Claude Opus 4.7 (Batch 17)
 
 ### Added (Batch 17 — 8 parallel Opus subagents, statefulset annotations + 7 cluster-scoped deletes)

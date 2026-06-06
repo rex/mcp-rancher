@@ -13,9 +13,11 @@
 
 A comprehensive [Model Context Protocol](https://modelcontextprotocol.io) server for operating [Rancher](https://www.rancher.com/)-managed Kubernetes clusters through any MCP client. Built with schema-driven discovery, multi-instance support, and curated operator workflows.
 
-**Primary compatibility target:** Rancher `2.6.5` (later versions supported via capability detection)
+**Primary target:** Rancher `2.9.3` (production) · **compatibility floor:** Rancher `2.6.5` (preserved via capability detection)
 
-**Current public surface:** 100 tools across discovery, generic fallbacks, curated reads, and operational summaries.
+**Current public surface:** 316 tools across discovery, generic fallbacks, curated reads, curated writes, specialized patches, operational summaries, and MCP protocol features.
+
+> The tables under [Tool Reference](#tool-reference) document the read, generic, and operational surface (~100 tools). The curated **write** surface — per-resource `set_labels` / `set_annotations` / `delete` plus specialized patches (`scale`, `pause`/`resume`/`restart`, `suspend`/`resume`, `set_size`, `set_type`, `set_min_max`) — together with the Phase-5 protocol features (tool safety annotations, MCP resources, MCP prompts, structured errors, cursor pagination, progress notifications, audit log, rate limiting) bring the total to 316. The authoritative, per-tool registry is [`docs/tool-catalog.md`](docs/tool-catalog.md).
 
 ## Features
 

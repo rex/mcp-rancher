@@ -6,7 +6,7 @@ built, and assigns an addressable slice ID to each gap so an agent
 can be instructed to ship a specific row without first reverse-
 engineering the codebase.
 
-Last updated: 2026-05-05 (after J-3 fifth slice).
+Last updated: 2026-06-06 (Batch 17 shipped + post-audit reconciliation).
 
 ---
 
@@ -66,10 +66,12 @@ table. The [Status legend](#status-legend) explains the icons.
 
 ## Quick start
 
-- **Tool surface today: 292 registered.** See
+- **Tool surface today: 316 registered.** See
   [Tool registry](#tool-registry).
 - **Estimated target: ~380 tools** at "perfect" coverage of
-  the 25-domain canonical plan. We're roughly 50% of the way.
+  the 25-domain canonical plan. We're ~83% of the way by tool count; the
+  remaining surface is concentrated in destructive operator workflows
+  (Track E) and subsystem depth (Track F).
 - **Substrate is feature-complete** for all 5 write verbs
   (create / apply / patch / delete + read pair) — see
   `docs/codegen-curated-tools.md`. Adding the next curated
@@ -121,14 +123,14 @@ descriptor migration commit). That's fine — Slice IDs map
 
 | Bucket | Count |
 |---|---|
-| ✅ Built (registered tools) | **292** |
-| 🟡 Planned (gap from plan) | ~190 |
+| ✅ Built (registered tools) | **316** |
+| 🟡 Planned (gap from plan) | ~64 |
 | 🟠 Partial (documented limitations) | ~10 |
 | 🔴 Blocked (external dep / design) | ~12 |
 | ⚫ Deferred / accessible-elsewhere | see `docs/known-gaps.md` |
 | 🚫 Out-of-scope (workflow / websocket) | ~8 |
 | **Estimated target tool surface** | ~380 |
-| **Coverage** | ~50% |
+| **Coverage** | ~83% (by tool count) |
 
 By plane:
 

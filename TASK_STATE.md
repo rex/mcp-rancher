@@ -11,10 +11,12 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
   track until either explicitly blocked by missing information or
   the active slice is fully complete and net-new scope would
   require user direction.
-- **J-1 is fully complete as of commit `5ed93f5`.** Net-new tracks
-  (J-2 Track B via descriptors, Track A quick fixes, Track C
-  Phase 5 stretch, Track G live validation) are all candidate
-  next-steps but require explicit user instruction to begin.
+- **2026-06-06: user directed "reconcile docs + Track A, then build the
+  destructive workflows" (audit follow-up).** Phase 1 (Track A closure +
+  doc reconciliation) is done; Track E destructive workflows are now
+  authorized and in progress (Phase 2). Phases 1-5 are complete; Phase 6
+  safe writes are partial (labels/annotations/scale/pause/resume/restart/
+  suspend shipped via codegen).
 
 ## Phase Discipline
 
