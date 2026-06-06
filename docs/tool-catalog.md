@@ -66,7 +66,7 @@ table. The [Status legend](#status-legend) explains the icons.
 
 ## Quick start
 
-- **Tool surface today: 316 registered.** See
+- **Tool surface today: 318 registered.** See
   [Tool registry](#tool-registry).
 - **Estimated target: ~380 tools** at "perfect" coverage of
   the 25-domain canonical plan. We're ~83% of the way by tool count; the
@@ -123,8 +123,8 @@ descriptor migration commit). That's fine — Slice IDs map
 
 | Bucket | Count |
 |---|---|
-| ✅ Built (registered tools) | **316** |
-| 🟡 Planned (gap from plan) | ~64 |
+| ✅ Built (registered tools) | **318** |
+| 🟡 Planned (gap from plan) | ~62 |
 | 🟠 Partial (documented limitations) | ~10 |
 | 🔴 Blocked (external dep / design) | ~12 |
 | ⚫ Deferred / accessible-elsewhere | see `docs/known-gaps.md` |
@@ -548,7 +548,7 @@ established.
 | D-5-catalog-refresh | rancher_catalog_refresh | norman | action | Norman action invocation; existing generic action tool covers this — possibly a thin wrapper |
 | D-5-app-upgrade | rancher_app_upgrade | norman | action | safe upgrades only; chart contract guarantees |
 
-### Track E — Phase 7 destructive writes (~15 planned)
+### Track E — Phase 7 destructive writes (~13 planned; cordon/uncordon shipped)
 
 Higher risk. Each requires confirmation phrase OR (preferred)
 Track C-1 elicitation. The current confirmation-phrase pattern
@@ -556,8 +556,8 @@ is acceptable as a v1.
 
 | Slice ID | Tool | Plane | Verb | Notes |
 |---|---|---|---|---|
-| E-1-node-cordon | rancher_node_cordon | both | patch / action | spec.unschedulable=true |
-| E-1-node-uncordon | rancher_node_uncordon | both | patch / action | spec.unschedulable=false |
+| E-1-node-cordon | rancher_node_cordon | norman | action | ✅ shipped 2026-06-06 (Norman `cordon` action; `node_lifecycle` pack) |
+| E-1-node-uncordon | rancher_node_uncordon | norman | action | ✅ shipped 2026-06-06 (Norman `uncordon` action; `node_lifecycle` pack) |
 | E-1-node-drain | rancher_node_drain | norman | action | long-running; needs progress notifications |
 | E-1-node-drain-status | rancher_node_drain_status | norman | get | poll companion |
 | E-1-node-delete | rancher_node_delete | norman | delete | DESTRUCTIVE; replaces machine in CAPI clusters |

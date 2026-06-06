@@ -47,6 +47,24 @@ truth (git + tests + this changelog):
   (it differs in meaning from the 2.9.3 product target and changing it shifts
   capability semantics and breaks two tests).
 
+### Added (Track E — node lifecycle: cordon / uncordon)
+
+First Track-E destructive-workflow slice. New hand-written `node_lifecycle`
+pack (not codegen — operator workflows stay hand-written):
+
+- `rancher_node_cordon` / `rancher_node_uncordon` (IDEMPOTENT_WRITE) — invoke
+  the Rancher Norman `cordon` / `uncordon` node actions, resolving the action
+  URL from the live node payload's `actions` map (no hardcoded endpoints).
+  Read-only-instance guard + audit + rate limiting applied; reversible, no
+  request payload. Tool surface **316 → 318**. Tests +3 (cordon, uncordon,
+  read-only rejection). 622 tests pass, 85% coverage, all gates green.
+
+Next E-1 slices: `rancher_node_drain` (+ `rancher_node_drain_status` poll
+companion) and `rancher_node_delete`. Drain carries a `nodeDrainInput` body
+(force, gracePeriod, ignoreDaemonSets, deleteLocalData, timeout) — its exact
+schema should be confirmed against the 2.6.5 lab before shipping rather than
+guessed.
+
 ## [2026-05-06] - Agent: Claude Opus 4.7 (Batch 17)
 
 ### Added (Batch 17 — 8 parallel Opus subagents, statefulset annotations + 7 cluster-scoped deletes)

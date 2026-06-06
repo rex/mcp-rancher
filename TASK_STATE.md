@@ -54,15 +54,35 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 
 ## Next Slice
 
-**Read Serena memo `tasks/autonomous_session_handoff_2026_05_05` first.** Comprehensive handoff after a long autonomous Opus turn that shipped Batches 3-10 (204 → 261 tools, +57 net new). Memo lists deferred substrate slices and remaining mechanical work.
+**Audit + Phase 1 + first Track-E slice landed 2026-06-06** (see CHANGELOG).
+Build green: 318 tools, 622 tests, 85% coverage, 0 type errors, gates clean.
 
-**Top deferred items**:
+**Done this session:**
+- Track A closed (A-1/A-2/A-3 were already fixed in the May work, now verified +
+  ticked; A-2 locked with `tests/unit/test_structured_errors.py`; A-4 default
+  description refreshed to 2.9.3-primary).
+- Docs reconciled (README / tool-catalog / ROADMAP / this file / project_overview
+  memory: 2.6.5 -> 2.9.3 primary; 100/292 -> 318 tools).
+- **E-1 cordon / uncordon shipped** — new hand-written `node_lifecycle` pack
+  (`shared.py` + `cordon.py`), Norman `cordon`/`uncordon` actions,
+  IDEMPOTENT_WRITE, read-only guard + audit + rate-limit, 3 tests.
 
-1. **Substrate slice — nested target_path support** in `scripts/codegen/templates/tool_module.py.j2`. Currently `target_path: spec.resources.requests` emits as literal dotted key `{"spec.resources.requests": {...}}` instead of nesting. Affects `rancher_persistent_volume_claim_set_size` (shipped but emits broken body shape — test asserts current behavior). Fix: split target_path on `.` and build nested dict in the patch helper. ~10 LOC change.
-2. **Substrate slice — argless patches**: lift `≥1 arg` constraint on PatchConfig to allow argless verbs that toggle a known field (e.g. `cron_job_resume` sets `spec.suspend=false`, `deployment_pause/resume` set `spec.paused=true/false`, `deployment_restart` sets a timestamp annotation). ~15 LOC schema change + template branch. Unlocks 4-5 specialized patches.
-3. **Batch 11 (mechanical)** — same-pack pairs deferred from Batch 9 to save context: `resource_quota_delete`, `limit_range_delete`, `service_monitor_delete`. 3 agents, 2 packs (governance pair + prometheus_monitoring single).
-4. **Cookbook doc**: `docs/codegen-write-tools-cookbook.md` per Q9 default. Outline: 5 verb recipes (create / apply / patch / delete + multi-patch), the `metadata_annotations` rename pitfall, the camelCase k8s arg-name pattern, the dotted-target_path substrate gap.
-5. **Norman writes substrate** (Q3 deferred). All Norman descriptors stay read-only on curated side until validated.
+**Next (continue Track E):**
+1. `rancher_node_drain` — Norman `drain` action with a `nodeDrainInput` body
+   (force, gracePeriod, ignoreDaemonSets, deleteLocalData, timeout). **Confirm
+   the exact `nodeDrainInput` field names against the 2.6.5 lab (or live
+   `rancher_norman_schema_get(schema_id="node")`) before shipping — do NOT guess
+   the payload schema.** DESTRUCTIVE -> confirmation phrase + audit.
+2. `rancher_node_drain_status` — read companion polling node `state`
+   (`draining` -> `drained`/`active`) and `appliedNodeDrainInput`.
+3. `rancher_node_delete` — DESTRUCTIVE; replaces the machine in CAPI clusters.
+4. Then E-2 (app rollback/delete), E-3 (cert rotation), E-4/E-5 (etcd / backup
+   restore), E-6 (cluster delete/upgrade).
+
+**Open decision flagged to user:** `catalog/capabilities.yaml` `primary_target`
+is still 2.6.5 (capability baseline vs the 2.9.3 product target) — left unchanged
+pending a user call (changing it shifts capability-detection semantics and breaks
+two tests).
 
 ## Old Next Slice (kept for history)
 

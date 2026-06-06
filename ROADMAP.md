@@ -457,7 +457,7 @@ deletes already shipped via the codegen substrate; the remaining Track E
 scope is the hand-written stateful **workflows** below. Work started this
 session with E-1 (node lifecycle).
 
-- [ ] **E-1** Node disruptive ops (P7)
+- [~] **E-1** Node disruptive ops (P7)
   - Cordon, uncordon, drain (with grace period + drain-status polling),
     delete/replace.
 - [ ] **E-2** App destructive ops (P7)
