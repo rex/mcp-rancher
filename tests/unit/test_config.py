@@ -78,3 +78,23 @@ def test_missing_configuration_raises_validation_error(monkeypatch: pytest.Monke
 
     with pytest.raises(ValueError):
         AppSettings(_env_file=None)
+
+
+def test_server_identity_defaults_and_env_override(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Server name/description default to current targets and honor env overrides."""
+
+    monkeypatch.delenv("RANCHER_INSTANCES_JSON", raising=False)
+    monkeypatch.setenv("RANCHER_URL", "https://rancher.example.com")
+    monkeypatch.setenv("RANCHER_TOKEN", "token-xxxxx:yyyyyyyyy")
+    monkeypatch.delenv("RANCHER_MCP_SERVER_NAME", raising=False)
+    monkeypatch.delenv("RANCHER_MCP_SERVER_DESCRIPTION", raising=False)
+
+    defaults = AppSettings(_env_file=None)
+    assert defaults.server_name == "rancher-mcp"
+    assert "2.9.3" in defaults.server_instructions
+
+    monkeypatch.setenv("RANCHER_MCP_SERVER_NAME", "rancher-prod")
+    monkeypatch.setenv("RANCHER_MCP_SERVER_DESCRIPTION", "Prod Rancher operator surface")
+    overridden = AppSettings(_env_file=None)
+    assert overridden.server_name == "rancher-prod"
+    assert overridden.server_instructions == "Prod Rancher operator surface"

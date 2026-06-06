@@ -26,7 +26,10 @@ class AppSettings(BaseSettings):
     rancher_read_only: bool = Field(default=False, alias="RANCHER_READ_ONLY")
     server_name: str = Field(default="rancher-mcp", alias="RANCHER_MCP_SERVER_NAME")
     server_instructions: str = Field(
-        default="Capability-aware Rancher MCP server for Rancher 2.6.5",
+        default=(
+            "Capability-aware Rancher MCP server. Primary target Rancher 2.9.3; "
+            "compatibility floor 2.6.5 preserved via capability detection."
+        ),
         alias="RANCHER_MCP_SERVER_DESCRIPTION",
     )
     write_rate_limit_per_min: int = Field(

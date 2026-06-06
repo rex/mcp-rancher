@@ -1,5 +1,31 @@
 # Changelog
 
+## [2026-06-06] - Agent: Claude Opus 4.8 (1M context)
+
+### Audit + Track A closure
+
+A full codebase audit (build green: 316 tools, 615 tests, 85% coverage, 0 type
+errors) found three of the four open Track-A quick-fixes were already resolved
+during the May work and never ticked. Reconciled the record and locked the
+behavior with tests:
+
+- **A-1** — `rancher_project_health_summary` already uses the Kubernetes proxy
+  (`/k8s/clusters/{id}/api/v1/namespaces` + `field.cattle.io/projectId=` label
+  selector) instead of the Norman path that 404s on downstream clusters.
+  Already covered by `tests/unit/test_ops_tools.py`.
+- **A-2** — write-guard rejections already surface as a structured `ToolError`
+  envelope (`error_code` + `message` [+ `http_status`/`field`]) via the Phase-5
+  `wrap_with_structured_errors` boundary, not a raw string. Added
+  `tests/unit/test_structured_errors.py` (the wrapper had 0% coverage).
+- **A-3** — the `cancellable=` anyio deprecation is no longer present in the tree.
+
+### Fixed
+
+- **A-4** — the server self-description default still announced "Rancher 2.6.5";
+  updated to "primary target Rancher 2.9.3; compatibility floor 2.6.5". The
+  `RANCHER_MCP_SERVER_NAME` / `RANCHER_MCP_SERVER_DESCRIPTION` env overrides were
+  already wired; added `tests/unit/test_config.py` coverage for both.
+
 ## [2026-05-06] - Agent: Claude Opus 4.7 (Batch 17)
 
 ### Added (Batch 17 — 8 parallel Opus subagents, statefulset annotations + 7 cluster-scoped deletes)
