@@ -8,6 +8,8 @@
 from mcp.server.fastmcp import FastMCP
 
 from rancher_mcp.tools.pods_services._generated_pods import (
+    rancher_pod_delete,
+    rancher_pod_delete_tool,
     rancher_pod_get,
     rancher_pod_get_tool,
     rancher_pod_set_annotations,
@@ -34,6 +36,7 @@ from rancher_mcp.tools.pods_services._generated_services import (
 from rancher_mcp.tools.support.annotations import DESTRUCTIVE, IDEMPOTENT_WRITE, READ_ONLY
 
 __all__ = [
+    "rancher_pod_delete",
     "rancher_pod_get",
     "rancher_pod_set_annotations",
     "rancher_pod_set_labels",
@@ -53,6 +56,7 @@ def register_pod_service_tools(mcp: FastMCP) -> None:
 
     mcp.tool(name="rancher_pods_list", annotations=READ_ONLY)(rancher_pods_list_tool)
     mcp.tool(name="rancher_pod_get", annotations=READ_ONLY)(rancher_pod_get_tool)
+    mcp.tool(name="rancher_pod_delete", annotations=DESTRUCTIVE)(rancher_pod_delete_tool)
     mcp.tool(name="rancher_pod_set_labels", annotations=IDEMPOTENT_WRITE)(
         rancher_pod_set_labels_tool
     )

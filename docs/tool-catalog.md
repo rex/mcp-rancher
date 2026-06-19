@@ -285,6 +285,7 @@ the source module (hand-written).
 |---|---|---|---|---|
 | ✅ | rancher_pods_list | steve | list | `catalog/curated_tools/pods.yml` |
 | ✅ | rancher_pod_get | steve | get | `catalog/curated_tools/pods.yml` |
+| ✅ | rancher_pod_delete | steve | delete | `catalog/curated_tools/pods.yml` |
 | ✅ | rancher_services_list | steve | list | `catalog/curated_tools/services.yml` |
 | ✅ | rancher_service_get | steve | get | `catalog/curated_tools/services.yml` |
 | ✅ | rancher_find_failing_pods | both | aggregate | `tools/ops/` |
@@ -1954,7 +1955,9 @@ Per Q2 default (b): namespaced "owned" resources only. **Skipped** (use `rancher
 
 #### Slice-specific rows — Batch 16 deletes (2026-05-06)
 
-Eight namespaced "owned" deletes for descriptors not yet covered. Per Q2 default. **Skipped** (cluster-scoped, recovery artifacts, or generally bad practice — use `rancher_steve_resource_delete` escape hatch instead): pod_delete, replica_set_delete (managed by Deployment), longhorn_node_delete, longhorn_snapshot_delete, restore_delete, backup_delete, cluster_flow_delete (cluster-scoped), cluster_output_delete (cluster-scoped), cluster_policy_report_delete (cluster-scoped), cert_manager_cluster_issuer_delete (cluster-scoped). Predicted Tool surface delta: 300 → 308 (+8).
+Eight namespaced "owned" deletes for descriptors not yet covered. Per Q2 default. **Skipped** (cluster-scoped, recovery artifacts, or generally bad practice — use `rancher_steve_resource_delete` escape hatch instead): replica_set_delete (managed by Deployment), longhorn_node_delete, longhorn_snapshot_delete, restore_delete, backup_delete, cluster_flow_delete (cluster-scoped), cluster_output_delete (cluster-scoped), cluster_policy_report_delete (cluster-scoped), cert_manager_cluster_issuer_delete (cluster-scoped). Predicted Tool surface delta: 300 → 307 (+7).
+
+> **Reversal (2026-06-19): `rancher_pod_delete` SHIPPED.** It was skipped above as "bad practice," but in venue ops "delete the pod, don't restart" is the #1 remediation — its absence forced agents onto raw `kubectl delete pod` (measured: 69 raw calls, 0 MCP). The generic escape hatch was too awkward to win adoption. Now a first-class `steve` delete in `pods.yml`.
 
 | Slice ID | Descriptor file | Pack | display_name_singular | audit_operation | Resource | Notes |
 |---|---|---|---|---|---|---|

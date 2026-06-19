@@ -23,7 +23,7 @@ shared_imports:
 summary_function: pod_summary_from_payload
 
 # Operations
-operations: [list, get, patch]
+operations: [list, get, delete, patch]
 
 list:
   query_params: [limit, continue_token, label_selector, field_selector]
@@ -52,6 +52,12 @@ get:
   next_steps:
     - rancher_pods_list
     - rancher_services_list
+
+delete:
+  audit_operation: pod_delete
+  confirmation_phrase: "delete pod {pod_name} in namespace {namespace}"
+  next_steps:
+    - rancher_pods_list
 
 patches:
   - verb: set_labels
@@ -85,6 +91,10 @@ tools:
     name: rancher_pod_get
     description: Fetch one pod by namespace and name. Returns the curated summary plus full payload and link keys.
     annotation_set: READ_ONLY
+  delete:
+    name: rancher_pod_delete
+    description: Delete one Kubernetes Pod. The `confirmation` arg must equal the exact phrase "delete pod NAME in namespace NS" (substituting the actual values). Returns a typed delete result with the rendered confirmation phrase. Subject to write rate limiting and audit logging.
+    annotation_set: DESTRUCTIVE
   patches:
     - name: rancher_pod_set_labels
       description: Replace metadata.labels on one Pod via JSON merge-patch. The `labels` arg is a complete replacement map. Returns the curated detail.
