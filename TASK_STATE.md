@@ -54,29 +54,27 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 
 ## Next Slice
 
-### ACTIVE WORKSTREAM (2026-07-09): repo compliance / god-file remediation
+### COMPLIANCE PASS (2026-07-09→10): repo god-file remediation — ✅ Status: done
 
-Track E is **paused** for a compliance pass (user-directed: "insane amount of
-god files"). Root cause found: the architecture line-gate's `scope_globs`
-narrowed it to `src/**`/`app/**` and `exclude_globs` exempted `_generated_*.py`,
-so tests/, devtools/, scripts/, and generated packs were never line-checked —
-and the strengthened gates were sitting uncommitted. 57 files are over the
-400-line hard limit in that blind spot (23 hand-maintained).
+User-directed ("insane amount of god files"). Root cause: the architecture
+gate's `scope_globs` narrowed it to `src/**`/`app/**` and `exclude_globs`
+exempted `_generated_*.py`, so tests/, devtools/, scripts/, and generated
+packs were never line-checked — and the strengthened gates were uncommitted.
 
-- **Phase 0 — enforcement baseline: ✅ DONE + pushed (`a8c5692`).** Landed the
-  fail-closed arch + module-shape gates into pre-commit + Stop hook, synced
-  skeleton to v0.43.0, disarmed the Serena hard-block (situational policy),
-  exempted the Pydantic `models/**` layer from the module-shape cap, removed
-  backup cruft. `make validate` green (624 tests, 85%).
-- **Phase 4 — remediate hand-maintained god files: 🔴 BLOCKED on user decision.**
-  Non-test splits are unambiguous: `devtools/devlab.py` (1627),
-  `scripts/codegen/descriptor.py` (809), `scripts/codegen/plan.py` (466).
-  The 20 test modules (up to `test_workloads_tools.py` @ 2743) need a call:
-  **split by operation-family vs. a relaxed test-specific line cap** (the
-  module-shape gate already exempts tests — precedent for special-casing).
-- **Phase 5 — open scope:** after splits, drop `scope_globs` so the gate covers
-  the whole tree; document the generated exemption. Line gate then wide-green.
-- **Phase 6 — CI:** add `make validate` in CI (ASK-FIRST). No CI exists today.
+- **Enforcement baseline (`a8c5692`):** fail-closed arch + module-shape gates
+  wired into pre-commit + Stop hook; skeleton synced to v0.43.0; Serena
+  hard-block disarmed (situational policy); backup cruft removed.
+- **God files split (`20b74e1`, `ea91729`, `5ee6f0c`, `bcb86ed`):** all 23
+  hand-maintained god files under 400 — 20 test modules by resource/operation,
+  codegen descriptor/plan → packages, devlab.py → 10-module package. 624 tests
+  green. `.secrets.baseline` added for the retrofit's new secret gate.
+- **Scope opened (`0a6d79c`):** dropped `scope_globs`; gate scans 359 files
+  (was 219), tests/devtools/scripts covered; cap raised 8→15 for cohesive
+  utility modules. Both gates green tree-wide — blind spot closed.
+- **Remaining — CI (ASK-FIRST):** no CI runs the gates; `make validate` is
+  local-only (pre-commit + Stop hook). Awaiting user go-ahead to wire CI.
+
+Track E (node_drain → E-6) resumes after the CI decision.
 
 **Audit + Phase 1 + first Track-E slice landed 2026-06-06** (see CHANGELOG).
 Build green: 318 tools, 622 tests, 85% coverage, 0 type errors, gates clean.
