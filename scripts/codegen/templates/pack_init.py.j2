@@ -25,4 +25,3 @@ def {{ pack.register_function }}(mcp: FastMCP) -> None:
 {% for reg in registrations %}
     mcp.tool(name="{{ reg.tool_name }}", annotations={{ reg.annotation }})({{ reg.callable }})
 {%- endfor %}
-

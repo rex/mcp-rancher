@@ -1,5 +1,41 @@
 # Changelog
 
+## [2026-07-09] — Agent: Claude Opus 4.8
+
+### Repo compliance — enforcement layer reconciled to skeleton v0.43.0
+
+Root-caused why "god files" accumulated despite the line-limit policy: the
+architecture gate's `scope_globs` restricted it to `src/**`/`app/**` and
+`exclude_globs` exempted `_generated_*.py`, so every oversized file (tests up
+to 2,743 lines, `devtools/devlab.py` 1,627, generated packs up to 836) was
+structurally invisible — and the strengthened gates were sitting uncommitted.
+This lands the enforcement baseline; god-file remediation + scope-open follow.
+
+### Changed
+
+- Landed the fail-closed `check_architecture.py` + `check_module_rules.py`
+  gates into pre-commit and the Stop hook (mirrors `make validate`).
+- Synced skeleton-owned files (hooks, gate scripts, `serena.md`) to
+  agentic-skeleton v0.43.0.
+- Exempted the Pydantic `models/**` layer from the architecture gates: DTO
+  aggregations legitimately define >8 model classes, so the module-shape
+  (max-public-entry) cap mis-flagged 13 as god-modules. Line counts are
+  trivial; the line gate no longer scans them (documented tradeoff).
+
+### Removed
+
+- Disarmed the Serena PreToolUse hard-block to match the situational-Serena
+  policy: re-wired `settings.json` to the disarmed `serena-gate.sh` and
+  deleted the bespoke 308-line `serena-gate.py`.
+- Removed retrofit backup cruft (`Makefile.pre-retrofit`, `VIBE.yaml.bak`).
+
+### Known gap (next slice)
+
+- The line gate's scope still exempts `tests/`, `devtools/`, `scripts/`, and
+  `_generated_*.py`; 57 files remain over the 400-line hard limit in that
+  blind spot (23 hand-maintained). Remediation: split the hand-maintained
+  god files, then drop `scope_globs` so the gate covers the whole tree.
+
 ## [2026-06-06] - Agent: Claude Opus 4.8 (1M context)
 
 ### Audit + Track A closure

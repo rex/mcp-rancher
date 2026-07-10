@@ -38,6 +38,21 @@ target-version = "py312"
 line-length = 100
 extend-exclude = [".claude/worktrees"]
 
+[tool.ruff.format]
+# Vendored agentic-skeleton gate scripts are synced verbatim by
+# scripts/sync_skeleton.py; the repo formatter must not rewrite them
+# (that would create skeleton drift the next --check flags). They stay
+# under `ruff check` via per-file-ignores below — only formatting is
+# exempt. All repo-authored scripts are still formatted normally.
+exclude = [
+    "scripts/bump_version.py",
+    "scripts/check_architecture.py",
+    "scripts/check_docs.py",
+    "scripts/check_module_rules.py",
+    "scripts/check_version_bumped.py",
+    "scripts/sync_skeleton.py",
+]
+
 [tool.ruff.lint]
 select = ["E", "W", "F", "I", "B", "C4", "UP", "SIM", "TID", "ANN", "S", "LOG"]
 ignore = ["ANN401"]
@@ -45,12 +60,37 @@ ignore = ["ANN401"]
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["S101"]
 "src/**/_generated_*.py" = ["E501"]
+# Vendored agentic-skeleton gate scripts (synced verbatim by
+# scripts/sync_skeleton.py — editing them creates skeleton drift). They
+# are PEP-723 `uv run --script` tools that shell out to git, so they
+# trip S603/S607 (trusted, hardcoded argv) and carry the skeleton's own
+# import ordering. Scope the exemption to these files and exactly those
+# rules; all repo-authored scripts keep the full profile.
+"scripts/bump_version.py" = ["S603", "S607", "I001", "SIM108"]
+"scripts/check_architecture.py" = ["S603", "S607", "I001"]
+"scripts/check_docs.py" = ["S603", "S607", "I001"]
+"scripts/check_module_rules.py" = ["S603", "S607", "I001"]
+"scripts/check_version_bumped.py" = ["S603", "S607", "I001"]
+"scripts/sync_skeleton.py" = ["S603", "S607", "I001"]
 
 [tool.pyright]
 pythonVersion = "3.12"
 typeCheckingMode = "strict"
 reportMissingTypeStubs = false
 venvPath = ".venv"
+# Vendored agentic-skeleton gate scripts are synced verbatim by
+# scripts/sync_skeleton.py and are not authored to this repo's strict
+# pyright profile; editing them to satisfy it would create skeleton
+# drift. Exempt only these files — all repo-authored code under
+# scripts/ stays fully type-checked.
+exclude = [
+    "scripts/bump_version.py",
+    "scripts/check_architecture.py",
+    "scripts/check_docs.py",
+    "scripts/check_module_rules.py",
+    "scripts/check_version_bumped.py",
+    "scripts/sync_skeleton.py",
+]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

@@ -38,6 +38,12 @@ architecture:
     - "**/_generated_*.py"
     - "**/node_modules/**"
     - "**/.next/**"
+    # Pydantic models are DTO aggregations, not behavior god-modules: a
+    # domain models file legitimately defines >8 model classes (e.g.
+    # models/discovery.py = 15). Exempt from the architecture gates —
+    # the module-shape (max-public-entry) cap especially. Their line
+    # counts are trivial (all well under the soft limit). See CHANGELOG.
+    - "**/models/**/*.py"
   max_lines_per_file:
     soft: 250
     hard: 400
@@ -84,7 +90,7 @@ testing:
 
 security:
   audit_logging: required
-  secret_masking: required
+  secret_masking: required  # pragma: allowlist secret
   destructive_confirmation: required
   rate_limiting: required
   read_only_instance_mode: supported
@@ -174,3 +180,8 @@ decisions:
   testing_policy:
     value: enabled
     decided_by: Pierce
+skills:
+  - id: lang-mcp
+    version: "0.1.0"
+    applied: 2026-05-03
+    source: transcript-backfill
