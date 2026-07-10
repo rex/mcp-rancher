@@ -6,7 +6,7 @@ import json
 from functools import lru_cache
 from typing import cast
 
-from pydantic import Field, SecretStr, ValidationError, model_validator
+from pydantic import Field, PrivateAttr, SecretStr, ValidationError, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from rancher_mcp.models.discovery import RancherInstanceConfig
@@ -40,13 +40,29 @@ class AppSettings(BaseSettings):
             "Burst capacity is twice this value. Set to 0 to disable."
         ),
     )
-    instances: dict[str, RancherInstanceConfig] = Field(default_factory=dict)
+    # Computed from instances_json / the single-instance shorthand by the
+    # model validator below — deliberately a PRIVATE attribute, not a
+    # settings field. As a field it was env-bindable: with
+    # case_sensitive=False, any stray `INSTANCES` environment variable
+    # (a common shell word; GNU make also exports command-line vars like
+    # `make live-health INSTANCES=lab` into recipe environments) bound to
+    # it and pydantic-settings tried to JSON-parse the value, killing
+    # startup with a SettingsError. Derived state must not be settable.
+    _instances: dict[str, RancherInstanceConfig] = PrivateAttr(
+        default_factory=dict[str, RancherInstanceConfig]
+    )
 
     model_config = SettingsConfigDict(
         env_file=".env",
         case_sensitive=False,
         extra="ignore",
     )
+
+    @property
+    def instances(self) -> dict[str, RancherInstanceConfig]:
+        """Resolved instance map (name -> config). Read-only, computed."""
+
+        return self._instances
 
     @model_validator(mode="after")
     def build_instances(self) -> AppSettings:
@@ -93,7 +109,7 @@ class AppSettings(BaseSettings):
                 f"Default instance {self.default_instance!r} is not present in configured instances"
             )
 
-        self.instances = instances
+        self._instances = instances
         return self
 
 

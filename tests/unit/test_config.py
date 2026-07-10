@@ -7,6 +7,27 @@ import pytest
 from rancher_mcp.config import AppSettings
 
 
+def test_stray_instances_env_var_cannot_break_settings(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A stray `INSTANCES` env var must not bind to the computed map.
+
+    Regression: `instances` was a plain settings field; with
+    case_sensitive=False an unrelated `INSTANCES` environment variable
+    (e.g. exported by `make live-health INSTANCES=lab` — GNU make passes
+    command-line vars into recipe environments) bound to it and
+    pydantic-settings raised SettingsError trying to JSON-parse it.
+    """
+
+    monkeypatch.setenv("INSTANCES", "lab")
+    monkeypatch.delenv("RANCHER_INSTANCES_JSON", raising=False)
+    monkeypatch.setenv("RANCHER_URL", "https://rancher.example.com")
+    monkeypatch.setenv("RANCHER_TOKEN", "token-xxxxx:yyyyyyyyy")
+    monkeypatch.setenv("RANCHER_DEFAULT_INSTANCE", "work")
+
+    settings = AppSettings(_env_file=None)
+
+    assert "work" in settings.instances
+
+
 def test_single_instance_shorthand_builds_default_instance(monkeypatch: pytest.MonkeyPatch) -> None:
     """Single-instance shorthand should produce a default instance map.
 
