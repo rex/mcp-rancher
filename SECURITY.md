@@ -1,0 +1,64 @@
+# Security Policy
+
+This server holds credentials to Kubernetes management planes. It is built
+around that fact — but you should still deploy it deliberately.
+
+## Reporting a vulnerability
+
+Email **pierce@piercemoore.com** with a description and reproduction steps.
+Please do not open a public issue for anything exploitable. You'll get an
+acknowledgment within 72 hours and a fix or mitigation plan before any public
+disclosure.
+
+## Supported versions
+
+| Version | Supported |
+|---|---|
+| Latest release | ✅ |
+| Older releases | ❌ — upgrade |
+
+## Threat model & guarantees
+
+**Credentials**
+
+- Rancher API tokens are read from environment variables (or a local `.env`)
+  only. They are never written to disk, never logged, and never included in
+  tool responses or audit records.
+- Use a Rancher token scoped to what you actually need. For inspection-only
+  use, create a read-only Rancher user and/or set `read_only: true` on the
+  instance — mutations are then refused at the configuration layer.
+- TLS verification is **on by default** (`RANCHER_VERIFY_SSL=true`).
+
+**What an agent can do through this server**
+
+- 176 tools are read-only; 143 mutate; 38 are destructive
+  (see [`docs/tool-manifest.json`](docs/tool-manifest.json) — generated from
+  the registry, per-tool safety annotations included).
+- Destructive tools require an explicit typed confirmation phrase.
+- Every mutation is audit-logged (structured `event="audit"` records:
+  tool, operation, plane, instance, resource, outcome — argument *names*
+  only, never values).
+- Writes are rate-limited (token bucket, default 60/min).
+
+**What is masked**
+
+- Secret values never appear in curated responses (key names only).
+- Certificate private keys are structurally absent from certificate tools.
+- Reading a secret's value requires the generic
+  `rancher_steve_resource_get` escape hatch — an explicit, auditable act.
+
+**Logging**
+
+- All logs go to `stderr` (never the MCP stdout channel).
+- No secrets, tokens, or payload values in any log stream. The repo enforces
+  this with `detect-secrets` + gitleaks in pre-commit and an audited baseline.
+
+## Hardening recommendations
+
+- Point production instances at the server with `read_only: true` unless you
+  explicitly need writes.
+- Run one server per trust boundary; don't mix credentials of different
+  sensitivity in a single instance config when you can avoid it.
+- Keep `RANCHER_MCP_WRITE_RATE_LIMIT_PER_MIN` enabled (default 60).
+- Treat the machine running this server like it holds your kubeconfigs —
+  because it effectively does.

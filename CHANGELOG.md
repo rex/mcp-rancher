@@ -3874,3 +3874,7 @@ pods.py.
 ## Captured Future Requests (not started)
 
 - **Server naming / client identity config** — user wants to configure how the server names itself and appears in MCP clients (server name, version string, instructions/description shown in client UIs). Likely: `RANCHER_MCP_SERVER_NAME`, `RANCHER_MCP_SERVER_DESCRIPTION` env vars wired through `config.py` → `FastMCP(name=..., instructions=...)` and the Phase 0 early-init response hardcoded strings in `__main__.py`.
+
+## [0.2.0] — 2026-07-10 — Agent: Claude
+### Changed
+- Release prep: generated tool manifest + drift gate, brand imagery, rewritten README, SECURITY.md, PyPI-ready packaging metadata

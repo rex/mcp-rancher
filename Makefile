@@ -10,7 +10,8 @@
         dev start build lint typecheck check-architecture check-docs \
         check-precommit check-skeleton sync-skeleton fix test test-unit \
         version clean clean-all \
-        codegen check-codegen capture-fixtures mock-rancher \
+        codegen check-codegen tool-manifest check-tool-manifest \
+        capture-fixtures mock-rancher \
         live-health live-read-matrix live-steve live-lifecycle \
         lab-up lab-down lab-reset lab-status lab-logs lab-tools \
         lab-rancher-up lab-rancher-down lab-kind-up lab-kind-down \
@@ -201,8 +202,17 @@ codegen:
 check-codegen:
 	$(PYTHON) -m scripts.codegen.check
 
+## tool-manifest: Regenerate docs/tool-manifest.json from the live tool registry
+tool-manifest:
+	@echo "$(CYAN)Generating docs/tool-manifest.json from the tool registry...$(RESET)"
+	@$(PYTHON) scripts/generate_tool_manifest.py
+
+## check-tool-manifest: Fail if docs/tool-manifest.json is stale (CI gate)
+check-tool-manifest:
+	@$(PYTHON) scripts/generate_tool_manifest.py --check
+
 ## validate: Run the repo's aggregate validation flow
-validate: check-codegen check-architecture lint typecheck test
+validate: check-codegen check-tool-manifest check-architecture lint typecheck test
 	@echo "$(GREEN)Validation complete.$(RESET)"
 
 # ─── Local Lab ────────────────────────────────────────────────────────

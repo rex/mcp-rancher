@@ -1,0 +1,75 @@
+<svg viewBox="0 0 1280 640" width="1280" height="640" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" role="img" aria-label="Rancher MCP — 319 tools for Rancher-managed Kubernetes">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0a0e15"/>
+      <stop offset="1" stop-color="#0d1420"/>
+    </linearGradient>
+    <radialGradient id="ember-glow" cx="0.18" cy="0.85" r="0.6">
+      <stop offset="0" stop-color="#ff6e2d" stop-opacity="0.18"/>
+      <stop offset="1" stop-color="#ff6e2d" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="steel-glow" cx="0.9" cy="0.06" r="0.55">
+      <stop offset="0" stop-color="#6ea0ff" stop-opacity="0.10"/>
+      <stop offset="1" stop-color="#6ea0ff" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="ember" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffc36b"/>
+      <stop offset="0.55" stop-color="#ff7a33"/>
+      <stop offset="1" stop-color="#e8501d"/>
+    </linearGradient>
+    <filter id="glow" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="7" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="softglow" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="3" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <pattern id="hexgrid" width="72" height="124" patternUnits="userSpaceOnUse">
+      <g fill="none" stroke="#94a3b8" stroke-opacity="0.05" stroke-width="1">
+        <path d="M36 2 66 19 66 53 36 70 6 53 6 19 Z"/>
+        <path d="M0 64 30 81 30 115 0 132" />
+        <path d="M72 64 42 81 42 115 72 132" />
+      </g>
+    </pattern>
+    <path id="horn" d="M 78,-76 C 152,-100 200,-146 213,-210 C 186,-158 146,-121 66,-98 Z"/>
+  </defs>
+
+  <rect width="1280" height="640" fill="url(#bg)"/>
+  <rect width="1280" height="640" fill="url(#hexgrid)"/>
+  <rect width="1280" height="640" fill="url(#ember-glow)"/>
+  <rect width="1280" height="640" fill="url(#steel-glow)"/>
+
+  <g stroke="#2c3a4f" stroke-width="2.5" fill="none">
+    <path d="M 26,58 L 26,26 L 58,26"/>
+    <path d="M 1222,26 L 1254,26 L 1254,58"/>
+    <path d="M 1254,582 L 1254,614 L 1222,614"/>
+    <path d="M 58,614 L 26,614 L 26,582"/>
+  </g>
+
+  <!-- THE MARK -->
+  <g transform="translate(232,336) scale(1.08)">
+    <path d="M 0,-140 121,-70 121,70 0,140 -121,70 -121,-70 Z" fill="none" stroke="#ff7a33" stroke-opacity="0.13" stroke-width="1.5"/>
+    <use xlink:href="#horn" fill="url(#ember)" filter="url(#softglow)"/>
+    <use xlink:href="#horn" transform="scale(-1,1)" fill="url(#ember)" filter="url(#softglow)"/>
+    <path d="M 0,-112 97,-56 97,56 0,112 -97,56 -97,-56 Z" fill="#ff7a33" fill-opacity="0.05" stroke="url(#ember)" stroke-width="7" stroke-linejoin="round" filter="url(#glow)"/>
+    <text x="0" y="30" text-anchor="middle" font-family="Menlo, 'SF Mono', 'DejaVu Sans Mono', monospace" font-size="76" font-weight="700" fill="url(#ember)" filter="url(#softglow)">&gt;_</text>
+  </g>
+
+  <!-- copy block -->
+  <text x="452" y="196" font-family="Menlo, 'SF Mono', 'DejaVu Sans Mono', monospace" font-size="16" fill="#6ea0ff" letter-spacing="6">MODEL CONTEXT PROTOCOL SERVER</text>
+  <text x="450" y="280" font-family="Menlo, 'SF Mono', 'DejaVu Sans Mono', monospace" font-size="88" font-weight="700" fill="#eef3f9" letter-spacing="2">RANCHER MCP</text>
+  <text x="452" y="330" font-family="Menlo, 'SF Mono', 'DejaVu Sans Mono', monospace" font-size="20" font-weight="700" fill="url(#ember)" letter-spacing="1.5">THE CAPABILITY-AWARE CONTROL PLANE FOR YOUR WHOLE HERD</text>
+  <line x1="452" y1="358" x2="1200" y2="358" stroke="#26334a" stroke-width="1"/>
+  <text x="452" y="398" font-family="Menlo, 'SF Mono', 'DejaVu Sans Mono', monospace" font-size="20" fill="#94a5bb" letter-spacing="0.5">319 TOOLS &#183; NORMAN + STEVE PLANES &#183; MULTI-INSTANCE</text>
+  <text x="452" y="430" font-family="Menlo, 'SF Mono', 'DejaVu Sans Mono', monospace" font-size="20" fill="#94a5bb" letter-spacing="0.5">RANCHER 2.6.5 &#8594; 2.9.3 &#183; CAPABILITY-DETECTED</text>
+  <text x="452" y="464" font-family="Menlo, 'SF Mono', 'DejaVu Sans Mono', monospace" font-size="17" fill="#64748b" letter-spacing="0.5">AUDIT-LOGGED &#183; RATE-LIMITED &#183; READ-ONLY MODE &#183; GUARDED</text>
+
+  <g>
+    <rect x="452" y="496" width="332" height="46" rx="8" fill="#111927" stroke="#263349" stroke-width="1.5"/>
+    <text x="474" y="526" font-family="Menlo, 'SF Mono', 'DejaVu Sans Mono', monospace" font-size="21" fill="#ff7a33" font-weight="700">$</text>
+    <text x="494" y="526" font-family="Menlo, 'SF Mono', 'DejaVu Sans Mono', monospace" font-size="21" fill="#c3d0e2">uvx rancher-mcp</text>
+  </g>
+
+  <text x="452" y="594" font-family="Menlo, 'SF Mono', 'DejaVu Sans Mono', monospace" font-size="16" fill="#4c5a70" letter-spacing="1">github.com/rex/mcp-rancher</text>
+</svg>

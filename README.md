@@ -1,132 +1,108 @@
 <p align="center">
-  <img src="images/readme-banner.png" alt="MCP Rancher banner" />
+  <img src="docs/assets/header.png" alt="Rancher MCP — the capability-aware control plane for your whole herd" />
 </p>
 
 <p align="center">
-  <a href="https://www.python.org/"><img src="https://img.shields.io/badge/python-3.12+-blue?logo=python&logoColor=white" alt="Python 3.12+" /></a>
-  <a href="https://modelcontextprotocol.io"><img src="https://img.shields.io/badge/MCP-1.0-green?logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHBhdGggZmlsbD0id2hpdGUiIGQ9Ik0xMiAyQzYuNDggMiAyIDYuNDggMiAxMnM0LjQ4IDEwIDEwIDEwIDEwLTQuNDggMTAtMTBTMTcuNTIgMiAxMiAyem0wIDE4Yy00LjQyIDAtOC0zLjU4LTgtOHMzLjU4LTggOC04IDggMy41OCA4IDgtMy41OCA4LTggOHoiLz48L3N2Zz4=" alt="MCP 1.0" /></a>
-  <a href="https://github.com/astral-sh/ruff"><img src="https://img.shields.io/badge/linting-ruff-purple" alt="Ruff" /></a>
-  <a href="https://github.com/microsoft/pyright"><img src="https://img.shields.io/badge/types-pyright_strict-blue" alt="Pyright strict" /></a>
+  <a href="https://modelcontextprotocol.io"><img src="https://img.shields.io/badge/MCP-server-ff7a33" alt="MCP server" /></a>
+  <a href="docs/tool-manifest.json"><img src="https://img.shields.io/badge/tools-319-ff7a33" alt="319 tools" /></a>
+  <a href="https://www.python.org/"><img src="https://img.shields.io/badge/python-3.12%2B-3776ab?logo=python&logoColor=white" alt="Python 3.12+" /></a>
+  <img src="https://img.shields.io/badge/tests-624%20passing-2ea44f" alt="624 tests passing" />
+  <img src="https://img.shields.io/badge/coverage-85%25-2ea44f" alt="85% coverage" />
+  <a href="https://github.com/microsoft/pyright"><img src="https://img.shields.io/badge/types-pyright%20strict-blue" alt="Pyright strict" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-lightgrey" alt="MIT license" /></a>
 </p>
 
-# MCP Rancher
+<p align="center">
+  <b>319 tools</b> for operating Rancher-managed Kubernetes through any MCP client —
+  discovery, generic resource access, and curated operator workflows,
+  wrapped in an audit-logged, rate-limited, confirmation-guarded safety model.
+</p>
 
-A comprehensive [Model Context Protocol](https://modelcontextprotocol.io) server for operating [Rancher](https://www.rancher.com/)-managed Kubernetes clusters through any MCP client. Built with schema-driven discovery, multi-instance support, and curated operator workflows.
+<p align="center">
+  <a href="#quick-start">Quick start</a> ·
+  <a href="#the-tool-surface">Tool surface</a> ·
+  <a href="#architecture">Architecture</a> ·
+  <a href="#safety-model">Safety model</a> ·
+  <a href="#compatibility">Compatibility</a> ·
+  <a href="#development">Development</a>
+</p>
 
-**Primary target:** Rancher `2.9.3` (production) · **compatibility floor:** Rancher `2.6.5` (preserved via capability detection)
+---
 
-**Current public surface:** 318 tools across discovery, generic fallbacks, curated reads, curated writes, specialized patches, operational summaries, and MCP protocol features.
+## Why this exists
 
-> The tables under [Tool Reference](#tool-reference) document the read, generic, and operational surface (~100 tools). The curated **write** surface — per-resource `set_labels` / `set_annotations` / `delete` plus specialized patches (`scale`, `pause`/`resume`/`restart`, `suspend`/`resume`, `set_size`, `set_type`, `set_min_max`) — together with the Phase-5 protocol features (tool safety annotations, MCP resources, MCP prompts, structured errors, cursor pagination, progress notifications, audit log, rate limiting) bring the total to 318. The authoritative, per-tool registry is [`docs/tool-catalog.md`](docs/tool-catalog.md).
+Rancher is how real fleets run Kubernetes — and it speaks **two APIs** (the legacy
+Norman `/v3` plane and the modern Steve `/v1` plane), varies by version, and wraps
+every cluster behind its own proxy. Pointing a generic Kubernetes MCP server at it
+misses everything Rancher-specific; pointing an agent at raw `kubectl` gives up
+auditability, guardrails, and the management-plane view entirely.
 
-## Features
+**Rancher MCP** is built for that reality:
 
-### Discovery & Introspection
-- **Schema-driven discovery** — enumerate every Norman and Steve API resource, action, and link available on your Rancher instance
-- **API plane exploration** — browse Norman (`/v3`) and Steve (`/v1`) schemas with field-level detail
-- **Capability catalog** — machine-readable inventory of supported domains and resources
-- **Multi-instance awareness** — discover and switch between multiple Rancher instances
+- **Capability-aware, not version-naive.** It detects what each connected Rancher
+  actually supports instead of assuming. One binary spans **2.6.5 → 2.9.3** with
+  the same tool surface.
+- **Multi-instance first.** Lab, staging, prod — configure them all; mark prod
+  `read_only: true` and every mutation is refused at the config layer, before any
+  guard even has to fire.
+- **Nothing is out of reach.** Curated tools cover the common 95%; the generic
+  engine reaches *every* resource either API plane exposes — even types nobody
+  wrote a tool for yet.
 
-### Cluster, Project, and Namespace Reads
-- **Cluster inventory** — state, conditions, Kubernetes version, node count, capacity, and provider metadata
-- **Node detail** — scheduling state, roles, IPs, pod CIDR, allocatable vs capacity, and conditions
-- **Projects and namespaces** — project assignment, monitoring/PSP signals, cattle conditions, labels, and finalizers
-- **Typed summaries** — deterministic shaped responses instead of raw Rancher payload spelunking
+## The tool surface
 
-### Workload Management
-- **Deployments** — list and inspect with replica counts, rollout status, strategy, revision, readiness
-- **StatefulSets** — replicas, update strategy, current/update revisions, service binding
-- **DaemonSets** — scheduling counts, rollout progress, node coverage
-- **Container detail** — images, resource requests/limits, conditions per workload
+**319 tools: 176 read-only · 143 writes · 38 destructive** — counted from the
+registry itself, not by hand. [`docs/tool-manifest.json`](docs/tool-manifest.json)
+is **generated from the live FastMCP registry** (`make tool-manifest`) and a CI
+gate fails the build if it ever drifts from the code. Per-tool descriptions,
+safety annotations, and parameters all live there; the narrative registry with
+slice tracking is [`docs/tool-catalog.md`](docs/tool-catalog.md).
 
-### Pod, Service, Storage, and Disruption Visibility
-- **Pod inventory** — phase, readiness, restart counts, QoS class, owner references, node placement
-- **Pod detail** — init containers, volume mounts, service account, conditions, events
-- **Service discovery** — type, selector, ports, cluster IP, session affinity, traffic policy
-- **PersistentVolumeClaims** — status, capacity, storage class, bound volume, access modes
-- **PersistentVolumes** — phase, reclaim policy, capacity, volume source, node affinity
-- **StorageClasses** — provisioner, parameters, default class, volume expansion support
-- **PodDisruptionBudgets** — min/max disruption policy, healthy counts, and disruption allowance
+| Layer | What it does | Examples |
+|---|---|---|
+| **Discovery & schema** | Explore what any instance can do | `rancher_server_version`, `rancher_norman_schema_list`, `rancher_capability_domain_list` |
+| **Generic engine** | CRUD + actions + links + watch on *any* resource, both planes | `rancher_steve_resource_list`, `rancher_norman_resource_action_invoke`, `rancher_steve_resource_watch` |
+| **Curated reads** | Typed, shaped responses across ~25 domains | `rancher_pods_list`, `rancher_deployments_list`, `rancher_longhorn_volumes_list`, `rancher_policy_reports_list` |
+| **Curated writes** | Guarded mutations | `rancher_deployment_scale`, `rancher_deployment_restart`, `rancher_cron_job_suspend`, `rancher_node_cordon`, `rancher_secret_create` |
+| **Operator rollups** | One-call triage | `rancher_cluster_health_check`, `rancher_find_failing_pods`, `rancher_find_stalled_rollouts`, `rancher_project_health_summary` |
 
-### Rancher Platform, Identity, and Access
-- **Settings** — list and inspect all Rancher settings with default/custom/source tracking
-- **Feature flags** — enabled/disabled state, dynamic toggle capability, transitioning status
-- **Auth and identity** — users, groups, and auth config inspection
-- **RBAC** — global roles, role templates, and scoped role-template bindings
-- **Fleet and registration** — Fleet workspaces plus cluster-registration token onboarding detail
-- **Logging and backup** — cluster/project logging resources and etcd backup visibility
+Domains covered: clusters & nodes · projects & namespaces · workloads · pods &
+services · storage · networking · config & secrets *(values masked)* ·
+certificates *(keys masked)* · RBAC · auth & identity · apps & catalogs ·
+logging pipeline · Prometheus monitoring · policy reports · CIS compliance ·
+backup operator · etcd backups · Longhorn · Fleet · provisioning · settings &
+features · alerts & notifiers.
 
-### Operational Aggregate Helpers
-- **Cluster health rollups** — one-call cluster diagnosis plus fleet-wide cluster summaries
-- **Failure finders** — unready nodes, failing pods, stalled rollouts, services without endpoints, unbound PVCs, and PDB blockers
-- **Namespace and project rollups** — summarize pod health plus deployment/daemonset/statefulset readiness in one response
+## Quick start
 
-### Generic Resource Access
-- **Norman list/get/create/apply/patch/delete** — query and mutate any Norman (`/v3`) resource by schema ID with schema-aware writable-field filtering
-- **Steve list/get/create/apply/patch/delete** — query any Steve (`/v1`) resource and mutate Kubernetes-backed resources through Rancher's validated cluster proxy paths
-- **Action invocation** — invoke any schema-defined action on Norman or Steve resources
-- **Link traversal** — follow any resource link (logs, metrics, related resources)
-- **Resource watch** — stream real-time Kubernetes watch events through the Steve proxy
+### Requirements
 
-## Quick Start
+- Python 3.12+ and [uv](https://docs.astral.sh/uv/)
+- A Rancher API token ([creating one](https://ranchermanager.docs.rancher.com/reference-guides/user-settings/api-keys))
 
-### Prerequisites
-
-- Python 3.12+
-- [uv](https://docs.astral.sh/uv/) package manager
-- A Rancher instance with an API token ([how to create one](https://ranchermanager.docs.rancher.com/reference-guides/user-settings/api-keys))
-
-### Install
+### Install & run
 
 ```bash
+# From source
 git clone https://github.com/rex/mcp-rancher.git
 cd mcp-rancher
-make setup
+make setup                 # deps, .env scaffold, pre-commit hooks
+cp .env.example .env       # set RANCHER_URL + RANCHER_TOKEN
+make dev                   # run the MCP server (stdio)
 ```
 
-### Configure
+Once published to PyPI, it's one line: `uvx rancher-mcp`.
 
-Copy the example environment file and fill in your Rancher credentials:
+### Claude Code
 
 ```bash
-cp .env.example .env
+claude mcp add rancher \
+  -e RANCHER_URL=https://rancher.example.com \
+  -e RANCHER_TOKEN=token-xxxxx:yyyyyyyyy \
+  -- uv run --directory /path/to/mcp-rancher rancher-mcp
 ```
 
-**Single instance:**
-```env
-RANCHER_URL=https://rancher.example.com
-RANCHER_TOKEN=token-xxxxx:yyyyyyyyy
-RANCHER_VERIFY_SSL=true
-```
-
-**Multiple instances:**
-```env
-RANCHER_INSTANCES_JSON='{
-  "production": {
-    "url": "https://rancher.prod.example.com",
-    "token": "token-xxxxx:yyyyyyyyy",
-    "verify_ssl": true,
-    "read_only": false
-  },
-  "staging": {
-    "url": "https://rancher.staging.example.com",
-    "token": "token-aaaaa:bbbbbbbbb",
-    "verify_ssl": true,
-    "read_only": true
-  }
-}'
-RANCHER_DEFAULT_INSTANCE=production
-```
-
-### Run
-
-```bash
-make dev
-```
-
-### Claude Desktop Configuration
-
-Add to your Claude Desktop `claude_desktop_config.json`:
+### Claude Desktop
 
 ```json
 {
@@ -143,276 +119,138 @@ Add to your Claude Desktop `claude_desktop_config.json`:
 }
 ```
 
-### Mock Rancher For Provider Config Testing
+### Multiple instances
 
-You can validate MCP-provider wiring without a live Rancher by running the fixture-backed mock server:
-
-```bash
-make mock-rancher
+```env
+RANCHER_INSTANCES_JSON='{
+  "production": {"url": "https://rancher.prod.example.com",    "token": "token-a:xxx", "verify_ssl": true, "read_only": true},
+  "lab":        {"url": "https://rancher.lab.example.com",     "token": "token-b:yyy", "verify_ssl": false, "read_only": false}
+}'
+RANCHER_DEFAULT_INSTANCE=production
 ```
 
-Default mock auth:
-
-```text
-URL: http://127.0.0.1:18443
-username: admin
-password: admin
-token: token-mock:secret
-```
-
-The mock supports Rancher-style login at `/v3-public/localProviders/local?action=login`, bearer-token auth on the served endpoints, and a small read-only surface backed by the committed sanitized `2.6.5` fixtures:
-
-- `/healthz`
-- `/v3`
-- `/v3/settings/server-version`
-- `/v3/schemas`
-- `/v3/schemas/cluster`
-- `/v3/clusters`
-- `/v3/clusters/local`
-- `/v3/settings?limit=2&sort=name&source=default`
-- `/v1`
-- `/v1/schemas`
-- `/v1/schemas/namespace`
-- `/v1/schemas/service`
-- `/v1/namespaces?limit=2`
-- `/v1/namespaces/cattle-system`
-- `/v1/services?limit=2`
-- `/v1/services/default/kubernetes`
-
-That is enough to test provider configuration, bearer auth, discovery tools, and a few curated read flows before pointing the MCP server at a real Rancher instance.
-
-## Tool Reference
-
-### Discovery (10 tools)
-
-| Tool | Description |
-|------|-------------|
-| `rancher_instance_list` | List all configured Rancher instances |
-| `rancher_server_health` | Rancher management server health check |
-| `rancher_server_version` | Rancher server version metadata |
-| `rancher_server_profile_get` | Static server profile and configuration |
-| `rancher_capability_domain_list` | Capability catalog domain inventory |
-| `rancher_api_plane_list` | Available API planes (Norman/Steve) for an instance |
-| `rancher_norman_schema_list` | Norman API schema inventory |
-| `rancher_norman_schema_get` | Norman schema detail with fields and actions |
-| `rancher_steve_schema_list` | Steve API schema inventory |
-| `rancher_steve_schema_get` | Steve schema detail with fields and actions |
-
-### Generic Resource Access (17 tools)
-
-| Tool | Description |
-|------|-------------|
-| `rancher_norman_resource_list` | List any Norman resource by schema ID |
-| `rancher_norman_resource_get` | Get any Norman resource by schema ID and resource ID |
-| `rancher_norman_resource_create` | Create any Norman resource by schema ID |
-| `rancher_norman_resource_apply` | Replace a Norman resource using schema-filtered mutable fields |
-| `rancher_norman_resource_patch` | Patch a Norman resource by merging into mutable fields |
-| `rancher_norman_resource_delete` | Delete any Norman resource with explicit confirmation |
-| `rancher_steve_resource_list` | List any Steve resource by schema ID |
-| `rancher_steve_resource_get` | Get any Steve resource by schema ID and resource ID |
-| `rancher_steve_resource_create` | Create any Steve resource through Rancher's Kubernetes proxy |
-| `rancher_steve_resource_apply` | Server-side apply a Steve resource through Rancher's Kubernetes proxy |
-| `rancher_steve_resource_patch` | Merge-patch a Steve resource through Rancher's Kubernetes proxy |
-| `rancher_steve_resource_delete` | Delete any Steve resource with explicit confirmation |
-| `rancher_norman_resource_action_invoke` | Invoke a schema-defined action on a Norman resource |
-| `rancher_norman_resource_link_follow` | Follow a link on a Norman resource |
-| `rancher_steve_resource_action_invoke` | Invoke a schema-defined action on a Steve resource |
-| `rancher_steve_resource_link_follow` | Follow a link on a Steve resource |
-| `rancher_steve_resource_watch` | Stream real-time watch events for a Steve resource |
-
-### Rancher Platform (4 tools)
-
-| Tool | Description |
-|------|-------------|
-| `rancher_settings_list` | List Rancher settings with default/custom tracking |
-| `rancher_setting_get` | Get one Rancher setting with full payload detail |
-| `rancher_features_list` | List Rancher feature flags with enabled/dynamic state |
-| `rancher_feature_get` | Get one Rancher feature flag with transition detail |
-
-### Cluster and Node Reads (4 tools)
-
-| Tool | Description |
-|------|-------------|
-| `rancher_clusters_list` | List clusters with health, version, capacity |
-| `rancher_cluster_get` | Cluster detail with conditions, components, endpoint |
-| `rancher_nodes_list` | List nodes with roles, conditions, scheduling state |
-| `rancher_node_get` | Node detail with capacity, allocatable, taints |
-
-### Project and Namespace Reads (4 tools)
-
-| Tool | Description |
-|------|-------------|
-| `rancher_projects_list` | List Rancher projects with monitoring, PSP status |
-| `rancher_project_get` | Project detail with conditions, actions, and links |
-| `rancher_namespaces_list` | List namespaces with project assignment and state |
-| `rancher_namespace_get` | Namespace detail with labels and cattle conditions |
-
-### Pod and Service Reads (4 tools)
-
-| Tool | Description |
-|------|-------------|
-| `rancher_pods_list` | List pods with phase, readiness, restarts |
-| `rancher_pod_get` | Pod detail with containers, volumes, conditions |
-| `rancher_services_list` | List services with type, ports, selector |
-| `rancher_service_get` | Service detail with traffic policy, session affinity |
-
-### Workloads and Disruption (8 tools)
-
-| Tool | Description |
-|------|-------------|
-| `rancher_deployments_list` | List deployments with replicas, rollout status |
-| `rancher_deployment_get` | Deployment detail with strategy, revision, conditions |
-| `rancher_daemonsets_list` | List daemonsets with scheduling and readiness |
-| `rancher_daemonset_get` | DaemonSet detail with update strategy, conditions |
-| `rancher_statefulsets_list` | List statefulsets with replicas, update strategy |
-| `rancher_statefulset_get` | StatefulSet detail with revisions, conditions |
-| `rancher_pod_disruption_budgets_list` | List PDBs with availability and disruption counts |
-| `rancher_pod_disruption_budget_get` | PDB detail with conditions and health metrics |
-
-### Storage (6 tools)
-
-| Tool | Description |
-|------|-------------|
-| `rancher_persistent_volume_claims_list` | List PVCs with status, capacity, storage class |
-| `rancher_persistent_volume_claim_get` | PVC detail with bound volume, finalizers |
-| `rancher_persistent_volumes_list` | List PVs with phase, capacity, reclaim policy |
-| `rancher_persistent_volume_get` | PV detail with volume source, node affinity |
-| `rancher_storage_classes_list` | List storage classes with provisioner, defaults |
-| `rancher_storage_class_get` | StorageClass detail with parameters, mount options |
-
-### Apps and Catalogs (6 tools)
-
-| Tool | Description |
-|------|-------------|
-| `rancher_catalogs_list` | List Rancher app catalogs |
-| `rancher_catalog_get` | Get one Rancher app catalog |
-| `rancher_templates_list` | List Rancher templates |
-| `rancher_template_get` | Get one Rancher template |
-| `rancher_template_versions_list` | List Rancher template versions |
-| `rancher_template_version_get` | Get one Rancher template version |
-
-### Auth and Identity (6 tools)
-
-| Tool | Description |
-|------|-------------|
-| `rancher_users_list` | List Rancher users |
-| `rancher_user_get` | Get one Rancher user |
-| `rancher_groups_list` | List Rancher groups |
-| `rancher_group_get` | Get one Rancher group |
-| `rancher_auth_configs_list` | List Rancher auth configuration resources |
-| `rancher_auth_config_get` | Get one Rancher auth configuration resource |
-
-### RBAC (10 tools)
-
-| Tool | Description |
-|------|-------------|
-| `rancher_global_roles_list` | List Rancher global roles |
-| `rancher_global_role_get` | Get one Rancher global role |
-| `rancher_role_templates_list` | List Rancher role templates |
-| `rancher_role_template_get` | Get one Rancher role template |
-| `rancher_global_role_bindings_list` | List Rancher global role bindings |
-| `rancher_global_role_binding_get` | Get one Rancher global role binding |
-| `rancher_cluster_role_template_bindings_list` | List cluster role-template bindings |
-| `rancher_cluster_role_template_binding_get` | Get one cluster role-template binding |
-| `rancher_project_role_template_bindings_list` | List project role-template bindings |
-| `rancher_project_role_template_binding_get` | Get one project role-template binding |
-
-### Fleet and Registration (4 tools)
-
-| Tool | Description |
-|------|-------------|
-| `rancher_fleet_workspaces_list` | List Fleet workspaces |
-| `rancher_fleet_workspace_get` | Get one Fleet workspace |
-| `rancher_cluster_registration_tokens_list` | List cluster registration tokens |
-| `rancher_cluster_registration_token_get` | Get one cluster registration token |
-
-### Logging and Backup (6 tools)
-
-| Tool | Description |
-|------|-------------|
-| `rancher_cluster_loggings_list` | List Rancher cluster logging resources |
-| `rancher_cluster_logging_get` | Get one Rancher cluster logging resource |
-| `rancher_project_loggings_list` | List Rancher project logging resources |
-| `rancher_project_logging_get` | Get one Rancher project logging resource |
-| `rancher_etcd_backups_list` | List Rancher etcd backups |
-| `rancher_etcd_backup_get` | Get one Rancher etcd backup |
-
-### Operational Summaries and Finders (11 tools)
-
-| Tool | Description |
-|------|-------------|
-| `rancher_cluster_health_check` | Diagnose one cluster using state, conditions, components, and nodes |
-| `rancher_clusters_health_summary` | Summarize cluster health across all clusters in an instance |
-| `rancher_cluster_nodes_summary` | Roll up node readiness and schedulability for one cluster |
-| `rancher_find_failing_pods` | Find failed, pending, crash-looping, or not-ready pods in a namespace |
-| `rancher_find_unready_nodes` | Find unready or unschedulable nodes |
-| `rancher_find_stalled_rollouts` | Find deployments and statefulsets that are not converging |
-| `rancher_find_services_without_endpoints` | Find selector-based services without ready backing endpoints |
-| `rancher_find_unbound_pvcs` | Find PVCs that are not bound |
-| `rancher_find_pdbs_blocking` | Find PDBs currently blocking disruption |
-| `rancher_namespace_workloads_summary` | Summarize pod counts and workload readiness for one namespace |
-| `rancher_project_health_summary` | Summarize pod and workload health across a Rancher project |
+Every tool takes an optional `instance` argument. Instances flagged
+`read_only: true` refuse **all** mutations at the settings layer.
 
 ## Architecture
 
-The server is built in three layers:
+```mermaid
+flowchart LR
+    A[MCP client<br/>Claude Code · Claude Desktop · any] -- stdio --> S
 
-1. **Discovery** — schema introspection and API plane enumeration let you explore what any Rancher instance can do
-2. **Generic resources** — list, get, create, apply, patch, delete, action, link, and watch tools work with any Norman or Steve resource by schema ID
-3. **Curated tools** — typed, validated tools for common operational workflows with rich response models
+    subgraph S[rancher-mcp]
+        direction TB
+        L1[Discovery & schema<br/>planes · schemas · capabilities]
+        L2[Generic engine<br/>any resource · both planes<br/>CRUD · actions · links · watch]
+        L3[Curated tools<br/>typed models · shaped output<br/>next-step hints]
+        G[Safety layer<br/>read-only guard · confirmation phrases<br/>audit log · rate limit · masking]
+        L1 --> L2 --> L3
+        L3 --> G
+        L2 --> G
+    end
 
-This layered approach means you can operate on any resource Rancher exposes, even if a curated tool hasn't been built for it yet.
+    G -- Norman /v3 --> R1[(Rancher<br/>instance A)]
+    G -- Steve /v1 + k8s proxy --> R1
+    G -- Norman + Steve --> R2[(Rancher<br/>instance B)]
+```
 
-Repo-wide validation, architecture policy, and completion rules are defined in [VIBE.yaml](VIBE.yaml). Active implementation-phase tracking lives in [TASK_STATE.md](TASK_STATE.md).
+Three layers, deliberately separate: **discovery** tells you what an instance can
+do, the **generic engine** can touch anything it exposes, and **curated tools**
+make the common paths typed, shaped, and self-describing (every response carries
+`suggested_next_steps`). Most curated tools are **generated from YAML descriptors**
+(`catalog/curated_tools/`) with a drift gate — the editorial decisions live in
+descriptors, not boilerplate.
+
+## Safety model
+
+Built for the day an agent is pointed at the cluster that pays your salary:
+
+| Guard | Behavior |
+|---|---|
+| **Read-only instances** | `read_only: true` refuses every mutation for that instance, before tool logic runs |
+| **Destructive confirmation** | Deletes require an explicit typed phrase (e.g. `"delete steve namespace foo"`) — no phrase, no delete |
+| **Tool annotations** | Every tool declares `readOnlyHint` / `destructiveHint` / `idempotentHint`, so clients can gate UX on them |
+| **Audit log** | Every mutation emits a structured `event="audit"` record — tool, operation, plane, instance, resource, outcome. Argument *names* only; values never logged |
+| **Rate limiting** | Token-bucket on writes (default 60/min) — a runaway loop can't machine-gun your API |
+| **Secret & key masking** | Secret values and certificate private keys are structurally absent from curated responses (reveal is an explicit generic-tool opt-in) |
+| **Structured errors** | Guard rejections return typed `error_code` envelopes agents can branch on — never raw strings |
+
+## Compatibility
+
+| | |
+|---|---|
+| **Primary target** | Rancher **2.9.3** (production-validated) |
+| **Compatibility floor** | Rancher **2.6.5** (kept green via capability detection) |
+| **API planes** | Norman `/v3` + Steve `/v1` (+ per-cluster Kubernetes proxy) |
+| **Transport** | stdio |
+
+Capability detection bridges version differences at runtime — no
+version-pinned builds, no "works on my Rancher." Both targets are exercised by
+the same test suite, and read paths have been validated live against both a
+2.6.5 lab and a 2.9.3 production fleet
+([validation report](docs/live-validation-2026-05-06.md)).
+
+## Configuration
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `RANCHER_URL` | — | Rancher server URL (single-instance mode) |
+| `RANCHER_TOKEN` | — | API token (`token-xxxxx:yyyyyyyyy`) |
+| `RANCHER_VERIFY_SSL` | `true` | TLS verification |
+| `RANCHER_INSTANCES_JSON` | — | Multi-instance config (see above) |
+| `RANCHER_DEFAULT_INSTANCE` | first defined | Instance used when a tool call names none |
+| `RANCHER_MCP_SERVER_NAME` | `rancher-mcp` | Server identity announced to clients |
+| `RANCHER_MCP_SERVER_DESCRIPTION` | built-in | Server description announced to clients |
+| `RANCHER_MCP_WRITE_RATE_LIMIT_PER_MIN` | `60` | Write rate limit (`0` disables) |
+
+## Project status
+
+Shipping and stable for **read, triage, and guarded write** operations. Honest
+ledger of what's beyond that:
+
+- **Destructive workflows** (node drain, etcd/backup restore, cert rotation,
+  cluster upgrade/delete) are **roadmap** — deliberately staged after real-world
+  read-path mileage. The generic engine + confirmation guard already covers
+  these cases for operators who need them today.
+- The Alertmanager routes/silences surface needs an in-cluster API integration
+  and is deferred.
+- The full per-version compatibility matrix (Track G) is in progress; the
+  [first live validation run](docs/live-validation-2026-05-06.md) covers the
+  read matrix on both targets.
+
+Work is tracked to the tool level: [`docs/tool-catalog.md`](docs/tool-catalog.md)
+(every tool has a row, every gap a slice ID) and [`ROADMAP.md`](ROADMAP.md).
 
 ## Development
 
-### Make Targets
-
 ```bash
-make setup              # Install dependencies, create .env, install pre-commit hooks
-make dev                # Run the MCP server
-make validate           # Run all quality gates (architecture + lint + typecheck + test)
-make lint               # Ruff linter
-make typecheck          # Pyright strict mode
-make test               # pytest with coverage
-make fix                # Auto-fix lint issues
-make lab-up             # Start local Rancher 2.6.5 development lab
-make lab-down           # Stop the development lab
-make lab-status         # Check lab status
-make capture-fixtures   # Regenerate contract fixtures from running lab
-make check-architecture # Enforce hard architecture limits and report soft-limit warnings
+make help               # every target, documented
+make validate           # codegen drift + manifest drift + architecture + lint + typecheck + tests
+make tool-manifest      # regenerate docs/tool-manifest.json from the registry
+make lab-up             # local Rancher 2.6.5 lab (kind + helm), fully scripted
+make live-read-matrix   # read-only validation probes against configured instances
+make mock-rancher       # fixture-backed mock Rancher for provider-config testing
 ```
 
-### Local Development Lab
+- **Local lab** — a self-contained Rancher 2.6.5 on kind with a simulated
+  downstream cluster; repo-local kubeconfigs, never touches your machine state.
+- **Contract fixtures** — sanitized captures from live Rancher committed under
+  `tests/fixtures/`; `respx` pins the HTTP boundary in tests.
+- **Codegen** — curated tools are emitted from `catalog/curated_tools/*.yml`
+  descriptors; `make check-codegen` fails on drift.
+- **Gates** — ruff, pyright strict, 624 tests with coverage floor, architecture
+  line-limits, module-shape checks, secret scanning. All fail closed, all wired
+  into pre-commit.
 
-The repo includes a self-contained local lab for development and testing:
+Stack: Python 3.12 · [FastMCP](https://github.com/modelcontextprotocol/python-sdk) ·
+[httpx](https://www.python-httpx.org/) · [Pydantic v2](https://docs.pydantic.dev/) ·
+[structlog](https://www.structlog.org/) · [uv](https://docs.astral.sh/uv/)
 
-- Management cluster on Kubernetes `v1.20.15` with Rancher `2.6.5`
-- Downstream simulated cluster on Kubernetes `v1.23.17`
-- Repo-local kubeconfigs and runtime state (never committed)
-- Contract fixture capture and sanitization
+## Security
 
-```bash
-make lab-up       # Full lab: management cluster + Rancher + downstream cluster
-make lab-status   # Check what's running
-make lab-down     # Stop everything
-```
-
-### Testing
-
-```bash
-make test
-```
-
-Tests use deterministic stub clients and [respx](https://github.com/lundberg/respx) for HTTP boundary testing. Contract fixtures captured from a live Rancher `2.6.5` instance are committed under `tests/fixtures/`.
-
-### Stack
-
-- **Runtime:** Python 3.12, [FastMCP](https://github.com/jlowin/fastmcp), [httpx](https://www.python-httpx.org/), [websockets](https://websockets.readthedocs.io/), [Pydantic v2](https://docs.pydantic.dev/)
-- **Quality:** [ruff](https://docs.astral.sh/ruff/), [pyright](https://github.com/microsoft/pyright) (strict), [pytest](https://docs.pytest.org/) with coverage gates
-- **Packaging:** [uv](https://docs.astral.sh/uv/)
+See [SECURITY.md](SECURITY.md) for the threat model, token guidance, and how to
+report vulnerabilities.
 
 ## License
 
-MIT
+[MIT](LICENSE)
