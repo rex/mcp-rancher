@@ -12,10 +12,11 @@
 # to move them forward. The repo-native gates under `local` have no
 # pins that can go stale.
 #
-# NOTE: this repo uses a date-based CHANGELOG with no semver VERSION
-# file, so the skeleton's `check-version-bumped` gate is intentionally
-# not wired here (it requires a semver VERSION and would fail closed on
-# every commit). Versioning is decoupled from per-commit enforcement.
+# Since v1.0.0 this repo follows full VIBE versioning: a semver VERSION
+# file + `## [X.Y.Z] — ` CHANGELOG headers, enforced per commit by the
+# skeleton's `check-version-bumped` gate below (any non-trivial change
+# is at least a minor; trivial-only changes are a patch). Bump with
+# `scripts/bump_version.py <major|minor|patch> --changelog-note "..."`.
 
 # Generated lockfiles are tool-owned: exempt from secret-scanning, size
 # caps, and whitespace rewriting (their hashes false-positive
@@ -75,6 +76,12 @@ repos:
       - id: check-module-rules
         name: module shape — max public functions (VIBE.yaml)
         entry: scripts/check_module_rules.py
+        language: script
+        pass_filenames: false
+        always_run: true
+      - id: check-version-bumped
+        name: version bumped + changelog header (VERSION)
+        entry: scripts/check_version_bumped.py
         language: script
         pass_filenames: false
         always_run: true

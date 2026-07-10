@@ -6,7 +6,10 @@ built, and assigns an addressable slice ID to each gap so an agent
 can be instructed to ship a specific row without first reverse-
 engineering the codebase.
 
-Last updated: 2026-06-06 (Batch 17 shipped + post-audit reconciliation).
+Last updated: 2026-07-10 (v1.1.0). NOTE: the machine-readable,
+always-current registry is [`tool-manifest.json`](tool-manifest.json)
+(generated from the live FastMCP registry, drift-gated in `make
+validate`) — trust it over any hand-typed count in this narrative doc.
 
 ---
 
@@ -66,7 +69,8 @@ table. The [Status legend](#status-legend) explains the icons.
 
 ## Quick start
 
-- **Tool surface today: 318 registered.** See
+- **Tool surface today: 319 registered** (authoritative count:
+  [`tool-manifest.json`](tool-manifest.json), generated). See
   [Tool registry](#tool-registry).
 - **Estimated target: ~380 tools** at "perfect" coverage of
   the 25-domain canonical plan. We're ~83% of the way by tool count; the

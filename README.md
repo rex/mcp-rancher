@@ -1,3 +1,5 @@
+<!-- mcp-name: io.github.rex/rancher-mcp -->
+
 <p align="center">
   <img src="docs/assets/header.png" alt="MCP Rancher — the capability-aware control plane for AI-assisted Rancher operations" />
 </p>

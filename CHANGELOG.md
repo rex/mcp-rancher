@@ -1,5 +1,27 @@
 # Changelog
 
+## [1.1.0] — 2026-07-10 — Agent: Claude (Fable 5)
+
+### Added
+- **Official MCP Registry publication** as `io.github.rex/rancher-mcp`:
+  `server.json` manifest + a `publish-mcp-registry` release job
+  (mcp-publisher v1.7.9, GitHub OIDC) that runs after the PyPI publish
+  on every tag. PyPI ownership marker (`mcp-name`) embedded in README.
+- **Per-commit version discipline enforced**: the skeleton's
+  `check-version-bumped` gate is wired into pre-commit — every commit
+  must bump VERSION (non-trivial = minor, trivial = patch) and carry a
+  matching CHANGELOG header.
+
+### Changed
+- CI actions upgraded to node24 (checkout v7, upload-artifact v7,
+  download-artifact v8, setup-uv v8); publish-pypi job no longer probes
+  cache or workdir (annotation cleanup).
+- Release guard now also verifies `server.json` versions match the tag.
+- Skeleton protocol fully reconciled: missing `stamp_skill.py` +
+  `check_skills.py` installed via sync; VIBE stamped agentic-skeleton
+  0.43.0; `docs/tool-catalog.md` counts now defer to the generated
+  manifest.
+
 ## [1.0.0] — 2026-07-10 — Agent: Claude (Fable 5)
 
 **MCP Rancher 1.0.0 — first stable release.** 🎉

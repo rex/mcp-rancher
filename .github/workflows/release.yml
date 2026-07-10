@@ -24,10 +24,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@v8
         with:
           enable-cache: true
           cache-dependency-glob: uv.lock
@@ -36,13 +36,14 @@ jobs:
       - name: Install dependencies (frozen lockfile)
         run: uv sync --frozen
 
-      - name: Guard — tag must match VERSION and pyproject
+      - name: Guard — tag must match VERSION, pyproject, and server.json
         run: |
           tag="${GITHUB_REF_NAME#v}"
           ver="$(cat VERSION)"
           pyver="$(uv run python -c 'import tomllib; print(tomllib.load(open("pyproject.toml","rb"))["project"]["version"])')"
-          if [ "$tag" != "$ver" ] || [ "$tag" != "$pyver" ]; then
-            echo "::error::tag v$tag does not match VERSION ($ver) / pyproject ($pyver) — bump before tagging."
+          sjver="$(uv run python -c 'import json; d=json.load(open("server.json")); print(d["version"], d["packages"][0]["version"])')"
+          if [ "$tag" != "$ver" ] || [ "$tag" != "$pyver" ] || [ "$sjver" != "$tag $tag" ]; then
+            echo "::error::tag v$tag mismatch: VERSION=$ver pyproject=$pyver server.json=($sjver) — bump all before tagging."
             exit 1
           fi
 
@@ -58,7 +59,7 @@ jobs:
           RANCHER_TOKEN: token-ci:smoke # pragma: allowlist secret
         run: timeout 30 uvx --from dist/*.whl rancher-mcp < /dev/null
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: dist
           path: dist/
@@ -73,15 +74,40 @@ jobs:
       id-token: write # OIDC for PyPI trusted publishing
     steps:
       - name: Install uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@v8
+        with:
+          # No checkout in this job: nothing to cache, no workdir to probe.
+          enable-cache: false
+          ignore-empty-workdir: true
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: dist
           path: dist/
 
       - name: Publish to PyPI (trusted publishing)
         run: uv publish --trusted-publishing always
+
+  publish-mcp-registry:
+    needs: publish-pypi
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      id-token: write # GitHub OIDC — authenticates the io.github.rex/* namespace
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install mcp-publisher
+        run: |
+          curl -fsSL https://github.com/modelcontextprotocol/registry/releases/download/v1.7.9/mcp-publisher_linux_amd64.tar.gz | tar xz mcp-publisher
+          sudo install -m 0755 mcp-publisher /usr/local/bin/mcp-publisher
+
+      - name: Login to the MCP Registry (GitHub OIDC)
+        run: mcp-publisher login github-oidc
+
+      - name: Publish server.json to the MCP Registry
+        run: mcp-publisher publish
 
   github-release:
     needs: publish-pypi
@@ -90,9 +116,9 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: dist
           path: dist/

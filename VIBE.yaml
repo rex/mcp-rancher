@@ -5,7 +5,8 @@ project:
   name: rancher-mcp
   lifecycle: brownfield
   stack: python-fastmcp
-  description: Capability-aware Rancher MCP server, primary 2.9.3 with 2.6.5 as compat floor
+  description: Capability-aware Rancher MCP server, primary 2.9.3 with 2.6.5 as
+    compat floor
   primary_target: kubernetes
   support_policy: maintained
   extensions:
@@ -117,7 +118,8 @@ workflow:
   signed_commits_required: true
   push_after_each_commit_if_remote_exists: true
   validation_command: make validate
-  final_verification_command: make check-if-the-agent-can-consider-this-task-completed
+  final_verification_command: make
+    check-if-the-agent-can-consider-this-task-completed
   ask_before_dockerizing: true
   default_slice_completion_behavior: continue-until-blocked
 
@@ -127,7 +129,7 @@ reporting:
     heading: Completion Report
     format: markdown-table
     detail_level: compact
-    version_command: null
+    version_command:
     include_fields:
       - commit
       - git_status
@@ -159,7 +161,8 @@ development:
     management_kubernetes_version: "1.20.15"
     downstream_cluster: kind
     downstream_kubernetes_version: "1.23.17"
-    downstream_runtime_note: "Simulated downstream cluster matches Kubernetes version but is not true RKE2"
+    downstream_runtime_note: "Simulated downstream cluster matches Kubernetes version
+      but is not true RKE2"
     repo_local_kubeconfig: required
     repo_local_tool_cache: required
 
@@ -167,11 +170,11 @@ deployment:
   dockerized: false
   autodeploy:
     enabled: false
-    system: null
-    app_slug: null
+    system:
+    app_slug:
     stack_required: false
-    stack_repo_local_path: null
-    stack_path: null
+    stack_repo_local_path:
+    stack_path:
     runtime_changes_require_stack_update: false
     require_commit_push_deploy_after_stack_change: false
 
@@ -192,3 +195,7 @@ skills:
     version: "0.1.0"
     applied: 2026-05-03
     source: transcript-backfill
+  - id: agentic-skeleton
+    version: "0.43.0"
+    applied: '2026-07-10'
+    source: sync

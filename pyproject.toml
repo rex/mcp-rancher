@@ -1,6 +1,6 @@
 [project]
 name = "rancher-mcp"
-version = "1.0.0"
+version = "1.1.0"
 description = "Capability-aware MCP server for Rancher-managed Kubernetes — 319 tools across discovery, generic resource access, and curated operator workflows (Rancher 2.6.5–2.9.3)"
 readme = "README.md"
 license = "MIT"
@@ -70,7 +70,9 @@ exclude = [
     "scripts/check_architecture.py",
     "scripts/check_docs.py",
     "scripts/check_module_rules.py",
+    "scripts/check_skills.py",
     "scripts/check_version_bumped.py",
+    "scripts/stamp_skill.py",
     "scripts/sync_skeleton.py",
 ]
 
@@ -91,7 +93,9 @@ ignore = ["ANN401"]
 "scripts/check_architecture.py" = ["S603", "S607", "I001"]
 "scripts/check_docs.py" = ["S603", "S607", "I001"]
 "scripts/check_module_rules.py" = ["S603", "S607", "I001"]
+"scripts/check_skills.py" = ["S603", "S607", "I001", "E501"]
 "scripts/check_version_bumped.py" = ["S603", "S607", "I001"]
+"scripts/stamp_skill.py" = ["S603", "S607", "I001", "E501"]
 "scripts/sync_skeleton.py" = ["S603", "S607", "I001"]
 
 [tool.pyright]
@@ -109,7 +113,9 @@ exclude = [
     "scripts/check_architecture.py",
     "scripts/check_docs.py",
     "scripts/check_module_rules.py",
+    "scripts/check_skills.py",
     "scripts/check_version_bumped.py",
+    "scripts/stamp_skill.py",
     "scripts/sync_skeleton.py",
 ]
 
