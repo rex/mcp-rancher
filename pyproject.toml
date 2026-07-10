@@ -1,6 +1,6 @@
 [project]
 name = "rancher-mcp"
-version = "0.4.0"
+version = "1.0.0"
 description = "Capability-aware MCP server for Rancher-managed Kubernetes — 319 tools across discovery, generic resource access, and curated operator workflows (Rancher 2.6.5–2.9.3)"
 readme = "README.md"
 license = "MIT"
@@ -8,7 +8,7 @@ license-files = ["LICENSE"]
 authors = [{ name = "Pierce Moore", email = "pierce@piercemoore.com" }]
 keywords = ["mcp", "model-context-protocol", "rancher", "kubernetes", "k8s", "devops", "sre", "llm", "agent"]
 classifiers = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 5 - Production/Stable",
     "Intended Audience :: System Administrators",
     "Intended Audience :: Developers",
     "Operating System :: OS Independent",

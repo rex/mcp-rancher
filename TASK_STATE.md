@@ -54,6 +54,18 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 
 ## Next Slice
 
+### 🚀 RELEASE (2026-07-10): MCP Rancher v1.0.0 — ✅ Status: done — SHIPPED
+
+Pierce declared 1.0.0. Release prep landed across v0.2.0→v0.4.0 (tool
+manifest + drift gate, brand imagery + README, SECURITY.md, PyPI-ready
+packaging, CI + tag-triggered release pipeline, INSTANCES env-collision
+fix). Pre-ship live battery green on the 2.6.5 lab incl. the full write
+lifecycle. Tagged v1.0.0 → release.yml publishes to PyPI (trusted
+publishing) + GitHub Releases. Post-1.0 stability contract: tool
+renames/removals = major; additions = minor. Next: MCP Registry
+server.json + community listings; then resume Track E (destructive
+workflows) and Track G (compat matrix) as 1.x.
+
 ### COMPLIANCE PASS (2026-07-09→10): repo god-file remediation — ✅ Status: done
 
 User-directed ("insane amount of god files"). Root cause: the architecture

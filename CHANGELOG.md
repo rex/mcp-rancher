@@ -1,5 +1,53 @@
 # Changelog
 
+## [1.0.0] — 2026-07-10 — Agent: Claude (Fable 5)
+
+**MCP Rancher 1.0.0 — first stable release.** 🎉
+
+319 tools (176 read-only · 143 write · 38 destructive) for operating
+Rancher-managed Kubernetes through any MCP client: schema discovery, a
+generic resource engine covering both API planes (Norman `/v3` + Steve
+`/v1`), curated typed tools across ~25 domains, and operator-intent
+rollups — wrapped in read-only instance mode, destructive confirmation
+phrases, structured audit logging, write rate-limiting, and structural
+secret/key masking. Primary target Rancher 2.9.3; compatibility floor
+2.6.5 via capability detection.
+
+Release verification: 625 tests / 85% coverage / pyright strict clean;
+full live battery green against a running 2.6.5 lab (health, read
+matrix, Steve-plane probes, and the complete write lifecycle including
+confirmed destructive delete); wheel smoke-tested via uvx; CI + tag
+release pipeline (PyPI trusted publishing) in place.
+
+### Added
+- 1.0.0 stability contract: post-1.0, tool renames/removals are
+  breaking (major); additions land as minors.
+- `Development Status :: 5 - Production/Stable` classifier.
+
+## [0.4.0] — 2026-07-10 — Agent: Claude (Fable 5)
+### Fixed
+- Stray `INSTANCES` env var (incl. `make live-health INSTANCES=lab` —
+  GNU make exports command-line vars into recipe environments) broke
+  `AppSettings` startup with a SettingsError: the computed instance map
+  was an env-bindable field. Now a private attr behind a read-only
+  property; regression test added. Full four-probe live battery
+  re-validated green against the 2.6.5 lab, including the write
+  lifecycle.
+
+## [0.3.0] — 2026-07-10 — Agent: Claude (Fable 5)
+### Added
+- GitHub Actions CI (`make validate` on push/PR) and tag-triggered
+  release pipeline: version guard → validate → build → uvx wheel smoke
+  → PyPI trusted publishing → GitHub Release.
+- `INSTANCES=` filter passthrough for `live-health` / `live-read-matrix`.
+
+## [0.2.0] — 2026-07-10 — Agent: Claude (Fable 5)
+### Changed
+- Release prep: generated tool manifest (`docs/tool-manifest.json` +
+  `make tool-manifest` / drift gate in `make validate`), brand imagery,
+  rewritten README, SECURITY.md, PyPI-ready packaging metadata.
+
+
 ## [2026-07-09] — Agent: Claude Opus 4.8
 
 ### Repo compliance — enforcement layer reconciled to skeleton v0.43.0
@@ -3874,15 +3922,3 @@ pods.py.
 ## Captured Future Requests (not started)
 
 - **Server naming / client identity config** — user wants to configure how the server names itself and appears in MCP clients (server name, version string, instructions/description shown in client UIs). Likely: `RANCHER_MCP_SERVER_NAME`, `RANCHER_MCP_SERVER_DESCRIPTION` env vars wired through `config.py` → `FastMCP(name=..., instructions=...)` and the Phase 0 early-init response hardcoded strings in `__main__.py`.
-
-## [0.4.0] — 2026-07-10 — Agent: Claude
-### Fixed
-- Fixed: stray INSTANCES env var (incl. make live-health INSTANCES=lab) broke AppSettings startup — computed instances map is now a private attr behind a read-only property; regression test added. Full four-probe live battery re-validated green against the 2.6.5 lab, including the write lifecycle
-
-## [0.3.0] — 2026-07-10 — Agent: Claude
-### Added
-- Added GitHub Actions CI (validate on push/PR) and tag-triggered release pipeline (PyPI trusted publishing + GitHub Release); INSTANCES filter for live probes
-
-## [0.2.0] — 2026-07-10 — Agent: Claude
-### Changed
-- Release prep: generated tool manifest + drift gate, brand imagery, rewritten README, SECURITY.md, PyPI-ready packaging metadata
