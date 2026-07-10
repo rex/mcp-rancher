@@ -1,0 +1,39 @@
+# CI — the server-side enforcement layer. Runs the same `make validate`
+# aggregate the repo enforces locally (pre-commit + Stop hook), so a
+# clone without hooks or a `--no-verify` push can no longer skip the
+# gates: codegen drift, tool-manifest drift, architecture line limits,
+# module shape, ruff, pyright strict, and the full test suite.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+          python-version: "3.12"
+
+      - name: Install dependencies (frozen lockfile)
+        run: uv sync --frozen
+
+      - name: Run the full validation gate
+        run: make validate

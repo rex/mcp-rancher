@@ -1,0 +1,103 @@
+# Release — tag-triggered publish pipeline.
+#
+#   git tag -s vX.Y.Z && git push origin vX.Y.Z
+#
+# Flow: guard (tag == VERSION == pyproject) → full validate → build
+# sdist+wheel → smoke-run the wheel via uvx → publish to PyPI via
+# TRUSTED PUBLISHING (OIDC, no stored tokens) → GitHub Release with
+# artifacts + generated notes.
+#
+# One-time PyPI setup (before the first tag): on pypi.org, add a
+# "pending publisher" for project `rancher-mcp` with owner `rex`,
+# repository `mcp-rancher`, workflow `release.yml`, environment `pypi`.
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+          python-version: "3.12"
+
+      - name: Install dependencies (frozen lockfile)
+        run: uv sync --frozen
+
+      - name: Guard — tag must match VERSION and pyproject
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          ver="$(cat VERSION)"
+          pyver="$(uv run python -c 'import tomllib; print(tomllib.load(open("pyproject.toml","rb"))["project"]["version"])')"
+          if [ "$tag" != "$ver" ] || [ "$tag" != "$pyver" ]; then
+            echo "::error::tag v$tag does not match VERSION ($ver) / pyproject ($pyver) — bump before tagging."
+            exit 1
+          fi
+
+      - name: Run the full validation gate
+        run: make validate
+
+      - name: Build sdist + wheel
+        run: uv build
+
+      - name: Smoke-run the built wheel (uvx, clean EOF exit)
+        env:
+          RANCHER_URL: https://rancher.invalid
+          RANCHER_TOKEN: token-ci:smoke # pragma: allowlist secret
+        run: timeout 30 uvx --from dist/*.whl rancher-mcp < /dev/null
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+          if-no-files-found: error
+
+  publish-pypi:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: pypi
+    permissions:
+      id-token: write # OIDC for PyPI trusted publishing
+    steps:
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - name: Publish to PyPI (trusted publishing)
+        run: uv publish --trusted-publishing always
+
+  github-release:
+    needs: publish-pypi
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" dist/* --title "$GITHUB_REF_NAME" --generate-notes

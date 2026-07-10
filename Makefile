@@ -270,11 +270,11 @@ mock-rancher:
 
 ## live-health: Probe server_version + server_health on every configured instance
 live-health:
-	$(PYTHON) -m scripts.live_probe health
+	$(PYTHON) -m scripts.live_probe health $(if $(INSTANCES),--instances $(INSTANCES),)
 
 ## live-read-matrix: Run the broad read-only smoke matrix on every configured instance
 live-read-matrix:
-	$(PYTHON) -m scripts.live_probe read-matrix
+	$(PYTHON) -m scripts.live_probe read-matrix $(if $(INSTANCES),--instances $(INSTANCES),)
 
 ## live-steve: Run Steve-plane (k8s-proxy) probes; INSTANCE and CLUSTER required
 ##   make live-steve INSTANCE=lab CLUSTER=local [NAMESPACE=cattle-system]

@@ -1,10 +1,11 @@
 <p align="center">
-  <img src="docs/assets/header.png" alt="Rancher MCP — the capability-aware control plane for your whole herd" />
+  <img src="docs/assets/header.png" alt="MCP Rancher — the capability-aware control plane for AI-assisted Rancher operations" />
 </p>
 
 <p align="center">
-  <a href="https://modelcontextprotocol.io"><img src="https://img.shields.io/badge/MCP-server-ff7a33" alt="MCP server" /></a>
-  <a href="docs/tool-manifest.json"><img src="https://img.shields.io/badge/tools-319-ff7a33" alt="319 tools" /></a>
+  <a href="https://github.com/rex/mcp-rancher/actions/workflows/validate.yml"><img src="https://img.shields.io/github/actions/workflow/status/rex/mcp-rancher/validate.yml?branch=main&label=CI" alt="CI" /></a>
+  <a href="https://modelcontextprotocol.io"><img src="https://img.shields.io/badge/MCP-server-2b6cd0" alt="MCP server" /></a>
+  <a href="docs/tool-manifest.json"><img src="https://img.shields.io/badge/tools-319-2b6cd0" alt="319 tools" /></a>
   <a href="https://www.python.org/"><img src="https://img.shields.io/badge/python-3.12%2B-3776ab?logo=python&logoColor=white" alt="Python 3.12+" /></a>
   <img src="https://img.shields.io/badge/tests-624%20passing-2ea44f" alt="624 tests passing" />
   <img src="https://img.shields.io/badge/coverage-85%25-2ea44f" alt="85% coverage" />
@@ -37,7 +38,7 @@ every cluster behind its own proxy. Pointing a generic Kubernetes MCP server at 
 misses everything Rancher-specific; pointing an agent at raw `kubectl` gives up
 auditability, guardrails, and the management-plane view entirely.
 
-**Rancher MCP** is built for that reality:
+**MCP Rancher** is built for that reality:
 
 - **Capability-aware, not version-naive.** It detects what each connected Rancher
   actually supports instead of assuming. One binary spans **2.6.5 → 2.9.3** with
