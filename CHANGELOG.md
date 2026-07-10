@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.4.0] — 2026-07-10 — Agent: Claude (Fable 5)
+### Fixed
+- Fixed CHANGELOG-corrupting bump_version.py via agentic-skeleton v0.44.0 sync: new entries now insert atop the first heading — date-based headers included — instead of appending to the bottom (the previously stranded [0.2.0]–[0.4.0] entries were relocated to the top in 97408de)
+
 ## [1.3.0] — 2026-07-10 — Agent: Claude
 ### Fixed
 - Fixed MCP Registry publish 422: server.json keys converted to camelCase (registryType/registryBaseUrl/runtimeHint/environmentVariables/isRequired/isSecret) per the registry API schema

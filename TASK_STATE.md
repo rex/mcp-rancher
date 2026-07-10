@@ -54,6 +54,19 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 
 ## Next Slice
 
+### MAINTENANCE (2026-07-10): skeleton v0.44.0 sync — ✅ Status: done — v1.4.0
+
+Synced agentic-skeleton 0.44.0, pulling the fixed `bump_version.py`
+(entries now insert atop date-based CHANGELOG headers instead of
+appending to the bottom; fix verified against a date-based fixture and
+by the v1.4.0 bump itself). The corruption that bug caused here —
+[0.2.0]–[0.4.0] stranded at the bottom of CHANGELOG.md — was already
+repaired in the v1.0.0 release commit (`97408de`); verified no stranded
+or duplicate semver entries remain. Advisory drift in Makefile /
+.pre-commit-config.yaml / .claude/settings.json is intentional repo
+customization (skeleton 0.44.0 changed only bump_version.py) — left
+as-is.
+
 ### 🚀 RELEASE (2026-07-10): MCP Rancher v1.0.0 — ✅ Status: done — SHIPPED
 
 Pierce declared 1.0.0. Release prep landed across v0.2.0→v0.4.0 (tool

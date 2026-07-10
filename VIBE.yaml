@@ -196,6 +196,6 @@ skills:
     applied: 2026-05-03
     source: transcript-backfill
   - id: agentic-skeleton
-    version: "0.43.0"
+    version: "0.44.0"
     applied: '2026-07-10'
     source: sync

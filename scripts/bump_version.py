@@ -12,7 +12,8 @@ Behavior:
        patch: X.Y.Z+1
   3. Writes the new VERSION.
   4. Inserts a new `## [X.Y.Z] — YYYY-MM-DD — Agent: <name>` header
-     above any existing `## [` block in CHANGELOG.md (creates CHANGELOG
+     above the FIRST existing `## [` heading in CHANGELOG.md — semver or
+     date-based alike, fenced code examples excluded (creates CHANGELOG
      if missing). If --changelog-note is given, places a matching bullet
      under "### Changed" (or Fixed/Added/Removed if the note starts with
      a recognized keyword).
@@ -103,6 +104,27 @@ def _section_for_note(note: str) -> str:
     return "Changed"
 
 
+def _first_entry_offset(text: str) -> int | None:
+    """Offset of the first `## [` heading outside fenced code, else None.
+
+    Any bracketed heading counts — semver (`## [1.2.3]`) or date-based
+    (`## [2026-07-09]`), hyphen or em-dash after — so repos whose
+    CHANGELOGs use date headers get new entries at the TOP rather than
+    appended to the bottom. Fence tracking is what keeps the literal
+    `## [X.Y.Z]` template inside the code-fence example some CHANGELOGs
+    carry from matching (a bare regex would insert INSIDE the fence).
+    """
+    offset = 0
+    in_fence = False
+    for line in text.splitlines(keepends=True):
+        if line.lstrip().startswith(("```", "~~~")):
+            in_fence = not in_fence
+        elif not in_fence and line.startswith("## ["):
+            return offset
+        offset += len(line)
+    return None
+
+
 def _insert_changelog_block(changelog_path: Path, header: str, section: str, note: str) -> None:
     if changelog_path.is_file():
         text = changelog_path.read_text()
@@ -114,13 +136,9 @@ def _insert_changelog_block(changelog_path: Path, header: str, section: str, not
     block_lines.append("")
     block = "\n".join(block_lines) + "\n"
 
-    # Insert above the first REAL versioned `## [N.N.N]` heading. A
-    # plain `^## \[` would match the `## [X.Y.Z]` template inside the
-    # markdown code-fence example some CHANGELOGs carry, placing new
-    # entries INSIDE the fence. Anchoring on digits skips the template.
-    m = re.search(r"^## \[\d+\.\d+\.\d+\]", text, re.MULTILINE)
-    if m:
-        text = text[: m.start()] + block + text[m.start() :]
+    pos = _first_entry_offset(text)
+    if pos is not None:
+        text = text[:pos] + block + text[pos:]
     else:
         if not text.endswith("\n"):
             text += "\n"
