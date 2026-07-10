@@ -7,41 +7,41 @@
     "url": "https://github.com/rex/mcp-rancher",
     "source": "github"
   },
-  "version": "1.2.0",
+  "version": "1.3.0",
   "packages": [
     {
-      "registry_type": "pypi",
-      "registry_base_url": "https://pypi.org",
+      "registryType": "pypi",
+      "registryBaseUrl": "https://pypi.org",
       "identifier": "rancher-mcp",
-      "version": "1.2.0",
-      "runtime_hint": "uvx",
+      "version": "1.3.0",
+      "runtimeHint": "uvx",
       "transport": {
         "type": "stdio"
       },
-      "environment_variables": [
+      "environmentVariables": [
         {
           "name": "RANCHER_URL",
           "description": "Rancher server URL (single-instance mode)",
-          "is_required": true,
-          "is_secret": false
+          "isRequired": true,
+          "isSecret": false
         },
         {
           "name": "RANCHER_TOKEN",
           "description": "Rancher API token (token-xxxxx:yyyyyyyyy)",
-          "is_required": true,
-          "is_secret": true
+          "isRequired": true,
+          "isSecret": true
         },
         {
           "name": "RANCHER_VERIFY_SSL",
           "description": "Verify TLS certificates (default true)",
-          "is_required": false,
-          "is_secret": false
+          "isRequired": false,
+          "isSecret": false
         },
         {
           "name": "RANCHER_INSTANCES_JSON",
           "description": "Multi-instance config JSON (overrides single-instance mode; supports per-instance read_only)",
-          "is_required": false,
-          "is_secret": true
+          "isRequired": false,
+          "isSecret": true
         }
       ]
     }

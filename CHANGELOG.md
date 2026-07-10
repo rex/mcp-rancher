@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.3.0] — 2026-07-10 — Agent: Claude
+### Fixed
+- Fixed MCP Registry publish 422: server.json keys converted to camelCase (registryType/registryBaseUrl/runtimeHint/environmentVariables/isRequired/isSecret) per the registry API schema
+
 ## [1.2.0] — 2026-07-10 — Agent: Claude
 ### Fixed
 - Fixed release/CI job setup failure: astral-sh/setup-uv has no v8 major tag — pinned v8.3.2. 1.1.0 content ships as 1.2.0 (dead v1.1.0 tag removed; no artifacts were published)
