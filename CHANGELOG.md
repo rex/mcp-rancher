@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.6.0] — 2026-07-11 — Agent: Codex
+### Fixed
+- Fixed current Rancher agent trust synchronization by reading its served ingress CA with a legacy fallback.
+
 ## [1.5.0] — 2026-07-10 — Agent: Codex
 ### Added
 - Add an isolated Rancher 2.14.3 integration profile with serial live probes and Docker-resource protection.

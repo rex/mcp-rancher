@@ -1,5 +1,6 @@
 """Tests for imported-cluster manifest patching and downstream agent trust."""
 
+import base64
 import hashlib
 import json
 from pathlib import Path
@@ -66,6 +67,62 @@ def test_downstream_agent_ca_checksum_matches_agent_runtime_behavior(
     checksum = devlab.downstream_agent_ca_checksum(config)
 
     assert checksum == hashlib.sha256(f"{cacerts_value}\n".encode()).hexdigest()
+
+
+@pytest.mark.parametrize(
+    ("available_secrets", "expected_value", "expected_queries"),
+    [
+        (
+            {"tls-rancher-ingress": "current-serving-ca"},
+            "current-serving-ca",
+            ["tls-rancher-ingress"],
+        ),
+        (
+            {"tls-rancher-internal-ca": "legacy-serving-ca"},
+            "legacy-serving-ca",
+            ["tls-rancher-ingress", "tls-rancher-internal-ca"],
+        ),
+    ],
+)
+def test_sync_rancher_cacerts_prefers_current_serving_ca_with_legacy_fallback(
+    monkeypatch: pytest.MonkeyPatch,
+    available_secrets: dict[str, str],
+    expected_value: str,
+    expected_queries: list[str],
+) -> None:
+    """The agent must trust the CA that signs the Rancher endpoint it reaches."""
+
+    config = LabConfig.from_env(STATIC_REPO_ROOT)
+    paths = LabPaths.from_repo_root(STATIC_REPO_ROOT)
+    queried_secrets: list[str] = []
+    jsonpaths: list[str] = []
+    patched_values: list[str] = []
+
+    def fake_run_command(args: list[str], **kwargs: object) -> object:
+        secret_name = args[args.index("secret") + 1]
+        queried_secrets.append(secret_name)
+        jsonpaths.append(args[-1])
+        value = available_secrets.get(secret_name)
+        if value is None:
+            return _completed(args, returncode=1, stderr="NotFound")
+        return _completed(args, stdout=base64.b64encode(value.encode()).decode())
+
+    monkeypatch.setattr(devlab.process, "run_command", fake_run_command)
+    monkeypatch.setattr(devlab.imported, "get_rancher_setting", lambda *args: "")
+    monkeypatch.setattr(
+        devlab.imported,
+        "patch_rancher_setting",
+        lambda *args: patched_values.append(args[-1]),
+    )
+
+    devlab.sync_rancher_cacerts(paths, config)
+
+    assert queried_secrets == expected_queries
+    assert jsonpaths == [
+        "jsonpath={.data.ca\\.crt}",
+        *(["jsonpath={.data.tls\\.crt}"] if len(expected_queries) == 2 else []),
+    ]
+    assert patched_values == [expected_value]
 
 
 def test_ensure_lab_up_brings_up_rancher_then_downstream(

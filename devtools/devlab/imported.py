@@ -107,22 +107,33 @@ def prewarm_agent_host_certificate(config: LabConfig) -> None:
 
 
 def sync_rancher_cacerts(paths: LabPaths, config: LabConfig) -> None:
-    """Align Rancher's cacerts setting with the current internal CA secret."""
+    """Align ``cacerts`` with the CA that signs Rancher's served certificate."""
 
-    secret_result = process.run_command(
-        process.kubectl_args(
-            paths.management_kubeconfig_path,
-            "-n",
-            "cattle-system",
-            "get",
-            "secret",
-            "tls-rancher-internal-ca",
-            "-o",
-            "jsonpath={.data.tls\\.crt}",
-        ),
-        cwd=config.repo_root,
-    )
-    desired_value = base64.b64decode(secret_result.stdout.strip()).decode("utf-8")
+    for secret_name, data_key in (
+        ("tls-rancher-ingress", "ca.crt"),
+        ("tls-rancher-internal-ca", "tls.crt"),
+    ):
+        escaped_data_key = data_key.replace(".", "\\.")
+        secret_result = process.run_command(
+            process.kubectl_args(
+                paths.management_kubeconfig_path,
+                "-n",
+                "cattle-system",
+                "get",
+                "secret",
+                secret_name,
+                "-o",
+                f"jsonpath={{.data.{escaped_data_key}}}",
+            ),
+            cwd=config.repo_root,
+            check=False,
+        )
+        if secret_result.returncode == 0 and secret_result.stdout.strip():
+            desired_value = base64.b64decode(secret_result.stdout.strip()).decode("utf-8")
+            break
+    else:
+        raise RuntimeError("Could not find a Rancher serving CA secret to populate cacerts")
+
     current_value = get_rancher_setting(paths, config, "cacerts")
     if current_value != desired_value:
         patch_rancher_setting(paths, config, "cacerts", desired_value)

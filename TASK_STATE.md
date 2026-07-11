@@ -54,7 +54,7 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 
 ## Next Slice
 
-### MAINTENANCE (2026-07-10): isolated current Rancher integration — implementation complete; live run pending serialized window
+### MAINTENANCE (2026-07-11): isolated current Rancher integration — ✅ live matrix green — v1.6.0
 
 Added an isolated `current` local-lab profile for Rancher `2.14.3` on
 Kubernetes `1.33.12`, with separate Kind names, repo-local runtime/tool paths,
@@ -62,9 +62,12 @@ and port `9443`. `make integration-current` runs the same health, read-matrix,
 Steve, and lifecycle battery against that profile using an ephemeral bootstrap
 token. It refuses to start while the legacy profile has running Docker
 containers, and the current profile uses two single-node Kind clusters to stay
-within the laptop Docker memory budget. Unit/static validation is green; run
-the live battery only after `make lab-down` has stopped the legacy lab, then
-use `make lab-current-down` when finished.
+within the laptop Docker memory budget. Rancher 2.14's serving CA is sourced
+from `tls-rancher-ingress` when available, with the 2.6 legacy internal-CA
+secret retained as a fallback; this prevents the downstream agent from trusting
+the wrong certificate chain. The full current live matrix is green. Run the
+live battery only after `make lab-down` has stopped the legacy lab, then use
+`make lab-current-down` when finished.
 
 ### MAINTENANCE (2026-07-10): skeleton v0.44.0 sync — ✅ Status: done — v1.4.0
 
