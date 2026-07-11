@@ -231,12 +231,16 @@ make help               # every target, documented
 make validate           # codegen drift + manifest drift + architecture + lint + typecheck + tests
 make tool-manifest      # regenerate docs/tool-manifest.json from the registry
 make lab-up             # local Rancher 2.6.5 lab (kind + helm), fully scripted
+make integration-current # isolated Rancher 2.14.3 end-to-end test run
 make live-read-matrix   # read-only validation probes against configured instances
 make mock-rancher       # fixture-backed mock Rancher for provider-config testing
 ```
 
 - **Local lab** — a self-contained Rancher 2.6.5 on kind with a simulated
   downstream cluster; repo-local kubeconfigs, never touches your machine state.
+- **Current integration lab** — Rancher 2.14.3 on separate Kind clusters and
+  port `9443`; run it serially with `make integration-current` to avoid
+  overlapping Docker resource demand with the legacy lab.
 - **Contract fixtures** — sanitized captures from live Rancher committed under
   `tests/fixtures/`; `respx` pins the HTTP boundary in tests.
 - **Codegen** — curated tools are emitted from `catalog/curated_tools/*.yml`

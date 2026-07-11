@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import shutil
 import subprocess
+from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
@@ -25,6 +26,7 @@ def run_command(
     capture_output: bool = True,
     check: bool = True,
     input_text: str | None = None,
+    env: Mapping[str, str] | None = None,
 ) -> subprocess.CompletedProcess[str]:
     """Run a subprocess command with text I/O."""
 
@@ -35,6 +37,7 @@ def run_command(
         capture_output=capture_output,
         input=input_text,
         text=True,
+        env=env,
     )
 
 

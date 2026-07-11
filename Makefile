@@ -14,6 +14,7 @@
         capture-fixtures mock-rancher \
         live-health live-read-matrix live-steve live-lifecycle \
         lab-up lab-down lab-reset lab-status lab-logs lab-tools \
+        lab-current-up lab-current-down lab-current-status integration-current \
         lab-rancher-up lab-rancher-down lab-kind-up lab-kind-down \
         check-if-the-agent-can-consider-this-task-completed
 
@@ -76,6 +77,10 @@ help:
 	@echo "  $(GREEN)make lab-status$(RESET)           Show local lab status for both clusters"
 	@echo "  $(GREEN)make lab-logs$(RESET)             Show recent Rancher deployment logs"
 	@echo "  $(GREEN)make lab-tools$(RESET)            Download the repo-managed kind binary"
+	@echo "  $(GREEN)make lab-current-up$(RESET)       Start the isolated current Rancher lab"
+	@echo "  $(GREEN)make lab-current-down$(RESET)     Stop the isolated current Rancher lab"
+	@echo "  $(GREEN)make lab-current-status$(RESET)   Show isolated current Rancher lab status"
+	@echo "  $(GREEN)make integration-current$(RESET)  Run the full live suite on current Rancher only"
 	@echo "  $(GREEN)make lab-rancher-up$(RESET)       Install or upgrade Rancher on the management cluster"
 	@echo "  $(GREEN)make lab-rancher-down$(RESET)     Uninstall Rancher from the management cluster"
 	@echo "  $(GREEN)make lab-kind-up$(RESET)          Start the managed and downstream kind clusters"
@@ -241,6 +246,22 @@ lab-logs:
 ## lab-tools: Download and verify the repo-managed kind binary
 lab-tools:
 	$(PYTHON) -m devtools.devlab ensure-tools
+
+## lab-current-up: Start the isolated current Rancher local lab
+lab-current-up:
+	$(PYTHON) -m devtools.devlab up --profile current
+
+## lab-current-down: Stop the isolated current Rancher local lab
+lab-current-down:
+	$(PYTHON) -m devtools.devlab down --profile current
+
+## lab-current-status: Show isolated current Rancher local lab status
+lab-current-status:
+	$(PYTHON) -m devtools.devlab status --profile current
+
+## integration-current: Run the full local integration suite against current Rancher
+integration-current:
+	$(PYTHON) -m devtools.devlab integration --profile current
 
 ## lab-rancher-up: Install or upgrade Rancher on the management cluster
 lab-rancher-up:

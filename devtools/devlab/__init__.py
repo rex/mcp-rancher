@@ -1,4 +1,4 @@
-"""Repo-managed local development lab for Rancher 2.6.5."""
+"""Repo-managed local Rancher compatibility labs."""
 
 # This package __init__ is a pure re-export shim. It deliberately re-exports a
 # few leading-underscore helpers (_parse_int_env, _download_bytes,
@@ -63,6 +63,7 @@ from .process import (
     run_curl,
     wait_for_rollout,
 )
+from .profiles import PROFILE_DEFAULTS, LabProfile, profile_env_name, profiles_for
 from .rancher import (
     build_port_forward_supervisor_command,
     ensure_cert_manager_up,
@@ -85,7 +86,9 @@ __all__ = [
     "DEFAULT_REPO_ROOT",
     "ClusterSpec",
     "LabConfig",
+    "LabProfile",
     "LabPaths",
+    "PROFILE_DEFAULTS",
     "_download_bytes",
     "_download_text",
     "_parse_int_env",
@@ -131,6 +134,8 @@ __all__ = [
     "patch_import_manifest",
     "patch_rancher_setting",
     "platform_suffix",
+    "profile_env_name",
+    "profiles_for",
     "port_forward_running",
     "prewarm_agent_host_certificate",
     "print_cluster_nodes",

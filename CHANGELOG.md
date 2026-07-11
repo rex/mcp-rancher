@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.5.0] — 2026-07-10 — Agent: Codex
+### Added
+- Add an isolated Rancher 2.14.3 integration profile with serial live probes and Docker-resource protection.
+
 ## [1.4.0] — 2026-07-10 — Agent: Claude (Fable 5)
 ### Fixed
 - Fixed CHANGELOG-corrupting bump_version.py via agentic-skeleton v0.44.0 sync: new entries now insert atop the first heading — date-based headers included — instead of appending to the bottom (the previously stranded [0.2.0]–[0.4.0] entries were relocated to the top in 97408de)

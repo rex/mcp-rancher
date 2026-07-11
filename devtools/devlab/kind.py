@@ -92,7 +92,12 @@ def ensure_kind_binary(paths: LabPaths, config: LabConfig) -> Path:
     return paths.kind_binary
 
 
-def render_kind_config(worker_count: int, *, role: str = "generic") -> str:
+def render_kind_config(
+    worker_count: int,
+    *,
+    role: str = "generic",
+    componentstatus_compat: bool = True,
+) -> str:
     """Render the kind cluster configuration for a given worker count."""
 
     worker_nodes = "\n".join("- role: worker" for _ in range(worker_count))
@@ -100,7 +105,7 @@ def render_kind_config(worker_count: int, *, role: str = "generic") -> str:
         "kind: Cluster",
         "apiVersion: kind.x-k8s.io/v1alpha4",
     ]
-    if role == "management":
+    if role == "management" and componentstatus_compat:
         lines.extend(
             [
                 "kubeadmConfigPatches:",
@@ -168,7 +173,11 @@ def ensure_kind_cluster_up(paths: LabPaths, config: LabConfig, spec: ClusterSpec
 
     process.ensure_lab_directories(paths)
     spec.kind_config_path.write_text(
-        render_kind_config(spec.worker_count, role=spec.role),
+        render_kind_config(
+            spec.worker_count,
+            role=spec.role,
+            componentstatus_compat=spec.componentstatus_compat,
+        ),
         encoding="utf-8",
     )
 

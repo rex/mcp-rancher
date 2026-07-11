@@ -6,12 +6,15 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 
+from .profiles import PROFILE_DEFAULTS, LabProfile, profile_env_name
+
 
 @dataclass(frozen=True)
 class LabPaths:
     """Filesystem paths used by the local development lab."""
 
     repo_root: Path
+    profile: LabProfile
     runtime_dir: Path
     tools_bin_dir: Path
     kind_binary: Path
@@ -23,13 +26,19 @@ class LabPaths:
     port_forward_log_path: Path
 
     @classmethod
-    def from_repo_root(cls, repo_root: Path) -> LabPaths:
+    def from_repo_root(
+        cls,
+        repo_root: Path,
+        profile: LabProfile = LabProfile.LEGACY,
+    ) -> LabPaths:
         """Build repo-local paths for lab state and tooling."""
 
-        runtime_dir = repo_root / ".lab"
-        tools_bin_dir = repo_root / ".tools" / "bin"
+        profile_suffix = () if profile is LabProfile.LEGACY else (profile.value,)
+        runtime_dir = repo_root.joinpath(".lab", *profile_suffix)
+        tools_bin_dir = repo_root.joinpath(".tools", *profile_suffix, "bin")
         return cls(
             repo_root=repo_root,
+            profile=profile,
             runtime_dir=runtime_dir,
             tools_bin_dir=tools_bin_dir,
             kind_binary=tools_bin_dir / "kind",
@@ -53,6 +62,7 @@ class ClusterSpec:
     wait_seconds: int
     kind_config_path: Path
     kubeconfig_path: Path
+    componentstatus_compat: bool = True
 
 
 @dataclass(frozen=True)
@@ -60,6 +70,7 @@ class LabConfig:
     """Configuration for the local development lab."""
 
     repo_root: Path
+    profile: LabProfile
     rancher_version: str
     rancher_hostname: str
     rancher_https_port: int
@@ -79,66 +90,57 @@ class LabConfig:
     cert_manager_version: str
 
     @classmethod
-    def from_env(cls, repo_root: Path) -> LabConfig:
+    def from_env(
+        cls,
+        repo_root: Path,
+        profile: LabProfile = LabProfile.LEGACY,
+    ) -> LabConfig:
         """Load lab configuration from environment variables."""
 
+        defaults = PROFILE_DEFAULTS[profile]
         return cls(
             repo_root=repo_root,
-            rancher_version=os.environ.get("RANCHER_MCP_LAB_RANCHER_VERSION", "2.6.5"),
-            rancher_hostname=os.environ.get(
-                "RANCHER_MCP_LAB_RANCHER_HOSTNAME",
-                "127.0.0.1.sslip.io",
+            profile=profile,
+            rancher_version=_profile_string_env(
+                profile, "RANCHER_VERSION", defaults.rancher_version
             ),
-            rancher_https_port=_parse_int_env("RANCHER_MCP_LAB_RANCHER_HTTPS_PORT", 8443),
-            rancher_agent_hostname=os.environ.get(
-                "RANCHER_MCP_LAB_RANCHER_AGENT_HOSTNAME",
-                "host.docker.internal",
+            rancher_hostname=_profile_string_env(profile, "RANCHER_HOSTNAME", "127.0.0.1.sslip.io"),
+            rancher_https_port=_profile_int_env(
+                profile, "RANCHER_HTTPS_PORT", defaults.rancher_https_port
             ),
-            rancher_bootstrap_password=os.environ.get(
-                "RANCHER_MCP_LAB_BOOTSTRAP_PASSWORD",
-                "rancher-admin-1234",
+            rancher_agent_hostname=_profile_string_env(
+                profile, "RANCHER_AGENT_HOSTNAME", "host.docker.internal"
             ),
-            rancher_wait_seconds=_parse_int_env("RANCHER_MCP_LAB_RANCHER_WAIT_SECONDS", 600),
-            kind_version=os.environ.get("RANCHER_MCP_LAB_KIND_VERSION", "v0.23.0"),
-            management_cluster_name=os.environ.get(
-                "RANCHER_MCP_LAB_MANAGEMENT_CLUSTER_NAME",
-                "rancher-mcp-management",
+            rancher_bootstrap_password=_profile_string_env(
+                profile, "BOOTSTRAP_PASSWORD", "rancher-admin-1234"
             ),
-            management_node_image=os.environ.get(
-                "RANCHER_MCP_LAB_MANAGEMENT_NODE_IMAGE",
-                "kindest/node:v1.20.15",
+            rancher_wait_seconds=_profile_int_env(profile, "RANCHER_WAIT_SECONDS", 600),
+            kind_version=_profile_string_env(profile, "KIND_VERSION", defaults.kind_version),
+            management_cluster_name=_profile_string_env(
+                profile, "MANAGEMENT_CLUSTER_NAME", defaults.management_cluster_name
             ),
-            management_worker_count=_parse_int_env(
-                "RANCHER_MCP_LAB_MANAGEMENT_WORKER_COUNT",
-                1,
+            management_node_image=_profile_string_env(
+                profile, "MANAGEMENT_NODE_IMAGE", defaults.management_node_image
             ),
-            management_wait_seconds=_parse_int_env(
-                "RANCHER_MCP_LAB_MANAGEMENT_WAIT_SECONDS",
-                300,
+            management_worker_count=_profile_int_env(
+                profile, "MANAGEMENT_WORKER_COUNT", defaults.management_worker_count
             ),
-            downstream_cluster_name=os.environ.get(
-                "RANCHER_MCP_LAB_DOWNSTREAM_CLUSTER_NAME",
-                "rancher-mcp-venue",
+            management_wait_seconds=_profile_int_env(profile, "MANAGEMENT_WAIT_SECONDS", 300),
+            downstream_cluster_name=_profile_string_env(
+                profile, "DOWNSTREAM_CLUSTER_NAME", defaults.downstream_cluster_name
             ),
-            downstream_node_image=os.environ.get(
-                "RANCHER_MCP_LAB_DOWNSTREAM_NODE_IMAGE",
-                "kindest/node:v1.23.17",
+            downstream_node_image=_profile_string_env(
+                profile, "DOWNSTREAM_NODE_IMAGE", defaults.downstream_node_image
             ),
-            downstream_worker_count=_parse_int_env(
-                "RANCHER_MCP_LAB_DOWNSTREAM_WORKER_COUNT",
-                1,
+            downstream_worker_count=_profile_int_env(
+                profile, "DOWNSTREAM_WORKER_COUNT", defaults.downstream_worker_count
             ),
-            downstream_wait_seconds=_parse_int_env(
-                "RANCHER_MCP_LAB_DOWNSTREAM_WAIT_SECONDS",
-                300,
+            downstream_wait_seconds=_profile_int_env(profile, "DOWNSTREAM_WAIT_SECONDS", 300),
+            imported_cluster_name=_profile_string_env(
+                profile, "IMPORTED_CLUSTER_NAME", defaults.imported_cluster_name
             ),
-            imported_cluster_name=os.environ.get(
-                "RANCHER_MCP_LAB_IMPORTED_CLUSTER_NAME",
-                "venue-local",
-            ),
-            cert_manager_version=os.environ.get(
-                "RANCHER_MCP_LAB_CERT_MANAGER_VERSION",
-                "v1.7.1",
+            cert_manager_version=_profile_string_env(
+                profile, "CERT_MANAGER_VERSION", defaults.cert_manager_version
             ),
         )
 
@@ -184,6 +186,7 @@ class LabConfig:
             node_image=self.management_node_image,
             worker_count=self.management_worker_count,
             wait_seconds=self.management_wait_seconds,
+            componentstatus_compat=self.profile is LabProfile.LEGACY,
             kind_config_path=paths.management_kind_config_path,
             kubeconfig_path=paths.management_kubeconfig_path,
         )
@@ -197,6 +200,7 @@ class LabConfig:
             node_image=self.downstream_node_image,
             worker_count=self.downstream_worker_count,
             wait_seconds=self.downstream_wait_seconds,
+            componentstatus_compat=False,
             kind_config_path=paths.downstream_kind_config_path,
             kubeconfig_path=paths.downstream_kubeconfig_path,
         )
@@ -212,3 +216,15 @@ def _parse_int_env(name: str, default: int) -> int:
         return int(raw_value)
     except ValueError as exc:  # pragma: no cover - defensive CLI validation
         raise RuntimeError(f"{name} must be an integer") from exc
+
+
+def _profile_string_env(profile: LabProfile, suffix: str, default: str) -> str:
+    """Return a string setting scoped to one local lab profile."""
+
+    return os.environ.get(profile_env_name(profile, suffix), default)
+
+
+def _profile_int_env(profile: LabProfile, suffix: str, default: int) -> int:
+    """Return an integer setting scoped to one local lab profile."""
+
+    return _parse_int_env(profile_env_name(profile, suffix), default)

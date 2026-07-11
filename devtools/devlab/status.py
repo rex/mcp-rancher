@@ -106,7 +106,7 @@ def print_status(paths: LabPaths, config: LabConfig) -> None:
 def print_rancher_logs(config: LabConfig) -> None:
     """Print recent Rancher deployment logs."""
 
-    paths = LabPaths.from_repo_root(config.repo_root)
+    paths = LabPaths.from_repo_root(config.repo_root, config.profile)
     if rancher.port_forward_running(paths) and paths.port_forward_log_path.exists():
         print("== port-forward ==")
         print(paths.port_forward_log_path.read_text(encoding="utf-8"), end="")
