@@ -100,8 +100,14 @@ ADR-0001 call.**
   now take an OPTIONAL `namespace` and scan the whole cluster when it's
   omitted — real one-call triage. The services↔endpoints correlation is keyed
   by (namespace, name) so it stays correct across namespaces.
-- **Next:** K-5 (error classification), then K-2 (verbose payloads — saved for
-  last in ①/② because it reshapes ~every response).
+- **K-5 shipped (v1.11.0)** — no tool can return an empty/opaque error: a
+  guaranteed-non-empty message + a catch-all backstop in the error wrapper,
+  and a distinct `MANAGEMENT_PLANE_UNREACHABLE` (with a node-local hint) when
+  the Rancher tunnel drops (post-retry httpx transport error; both planes,
+  since Steve wraps the management client).
+- **Next:** K-2 (verbose payloads) — the last slice in buckets ①/②. Hides the
+  full `payload`/`response_payload` by default (tiny responses) with a
+  `verbose:true` opt-in, via the codegen template + the base serializer.
 - **K-12 (labels) is BLOCKED** on Pierce's `catalog/capabilities.yaml`
   `primary_target` decision (2.6.5 baseline vs 2.9.3 product) — the meaningful
   half (`primaryTargetVersion` in `instance_list`) can't ship without that

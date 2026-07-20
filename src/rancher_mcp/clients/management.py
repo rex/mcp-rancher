@@ -12,6 +12,7 @@ from rancher_mcp.clients.retry import run_with_retry
 from rancher_mcp.exceptions import (
     RancherAPIError,
     RancherConflictError,
+    RancherManagementPlaneUnreachableError,
     RancherNotFoundError,
     RancherUnauthorizedError,
 )
@@ -280,7 +281,19 @@ class RancherManagementClient:
             self._raise_for_status(response)
             return response
 
-        return await run_with_retry(perform_request)
+        try:
+            return await run_with_retry(perform_request)
+        except httpx.TransportError as exc:
+            # Post-retry transport failure = the Rancher management plane /
+            # tunnel is unreachable. Convert it to a distinct, hinted error
+            # with a guaranteed-non-empty message (httpx timeouts stringify
+            # to ""), so the operator knows to go node-local. K-5. Because
+            # RancherSteveClient wraps this client, both planes are covered.
+            raise RancherManagementPlaneUnreachableError(
+                f"Could not reach the Rancher management plane for instance "
+                f"{getattr(self, 'instance_name', '?')!r} ({method} {path}) "
+                f"after retries: {exc!r}"
+            ) from exc
 
     def _decode_json_object(self, response: httpx.Response) -> dict[str, object]:
         """Decode a JSON object response, tolerating empty success bodies."""

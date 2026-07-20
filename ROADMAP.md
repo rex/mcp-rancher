@@ -142,7 +142,7 @@ roughly a day or less; none needs the ADR-0001 decision.
     labels each result's namespace; `tests/unit/test_ops_find_tools.py`
     extended. Hand-written.
 
-- [ ] **K-5** No empty/opaque errors; classify tunnel loss (P5/P10) — 🅜
+- [x] **K-5** No empty/opaque errors; classify tunnel loss (P5/P10) — 🅜 — ✅ **done v1.11.0**
   - **Why:** a call returned `Error executing tool rancher_pod_delete:`
     (empty — an httpx timeout when the Rancher tunnel dropped) and the operator
     abandoned the tool (R1 #7, #2).

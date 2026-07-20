@@ -7,16 +7,25 @@ import json
 from collections.abc import Callable
 from typing import Any
 
+import structlog
 from mcp.server.fastmcp.exceptions import ToolError
 
 from rancher_mcp.exceptions import RancherAPIError, RancherMCPError
 
+_logger = structlog.get_logger("rancher_mcp.tools.errors")
 
-def _error_envelope(exc: RancherMCPError) -> str:
+
+def _error_envelope(exc: Exception) -> str:
     payload: dict[str, Any] = {
-        "error_code": exc.error_code,
-        "message": str(exc),
+        "error_code": getattr(exc, "error_code", "MCP_ERROR"),
+        # Never emit an empty message: an httpx timeout stringifies to "",
+        # which is exactly the opaque "Error executing tool X:" (nothing after
+        # the colon) the operator hit when the Rancher tunnel dropped. K-5.
+        "message": str(exc) or type(exc).__name__,
     }
+    hint = getattr(exc, "hint", None)
+    if hint:
+        payload["hint"] = hint
     if isinstance(exc, RancherAPIError):
         payload["http_status"] = exc.status_code
         if exc.field:
@@ -45,6 +54,19 @@ def wrap_with_structured_errors(fn: Callable[..., Any]) -> Callable[..., Any]:
         try:
             return await fn(*args, **kwargs)
         except RancherMCPError as exc:
+            raise ToolError(_error_envelope(exc)) from exc
+        except ToolError:
+            raise
+        except Exception as exc:
+            # Backstop: an unforeseen exception (or one whose str() is empty)
+            # must never reach FastMCP as a bare "Error executing tool X:"
+            # with nothing after the colon. Log it and surface a structured,
+            # guaranteed-non-empty envelope. K-5.
+            _logger.error(
+                "tool_unexpected_error",
+                tool=getattr(fn, "__name__", "unknown"),
+                exc_info=True,
+            )
             raise ToolError(_error_envelope(exc)) from exc
 
     return wrapper

@@ -6,7 +6,10 @@ import respx
 from pydantic import SecretStr
 
 from rancher_mcp.clients.management import RancherManagementClient
-from rancher_mcp.exceptions import RancherNotFoundError
+from rancher_mcp.exceptions import (
+    RancherManagementPlaneUnreachableError,
+    RancherNotFoundError,
+)
 from rancher_mcp.models.discovery import RancherInstanceConfig
 
 
@@ -49,6 +52,27 @@ async def test_get_json_maps_not_found_error() -> None:
     async with RancherManagementClient("work", build_config()) as client:
         with pytest.raises(RancherNotFoundError):
             await client.get_json("/v3/settings/server-version")
+
+
+@pytest.mark.asyncio
+@respx.mock
+async def test_transport_error_maps_to_management_plane_unreachable() -> None:
+    """A post-retry transport failure surfaces as MANAGEMENT_PLANE_UNREACHABLE (K-5).
+
+    The Rancher tunnel dropping raises an httpx timeout that stringifies to "";
+    it must become a distinct, hinted, non-empty error, not a bare exception
+    that FastMCP renders as "Error executing tool X:" with nothing after it.
+    """
+
+    respx.get("https://rancher.example.com/v3/pods").mock(side_effect=httpx.ConnectTimeout(""))
+
+    async with RancherManagementClient("work", build_config()) as client:
+        with pytest.raises(RancherManagementPlaneUnreachableError) as excinfo:
+            await client.get_json("/v3/pods")
+
+    assert str(excinfo.value)  # non-empty despite httpx's empty str()
+    assert excinfo.value.error_code == "MANAGEMENT_PLANE_UNREACHABLE"
+    assert "node-local" in (excinfo.value.hint or "")
 
 
 @pytest.mark.asyncio

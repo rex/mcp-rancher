@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.11.0] — 2026-07-20 — Agent: Claude
+### Fixed
+- Fixed: tool errors are never empty or opaque — a guaranteed non-empty message plus a catch-all backstop, and a distinct MANAGEMENT_PLANE_UNREACHABLE error (with a go-node-local hint) when the Rancher management plane/tunnel is unreachable instead of a bare httpx timeout. (ROADMAP K-5)
+
 ## [1.10.0] — 2026-07-20 — Agent: Claude
 ### Added
 - Added: the 5 diagnostic finders (find_failing_pods, find_stalled_rollouts, find_services_without_endpoints, find_pdbs_blocking, find_unbound_pvcs) now accept an optional namespace and scan the entire cluster when it is omitted — true one-call triage. (ROADMAP K-4)
