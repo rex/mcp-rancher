@@ -6,7 +6,7 @@ from rancher_mcp.clients.management import ManagementDiscoveryClient, RancherMan
 from rancher_mcp.config import AppSettings, get_settings
 from rancher_mcp.models.ops.failure_finders import StalledRolloutsList, StalledRolloutSummary
 from rancher_mcp.services.instances import resolve_instance
-from rancher_mcp.tools.ops.paths import k8s_apps_ns_path, k8s_items
+from rancher_mcp.tools.ops.paths import k8s_apps_path, k8s_items
 from rancher_mcp.tools.support.values import mapping_value, string_value
 
 
@@ -21,14 +21,14 @@ def _safe_int(value: object) -> int:
 async def _find_stalled_rollouts(
     instance_name: str,
     cluster_id: str,
-    namespace: str,
+    namespace: str | None,
     client: ManagementDiscoveryClient,
 ) -> StalledRolloutsList:
-    """Scan deployments and statefulsets for stalled rollouts."""
+    """Scan deployments and statefulsets — one namespace or the whole cluster."""
 
     stalled: list[StalledRolloutSummary] = []
 
-    deploy_path = k8s_apps_ns_path(cluster_id, namespace, "deployments")
+    deploy_path = k8s_apps_path(cluster_id, "deployments", namespace)
     deploy_payload = await client.get_json(deploy_path)
     for dep in k8s_items(deploy_payload):
         metadata = mapping_value(dep, "metadata") or {}
@@ -43,7 +43,7 @@ async def _find_stalled_rollouts(
             stalled.append(
                 StalledRolloutSummary(
                     name=string_value(metadata, "name") or "<unknown>",
-                    namespace=string_value(metadata, "namespace") or namespace,
+                    namespace=string_value(metadata, "namespace") or "<unknown>",
                     kind="Deployment",
                     desired_replicas=desired,
                     ready_replicas=ready,
@@ -54,7 +54,7 @@ async def _find_stalled_rollouts(
                 )
             )
 
-    sts_path = k8s_apps_ns_path(cluster_id, namespace, "statefulsets")
+    sts_path = k8s_apps_path(cluster_id, "statefulsets", namespace)
     sts_payload = await client.get_json(sts_path)
     for sts in k8s_items(sts_payload):
         metadata = mapping_value(sts, "metadata") or {}
@@ -68,7 +68,7 @@ async def _find_stalled_rollouts(
             stalled.append(
                 StalledRolloutSummary(
                     name=string_value(metadata, "name") or "<unknown>",
-                    namespace=string_value(metadata, "namespace") or namespace,
+                    namespace=string_value(metadata, "namespace") or "<unknown>",
                     kind="StatefulSet",
                     desired_replicas=desired,
                     ready_replicas=ready,
@@ -86,7 +86,7 @@ async def _find_stalled_rollouts(
 
 
 async def rancher_find_stalled_rollouts(
-    namespace: str,
+    namespace: str | None = None,
     cluster_id: str = "local",
     instance: str | None = None,
     settings: AppSettings | None = None,
@@ -103,11 +103,14 @@ async def rancher_find_stalled_rollouts(
 
 
 async def rancher_find_stalled_rollouts_tool(
-    namespace: str,
+    namespace: str | None = None,
     cluster_id: str = "local",
     instance: str | None = None,
 ) -> StalledRolloutsList:
-    """Find stalled rollouts: deployments or statefulsets not converging."""
+    """Find stalled rollouts (deployments/statefulsets not converging).
+
+    Omit `namespace` to scan the whole cluster; pass it to scope to one.
+    """
 
     return await rancher_find_stalled_rollouts(
         namespace=namespace,

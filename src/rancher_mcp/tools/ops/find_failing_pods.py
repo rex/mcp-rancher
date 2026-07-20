@@ -6,7 +6,7 @@ from rancher_mcp.clients.management import ManagementDiscoveryClient, RancherMan
 from rancher_mcp.config import AppSettings, get_settings
 from rancher_mcp.models.ops.failure_finders import FailingPodsList, FailingPodSummary
 from rancher_mcp.services.instances import resolve_instance
-from rancher_mcp.tools.ops.paths import k8s_core_ns_path, k8s_items
+from rancher_mcp.tools.ops.paths import k8s_core_path, k8s_items
 from rancher_mcp.tools.support.collections import object_items
 from rancher_mcp.tools.support.conditions import condition_is_true, conditions_from_value
 from rancher_mcp.tools.support.values import mapping_value, string_value
@@ -59,12 +59,12 @@ def _total_restarts(status: dict[str, object]) -> int:
 async def _find_failing_pods(
     instance_name: str,
     cluster_id: str,
-    namespace: str,
+    namespace: str | None,
     client: ManagementDiscoveryClient,
 ) -> FailingPodsList:
-    """Scan pods in one namespace for failures."""
+    """Scan pods for failures — one namespace, or the whole cluster if None."""
 
-    path = k8s_core_ns_path(cluster_id, namespace, "pods")
+    path = k8s_core_path(cluster_id, "pods", namespace)
     payload = await client.get_json(path)
     failing: list[FailingPodSummary] = []
 
@@ -94,7 +94,7 @@ async def _find_failing_pods(
             failing.append(
                 FailingPodSummary(
                     name=string_value(metadata, "name") or "<unknown>",
-                    namespace=string_value(metadata, "namespace") or namespace,
+                    namespace=string_value(metadata, "namespace") or "<unknown>",
                     phase=phase,
                     reason=reason or (container_states[0] if container_states else None),
                     node_name=string_value(spec, "nodeName"),
@@ -115,7 +115,7 @@ async def _find_failing_pods(
 
 
 async def rancher_find_failing_pods(
-    namespace: str,
+    namespace: str | None = None,
     cluster_id: str = "local",
     instance: str | None = None,
     settings: AppSettings | None = None,
@@ -132,11 +132,15 @@ async def rancher_find_failing_pods(
 
 
 async def rancher_find_failing_pods_tool(
-    namespace: str,
+    namespace: str | None = None,
     cluster_id: str = "local",
     instance: str | None = None,
 ) -> FailingPodsList:
-    """Find failing pods: CrashLoopBackOff, Pending, Failed, ImagePull errors."""
+    """Find failing pods (CrashLoopBackOff, Pending, Failed, ImagePull errors).
+
+    Omit `namespace` to triage the entire cluster in one call; pass it to
+    scope to a single namespace.
+    """
 
     return await rancher_find_failing_pods(
         namespace=namespace,

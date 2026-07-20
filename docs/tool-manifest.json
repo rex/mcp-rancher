@@ -2788,7 +2788,7 @@
     },
     {
       "name": "rancher_find_failing_pods",
-      "description": "Find failing pods: CrashLoopBackOff, Pending, Failed, ImagePull errors.",
+      "description": "Find failing pods (CrashLoopBackOff, Pending, Failed, ImagePull errors).\n\n    Omit `namespace` to triage the entire cluster in one call; pass it to\n    scope to a single namespace.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -2803,13 +2803,13 @@
         },
         {
           "name": "namespace",
-          "required": true
+          "required": false
         }
       ]
     },
     {
       "name": "rancher_find_pdbs_blocking",
-      "description": "Find PDBs blocking maintenance: currently allowing zero disruptions.",
+      "description": "Find PDBs blocking maintenance (currently allowing zero disruptions).\n\n    Omit `namespace` to scan the whole cluster; pass it to scope to one.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -2824,13 +2824,13 @@
         },
         {
           "name": "namespace",
-          "required": true
+          "required": false
         }
       ]
     },
     {
       "name": "rancher_find_services_without_endpoints",
-      "description": "Find services with no backing endpoints -- fast outage signal.",
+      "description": "Find services with no backing endpoints -- a fast outage signal.\n\n    Omit `namespace` to scan the whole cluster; pass it to scope to one.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -2845,13 +2845,13 @@
         },
         {
           "name": "namespace",
-          "required": true
+          "required": false
         }
       ]
     },
     {
       "name": "rancher_find_stalled_rollouts",
-      "description": "Find stalled rollouts: deployments or statefulsets not converging.",
+      "description": "Find stalled rollouts (deployments/statefulsets not converging).\n\n    Omit `namespace` to scan the whole cluster; pass it to scope to one.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -2866,13 +2866,13 @@
         },
         {
           "name": "namespace",
-          "required": true
+          "required": false
         }
       ]
     },
     {
       "name": "rancher_find_unbound_pvcs",
-      "description": "Find unbound PVCs in a namespace: storage blocking app startup.",
+      "description": "Find unbound PVCs (Pending/Lost) — storage blocking app startup.\n\n    Omit `namespace` to scan the whole cluster; pass it to scope to one.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -2887,7 +2887,7 @@
         },
         {
           "name": "namespace",
-          "required": true
+          "required": false
         }
       ]
     },

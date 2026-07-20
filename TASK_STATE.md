@@ -95,9 +95,13 @@ ADR-0001 call.**
 - **K-8a shipped (v1.9.0)** — generic steve/norman resource tools return a
   uniform `CAPABILITY_ERROR` ("schema X not installed") instead of a raw 404
   when an app/CRD is absent. Doc/code error-code mismatch reconciled.
-- **Next:** K-4 (estate-wide finders), K-5 (error classification), then K-2
-  (verbose payloads — saved for last in ①/② because it reshapes ~every
-  response).
+- **K-4 shipped (v1.10.0)** — the 5 diagnostic finders (failing_pods,
+  stalled_rollouts, services_without_endpoints, pdbs_blocking, unbound_pvcs)
+  now take an OPTIONAL `namespace` and scan the whole cluster when it's
+  omitted — real one-call triage. The services↔endpoints correlation is keyed
+  by (namespace, name) so it stays correct across namespaces.
+- **Next:** K-5 (error classification), then K-2 (verbose payloads — saved for
+  last in ①/② because it reshapes ~every response).
 - **K-12 (labels) is BLOCKED** on Pierce's `catalog/capabilities.yaml`
   `primary_target` decision (2.6.5 baseline vs 2.9.3 product) — the meaningful
   half (`primaryTargetVersion` in `instance_list`) can't ship without that

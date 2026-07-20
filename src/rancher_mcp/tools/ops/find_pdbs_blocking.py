@@ -6,7 +6,7 @@ from rancher_mcp.clients.management import ManagementDiscoveryClient, RancherMan
 from rancher_mcp.config import AppSettings, get_settings
 from rancher_mcp.models.ops.failure_finders import PdbBlockersList, PdbBlockerSummary
 from rancher_mcp.services.instances import resolve_instance
-from rancher_mcp.tools.ops.paths import k8s_items, k8s_policy_ns_path
+from rancher_mcp.tools.ops.paths import k8s_items, k8s_policy_path
 from rancher_mcp.tools.support.values import (
     int_value,
     mapping_value,
@@ -19,12 +19,12 @@ from rancher_mcp.tools.support.values import (
 async def _find_pdbs_blocking(
     instance_name: str,
     cluster_id: str,
-    namespace: str,
+    namespace: str | None,
     client: ManagementDiscoveryClient,
 ) -> PdbBlockersList:
-    """Scan PDBs for zero-disruption-allowed state."""
+    """Scan PDBs for zero-disruption-allowed state — one namespace or cluster-wide."""
 
-    path = k8s_policy_ns_path(cluster_id, namespace, "poddisruptionbudgets")
+    path = k8s_policy_path(cluster_id, "poddisruptionbudgets", namespace)
     payload = await client.get_json(path)
     blockers: list[PdbBlockerSummary] = []
 
@@ -39,7 +39,7 @@ async def _find_pdbs_blocking(
             blockers.append(
                 PdbBlockerSummary(
                     name=string_value(metadata, "name") or "<unknown>",
-                    namespace=string_value(metadata, "namespace") or namespace,
+                    namespace=string_value(metadata, "namespace") or "<unknown>",
                     min_available=scalar_to_string(spec.get("minAvailable")),
                     max_unavailable=scalar_to_string(spec.get("maxUnavailable")),
                     current_healthy=int_value(status, "currentHealthy"),
@@ -59,7 +59,7 @@ async def _find_pdbs_blocking(
 
 
 async def rancher_find_pdbs_blocking(
-    namespace: str,
+    namespace: str | None = None,
     cluster_id: str = "local",
     instance: str | None = None,
     settings: AppSettings | None = None,
@@ -76,11 +76,14 @@ async def rancher_find_pdbs_blocking(
 
 
 async def rancher_find_pdbs_blocking_tool(
-    namespace: str,
+    namespace: str | None = None,
     cluster_id: str = "local",
     instance: str | None = None,
 ) -> PdbBlockersList:
-    """Find PDBs blocking maintenance: currently allowing zero disruptions."""
+    """Find PDBs blocking maintenance (currently allowing zero disruptions).
+
+    Omit `namespace` to scan the whole cluster; pass it to scope to one.
+    """
 
     return await rancher_find_pdbs_blocking(
         namespace=namespace,

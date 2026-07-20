@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.10.0] — 2026-07-20 — Agent: Claude
+### Added
+- Added: the 5 diagnostic finders (find_failing_pods, find_stalled_rollouts, find_services_without_endpoints, find_pdbs_blocking, find_unbound_pvcs) now accept an optional namespace and scan the entire cluster when it is omitted — true one-call triage. (ROADMAP K-4)
+
 ## [1.9.0] — 2026-07-20 — Agent: Claude
 ### Fixed
 - Fixed: generic steve/norman resource tools now return a uniform CAPABILITY_ERROR ('schema not installed') instead of a raw 404 when an optional app or CRD is absent. (ROADMAP K-8a)

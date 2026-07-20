@@ -99,7 +99,7 @@ class StalledRolloutsList(RancherModel):
 
     instance: str
     cluster_id: str
-    namespace: str
+    namespace: str | None = None
     stalled_count: int
     rollouts: list[StalledRolloutSummary] = Field(
         default_factory=_empty_stalled_rollouts,
@@ -120,7 +120,7 @@ class ServicesWithoutEndpointsList(RancherModel):
 
     instance: str
     cluster_id: str
-    namespace: str
+    namespace: str | None = None
     count: int
     services: list[ServiceWithoutEndpointsSummary] = Field(
         default_factory=_empty_svc_no_ep,
@@ -167,7 +167,7 @@ class PdbBlockersList(RancherModel):
 
     instance: str
     cluster_id: str
-    namespace: str
+    namespace: str | None = None
     blocking_count: int
     blockers: list[PdbBlockerSummary] = Field(
         default_factory=_empty_pdb_blockers,

@@ -6,31 +6,53 @@ from typing import cast
 from urllib.parse import quote
 
 
-def k8s_core_ns_path(cluster_id: str, namespace: str, resource: str) -> str:
-    """Build a raw Kubernetes proxy core-API namespaced path."""
+def _k8s_path(cluster_id: str, api_prefix: str, resource: str, namespace: str | None) -> str:
+    """Build a raw Kubernetes proxy path.
 
-    return (
-        f"/k8s/clusters/{quote(cluster_id, safe='')}/api/v1/"
-        f"namespaces/{quote(namespace, safe='')}/{quote(resource, safe='')}"
-    )
+    Namespaced when ``namespace`` is given; all-namespaces (the segment
+    dropped) when it is ``None`` — the cluster-wide triage form (ROADMAP K-4).
+    """
+
+    base = f"/k8s/clusters/{quote(cluster_id, safe='')}/{api_prefix}/"
+    if namespace is not None:
+        base += f"namespaces/{quote(namespace, safe='')}/"
+    return base + quote(resource, safe="")
+
+
+def k8s_core_path(cluster_id: str, resource: str, namespace: str | None = None) -> str:
+    """Core-API (api/v1) path; all-namespaces when ``namespace`` is None."""
+
+    return _k8s_path(cluster_id, "api/v1", resource, namespace)
+
+
+def k8s_apps_path(cluster_id: str, resource: str, namespace: str | None = None) -> str:
+    """apps/v1 path; all-namespaces when ``namespace`` is None."""
+
+    return _k8s_path(cluster_id, "apis/apps/v1", resource, namespace)
+
+
+def k8s_policy_path(cluster_id: str, resource: str, namespace: str | None = None) -> str:
+    """policy/v1 path; all-namespaces when ``namespace`` is None."""
+
+    return _k8s_path(cluster_id, "apis/policy/v1", resource, namespace)
+
+
+def k8s_core_ns_path(cluster_id: str, namespace: str, resource: str) -> str:
+    """Namespaced core-API path (kept for the events/rollups call sites)."""
+
+    return k8s_core_path(cluster_id, resource, namespace)
 
 
 def k8s_apps_ns_path(cluster_id: str, namespace: str, resource: str) -> str:
-    """Build a raw Kubernetes proxy apps/v1 namespaced path."""
+    """Namespaced apps/v1 path (kept for the rollups call sites)."""
 
-    return (
-        f"/k8s/clusters/{quote(cluster_id, safe='')}/apis/apps/v1/"
-        f"namespaces/{quote(namespace, safe='')}/{quote(resource, safe='')}"
-    )
+    return k8s_apps_path(cluster_id, resource, namespace)
 
 
 def k8s_policy_ns_path(cluster_id: str, namespace: str, resource: str) -> str:
-    """Build a raw Kubernetes proxy policy/v1 namespaced path."""
+    """Namespaced policy/v1 path."""
 
-    return (
-        f"/k8s/clusters/{quote(cluster_id, safe='')}/apis/policy/v1/"
-        f"namespaces/{quote(namespace, safe='')}/{quote(resource, safe='')}"
-    )
+    return k8s_policy_path(cluster_id, resource, namespace)
 
 
 def k8s_items(payload: dict[str, object]) -> list[dict[str, object]]:

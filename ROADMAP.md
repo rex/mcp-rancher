@@ -128,7 +128,7 @@ roughly a day or less; none needs the ADR-0001 decision.
     asserting a `vX.Y.Z` string, never an int.
   - **Acceptance:** all clusters report `vX.Y.Z` in a re-run sweep. Hand-written.
 
-- [ ] **K-4** Cluster-wide triage: `namespace` optional on finders (P5) — 🅜
+- [x] **K-4** Cluster-wide triage: `namespace` optional on finders (P5) — 🅜 — ✅ **done v1.10.0**
   - **Why:** `find_failing_pods` + 4 finders REQUIRE `namespace`, defeating
     triage (R1 #5, R2 G1). `find_unready_nodes` is already estate-wide — copy it.
   - **Fix:** in `src/rancher_mcp/tools/ops/`, `namespace: str` →

@@ -94,3 +94,97 @@ async def test_rancher_find_unbound_pvcs_and_pdb_blockers_report_blockers() -> N
     assert pdb_result.blockers[0].name == "api-pdb"
     assert pdb_result.blockers[0].min_available == "1"
     assert pdb_result.blockers[0].selector_match_labels == {"app": "api"}
+
+
+class _AllNamespacesPodClient:
+    """Stub returning failing pods across two namespaces; records the path."""
+
+    def __init__(self) -> None:
+        self.requested_path: str | None = None
+
+    async def get_json(self, path: str) -> dict[str, object]:
+        self.requested_path = path
+        return {
+            "items": [
+                {
+                    "metadata": {"name": "api-0", "namespace": "team-a"},
+                    "status": {"phase": "Failed"},
+                    "spec": {},
+                },
+                {
+                    "metadata": {"name": "worker-0", "namespace": "team-b"},
+                    "status": {"phase": "Failed"},
+                    "spec": {},
+                },
+            ]
+        }
+
+
+class _AllNamespacesServiceClient:
+    """Stub with a name collision: 'web' in two namespaces, only one backed."""
+
+    async def get_json(self, path: str) -> dict[str, object]:
+        if path.endswith("/services"):
+            return {
+                "items": [
+                    {
+                        "metadata": {"name": "web", "namespace": "team-a"},
+                        "spec": {"selector": {"app": "web"}},
+                    },
+                    {
+                        "metadata": {"name": "web", "namespace": "team-b"},
+                        "spec": {"selector": {"app": "web"}},
+                    },
+                ]
+            }
+        if path.endswith("/endpoints"):
+            # Only team-a/web has backing addresses; team-b/web does not.
+            return {
+                "items": [
+                    {
+                        "metadata": {"name": "web", "namespace": "team-a"},
+                        "subsets": [{"addresses": [{"ip": "10.0.0.1"}]}],
+                    }
+                ]
+            }
+        raise AssertionError(f"unexpected path: {path}")
+
+
+@pytest.mark.asyncio
+async def test_find_failing_pods_scans_all_namespaces_when_namespace_omitted() -> None:
+    """Omitting namespace triages the whole cluster and labels each pod's namespace (K-4)."""
+
+    client = _AllNamespacesPodClient()
+    result = await rancher_find_failing_pods(
+        cluster_id="local",
+        instance="work",
+        settings=build_settings(),
+        client=client,  # type: ignore[arg-type]
+    )
+
+    # All-namespaces path: no `/namespaces/<ns>/` segment.
+    assert client.requested_path == "/k8s/clusters/local/api/v1/pods"
+    assert result.namespace is None
+    assert result.failing_count == 2
+    assert {pod.namespace for pod in result.pods} == {"team-a", "team-b"}
+
+
+@pytest.mark.asyncio
+async def test_find_services_all_namespaces_keys_by_namespace_and_name() -> None:
+    """Across namespaces, a service matches endpoints in its OWN namespace (K-4).
+
+    Name-only matching (the pre-K-4 bug) would see 'web' backed in team-a and
+    wrongly clear team-b/web too. Keying by (namespace, name) flags only team-b.
+    """
+
+    result = await rancher_find_services_without_endpoints(
+        cluster_id="local",
+        instance="work",
+        settings=build_settings(),
+        client=_AllNamespacesServiceClient(),  # type: ignore[arg-type]
+    )
+
+    assert result.namespace is None
+    assert result.count == 1
+    assert result.services[0].namespace == "team-b"
+    assert result.services[0].name == "web"

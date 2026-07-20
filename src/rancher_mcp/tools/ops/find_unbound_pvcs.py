@@ -6,19 +6,19 @@ from rancher_mcp.clients.management import ManagementDiscoveryClient, RancherMan
 from rancher_mcp.config import AppSettings, get_settings
 from rancher_mcp.models.ops.failure_finders import UnboundPvcsList, UnboundPvcSummary
 from rancher_mcp.services.instances import resolve_instance
-from rancher_mcp.tools.ops.paths import k8s_core_ns_path, k8s_items
+from rancher_mcp.tools.ops.paths import k8s_core_path, k8s_items
 from rancher_mcp.tools.support.values import mapping_value, string_value
 
 
 async def _find_unbound_pvcs(
     instance_name: str,
     cluster_id: str,
-    namespace: str,
+    namespace: str | None,
     client: ManagementDiscoveryClient,
 ) -> UnboundPvcsList:
-    """Scan PVCs for non-Bound phase."""
+    """Scan PVCs for non-Bound phase — one namespace or the whole cluster."""
 
-    path = k8s_core_ns_path(cluster_id, namespace, "persistentvolumeclaims")
+    path = k8s_core_path(cluster_id, "persistentvolumeclaims", namespace)
     payload = await client.get_json(path)
     unbound: list[UnboundPvcSummary] = []
 
@@ -34,7 +34,7 @@ async def _find_unbound_pvcs(
         unbound.append(
             UnboundPvcSummary(
                 name=string_value(metadata, "name") or "<unknown>",
-                namespace=string_value(metadata, "namespace") or namespace,
+                namespace=string_value(metadata, "namespace") or "<unknown>",
                 phase=phase,
                 storage_class=string_value(spec, "storageClassName"),
                 requested_storage=string_value(requests, "storage"),
@@ -51,7 +51,7 @@ async def _find_unbound_pvcs(
 
 
 async def rancher_find_unbound_pvcs(
-    namespace: str,
+    namespace: str | None = None,
     cluster_id: str = "local",
     instance: str | None = None,
     settings: AppSettings | None = None,
@@ -68,11 +68,14 @@ async def rancher_find_unbound_pvcs(
 
 
 async def rancher_find_unbound_pvcs_tool(
-    namespace: str,
+    namespace: str | None = None,
     cluster_id: str = "local",
     instance: str | None = None,
 ) -> UnboundPvcsList:
-    """Find unbound PVCs in a namespace: storage blocking app startup."""
+    """Find unbound PVCs (Pending/Lost) — storage blocking app startup.
+
+    Omit `namespace` to scan the whole cluster; pass it to scope to one.
+    """
 
     return await rancher_find_unbound_pvcs(
         namespace=namespace,
