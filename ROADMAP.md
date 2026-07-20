@@ -63,7 +63,7 @@ Two tools hand back live credentials, breaking the guarantee in
 oversized response, because the leak and the 30 KB bloat are the same
 wholesale-payload dump — hide it by default and both problems close at once.
 
-- [ ] **K-1** Central secret scrubbing + payload-hide-by-default (P10) — 🅜 — **P0**
+- [x] **K-1** Central secret scrubbing (P10) — 🅜 — **P0** — ✅ **done v1.7.0**
   - **Why:** `SECURITY.md` promises credentials are "never included in tool
     responses" and "secret values never appear in curated responses" — FALSE
     today. `rancher_cluster_get` leaks an etcd-backup S3 **accessKey/secretKey**
@@ -85,6 +85,15 @@ wholesale-payload dump — hide it by default and both problems close at once.
     `tests/unit/test_secret_scrubbing.py` asserts the scrub over a fixture
     carrying all four key types; suite green. Hand-written.
   - **Predecessor:** none. **Pairs with K-2.**
+  - **Done (v1.7.0):** central scrubber (`src/rancher_mcp/redaction.py`, a
+    precise credential-key denylist) wired into the base `RancherModel`
+    `@model_serializer`, so every response is scrubbed — including secrets
+    nested in an untyped `payload`. The registration join credential moved
+    off the list summary to the deliberate detail get. `SECURITY.md`
+    reconciled; `tests/unit/test_secret_scrubbing.py` added (626→634 tests).
+    **Scope split:** payload-hide-by-default and empty-field dropping were
+    deferred to **K-2** — they change nearly every tool's response shape and
+    belong with the `verbose` gating, whereas the scrub is a pure add.
 
 - [ ] **K-2** `verbose: true` opt-in to re-expand payloads (P5) — 🅜
   - **Why:** default responses must be small — R1 #3 (31 KB pod-delete

@@ -54,7 +54,7 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 
 ## Next Slice
 
-### 🔴 PRIORITY (2026-07-20): Production usability remediation — Track K opened (plan only, no code yet)
+### 🔴 PRIORITY (2026-07-20): Production usability remediation — Track K IN PROGRESS
 
 Two live production exercises against the 2.9.3 / 12-cluster estate (a
 7-hour incident/upgrade session and a 58-call read-only sweep) surfaced:
@@ -82,7 +82,16 @@ blank) + **ROADMAP Track K**, ordered in three buckets:
   capability, K-9 break-glass, K-10 name aliases, K-11 audit hook.
 
 **Buckets ① and ② are lane-independent and start first; only ③ depends on the
-ADR-0001 call.** No code changed this turn — planning artifacts only.
+ADR-0001 call.**
+
+**Progress (2026-07-20):**
+- **K-1 shipped (v1.7.0)** — central credential scrub (`src/rancher_mcp/redaction.py`
+  + base-model serializer). The `cluster_get` S3-key leak and the
+  registration-token `manifestUrl` leak are closed; `SECURITY.md` reconciled.
+  (Payload-hide-by-default + empty-field dropping deferred to K-2.)
+- **Next:** K-2 (verbose payload gating + drop-empty), then K-3 (version bug),
+  K-4 (estate-wide finders), K-5 (error classification), K-12 (labels),
+  K-8a (generic capability messages). Bucket ③ not started (Pierce's call).
 
 **Open decisions flagged to user:**
 1. ADR-0001 positioning lane (fleet-triage+diagnosis / full incident console /

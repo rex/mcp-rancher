@@ -42,10 +42,21 @@ disclosure.
 
 **What is masked**
 
-- Secret values never appear in curated responses (key names only).
-- Certificate private keys are structurally absent from certificate tools.
-- Reading a secret's value requires the generic
-  `rancher_steve_resource_get` escape hatch — an explicit, auditable act.
+- Every tool response passes through a central credential scrubber before it
+  leaves the server (`src/rancher_mcp/redaction.py`): cloud access/secret
+  keys, passwords, private keys, and service-account / bootstrap tokens are
+  redacted wherever they appear — **including inside an untyped `payload`
+  blob** that no typed field would otherwise mask. It is enforced once, on the
+  base response model, so the guarantee holds for every tool.
+- Kubernetes Secret values never appear in curated responses (key names and
+  counts only). Certificate private keys are structurally absent from the
+  certificate tools.
+- A cluster registration token is a node-join credential; it is kept off the
+  list surface, so obtaining one is a deliberate single-resource
+  `rancher_cluster_registration_token_get`.
+- Reading a masked value where it is legitimately needed (a Secret's contents,
+  a cloud credential's config) is a deliberate, auditable step via the generic
+  `rancher_steve_resource_get` / `rancher_norman_resource_get` escape hatch.
 
 **Logging**
 

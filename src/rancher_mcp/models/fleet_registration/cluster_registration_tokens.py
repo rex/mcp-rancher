@@ -21,12 +21,23 @@ class RancherClusterRegistrationTokenSummary(RancherModel):
     state: str | None = None
     transitioning: str | None = None
     transitioning_message: str | None = None
-    manifest_url: str | None = None
+    # `manifest_url` is intentionally NOT on the list summary: its path
+    # embeds a bearer import token, and a list would spray every cluster's
+    # join credential at once. It lives on the detail below, so retrieving a
+    # join credential is a deliberate single-resource get. See ROADMAP K-1.
 
 
 class RancherClusterRegistrationTokenDetail(RancherClusterRegistrationTokenSummary):
-    """Typed detail for one Rancher cluster registration token."""
+    """Typed detail for one Rancher cluster registration token.
 
+    This detail intentionally returns the join credential — ``manifest_url``,
+    ``token``, and the ``*_command`` fields all embed it — because surfacing
+    the join command is the tool's whole purpose. Retrieving it is an
+    explicit, audited single-resource fetch, mirroring how reading one
+    Secret's value is a deliberate act. See ROADMAP K-1.
+    """
+
+    manifest_url: str | None = None
     created: str | None = None
     created_ts: int | None = None
     creator_id: str | None = None

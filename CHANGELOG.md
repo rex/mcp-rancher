@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.7.0] — 2026-07-20 — Agent: Claude
+### Fixed
+- Fixed: central credential scrubbing redacts cloud access/secret keys, passwords, private keys, and service-account tokens from every tool response — including secrets nested in an untyped payload blob (closes the cluster_get S3-key leak and the cluster-registration-token manifestUrl leak). SECURITY.md reconciled with the actual guarantee. (ROADMAP K-1)
+
 ## [1.6.1] — 2026-07-20 — Agent: Claude
 ### Changed
 - Documented the production usability remediation plan — ADR-0001 (positioning decision) and ROADMAP Track K (K-1..K-12) — from the 2026-07-20 live-production field reports.

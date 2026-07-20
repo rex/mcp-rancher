@@ -92,7 +92,10 @@ async def test_rancher_cluster_registration_tokens_list_returns_typed_summaries(
 
     assert result.instance == "work"
     assert result.cluster_registration_token_count == 1
-    assert result.cluster_registration_tokens[0].manifest_url is not None
+    # The join credential (manifestUrl embeds a bearer token) must NOT be
+    # sprayed across the list surface — it lives on the deliberate detail get.
+    summary_dump = result.cluster_registration_tokens[0].model_dump(by_alias=True)
+    assert "manifestUrl" not in summary_dump
 
 
 @pytest.mark.asyncio
@@ -112,5 +115,7 @@ async def test_rancher_cluster_registration_token_get_returns_typed_detail() -> 
     assert result.token == expected_value
     assert result.command is not None
     assert result.node_command is not None
+    # The detail is the deliberate reveal — manifest_url is present here.
+    assert result.manifest_url is not None
     assert result.action_keys == ["noop"]
     assert result.link_keys == ["self", "update"]
