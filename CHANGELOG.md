@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.6.1] — 2026-07-20 — Agent: Claude
+### Changed
+- Documented the production usability remediation plan — ADR-0001 (positioning decision) and ROADMAP Track K (K-1..K-12) — from the 2026-07-20 live-production field reports.
+
 ## [1.6.0] — 2026-07-11 — Agent: Codex
 ### Fixed
 - Fixed current Rancher agent trust synchronization by reading its served ingress CA with a legacy fallback.

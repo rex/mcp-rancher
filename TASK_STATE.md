@@ -54,6 +54,45 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 
 ## Next Slice
 
+### 🔴 PRIORITY (2026-07-20): Production usability remediation — Track K opened (plan only, no code yet)
+
+Two live production exercises against the 2.9.3 / 12-cluster estate (a
+7-hour incident/upgrade session and a 58-call read-only sweep) surfaced:
+
+- **P0 — a live security-guarantee violation.** `SECURITY.md` promises creds
+  are never in responses, but `rancher_cluster_get` leaks an etcd S3
+  access/secret key + CA cert, and `rancher_cluster_registration_tokens_list`
+  leaks a bearer token in `manifestUrl`. Redaction is per-tool, not central.
+- **A data bug** (`clusters_list.kubernetesVersion` reads the int `nodeVersion`
+  → `"8"`/`"0"`), **payload bloat** (31 KB pod-delete confirmation, 15 KB
+  `cluster_get`), **namespace-required finders** (no cluster-wide triage), and
+  **opaque empty errors** (httpx tunnel-timeout → empty message → the operator
+  abandoned the tool).
+- **A positioning question:** strong read-only fleet-triage layer, but loses to
+  `kubectl` as an incident console (no diagnosis verbs, no break-glass).
+
+Captured in **`docs/adr/0001-production-usability-remediation.md`** (status
+`proposed` — the positioning lane is Pierce's call, Decision Outcome left
+blank) + **ROADMAP Track K**, ordered in three buckets:
+- **① the security leak (P0):** K-1 central scrub + `SECURITY.md` reconcile,
+  K-2 verbose payloads. Same fix also kills the 30 KB-response bloat.
+- **② quick wins:** K-3 version bug, K-4 estate-wide finders, K-5 real errors,
+  K-12 labels, K-8a generic capability message.
+- **③ the big stuff:** K-7 diagnosis verbs, K-6 confirm rework, K-8b curated
+  capability, K-9 break-glass, K-10 name aliases, K-11 audit hook.
+
+**Buckets ① and ② are lane-independent and start first; only ③ depends on the
+ADR-0001 call.** No code changed this turn — planning artifacts only.
+
+**Open decisions flagged to user:**
+1. ADR-0001 positioning lane (fleet-triage+diagnosis / full incident console /
+   read-only-only). Wave 0 proceeds regardless.
+2. Whether to **rotate the exposed etcd-backup S3 access key** — it spilled
+   into on-disk session transcripts; rotate if those transcripts left the
+   machine (per `SECURITY.md` incident rule).
+3. Existing `catalog/capabilities.yaml primary_target` still 2.6.5 (pre-existing,
+   see below) — K-12 touches the same label surface.
+
 ### MAINTENANCE (2026-07-11): isolated current Rancher integration — ✅ live matrix green — v1.6.0
 
 Added an isolated `current` local-lab profile for Rancher `2.14.3` on

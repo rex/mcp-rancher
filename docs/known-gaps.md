@@ -152,6 +152,8 @@ For each gap:
   acceptable current-default behavior.
 - **Future enhancement**: capability detection at the boundary so
   the tool returns "chart not installed" instead of a 404.
+  → **scheduled as ROADMAP K-8** (2026-07-20; prod sweep confirmed the raw
+  404s for CIS / policy-reports / notifiers).
 
 ---
 

@@ -38,6 +38,205 @@ Phases referenced:
 
 ---
 
+## Track K — Production usability remediation (field-hardening)
+
+**Status:** PRIORITY — opened 2026-07-20 from two live production
+exercises against the 2.9.3 / 12-cluster estate (a 7-hour incident/upgrade
+session and a 58-call read-only sweep). Rationale + positioning options in
+**ADR-0001**. User-directed; supersedes normal phase order pending the
+ADR-0001 lane call (precedent: the 2026-06-06 audit follow-up and the
+Track J substrate insert).
+
+**Order (the maintainer's own framing):** ① the security leak first →
+② the quick wins → ③ the big stuff last. ① and ② happen no matter what;
+only ③ depends on the ADR-0001 positioning call. No `_generated_*.py` is
+edited directly — codegen slices change `scripts/codegen/` +
+`catalog/curated_tools/*.yml`, then `make codegen`.
+
+Legend: 🅢 small · 🅜 medium · 🅛 large. **R1** = incident-session report,
+**R2** = read-only-sweep report (both 2026-07-20; summarized in ADR-0001).
+
+### ① Fix now — the security leak (P0)
+
+Two tools hand back live credentials, breaking the guarantee in
+`SECURITY.md`. This is the only emergency. The same fix also shrinks every
+oversized response, because the leak and the 30 KB bloat are the same
+wholesale-payload dump — hide it by default and both problems close at once.
+
+- [ ] **K-1** Central secret scrubbing + payload-hide-by-default (P10) — 🅜 — **P0**
+  - **Why:** `SECURITY.md` promises credentials are "never included in tool
+    responses" and "secret values never appear in curated responses" — FALSE
+    today. `rancher_cluster_get` leaks an etcd-backup S3 **accessKey/secretKey**
+    + **caCert**; `rancher_cluster_registration_tokens_list` leaks a bearer
+    token in **`manifestUrl`** (R2 B2). Redaction is per-tool; no central layer.
+  - **Fix (one chokepoint):** add a `@model_serializer` to `RancherModel`
+    (`src/rancher_mcp/models/base.py:9-18`) — it runs inside FastMCP's dump
+    for all ~130 tools — that (a) omits `payload`/`response_payload` unless
+    verbose (K-2), (b) scrubs any emitted mapping for keys matching
+    `accessKey|secretKey|caCert|serviceAccountToken|token|password|*Secret`,
+    (c) drops empty `[]`/`{}`/`None` (kills the ubiquitous empty
+    `suggestedNextSteps:[]`, R2 G3).
+  - **Also:** redact the token substring in the typed `manifestUrl` field of
+    `src/rancher_mcp/models/fleet_registration/cluster_registration_tokens.py`
+    — it is NOT in the untyped `payload` blob, so (a) won't catch it.
+  - **Also:** reconcile `SECURITY.md` lines 24 & 45 with reality in the same PR.
+  - **Acceptance:** `cluster_get` + `registration_tokens_list` emit no
+    cleartext credential in default OR verbose mode; new
+    `tests/unit/test_secret_scrubbing.py` asserts the scrub over a fixture
+    carrying all four key types; suite green. Hand-written.
+  - **Predecessor:** none. **Pairs with K-2.**
+
+- [ ] **K-2** `verbose: true` opt-in to re-expand payloads (P5) — 🅜
+  - **Why:** default responses must be small — R1 #3 (31 KB pod-delete
+    *confirmation*, full object incl. `managedFields`) and R2 B3 (15 KB
+    `cluster_get`). Full object opt-in only; typed summaries already carry the
+    useful fields.
+  - **Fix:** add `verbose: bool = False` via the codegen template
+    (`scripts/codegen/templates/tool_module.py.j2`, payload emit-sites
+    ~262-264/367-369/506-508/625/768-770) + the ~7 generic builder sites
+    (`services/resources/builders_item.py:66`, `builders_results.py:38/65/104`,
+    `builders_watch.py:98`, `contexts.py:61/107`); the K-1 serializer honors
+    it. `make codegen`.
+  - **Acceptance:** default omits `payload`/`response_payload`; `verbose=true`
+    restores it (still scrubbed). `make check-codegen` + `make
+    check-tool-manifest` green. Generated (template) → regen + tests.
+  - **Predecessor:** K-1.
+
+(K-1 + K-2 ship together — hide-by-default needs the verbose escape hatch.)
+
+### ② Quick wins (small, high-value, no new architecture)
+
+The papercuts that made the tool annoying enough to abandon. Each is
+roughly a day or less; none needs the ADR-0001 decision.
+
+- [ ] **K-3** Fix `clusters_list.kubernetesVersion` garbage (P10) — 🅢 — **quick win**
+  - **Why:** returns `"8"`/`"0"` — the alias reads the integer `nodeVersion`
+    field (R1 #6, R2 B1). Destroys trust in the exact field an upgrade
+    operator needs.
+  - **Fix:** `src/rancher_mcp/models/clusters_nodes.py:99` — drop `nodeVersion`
+    from `AliasChoices`; read the real k8s version (`version.gitVersion` /
+    `rancherKubernetesEngineConfig.kubernetesVersion`). Fixture-backed test
+    asserting a `vX.Y.Z` string, never an int.
+  - **Acceptance:** all clusters report `vX.Y.Z` in a re-run sweep. Hand-written.
+
+- [ ] **K-4** Cluster-wide triage: `namespace` optional on finders (P5) — 🅜
+  - **Why:** `find_failing_pods` + 4 finders REQUIRE `namespace`, defeating
+    triage (R1 #5, R2 G1). `find_unready_nodes` is already estate-wide — copy it.
+  - **Fix:** in `src/rancher_mcp/tools/ops/`, `namespace: str` →
+    `str | None = None` on find_failing_pods / find_stalled_rollouts /
+    find_services_without_endpoints / find_pdbs_blocking / find_unbound_pvcs;
+    add all-namespace path helpers in `tools/ops/paths.py` (drop the
+    `namespaces/{ns}` segment); make `namespace` optional on the 3 still-
+    required models in `models/ops/failure_finders.py`. Pattern:
+    `find_unready_nodes.py:15-89`.
+  - **Acceptance:** each finder with no namespace scans all namespaces and
+    labels each result's namespace; `tests/unit/test_ops_find_tools.py`
+    extended. Hand-written.
+
+- [ ] **K-5** No empty/opaque errors; classify tunnel loss (P5/P10) — 🅜
+  - **Why:** a call returned `Error executing tool rancher_pod_delete:`
+    (empty — an httpx timeout when the Rancher tunnel dropped) and the operator
+    abandoned the tool (R1 #7, #2).
+  - **Fix:** add `RancherManagementPlaneUnreachableError`
+    (`error_code=MANAGEMENT_PLANE_UNREACHABLE`, node-local hint) in
+    `exceptions.py`; in `clients/management.py:_request` (~259-283) wrap
+    `run_with_retry` so post-retry `httpx.ConnectError/ConnectTimeout/
+    ReadTimeout` becomes it with a guaranteed non-empty message (Steve wraps
+    this client → both planes covered); add a catch-all `except Exception`
+    backstop in the `tools/support/errors.py` wrapper (message `str(exc) or
+    type(exc).__name__`) + a `hint` key in `_error_envelope`.
+  - **Acceptance:** no tool can return an empty error; a simulated timeout
+    yields `MANAGEMENT_PLANE_UNREACHABLE` + hint; regression case in
+    `tests/unit/test_structured_errors.py`. Hand-written.
+
+- [ ] **K-12** Fix the confusing labels (P5) — 🅢
+  - `instance_list` `readOnly:false` is technically correct (self-imposed
+    read-only) but reads as unenforced; `primaryTargetVersion:2.6.5` vs
+    `server_version:2.9.3` confuses (R2 G5). Ties the open
+    `catalog/capabilities.yaml primary_target` decision flagged in TASK_STATE.
+
+- [ ] **K-8a** Clean "not installed" message — generic tools (P11) — 🅢
+  - **Why:** absent apps return raw `404 page not found` vs `failed to find
+    schema X` — inconsistent and useless (R2 G2). The generic-tool half is
+    quick; the curated half (73 tools) is **K-8b** in ③.
+  - **Fix:** `try/except RancherNotFoundError` around the schema load at
+    `services/resources/contexts.py:34,73` → `RancherCapabilityError`. Covers
+    `rancher_steve_resource_*` / `rancher_norman_resource_*`. Standardize the
+    error code (`docs/codegen-curated-tools.md:997` says `CAPABILITY_REQUIRED`;
+    `exceptions.py:19` emits `CAPABILITY_ERROR` — pick one).
+
+### ③ The big stuff — new tools / high effort (this is where the ADR-0001 lane matters)
+
+Real work; each is days, not hours. Do these last.
+
+- [ ] **K-7** Diagnosis verbs — logs / describe / events (P8) — 🅛 — **highest-leverage add; the reason the tool got abandoned**
+  - **Why:** incident work is diagnosis first; the server has list/get/delete
+    but not `logs` / `describe` / `events` / arbitrary `get <kind> -o yaml`
+    (R1 #1). Without them the tool is never in-hand when it is time to mutate,
+    so it never gets used.
+  - **Fix:** confirm current coverage first (streaming clients +
+    `rancher_steve_resource_watch` exist; curated pod-logs/exec likely absent),
+    then land `rancher_pod_logs` (container select, `previous`, `tail`), a
+    describe/events rollup, and lean on/extend generic `steve/norman_resource_
+    get` for arbitrary kinds. Scope as sub-slices K-7a…K-7c. Hand-written.
+  - **Acceptance:** an operator can go symptom→root-cause for the common cases
+    without leaving the MCP. Relates to **G-4** (streaming validation).
+
+- [ ] **K-6** Replace the magic confirmation phrase with `confirm: true` (P5) — 🅛
+  - **Why:** deletes require echoing `"delete pod X in namespace Y"` from args
+    already supplied; fails closed, burns incident round-trips (R1 #4). Simple
+    idea, but it touches 34 generated delete tools — hence ③, not a quick win.
+    **Interim implementation of C-1** (elicitation stays the eventual
+    protocol-native form); still satisfies VIBE `destructive_confirmation`.
+  - **Fix (two mechanisms):** (A) the 2 generic deletes use
+    `services/safety.py` — `confirmation: str` → `confirm: bool`. (B) the 34
+    generated deletes inline the phrase — fix the codegen template
+    (`tool_module.py.j2` delete block ~L637/647/999; mirror the boolean pattern
+    already at create L400-405 / apply L539-544),
+    `scripts/codegen/descriptor/operations.py:104 DeleteConfig`, 34
+    `catalog/curated_tools/*.yml`, result model `models/resources.py:136`, then
+    `make codegen`. ~32 delete tests + `make tool-manifest` + prose docs.
+  - **Acceptance:** every delete accepts `confirm=true` and rejects
+    `confirm=false`/absent with a structured error; `make check-codegen` +
+    `make check-tool-manifest` green. Mixed (2 hand-written + 34 via codegen).
+  - **Cross-ref:** supersedes the interim note in **C-1**; relates to **H-3**.
+
+- [ ] **K-8b** Clean "not installed" message — the 73 curated tools (P11) — 🅛
+  - **Why:** the curated half of the capability-detection fix (R2 G2); bigger
+    because it regenerates every curated read tool.
+  - **Fix:** wrap read `get_json` in the codegen template on
+    `RancherNotFoundError`/404-body → `RancherCapabilityError("capability not
+    available: <app> not installed")`; add a structured `capability_app` field
+    to descriptors + YAMLs (`make codegen`, 73 files).
+  - **Cross-ref:** **K-8a** for the generic half; closes the known-gaps
+    "future enhancement" note + **B-6**.
+
+- [ ] **K-9** Break-glass / node-local awareness (new; ADR-gated) — 🅛
+  - **Why:** everything routes through the management plane / tunnel, down
+    exactly during the node-wedge incidents where an operator is most desperate
+    (R1 #2). K-5 already surfaces `MANAGEMENT_PLANE_UNREACHABLE`; K-9 is the
+    fuller story (documented break-glass guidance and/or a direct-kubeconfig
+    fallback mode). Design-level — likely its own ADR. Pursued only under
+    ADR-0001 Options 1/2.
+
+- [ ] **K-10** Accept friendly cluster name as a `cluster_id` alias (P5) — 🅢/🅜
+  - **Why:** every mutation needs a `clusters_list` id lookup first; operators
+    know `puttery-pittsburgh-onprem`, not `c-m-dlrpzlnl` (R1 #8). Resolve
+    name→id at the boundary.
+
+- [ ] **K-11** Audit-gate hook for external change-audit (P10) — 🅜
+  - **Why:** the operator's environment wraps every mutation in
+    `audit-log.sh start/finish`; MCP mutations don't hook in, so the server
+    offers no governance advantage to offset its friction (R1 #9). Expose a
+    hook / emit a pre/post event reusing the C-4 audit infrastructure.
+
+**Definition of done (Track K):** bucket ① shipped and `SECURITY.md` truthful;
+a re-run read-only sweep shows no credential leak, a correct
+`kubernetesVersion`, and <2 KB default mutation results; finders run
+estate-wide; no empty errors. Bucket ③ scoped per the ADR-0001 lane.
+
+---
+
 ## Track J — Codegen substrate (build-time generation of curated tool plumbing)
 
 **Status:** approved 2026-05-04. Spec lives in
