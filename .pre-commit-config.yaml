@@ -101,3 +101,9 @@ repos:
         language: script
         pass_filenames: false
         files: ^(docs/tool-manifest\.json|README\.md)$
+      - id: check-server-json
+        name: server.json within MCP Registry limits
+        entry: scripts/check_server_json.py
+        language: script
+        pass_filenames: false
+        files: ^server\.json$

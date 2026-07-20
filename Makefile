@@ -224,8 +224,12 @@ sync-readme-badges:
 check-readme-badges:
 	@$(PYTHON) scripts/sync_readme_badges.py --check
 
+## check-server-json: Validate server.json against MCP Registry limits (CI gate)
+check-server-json:
+	@$(PYTHON) scripts/check_server_json.py
+
 ## validate: Run the repo's aggregate validation flow
-validate: check-codegen check-tool-manifest check-readme-badges check-architecture lint typecheck test
+validate: check-codegen check-tool-manifest check-readme-badges check-server-json check-architecture lint typecheck test
 	@echo "$(GREEN)Validation complete.$(RESET)"
 
 # ─── Local Lab ────────────────────────────────────────────────────────

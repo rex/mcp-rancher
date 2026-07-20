@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.12.3] — 2026-07-20 — Agent: Claude
+### Changed
+- Registry fix: shortened the server.json description to the MCP Registry's 100-char limit (v1.12.2 published to PyPI + GitHub but the registry publish 422'd on description length).
+
 ## [1.12.2] — 2026-07-20 — Agent: Claude
 ### Changed
 - README/PyPI polish: absolute header-image URL (fixes the broken image on the PyPI page), de-numbered the project and MCP-server descriptions (no more hardcoded tool count leading the copy), and a new sync-readme-badges pre-commit hook + validate gate that keeps the tool-count badge and breakdown in lockstep with docs/tool-manifest.json. Dropped the stale-prone hardcoded tests/coverage vanity badges (CI status covers test health).
