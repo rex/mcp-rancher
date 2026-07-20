@@ -1,5 +1,7 @@
 """Generic resource tool data models."""
 
+from typing import ClassVar
+
 from pydantic import Field
 
 from rancher_mcp.models.base import RancherModel
@@ -29,6 +31,9 @@ class ResourcePagination(RancherModel):
 
 class GenericResourceItem(RancherModel):
     """Normalized summary for one Rancher or Kubernetes resource."""
+
+    # Generic escape-hatch tools return the full payload by design (K-2).
+    serializer_hides_payload: ClassVar[bool] = False
 
     id: str | None = None
     type: str | None = None
@@ -64,6 +69,9 @@ class GenericResourceList(RancherModel):
 class GenericResourceDetail(RancherModel):
     """Normalized generic get result for one Rancher or Kubernetes resource."""
 
+    # Generic escape-hatch tools return the full payload by design (K-2).
+    serializer_hides_payload: ClassVar[bool] = False
+
     instance: str
     plane: str
     schema_id: str
@@ -81,6 +89,9 @@ class GenericResourceDetail(RancherModel):
 class GenericResourceActionResult(RancherModel):
     """Normalized result from invoking a resource action."""
 
+    # Generic escape-hatch tools return the full payload by design (K-2).
+    serializer_hides_payload: ClassVar[bool] = False
+
     instance: str
     plane: str
     schema_id: str
@@ -94,6 +105,9 @@ class GenericResourceActionResult(RancherModel):
 
 class GenericResourceMutationResult(RancherModel):
     """Normalized result from a generic resource mutation request."""
+
+    # Generic escape-hatch tools return the full payload by design (K-2).
+    serializer_hides_payload: ClassVar[bool] = False
 
     instance: str
     plane: str
@@ -145,6 +159,9 @@ class RancherCuratedDeleteResult(RancherModel):
 class GenericResourceLinkResult(RancherModel):
     """Normalized result from following a resource link."""
 
+    # Generic escape-hatch tools return the full payload by design (K-2).
+    serializer_hides_payload: ClassVar[bool] = False
+
     instance: str
     plane: str
     schema_id: str
@@ -158,6 +175,9 @@ class GenericResourceLinkResult(RancherModel):
 
 class GenericResourceWatchEvent(RancherModel):
     """Normalized watch event for one Rancher-proxied Kubernetes resource change."""
+
+    # Generic escape-hatch tools return the full payload by design (K-2).
+    serializer_hides_payload: ClassVar[bool] = False
 
     event_type: str
     resource_id: str | None = None

@@ -95,7 +95,7 @@ wholesale-payload dump — hide it by default and both problems close at once.
     deferred to **K-2** — they change nearly every tool's response shape and
     belong with the `verbose` gating, whereas the scrub is a pure add.
 
-- [ ] **K-2** `verbose: true` opt-in to re-expand payloads (P5) — 🅜
+- [x] **K-2** Hide raw payloads from curated responses by default (P5) — 🅜 — ✅ **done v1.12.0**
   - **Why:** default responses must be small — R1 #3 (31 KB pod-delete
     *confirmation*, full object incl. `managedFields`) and R2 B3 (15 KB
     `cluster_get`). Full object opt-in only; typed summaries already carry the
@@ -110,6 +110,22 @@ wholesale-payload dump — hide it by default and both problems close at once.
     restores it (still scrubbed). `make check-codegen` + `make
     check-tool-manifest` green. Generated (template) → regen + tests.
   - **Predecessor:** K-1.
+  - **Done (v1.12.0) — MECHANISM DEVIATION, flagged for Pierce:** shipped via
+    the base-model serializer, **not** the planned per-call `verbose` flag.
+    The serializer drops `payload`/`response_payload` from the DUMP for curated
+    models (a `serializer_hides_payload` ClassVar, default True); the 6 generic
+    `GenericResource*` escape-hatch models set it False and keep the full
+    payload. This fixes the 15 KB `cluster_get` + 31 KB delete firehoses with
+    **zero test churn** — the blob stays on the model *attribute*, so the ~120
+    existing `.payload`/`.response_payload` assertions are unaffected — and no
+    codegen/template/manifest change. It matches the repo's existing "curated
+    masks, generic reveals" pattern (report B3 asked for exactly this: "drop
+    the cluster_get payload by default"). **Trade-off:** the full curated
+    payload is retrieved via the generic `steve/norman_resource_get` reveal
+    rather than a `verbose:true` arg. A per-call `verbose` opt-in *can* be
+    layered on later if wanted — private attrs survive FastMCP's
+    `model_validate(result)` re-validation (verified) — but the generic escape
+    hatch already serves that need. Pierce's call whether to add `verbose`.
 
 (K-1 + K-2 ship together — hide-by-default needs the verbose escape hatch.)
 

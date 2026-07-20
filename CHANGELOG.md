@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.12.0] — 2026-07-20 — Agent: Claude
+### Changed
+- Changed: curated tool responses no longer include the multi-KB raw payload/response_payload blob by default (a 15 KB cluster_get / 31 KB delete firehose) — the base serializer trims it for curated models while the generic steve/norman_resource_get escape hatch still returns the full object. Secrets remain scrubbed either way. (ROADMAP K-2)
+
 ## [1.11.0] — 2026-07-20 — Agent: Claude
 ### Fixed
 - Fixed: tool errors are never empty or opaque — a guaranteed non-empty message plus a catch-all backstop, and a distinct MANAGEMENT_PLANE_UNREACHABLE error (with a go-node-local hint) when the Rancher management plane/tunnel is unreachable instead of a bare httpx timeout. (ROADMAP K-5)

@@ -8,6 +8,8 @@ secret *references*, public keys) untouched.
 
 from __future__ import annotations
 
+from typing import ClassVar
+
 from pydantic import Field
 
 from rancher_mcp.models.base import RancherModel
@@ -15,7 +17,10 @@ from rancher_mcp.redaction import REDACTED, is_secret_key, scrub_secrets
 
 
 class _PayloadModel(RancherModel):
-    """Throwaway model carrying a raw payload blob, like the detail tools."""
+    """Throwaway model with a VISIBLE payload (like the generic escape-hatch
+    tools), so the scrub is exercised on payload the agent actually sees."""
+
+    serializer_hides_payload: ClassVar[bool] = False
 
     name: str = "x"
     payload: dict[str, object] = Field(default_factory=dict)

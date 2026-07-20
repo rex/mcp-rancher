@@ -105,9 +105,18 @@ ADR-0001 call.**
   and a distinct `MANAGEMENT_PLANE_UNREACHABLE` (with a node-local hint) when
   the Rancher tunnel drops (post-retry httpx transport error; both planes,
   since Steve wraps the management client).
-- **Next:** K-2 (verbose payloads) — the last slice in buckets ①/②. Hides the
-  full `payload`/`response_payload` by default (tiny responses) with a
-  `verbose:true` opt-in, via the codegen template + the base serializer.
+- **K-2 shipped (v1.12.0)** — curated tools no longer hand the agent the
+  15 KB/31 KB raw-payload firehose: the base serializer drops
+  `payload`/`response_payload` from the DUMP for curated models (kept on the
+  attribute → **zero test churn**) while the generic `*_resource_get` escape
+  hatch keeps it. **NOTE:** shipped as "curated hides / generic reveals"
+  rather than the planned per-call `verbose` flag (simpler, no manifest
+  change, matches the existing masking philosophy) — flagged for Pierce's
+  call in ROADMAP K-2.
+- **✅ Buckets ① (security) and ② (quick wins) are COMPLETE except K-12.** Six
+  slices shipped this session, v1.7.0 → v1.12.0. Bucket ③ (the big stuff:
+  K-7 diagnosis verbs, K-6 confirm rework, K-8b, K-9, K-10, K-11) is NOT
+  started — it awaits the ADR-0001 positioning call.
 - **K-12 (labels) is BLOCKED** on Pierce's `catalog/capabilities.yaml`
   `primary_target` decision (2.6.5 baseline vs 2.9.3 product) — the meaningful
   half (`primaryTargetVersion` in `instance_list`) can't ship without that
