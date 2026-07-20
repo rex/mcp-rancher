@@ -89,9 +89,13 @@ ADR-0001 call.**
   + base-model serializer). The `cluster_get` S3-key leak and the
   registration-token `manifestUrl` leak are closed; `SECURITY.md` reconciled.
   (Payload-hide-by-default + empty-field dropping deferred to K-2.)
-- **Next:** K-2 (verbose payload gating + drop-empty), then K-3 (version bug),
-  K-4 (estate-wide finders), K-5 (error classification), K-12 (labels),
-  K-8a (generic capability messages). Bucket ③ not started (Pierce's call).
+- **K-3 shipped (v1.8.0)** — `clusters_list.kubernetesVersion` now reads the
+  real `version.gitVersion` instead of the integer `nodeVersion` (which
+  coerced to "8"/"0"). Stubs made prod-realistic; regression guard added.
+- **Next:** K-4 (estate-wide finders), K-5 (error classification), K-12
+  (labels), K-8a (generic capability messages), then K-2 (verbose payloads —
+  saved for last in ①/② because it reshapes ~every response). Bucket ③ not
+  started (Pierce's call).
 
 **Open decisions flagged to user:**
 1. ADR-0001 positioning lane (fleet-triage+diagnosis / full incident console /

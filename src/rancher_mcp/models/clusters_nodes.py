@@ -96,7 +96,16 @@ class RancherClusterSummary(RancherModel):
     driver: str | None = None
     kubernetes_version: str | None = Field(
         default=None,
-        validation_alias=AliasChoices("nodeVersion", AliasPath("version", "gitVersion")),
+        # Read the real Kubernetes version, never the integer `nodeVersion`
+        # (a node counter) that the old alias picked up first and coerced to
+        # garbage like "8"/"0" (ROADMAP K-3). `version.gitVersion` is the
+        # running version for both RKE and imported clusters; the RKE-config
+        # paths are spec fallbacks for management clusters that omit status.
+        validation_alias=AliasChoices(
+            AliasPath("version", "gitVersion"),
+            AliasPath("rancherKubernetesEngineConfig", "kubernetesVersion"),
+            AliasPath("appliedSpec", "rancherKubernetesEngineConfig", "kubernetesVersion"),
+        ),
     )
 
     @field_validator("kubernetes_version", mode="before")

@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.8.0] — 2026-07-20 — Agent: Claude
+### Fixed
+- Fixed: clusters_list and cluster_get now report the real Kubernetes version (version.gitVersion) instead of the integer nodeVersion, which coerced to garbage like "8"/"0". (ROADMAP K-3)
+
 ## [1.7.0] — 2026-07-20 — Agent: Claude
 ### Fixed
 - Fixed: central credential scrubbing redacts cloud access/secret keys, passwords, private keys, and service-account tokens from every tool response — including secrets nested in an untyped payload blob (closes the cluster_get S3-key leak and the cluster-registration-token manifestUrl leak). SECURITY.md reconciled with the actual guarantee. (ROADMAP K-1)

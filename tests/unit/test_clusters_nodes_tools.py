@@ -46,7 +46,8 @@ class StubManagementClient:
                         "state": "active",
                         "provider": "imported",
                         "driver": "imported",
-                        "nodeVersion": "v1.20.15",
+                        "nodeVersion": 2,
+                        "version": {"gitVersion": "v1.20.15"},
                         "nodeCount": 2,
                         "capacity": {"cpu": "4", "memory": "5294864Ki"},
                         "conditions": [
@@ -65,7 +66,8 @@ class StubManagementClient:
                 "state": "active",
                 "provider": "imported",
                 "driver": "imported",
-                "nodeVersion": "v1.20.15",
+                "nodeVersion": 2,
+                "version": {"gitVersion": "v1.20.15"},
                 "nodeCount": 2,
                 "capacity": {"cpu": "4", "memory": "5294864Ki"},
                 "apiEndpoint": "https://10.96.0.1:443",
@@ -173,6 +175,9 @@ async def test_rancher_clusters_list_returns_typed_summaries() -> None:
     }
     assert result.clusters[0].id == "local"
     assert result.clusters[0].ready is True
+    # K-3: the real k8s version comes from version.gitVersion, never the
+    # integer nodeVersion (which here is 2 and would coerce to "2").
+    assert result.clusters[0].kubernetes_version == "v1.20.15"
 
 
 @pytest.mark.asyncio
@@ -187,6 +192,7 @@ async def test_rancher_cluster_get_returns_typed_detail() -> None:
     )
 
     assert result.id == "local"
+    assert result.kubernetes_version == "v1.20.15"  # K-3: version.gitVersion, not nodeVersion
     assert result.api_endpoint == "https://10.96.0.1:443"
     assert result.action_keys == ["generateKubeconfig"]
     assert result.component_statuses[0].name == "scheduler"

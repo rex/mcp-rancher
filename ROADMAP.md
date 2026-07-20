@@ -118,7 +118,7 @@ wholesale-payload dump — hide it by default and both problems close at once.
 The papercuts that made the tool annoying enough to abandon. Each is
 roughly a day or less; none needs the ADR-0001 decision.
 
-- [ ] **K-3** Fix `clusters_list.kubernetesVersion` garbage (P10) — 🅢 — **quick win**
+- [x] **K-3** Fix `clusters_list.kubernetesVersion` garbage (P10) — 🅢 — ✅ **done v1.8.0** (reads `version.gitVersion`, not the int `nodeVersion`)
   - **Why:** returns `"8"`/`"0"` — the alias reads the integer `nodeVersion`
     field (R1 #6, R2 B1). Destroys trust in the exact field an upgrade
     operator needs.
