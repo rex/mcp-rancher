@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.12.2] — 2026-07-20 — Agent: Claude
+### Changed
+- README/PyPI polish: absolute header-image URL (fixes the broken image on the PyPI page), de-numbered the project and MCP-server descriptions (no more hardcoded tool count leading the copy), and a new sync-readme-badges pre-commit hook + validate gate that keeps the tool-count badge and breakdown in lockstep with docs/tool-manifest.json. Dropped the stale-prone hardcoded tests/coverage vanity badges (CI status covers test health).
+
 ## [1.12.1] — 2026-07-20 — Agent: Claude
 ### Changed
 - Release preparation: synced pyproject.toml, server.json, and uv.lock to VERSION, and tidied redundant leading keywords in this session's CHANGELOG bullets. Ships the Track K production-usability remediation (v1.7.0-1.12.0) — the first publish since v1.3.0.

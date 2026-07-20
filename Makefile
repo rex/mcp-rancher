@@ -216,8 +216,16 @@ tool-manifest:
 check-tool-manifest:
 	@$(PYTHON) scripts/generate_tool_manifest.py --check
 
+## sync-readme-badges: Rewrite README tool counts from the manifest
+sync-readme-badges:
+	@$(PYTHON) scripts/sync_readme_badges.py
+
+## check-readme-badges: Fail if README tool counts are stale (CI gate)
+check-readme-badges:
+	@$(PYTHON) scripts/sync_readme_badges.py --check
+
 ## validate: Run the repo's aggregate validation flow
-validate: check-codegen check-tool-manifest check-architecture lint typecheck test
+validate: check-codegen check-tool-manifest check-readme-badges check-architecture lint typecheck test
 	@echo "$(GREEN)Validation complete.$(RESET)"
 
 # ─── Local Lab ────────────────────────────────────────────────────────

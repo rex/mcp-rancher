@@ -1,19 +1,19 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-09-29/server.schema.json",
   "name": "io.github.rex/rancher-mcp",
-  "description": "319 tools for Rancher-managed Kubernetes over MCP: discovery, generic access, operator workflows",
+  "description": "Capability-aware MCP server for Rancher-managed Kubernetes: discovery, generic resource access, and curated operator workflows.",
   "status": "active",
   "repository": {
     "url": "https://github.com/rex/mcp-rancher",
     "source": "github"
   },
-  "version": "1.12.1",
+  "version": "1.12.2",
   "packages": [
     {
       "registryType": "pypi",
       "registryBaseUrl": "https://pypi.org",
       "identifier": "rancher-mcp",
-      "version": "1.12.1",
+      "version": "1.12.2",
       "runtimeHint": "uvx",
       "transport": {
         "type": "stdio"

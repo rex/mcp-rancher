@@ -1,7 +1,7 @@
 <!-- mcp-name: io.github.rex/rancher-mcp -->
 
 <p align="center">
-  <img src="docs/assets/header.png" alt="MCP Rancher — the capability-aware control plane for AI-assisted Rancher operations" />
+  <img src="https://raw.githubusercontent.com/rex/mcp-rancher/main/docs/assets/header.png" alt="MCP Rancher — the capability-aware control plane for AI-assisted Rancher operations" />
 </p>
 
 <p align="center">
@@ -9,14 +9,12 @@
   <a href="https://modelcontextprotocol.io"><img src="https://img.shields.io/badge/MCP-server-2b6cd0" alt="MCP server" /></a>
   <a href="docs/tool-manifest.json"><img src="https://img.shields.io/badge/tools-319-2b6cd0" alt="319 tools" /></a>
   <a href="https://www.python.org/"><img src="https://img.shields.io/badge/python-3.12%2B-3776ab?logo=python&logoColor=white" alt="Python 3.12+" /></a>
-  <img src="https://img.shields.io/badge/tests-624%20passing-2ea44f" alt="624 tests passing" />
-  <img src="https://img.shields.io/badge/coverage-85%25-2ea44f" alt="85% coverage" />
   <a href="https://github.com/microsoft/pyright"><img src="https://img.shields.io/badge/types-pyright%20strict-blue" alt="Pyright strict" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-lightgrey" alt="MIT license" /></a>
 </p>
 
 <p align="center">
-  <b>319 tools</b> for operating Rancher-managed Kubernetes through any MCP client —
+  Operate Rancher-managed Kubernetes through any MCP client —
   discovery, generic resource access, and curated operator workflows,
   wrapped in an audit-logged, rate-limited, confirmation-guarded safety model.
 </p>

@@ -95,3 +95,9 @@ repos:
         entry: uv run pytest -q
         language: system
         pass_filenames: false
+      - id: sync-readme-badges
+        name: README tool counts in sync with the manifest
+        entry: scripts/sync_readme_badges.py
+        language: script
+        pass_filenames: false
+        files: ^(docs/tool-manifest\.json|README\.md)$
