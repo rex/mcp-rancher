@@ -994,7 +994,7 @@ Reasoning:
   `outcome=error, error_code=RATE_LIMITED`.
 - **ensure_instance_writable inside the body**: hits AFTER kwargs are
   resolved and instance is identified. Raises
-  `RancherCapabilityError` with `error_code=CAPABILITY_REQUIRED`,
+  `RancherCapabilityError` with `error_code=CAPABILITY_ERROR`,
   audited by the outer decorator.
 - **Confirmation guards (delete, optional create/apply) at body top**:
   fire FIRST, before any I/O. An agent on a read-only instance with a

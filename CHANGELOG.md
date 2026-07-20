@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.9.0] — 2026-07-20 — Agent: Claude
+### Fixed
+- Fixed: generic steve/norman resource tools now return a uniform CAPABILITY_ERROR ('schema not installed') instead of a raw 404 when an optional app or CRD is absent. (ROADMAP K-8a)
+
 ## [1.8.0] — 2026-07-20 — Agent: Claude
 ### Fixed
 - Fixed: clusters_list and cluster_get now report the real Kubernetes version (version.gitVersion) instead of the integer nodeVersion, which coerced to garbage like "8"/"0". (ROADMAP K-3)

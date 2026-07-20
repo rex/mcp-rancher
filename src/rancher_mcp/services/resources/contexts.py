@@ -6,6 +6,7 @@ from dataclasses import dataclass
 
 from rancher_mcp.clients.management import ManagementDiscoveryClient
 from rancher_mcp.clients.steve import SteveDiscoveryClient
+from rancher_mcp.exceptions import RancherCapabilityError, RancherNotFoundError
 from rancher_mcp.models.resources import GenericResourceItem
 from rancher_mcp.services.resources.builders_item import build_resource_item
 from rancher_mcp.services.resources.paths import build_resource_path
@@ -25,13 +26,36 @@ class ResourceContext:
     resource: GenericResourceItem
 
 
+async def _get_schema_json(
+    client: ManagementDiscoveryClient | SteveDiscoveryClient,
+    path: str,
+    schema_id: str,
+) -> dict[str, object]:
+    """Fetch a schema payload, mapping a 404 to a clean capability error.
+
+    When an optional app / CRD is not installed, Rancher 404s the schema
+    lookup. Surfacing that as a bare NOT_FOUND leaves the agent to
+    prose-sniff a raw "page not found"; instead raise a uniform
+    CAPABILITY_ERROR so it can branch cleanly (ROADMAP K-8a). The curated
+    per-tool equivalent is K-8b.
+    """
+
+    try:
+        return await client.get_json(path)
+    except RancherNotFoundError as exc:
+        raise RancherCapabilityError(
+            f"capability not available: schema {schema_id!r} is not installed "
+            "on this cluster (the resource type does not exist here)."
+        ) from exc
+
+
 async def load_norman_schema_reference(
     schema_id: str,
     client: ManagementDiscoveryClient,
 ) -> ResourceSchemaReference:
     """Load and normalize one Norman schema reference."""
 
-    schema_payload = await client.get_json(f"/v3/schemas/{schema_id}")
+    schema_payload = await _get_schema_json(client, f"/v3/schemas/{schema_id}", schema_id)
     return schema_reference_from_payload(
         plane="norman",
         cluster_id=None,
@@ -70,7 +94,7 @@ async def load_steve_schema_reference(
 ) -> ResourceSchemaReference:
     """Load and normalize one Steve schema reference."""
 
-    schema_payload = await client.get_json(f"/schemas/{schema_id}")
+    schema_payload = await _get_schema_json(client, f"/schemas/{schema_id}", schema_id)
     return schema_reference_from_payload(
         plane="steve",
         cluster_id=cluster_id,

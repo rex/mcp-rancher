@@ -92,10 +92,16 @@ ADR-0001 call.**
 - **K-3 shipped (v1.8.0)** — `clusters_list.kubernetesVersion` now reads the
   real `version.gitVersion` instead of the integer `nodeVersion` (which
   coerced to "8"/"0"). Stubs made prod-realistic; regression guard added.
-- **Next:** K-4 (estate-wide finders), K-5 (error classification), K-12
-  (labels), K-8a (generic capability messages), then K-2 (verbose payloads —
-  saved for last in ①/② because it reshapes ~every response). Bucket ③ not
-  started (Pierce's call).
+- **K-8a shipped (v1.9.0)** — generic steve/norman resource tools return a
+  uniform `CAPABILITY_ERROR` ("schema X not installed") instead of a raw 404
+  when an app/CRD is absent. Doc/code error-code mismatch reconciled.
+- **Next:** K-4 (estate-wide finders), K-5 (error classification), then K-2
+  (verbose payloads — saved for last in ①/② because it reshapes ~every
+  response).
+- **K-12 (labels) is BLOCKED** on Pierce's `catalog/capabilities.yaml`
+  `primary_target` decision (2.6.5 baseline vs 2.9.3 product) — the meaningful
+  half (`primaryTargetVersion` in `instance_list`) can't ship without that
+  call, and it's explicitly his per the note below. Bucket ③ not started.
 
 **Open decisions flagged to user:**
 1. ADR-0001 positioning lane (fleet-triage+diagnosis / full incident console /

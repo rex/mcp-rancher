@@ -164,7 +164,7 @@ roughly a day or less; none needs the ADR-0001 decision.
     `server_version:2.9.3` confuses (R2 G5). Ties the open
     `catalog/capabilities.yaml primary_target` decision flagged in TASK_STATE.
 
-- [ ] **K-8a** Clean "not installed" message — generic tools (P11) — 🅢
+- [x] **K-8a** Clean "not installed" message — generic tools (P11) — 🅢 — ✅ **done v1.9.0**
   - **Why:** absent apps return raw `404 page not found` vs `failed to find
     schema X` — inconsistent and useless (R2 G2). The generic-tool half is
     quick; the curated half (73 tools) is **K-8b** in ③.
