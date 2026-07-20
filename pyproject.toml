@@ -1,6 +1,6 @@
 [project]
 name = "rancher-mcp"
-version = "1.3.0"
+version = "1.12.1"
 description = "Capability-aware MCP server for Rancher-managed Kubernetes — 319 tools across discovery, generic resource access, and curated operator workflows (Rancher 2.6.5–2.9.3)"
 readme = "README.md"
 license = "MIT"

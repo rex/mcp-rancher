@@ -1,28 +1,32 @@
 # Changelog
 
+## [1.12.1] — 2026-07-20 — Agent: Claude
+### Changed
+- Release preparation: synced pyproject.toml, server.json, and uv.lock to VERSION, and tidied redundant leading keywords in this session's CHANGELOG bullets. Ships the Track K production-usability remediation (v1.7.0-1.12.0) — the first publish since v1.3.0.
+
 ## [1.12.0] — 2026-07-20 — Agent: Claude
 ### Changed
-- Changed: curated tool responses no longer include the multi-KB raw payload/response_payload blob by default (a 15 KB cluster_get / 31 KB delete firehose) — the base serializer trims it for curated models while the generic steve/norman_resource_get escape hatch still returns the full object. Secrets remain scrubbed either way. (ROADMAP K-2)
+- Curated tool responses no longer include the multi-KB raw payload/response_payload blob by default (a 15 KB cluster_get / 31 KB delete firehose) — the base serializer trims it for curated models while the generic steve/norman_resource_get escape hatch still returns the full object. Secrets remain scrubbed either way. (ROADMAP K-2)
 
 ## [1.11.0] — 2026-07-20 — Agent: Claude
 ### Fixed
-- Fixed: tool errors are never empty or opaque — a guaranteed non-empty message plus a catch-all backstop, and a distinct MANAGEMENT_PLANE_UNREACHABLE error (with a go-node-local hint) when the Rancher management plane/tunnel is unreachable instead of a bare httpx timeout. (ROADMAP K-5)
+- Tool errors are never empty or opaque — a guaranteed non-empty message plus a catch-all backstop, and a distinct MANAGEMENT_PLANE_UNREACHABLE error (with a go-node-local hint) when the Rancher management plane/tunnel is unreachable instead of a bare httpx timeout. (ROADMAP K-5)
 
 ## [1.10.0] — 2026-07-20 — Agent: Claude
 ### Added
-- Added: the 5 diagnostic finders (find_failing_pods, find_stalled_rollouts, find_services_without_endpoints, find_pdbs_blocking, find_unbound_pvcs) now accept an optional namespace and scan the entire cluster when it is omitted — true one-call triage. (ROADMAP K-4)
+- The 5 diagnostic finders (find_failing_pods, find_stalled_rollouts, find_services_without_endpoints, find_pdbs_blocking, find_unbound_pvcs) now accept an optional namespace and scan the entire cluster when it is omitted — true one-call triage. (ROADMAP K-4)
 
 ## [1.9.0] — 2026-07-20 — Agent: Claude
 ### Fixed
-- Fixed: generic steve/norman resource tools now return a uniform CAPABILITY_ERROR ('schema not installed') instead of a raw 404 when an optional app or CRD is absent. (ROADMAP K-8a)
+- Generic steve/norman resource tools now return a uniform CAPABILITY_ERROR ('schema not installed') instead of a raw 404 when an optional app or CRD is absent. (ROADMAP K-8a)
 
 ## [1.8.0] — 2026-07-20 — Agent: Claude
 ### Fixed
-- Fixed: clusters_list and cluster_get now report the real Kubernetes version (version.gitVersion) instead of the integer nodeVersion, which coerced to garbage like "8"/"0". (ROADMAP K-3)
+- clusters_list and cluster_get now report the real Kubernetes version (version.gitVersion) instead of the integer nodeVersion, which coerced to garbage like "8"/"0". (ROADMAP K-3)
 
 ## [1.7.0] — 2026-07-20 — Agent: Claude
 ### Fixed
-- Fixed: central credential scrubbing redacts cloud access/secret keys, passwords, private keys, and service-account tokens from every tool response — including secrets nested in an untyped payload blob (closes the cluster_get S3-key leak and the cluster-registration-token manifestUrl leak). SECURITY.md reconciled with the actual guarantee. (ROADMAP K-1)
+- Central credential scrubbing redacts cloud access/secret keys, passwords, private keys, and service-account tokens from every tool response — including secrets nested in an untyped payload blob (closes the cluster_get S3-key leak and the cluster-registration-token manifestUrl leak). SECURITY.md reconciled with the actual guarantee. (ROADMAP K-1)
 
 ## [1.6.1] — 2026-07-20 — Agent: Claude
 ### Changed
