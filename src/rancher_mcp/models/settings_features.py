@@ -18,7 +18,14 @@ def _empty_features() -> list["RancherFeatureSummary"]:
 
 
 class RancherSettingSummary(RancherModel):
-    """Typed summary for one Rancher setting."""
+    """Typed summary for one Rancher setting.
+
+    L-3a: huge setting *values* (a 4 KB JSON blob, a full PEM) are the payload
+    here, not a wrapper — so the list builder shapes them: a JSON object becomes
+    ``valueType:"json"`` + ``keys`` (the shape *is* the signal), a certificate
+    becomes a marker, and any long value is truncated. The full value is a
+    deliberate ``setting_get`` (ADR-0002).
+    """
 
     id: str = "<unknown-setting>"
     name: str = "<unknown-setting>"
@@ -26,6 +33,10 @@ class RancherSettingSummary(RancherModel):
     default: str | None = None
     source: str | None = None
     customized: bool | None = None
+    value_type: str | None = None
+    truncated: bool | None = None
+    length: int | None = None
+    keys: list[str] = Field(default_factory=list)
 
 
 class RancherSettingDetail(RancherSettingSummary):

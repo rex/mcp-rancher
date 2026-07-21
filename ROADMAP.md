@@ -400,12 +400,12 @@ addition in VS) and derived units/tokens; these are required signal, not polish.
 
 ### L-3 — Tail
 
-- [ ] **L-3a** `settings_list` — **value-level** truncation (VS §11; ~9 KB, one
-  value 4 KB — K-2 doesn't touch it, the *values* are the payload). Default cap
-  ~200 chars; for JSON-object values emit `keys[]` + `length` (the key list *is*
-  the signal — which versions are configured — the 4 KB of flags never was);
-  parse certificate values to `{subject, notAfter}` instead of dumping PEM; drop
-  `source`/`default:""` from the default view; full value via `setting_get`/verbose. 🅜
+- [x] **L-3a** `settings_list` — **✅ done v1.22.0**: value-level shaping in the
+  list builder — a JSON-object value collapses to `valueType:"json"` + `keys` +
+  `length` (the ~4 KB of flags gone), a PEM to a `valueType:"certificate"` marker,
+  any value >200 chars truncated. Short values untouched; full value via
+  `setting_get`. Cert subject/notAfter parsing deferred (needs a crypto dep);
+  `source`/`default:""` drop deferred (minor vs the 4 KB win). 🅜
 - [ ] **L-3b** 🔁 **`suggestedNextSteps` MANDATORY RE-ADD** — CAPTURED, MUST
   RETURN. L-0 deletes it; this slice brings it back **correctly** as a single
   **root-level pre-filled call** carrying the *arguments*, not bare tool names:

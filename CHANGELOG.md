@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.22.0] — 2026-07-21 — Agent: Claude
+### Changed
+- L-3a settings_list value shaping: the setting VALUES are the payload here (a 4 KB JSON blob, a full PEM), so the list builder shapes them — a JSON object collapses to valueType:json + keys + length (which versions are configured, not 4 KB of kubelet flags), a certificate to a marker, any value over 200 chars is truncated. Short values are untouched; the full value is a deliberate setting_get. ~9 KB -> ~1.2 KB.
+
 ## [1.21.0] — 2026-07-21 — Agent: Claude
 ### Changed
 - L-3d self-version: rancher_server_version now also reports mcp_server_version (the rancher-mcp server's OWN version), so an agent can confirm which build it is driving without inspecting the venv. Fixed the package __version__ (was a stale hardcoded 0.1.0) to read the installed package metadata via importlib.metadata.

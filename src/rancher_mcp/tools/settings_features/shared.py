@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import json
 from collections.abc import Mapping
+from typing import cast
 
 from rancher_mcp.models.settings_features import (
     RancherFeatureSummary,
@@ -53,10 +55,44 @@ def _build_feature_query_params(
     return params
 
 
-def _setting_summary_from_payload(payload: Mapping[str, object]) -> RancherSettingSummary:
-    """Normalize one Rancher setting payload."""
+_MAX_VALUE_LEN = 200
 
-    return RancherSettingSummary.model_validate(payload)
+
+def _shape_setting_value(value: str | None) -> dict[str, object]:
+    """Shape a raw setting value (L-3a): a JSON object collapses to its ``keys``
+    (the shape is the signal, not the 4 KB of args), a PEM to a marker, and any
+    long value is truncated. Returns model-copy fields; empty when no shaping."""
+
+    if not value:
+        return {}
+    if "BEGIN CERTIFICATE" in value:
+        return {"value": None, "value_type": "certificate", "truncated": True, "length": len(value)}
+    stripped = value.strip()
+    if stripped.startswith("{"):
+        try:
+            parsed = json.loads(stripped)
+        except json.JSONDecodeError:
+            parsed = None
+        if isinstance(parsed, dict):
+            keys = cast("dict[str, object]", parsed).keys()
+            return {
+                "value": None,
+                "value_type": "json",
+                "truncated": True,
+                "length": len(value),
+                "keys": sorted(str(key) for key in keys),
+            }
+    if len(value) > _MAX_VALUE_LEN:
+        return {"value": value[:_MAX_VALUE_LEN], "truncated": True, "length": len(value)}
+    return {}
+
+
+def _setting_summary_from_payload(payload: Mapping[str, object]) -> RancherSettingSummary:
+    """Normalize one Rancher setting payload, shaping oversized values (L-3a)."""
+
+    summary = RancherSettingSummary.model_validate(payload)
+    shaped = _shape_setting_value(summary.value)
+    return summary.model_copy(update=shaped) if shaped else summary
 
 
 def _feature_summary_from_payload(payload: Mapping[str, object]) -> RancherFeatureSummary:
