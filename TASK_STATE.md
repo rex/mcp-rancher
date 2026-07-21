@@ -131,7 +131,7 @@ ADR-0001 call.**
 3. Existing `catalog/capabilities.yaml primary_target` still 2.6.5 (pre-existing,
    see below) — K-12 touches the same label surface.
 
-### 📌 HANDOFF (2026-07-21): released + prod-validated; verbose-diagnostics design PENDING
+### 📌 HANDOFF (2026-07-21): released + prod-validated; response-shaping doctrine SET → Track L
 
 **Released to PyPI + MCP Registry.** `rancher-mcp` **v1.12.3** is live on PyPI
 (`uvx rancher-mcp`), the MCP Registry (`io.github.rex/rancher-mcp`), and GitHub
@@ -154,34 +154,39 @@ gone), K-2 ✅ (`cluster_get` 15→2.5 KB, `node_get` 4.2→1 KB), K-3 ✅ (vers
 `v1.24.17`). K-5 ⚪ untested (no empty error hit this session). Report:
 `validation-sweep-report.md`.
 
-**POST-VALIDATION BACKLOG (new — NOT yet in ROADMAP, pending the design talk):**
-1. **🔴 verbose/diagnostics DESIGN — being discussed with Pierce NOW.** K-2's
-   payload-hide dropped genuinely-useful `node_get` diagnostics: `requested`
-   cpu/mem (headroom), `info.os` (OS/kernel/containerd), etcd-snapshot
-   timestamp. **Pierce's HARD position: a few key diagnostic properties MUST
-   NOT require re-including 30 KB of raw API data — routine diagnostics belong
-   as CURATED typed fields, not behind a full-payload `verbose` flag.** Leaning
-   (unconfirmed): PROMOTE the useful fields into the typed detail models (audit
-   what K-2 hid that's signal vs `managedFields` noise); keep generic
-   `steve/norman_resource_get` as the raw-object escape hatch; likely NO
-   `verbose` flag on curated tools. The "verbose re-dumps the firehose" idea is
-   REJECTED.
-2. **self-version tool** (Pierce-flagged): the server can't report its OWN
-   version/build metadata — `rancher_server_version` returns *Rancher's*
-   version, so the field agent had to inspect the venv. Add to `server_health`
-   / a new `server_info`. Small.
-3. **`settings_list` G3 — value-level verbosity** (~9 KB): NOT a payload problem
-   (K-2 doesn't touch it) — the setting VALUES are huge (`k8s-version-to-service-
-   options` ~4 KB, `internal-cacerts` PEM). Needs value truncation
-   (`max_value_length` / `values:false`), a different mechanism than K-2.
-4. **K-8b** (ROADMAP, bucket ③): curated "not installed" — `cluster_policy_reports`
-   still returns the useless `404 page not found` (cis/notifiers/alert-rules
-   already give useful `failed to find schema X`).
-5. **drop-empty `suggestedNextSteps:[]`** — deferred from K-1/K-2; still emitted.
+**DESIGN RESOLVED → ADR-0002 + ROADMAP Track L.** The verbose/diagnostics
+question is settled and written up: `docs/adr/0002-response-shaping-doctrine.md`
+(the governing test, signal/noise taxonomy, exception-shaping, always/`verbose`
+field manifests) and **Track L** in ROADMAP (L-0 envelope → L-1 mutation
+receipts → L-2 hand-tunes → L-3 tail). Pierce's 2026-07-21 calls: green-lit
+Track L (envelope-first); `verbose` = raw-object escape hatch only, diagnostics
+PROMOTED to always-on typed fields (never behind a 30 KB opt-in); exception-
+shaping light-first; ADR before code.
 
-**Open USER decisions:** (a) the verbose/diagnostics design above (active);
-(b) ADR-0001 positioning lane (gates bucket ③); (c) S3-key rotation;
-(d) K-12 `capabilities.yaml primary_target`.
+**⚠️ CAPTURED — MUST NOT BE LOST (Track L-3b):** `suggestedNextSteps` is
+**deleted at L-0** and **MUST RETURN** in a later phase as a single root-level
+**pre-filled call** `{tool, args}` carrying the *arguments* (not bare tool
+names, not a per-object array). This is a first-class tracked slice, not a
+nice-to-have. See ADR-0002 Decision Outcome §2 + ROADMAP L-3b.
+
+**BACKLOG — now folded into Track L (no longer loose):**
+- verbose/diagnostics → **ADR-0002** + **L-2a** (restore `node_get` `requested`
+  cpu/mem + os/kernel/runtime as always fields — the direct K-2-over-trim fix).
+- `settings_list` G3 value-level truncation → **L-3a**.
+- drop-empty `suggestedNextSteps` → **L-0** (superseded: deleted entirely, not
+  just when empty; re-add tracked as **L-3b**).
+- self-version tool (server can't report its OWN version; `rancher_server_version`
+  returns *Rancher's*, so the field agent inspected the venv) → **L-3d**.
+- **K-8b** (curated "not installed" — `cluster_policy_reports` still `404 page
+  not found`) stays in **Track K bucket ③** (unchanged).
+
+**INCOMING:** the field agent (Opus 4.8, live prod tool output) is producing
+per-tool ideal target shapes — the **L-2 companion**. L-2 slices consume it;
+L-0/L-1 do not block on it.
+
+**Open USER decisions:** (a) ADR-0001 positioning lane (gates Track K bucket ③);
+(b) S3-key rotation; (c) K-12 `capabilities.yaml primary_target`.
+[resolved 2026-07-21: the response-shaping/verbose design — now ADR-0002.]
 
 ### MAINTENANCE (2026-07-11): isolated current Rancher integration — ✅ live matrix green — v1.6.0
 

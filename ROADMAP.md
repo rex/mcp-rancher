@@ -262,6 +262,118 @@ estate-wide; no empty errors. Bucket ③ scoped per the ADR-0001 lane.
 
 ---
 
+## Track L — Response shaping (signal over completeness)
+
+**Status:** PRIORITY — opened 2026-07-21 from the second field pass
+(`validation-sweep-report.md` + `-2.md`, "VS"; 58 calls / 56 tools). Follows
+Track K. The governing doctrine — the "would this field ever change what I do
+next?" test, the signal/noise taxonomy, exception-shaping, and the always/
+`verbose` field manifests — is **ADR-0002**. Green-lit by Pierce 2026-07-21
+(all four design forks answered). Supersedes the K-2 over-trim (it dropped
+operational node diagnostics) and the deferred empty-`suggestedNextSteps` item.
+
+**Order (envelope-first — deviates from VS's receipts-first):** L-0 universal
+envelope → L-1 mutation receipts → L-2 the ~15 hand-tunes → L-3 tail. Envelope
+leads because it lives in the base serializer we already own (K-1/K-2), is the
+broadest win, and carries the least risk. No `_generated_*.py` is edited
+directly — codegen slices change `scripts/codegen/` + `catalog/curated_tools/
+*.yml`, then `make codegen`. **Invariants:** K-1 (no secret at any verbosity)
+and the Rancher 2.6.5 compat floor hold across every slice.
+
+Legend: 🅢 small · 🅜 medium · 🅛 large. **VS** = the field-agent validation
+sweep (2026-07-21). Per-tool ideal target shapes for L-2 come from the VS
+companion (forthcoming, from prod tool-output analysis).
+
+### L-0 — Universal envelope (one file, every tool)
+
+- [ ] **L-0** Drop noise at the serializer 🅜 — **do first**
+  - **Why:** the most pervasive noise is identical across all ~130 curated
+    models and belongs in one place, not 400 edits. Empty `suggestedNextSteps:[]`
+    (27 in one `cluster_health_check`), `nextPageToken:null`, and k8s/Rancher
+    plumbing (`managedFields`, `resourceVersion`, `uid`, `generation`,
+    `finalizers`, `links`, `baseType`, `"type":"/v3/schemas/..."`) — all VS
+    "kill unconditionally".
+  - **Fix:** extend `_shape_on_dump` in `src/rancher_mcp/models/base.py`
+    (the K-1/K-2 chokepoint) to, after scrub + payload-drop: (a) **drop
+    `suggestedNextSteps` entirely** — see L-3b for the mandated re-add;
+    (b) drop null/empty pagination keys; (c) strip the plumbing key denylist
+    from every emitted mapping (nested included). Keep it alias-agnostic like
+    the existing scrub.
+  - **Acceptance:** default responses carry no plumbing key, no empty
+    `suggestedNextSteps`, no null pagination; K-1 scrub + K-2 payload-drop
+    unchanged; new `tests/unit/test_envelope_shaping.py`; suite green (expect
+    real churn updating assertions that referenced the dropped keys).
+  - **Predecessor:** K-1, K-2. Hand-written (serializer, not codegen).
+
+### L-1 — Mutation receipts (codegen template)
+
+- [ ] **L-1** Metadata/state mutations return a receipt, not the full object 🅜
+  - **Why:** `*_set_labels` / `*_set_annotations` (and `*_scale` / `*_restart`
+    / `*_pause` / `*_resume` / `*_suspend` / `*_cordon`) return the **entire
+    curated detail** to confirm a one-field change (see
+    `tools/networking/_generated_network_policies.py:257`). Curated *deletes*
+    are already lean (`RancherCuratedDeleteResult` drops `response_payload`
+    via K-2 — VS's 31 KB `pod_delete` was pre-K-2), so the target is the
+    metadata/state writes, not deletes.
+  - **Fix:** a shared receipt — `{ok, action, kind, name, namespace,
+    <one or two operation-relevant fields e.g. desiredReplicas/readyReplicas
+    for scale>}` — expressed once in the codegen template
+    (`scripts/codegen/templates/tool_module.py.j2`) + a receipt model, then
+    `make codegen`. ~60 tools, one pattern.
+  - **Acceptance:** metadata/state mutations return <0.5 KB receipts;
+    `make check-codegen` + `make check-tool-manifest` green; deletes unchanged.
+  - **Predecessor:** L-0.
+
+### L-2 — Hand-tune the ~15 highest-traffic tools (exception-shaped, light first)
+
+VS priority order; per-tool target shapes from the companion. Exception-shaping
+is **light first** (promote `reason`/`message` to root, drop all-True
+`conditions[]`); the full "healthy collapses to one line" is L-2b.
+
+- [ ] **L-2a** `node_get` / `nodes_list` — restore `requested` cpu/mem +
+  `os`/`kernel`/`runtime` as **always** typed fields (the direct K-2-over-trim
+  fix; ADR-0002 constraint) 🅢
+- [ ] **L-2b** `cluster_health_check` — exception-shape 27 conditions → the 1
+  issue; promote `reason`/`message`; the pilot for full exception-shaping 🅜
+- [ ] **L-2c** `pods_list` / `pod_get` — phase, ready, restartCount, ownerRef;
+  exception-shape 🅜
+- [ ] **L-2d** the 6 `find_*` tools — already close (the triage surface); tighten
+  + fix discoverability (see L-3c) 🅢
+- [ ] **L-2e** `cert_manager_certificate*` — promote failure `reason`/`message`
+  (VS's cert case: the whole answer was `reason: SecretMismatch`) 🅢
+  - **Templates (already good post-K-2):** `cluster_get`, `deployments_list` —
+    use as the reference shape, no rework.
+  - **Predecessor:** L-0. **Predecessor for full collapse (L-2b):** output-model
+    optionality rework (fights FastMCP `model_validate` revalidation).
+
+### L-3 — Tail
+
+- [ ] **L-3a** `settings_list` — **value-level** truncation (VS G3; ~9 KB, a
+  single value 4 KB). NOT a payload problem (K-2 doesn't touch it) — the setting
+  *values* are huge (`k8s-version-to-service-options`, `internal-cacerts` PEM).
+  Add `max_value_length` / `values:false` summary. 🅜
+- [ ] **L-3b** 🔁 **`suggestedNextSteps` MANDATORY RE-ADD** — CAPTURED, MUST
+  RETURN. L-0 deletes it; this slice brings it back **correctly** as a single
+  **root-level pre-filled call** carrying the *arguments*, not bare tool names:
+  `{tool: "rancher_cluster_health_check", args: {cluster_id: "c-h26fc"}}`. Do
+  NOT resurrect the per-object bare-name array. Blocked on L-0 landing first. 🅜
+- [ ] **L-3c** `find_*` discoverability — the cluster-wide sweep ("omit
+  `namespace`") is a weak affordance even VS missed despite the docstring. Put
+  the capability in the first line of the description, or name the sweep
+  explicitly. 🅢
+- [ ] **L-3d** self-version tool — the server can't report its OWN version;
+  `rancher_server_version` returns *Rancher's*. Add build/version metadata to
+  `server_health` or a new `server_info`. (Adjacent to shaping; folded here as
+  a small usability fix.) 🅢
+
+**Definition of done (Track L):** L-0 + L-1 shipped (long tail + mutations lean,
+no plumbing/empty noise); the ~15 L-2 tools match the companion target shapes
+with exception-shaped defaults; `suggestedNextSteps` deleted then re-added in
+pre-filled form (L-3b); `settings_list` under ~2 KB default. K-1 and 2.6.5
+green throughout.
+
+---
+
 ## Track J — Codegen substrate (build-time generation of curated tool plumbing)
 
 **Status:** approved 2026-05-04. Spec lives in
