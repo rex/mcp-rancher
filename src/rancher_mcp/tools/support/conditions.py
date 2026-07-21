@@ -36,6 +36,7 @@ def conditions_from_value(
                 status=string_value(typed_item, status_key),
                 reason=string_value(typed_item, reason_key),
                 message=string_value(typed_item, message_key),
+                last_transition_time=string_value(typed_item, "lastTransitionTime"),
             )
         )
     return conditions

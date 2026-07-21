@@ -27,6 +27,32 @@ class NodeHealthRollup(RancherModel):
     unschedulable: int = 0
 
 
+def _empty_issues() -> list["ClusterIssue"]:
+    return []
+
+
+def _empty_counts() -> dict[str, int]:
+    return {}
+
+
+class ClusterIssue(RancherModel):
+    """One structured cluster-health issue — exception-shaped signal.
+
+    Carries the diagnosis inline (``severity`` + ``since``/``age_days`` +
+    ``reason``/``message``) so an agent branches without a second call (ADR-0002
+    rules #2/#4). ``since``/``age_days`` separate a five-year-old benign state
+    from a live incident — the single highest-value addition in the field spec.
+    """
+
+    type: str
+    status: str | None = None
+    severity: str = "warning"
+    since: str | None = None
+    age_days: int | None = None
+    reason: str | None = None
+    message: str | None = None
+
+
 class ClusterHealthCheck(RancherModel):
     """One-call cluster health diagnosis."""
 
@@ -40,9 +66,7 @@ class ClusterHealthCheck(RancherModel):
     conditions: list[RancherCondition] = Field(
         default_factory=_empty_conditions,
     )
-    condition_types_true: list[str] = Field(
-        default_factory=_empty_strings,
-    )
+    condition_counts: dict[str, int] = Field(default_factory=_empty_counts)
     condition_types_false: list[str] = Field(
         default_factory=_empty_strings,
     )
@@ -52,7 +76,7 @@ class ClusterHealthCheck(RancherModel):
         default_factory=_empty_strings,
     )
     nodes: NodeHealthRollup = Field(default_factory=NodeHealthRollup)
-    issues: list[str] = Field(default_factory=_empty_strings)
+    issues: list[ClusterIssue] = Field(default_factory=_empty_issues)
 
 
 class ClusterHealthSummary(RancherModel):
@@ -66,7 +90,7 @@ class ClusterHealthSummary(RancherModel):
     nodes_ready: int = 0
     nodes_not_ready: int = 0
     issue_count: int = 0
-    top_issues: list[str] = Field(default_factory=_empty_strings)
+    top_issues: list[ClusterIssue] = Field(default_factory=_empty_issues)
 
 
 class ClustersHealthSummary(RancherModel):
@@ -76,6 +100,8 @@ class ClustersHealthSummary(RancherModel):
     total_clusters: int
     healthy_count: int
     unhealthy_count: int
+    by_severity: dict[str, int] = Field(default_factory=_empty_counts)
+    versions: dict[str, int] = Field(default_factory=_empty_counts)
     clusters: list[ClusterHealthSummary] = Field(
         default_factory=_empty_cluster_summaries,
     )

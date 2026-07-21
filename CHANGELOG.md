@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.19.0] — 2026-07-21 — Agent: Claude
+### Changed
+- L-2b + L-2f health exception-shaping: cluster_health_check issues are now structured ClusterIssue objects carrying severity + since/ageDays + reason/message inline (a five-year-old benign condition no longer reads the same as a live incident, and reason/message no longer require a second call); the conditionTypesTrue echo is replaced by a condition_counts summary. clusters_health_summary gains a root by_severity histogram and a versions upgrade-matrix rollup. RancherCondition gained lastTransitionTime.
+
 ## [1.18.0] — 2026-07-21 — Agent: Claude
 ### Changed
 - L-2a node diagnostics + L-2.0 derivation helpers: node_get restores requested cpu/mem and os/kernel/runtime as always-on typed fields (the K-2 over-trim fix — satisfies the 'diagnostics must not cost 30 KB' constraint at ~40 bytes each), humanizes memory (3.8Gi not 4005204Ki) and derives cpu/memory utilization %, dedupes the duplicate Ready condition, and rolls up a node-version upgrade matrix on the list. New foundational rancher_mcp/units.py (pure Kubernetes-quantity math) + tools/support/derive.py (age_days, tokens, condition severity).

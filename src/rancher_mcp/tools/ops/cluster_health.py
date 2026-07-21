@@ -12,6 +12,7 @@ from rancher_mcp.models.clusters_nodes import RancherCondition
 from rancher_mcp.models.ops.cluster_health import (
     ClusterHealthCheck,
     ClusterHealthSummary,
+    ClusterIssue,
     ClustersHealthSummary,
     NodeHealthRollup,
 )
@@ -22,10 +23,8 @@ from rancher_mcp.tools.clusters_nodes.shared import (
     node_summary_from_payload,
 )
 from rancher_mcp.tools.support.collections import object_items
-from rancher_mcp.tools.support.conditions import (
-    condition_types_true,
-    conditions_from_value,
-)
+from rancher_mcp.tools.support.conditions import conditions_from_value
+from rancher_mcp.tools.support.derive import age_days, condition_severity
 from rancher_mcp.tools.support.values import status_to_bool, string_value
 
 # Rancher cluster conditions that represent optional features or configuration
@@ -84,26 +83,76 @@ def _component_health(
     return healthy, unhealthy, sorted(unhealthy_names)
 
 
+def _condition_counts(conditions: list[RancherCondition]) -> dict[str, int]:
+    """Count conditions by truthiness — replaces the ``condition_types_true`` echo."""
+
+    counts = {"true": 0, "false": 0, "unknown": 0}
+    for condition in conditions:
+        truth = status_to_bool(condition.status)
+        counts["true" if truth is True else "false" if truth is False else "unknown"] += 1
+    return counts
+
+
 def _derive_issues(
     state: str | None,
-    conditions_false: list[str],
+    conditions: list[RancherCondition],
     component_unhealthy_names: list[str],
     nodes: NodeHealthRollup,
-) -> list[str]:
-    """Derive a human-readable issue list from cluster health signals."""
+) -> list[ClusterIssue]:
+    """Derive structured, severity-ranked issues from cluster health signals.
 
-    issues: list[str] = []
+    Each condition-based issue carries its severity + ``since``/``age_days`` +
+    reason/message inline (ADR-0002), so an agent branches without a second call
+    and can tell a five-year-old benign state from a live incident.
+    """
+
+    issues: list[ClusterIssue] = []
     if state is not None and state != "active":
-        issues.append(f"Cluster state is '{state}', expected 'active'")
-    for ct in conditions_false:
-        if ct not in _FEATURE_FLAG_CONDITIONS:
-            issues.append(f"Condition {ct} is False")
-    for name in component_unhealthy_names:
-        issues.append(f"Component '{name}' is unhealthy")
+        issues.append(
+            ClusterIssue(
+                type="ClusterState",
+                severity="critical",
+                message=f"Cluster state is '{state}', expected 'active'",
+            )
+        )
+    for condition in conditions:
+        if status_to_bool(condition.status) is not False:
+            continue
+        if condition.type in _FEATURE_FLAG_CONDITIONS:
+            continue
+        issues.append(
+            ClusterIssue(
+                type=condition.type,
+                status=condition.status,
+                severity=condition_severity(condition.type, condition.status),
+                since=condition.last_transition_time,
+                age_days=age_days(condition.last_transition_time),
+                reason=condition.reason,
+                message=condition.message,
+            )
+        )
+    issues.extend(
+        ClusterIssue(
+            type="Component", severity="warning", message=f"Component '{name}' is unhealthy"
+        )
+        for name in component_unhealthy_names
+    )
     if nodes.not_ready > 0:
-        issues.append(f"{nodes.not_ready}/{nodes.total} node(s) not ready")
+        issues.append(
+            ClusterIssue(
+                type="NodesNotReady",
+                severity="critical",
+                message=f"{nodes.not_ready}/{nodes.total} node(s) not ready",
+            )
+        )
     if nodes.unschedulable > 0:
-        issues.append(f"{nodes.unschedulable}/{nodes.total} node(s) unschedulable")
+        issues.append(
+            ClusterIssue(
+                type="NodesUnschedulable",
+                severity="warning",
+                message=f"{nodes.unschedulable}/{nodes.total} node(s) unschedulable",
+            )
+        )
     return issues
 
 
@@ -139,7 +188,6 @@ async def _build_cluster_health(
     payload = await client.get_json(f"/v3/clusters/{cluster_id}")
     summary = cluster_summary_from_payload(payload)
     conditions = conditions_from_value(payload.get("conditions"))
-    ct_true = condition_types_true(conditions)
     ct_false = _condition_types_false(conditions)
     ch, cu, cu_names = _component_health(payload)
 
@@ -151,7 +199,7 @@ async def _build_cluster_health(
     )
     nodes = _rollup_nodes_by_cluster(cluster_id, data_items(node_payload))
 
-    issues = _derive_issues(summary.state, ct_false, cu_names, nodes)
+    issues = _derive_issues(summary.state, conditions, cu_names, nodes)
     healthy = len(issues) == 0
 
     return ClusterHealthCheck(
@@ -163,7 +211,7 @@ async def _build_cluster_health(
         kubernetes_version=summary.kubernetes_version,
         provider=summary.provider,
         conditions=conditions,
-        condition_types_true=ct_true,
+        condition_counts=_condition_counts(conditions),
         condition_types_false=ct_false,
         component_healthy_count=ch,
         component_unhealthy_count=cu,
@@ -232,16 +280,21 @@ async def _build_clusters_health_summary(
         for cluster_data in clusters_data
     }
     summaries: list[ClusterHealthSummary] = []
+    by_severity: dict[str, int] = {}
+    versions: dict[str, int] = {}
 
     for cluster_data in clusters_data:
         cs = cluster_summary_from_payload(cluster_data)
         conditions = conditions_from_value(cluster_data.get("conditions"))
-        ct_false = _condition_types_false(conditions)
         _ch, _cu, cu_names = _component_health(cluster_data)
         nodes = node_rollups.get(cs.id, NodeHealthRollup())
 
-        issues = _derive_issues(cs.state, ct_false, cu_names, nodes)
+        issues = _derive_issues(cs.state, conditions, cu_names, nodes)
         healthy = len(issues) == 0
+        for issue in issues:
+            by_severity[issue.severity] = by_severity.get(issue.severity, 0) + 1
+        if cs.kubernetes_version:
+            versions[cs.kubernetes_version] = versions.get(cs.kubernetes_version, 0) + 1
         summaries.append(
             ClusterHealthSummary(
                 cluster_id=cs.id,
@@ -252,7 +305,7 @@ async def _build_clusters_health_summary(
                 nodes_ready=nodes.ready,
                 nodes_not_ready=nodes.not_ready,
                 issue_count=len(issues),
-                top_issues=issues[:5],
+                top_issues=issues[:3],
             )
         )
 
@@ -262,6 +315,8 @@ async def _build_clusters_health_summary(
         total_clusters=len(summaries),
         healthy_count=healthy_count,
         unhealthy_count=len(summaries) - healthy_count,
+        by_severity=by_severity,
+        versions=versions,
         clusters=summaries,
         suggested_next_steps=[
             "rancher_cluster_health_check",

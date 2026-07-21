@@ -3,12 +3,37 @@
 import pytest
 from _ops_support import StubOpsClient, build_settings
 
+from rancher_mcp.models.clusters_nodes import RancherCondition
+from rancher_mcp.models.ops.cluster_health import NodeHealthRollup
 from rancher_mcp.tools.ops.cluster_health import (
+    _derive_issues,
     rancher_cluster_health_check,
     rancher_cluster_nodes_summary,
     rancher_clusters_health_summary,
 )
 from rancher_mcp.tools.ops.find_unready_nodes import rancher_find_unready_nodes
+
+
+def test_l2b_issues_are_severity_ranked_with_since() -> None:
+    """Structured issues carry severity + since + reason; feature flags excluded."""
+
+    conditions = [
+        RancherCondition(
+            type="Ready",
+            status="False",
+            reason="NodeDown",
+            last_transition_time="2021-04-20T19:22:02Z",
+        ),
+        RancherCondition(type="PrometheusOperatorDeployed", status="False"),
+        RancherCondition(type="MonitoringEnabled", status="False"),  # feature flag
+    ]
+    by_type = {i.type: i for i in _derive_issues("active", conditions, [], NodeHealthRollup())}
+
+    assert "MonitoringEnabled" not in by_type  # cosmetic feature flag excluded
+    assert by_type["Ready"].severity == "critical"
+    assert by_type["Ready"].since == "2021-04-20T19:22:02Z"  # age-vs-incident signal
+    assert by_type["Ready"].reason == "NodeDown"
+    assert by_type["PrometheusOperatorDeployed"].severity == "warning"
 
 
 @pytest.mark.asyncio
@@ -30,8 +55,11 @@ async def test_rancher_cluster_health_check_reports_component_and_node_issues() 
     assert result.nodes.ready == 1
     assert result.nodes.not_ready == 1
     assert result.nodes.unschedulable == 1
-    assert "Condition Provisioned is False" in result.issues
-    assert "Component 'controller-manager' is unhealthy" in result.issues
+    # Issues are structured now (L-2b): severity + since + reason inline.
+    assert any(i.type == "Provisioned" and i.status == "False" for i in result.issues)
+    assert any(
+        i.type == "Component" and "controller-manager" in (i.message or "") for i in result.issues
+    )
 
 
 @pytest.mark.asyncio
@@ -53,7 +81,7 @@ async def test_rancher_clusters_health_summary_populates_node_rollups() -> None:
     assert local.issue_count >= 1
     assert edge.nodes_ready == 1
     assert edge.nodes_not_ready == 0
-    assert any("Cluster state is 'provisioning'" in issue for issue in edge.top_issues)
+    assert any(i.type == "ClusterState" for i in edge.top_issues)
 
 
 @pytest.mark.asyncio

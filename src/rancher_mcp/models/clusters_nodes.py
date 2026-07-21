@@ -46,6 +46,7 @@ class RancherCondition(RancherModel):
     status: str | None = None
     reason: str | None = None
     message: str | None = None
+    last_transition_time: str | None = Field(default=None, validation_alias="lastTransitionTime")
 
 
 class RancherClusterComponentStatus(RancherModel):

@@ -369,9 +369,12 @@ addition in VS) and derived units/tokens; these are required signal, not polish.
   (age/tokens/severity). `etcd.lastLocalSnapshot` deferred (dotted-annotation key
   — small follow-on). Node paths (`info.os.*`, `requested.*`) are Rancher-conventional;
   verify against prod. 🅢
-- [ ] **L-2b** `cluster_health_check` — exception-shape 27 conditions → the 1
-  issue with `since`/`ageDays`/`severity`; drop the `conditionTypesTrue` echo;
-  the pilot for full exception-shaping 🅜
+- [x] **L-2b** `cluster_health_check` — **✅ done v1.19.0**: `issues` are now
+  structured `ClusterIssue` objects carrying `severity` + `since`/`ageDays` +
+  `reason`/`message` inline (the #1/#2 field-agent asks); `conditionTypesTrue`
+  echo replaced by a `condition_counts` {true,false,unknown}; `RancherCondition`
+  gained `lastTransitionTime`. Full conditions[] collapse deferred to the verbose
+  flag ("light first"). 🅜
 - [ ] **L-2c** `pods_list` / `pod_get` — `ready:"2/2"` + `owner:"Kind/name"`
   tokens; `id`/`podIp`/`qosClass`/zero-`restartCount` → verbose; **split terminal
   job pods into `completed[]`** + a `summary:{running,succeeded,pending,failed,
@@ -385,9 +388,10 @@ addition in VS) and derived units/tokens; these are required signal, not polish.
   item so the `_get` becomes unnecessary: promote `reason`/`message`/`since` +
   derive `daysRemaining` (VS §12 flagship: the whole 3 KB `_get` existed only for
   `reason:"SecretMismatch"`). 🅢
-- [ ] **L-2f** `clusters_health_summary` (the crown jewel — small upgrades):
-  collapse healthy clusters to one line, add a root `bySeverity` + a `versions`
-  fleet rollup (free upgrade matrix now that K-3 reports real versions). 🅢
+- [x] **L-2f** `clusters_health_summary` — **✅ done v1.19.0** (with L-2b): root
+  `by_severity` histogram (answers "care at all?" before reading a row) + a
+  `versions` fleet rollup (the upgrade matrix); per-cluster `top_issues` are now
+  structured `ClusterIssue`s. Healthy-collapse deferred to the verbose flag. 🅢
   - **Templates (already good post-K-2):** `cluster_get`, `deployments_list` —
     use as the reference shape, no rework.
   - **Predecessor:** L-0. **Predecessor for full collapse (L-2b):** output-model
