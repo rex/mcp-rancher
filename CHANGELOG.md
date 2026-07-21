@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.12.4] — 2026-07-21 — Agent: Claude
+### Changed
+- Session handoff: TASK_STATE records the v1.12.3 release (PyPI + MCP Registry), the 2026-07-21 field validation against prod (P0 verified closed — K-1/K-2/K-3 confirmed fixed), and the post-validation backlog (the verbose/diagnostics design is pending a decision; plus self-version tool, settings_list value truncation, K-8b, drop-empty).
+
 ## [1.12.3] — 2026-07-20 — Agent: Claude
 ### Changed
 - Registry fix: shortened the server.json description to the MCP Registry's 100-char limit (v1.12.2 published to PyPI + GitHub but the registry publish 422'd on description length).

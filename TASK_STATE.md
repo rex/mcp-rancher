@@ -131,6 +131,58 @@ ADR-0001 call.**
 3. Existing `catalog/capabilities.yaml primary_target` still 2.6.5 (pre-existing,
    see below) — K-12 touches the same label surface.
 
+### 📌 HANDOFF (2026-07-21): released + prod-validated; verbose-diagnostics design PENDING
+
+**Released to PyPI + MCP Registry.** `rancher-mcp` **v1.12.3** is live on PyPI
+(`uvx rancher-mcp`), the MCP Registry (`io.github.rex/rancher-mcp`), and GitHub
+Releases. This was the **first publish since v1.3.0** (1.4.0–1.12.0 were
+committed-but-unreleased), so one tag shipped everything. Trail: v1.12.1 = the
+Track K remediation; v1.12.2 = README/PyPI polish; v1.12.3 = fix for v1.12.2's
+registry job (422'd on a >100-char `server.json` description).
+
+**Release-flow gotcha (now gated):** `bump_version.py` only writes
+VERSION+CHANGELOG. `pyproject.toml`, `server.json` (BOTH version fields), and
+`uv.lock` freeze at the last published tag and must ALL be synced to VERSION
+before tagging (`release.yml` guards tag==VERSION==pyproject==server.json×2;
+build runs `uv sync --frozen`). New `scripts/check_server_json.py` +
+`scripts/sync_readme_badges.py` gates (in pre-commit + `make validate`) catch
+the ≤100-char description limit and README tool-count drift locally.
+
+**VALIDATION (2026-07-21, field agent vs prod) — P0 VERIFIED CLOSED:** K-1 ✅
+(`cluster_get` no longer leaks the S3 key/CA cert; registration `manifestUrl`
+gone), K-2 ✅ (`cluster_get` 15→2.5 KB, `node_get` 4.2→1 KB), K-3 ✅ (version now
+`v1.24.17`). K-5 ⚪ untested (no empty error hit this session). Report:
+`validation-sweep-report.md`.
+
+**POST-VALIDATION BACKLOG (new — NOT yet in ROADMAP, pending the design talk):**
+1. **🔴 verbose/diagnostics DESIGN — being discussed with Pierce NOW.** K-2's
+   payload-hide dropped genuinely-useful `node_get` diagnostics: `requested`
+   cpu/mem (headroom), `info.os` (OS/kernel/containerd), etcd-snapshot
+   timestamp. **Pierce's HARD position: a few key diagnostic properties MUST
+   NOT require re-including 30 KB of raw API data — routine diagnostics belong
+   as CURATED typed fields, not behind a full-payload `verbose` flag.** Leaning
+   (unconfirmed): PROMOTE the useful fields into the typed detail models (audit
+   what K-2 hid that's signal vs `managedFields` noise); keep generic
+   `steve/norman_resource_get` as the raw-object escape hatch; likely NO
+   `verbose` flag on curated tools. The "verbose re-dumps the firehose" idea is
+   REJECTED.
+2. **self-version tool** (Pierce-flagged): the server can't report its OWN
+   version/build metadata — `rancher_server_version` returns *Rancher's*
+   version, so the field agent had to inspect the venv. Add to `server_health`
+   / a new `server_info`. Small.
+3. **`settings_list` G3 — value-level verbosity** (~9 KB): NOT a payload problem
+   (K-2 doesn't touch it) — the setting VALUES are huge (`k8s-version-to-service-
+   options` ~4 KB, `internal-cacerts` PEM). Needs value truncation
+   (`max_value_length` / `values:false`), a different mechanism than K-2.
+4. **K-8b** (ROADMAP, bucket ③): curated "not installed" — `cluster_policy_reports`
+   still returns the useless `404 page not found` (cis/notifiers/alert-rules
+   already give useful `failed to find schema X`).
+5. **drop-empty `suggestedNextSteps:[]`** — deferred from K-1/K-2; still emitted.
+
+**Open USER decisions:** (a) the verbose/diagnostics design above (active);
+(b) ADR-0001 positioning lane (gates bucket ③); (c) S3-key rotation;
+(d) K-12 `capabilities.yaml primary_target`.
+
 ### MAINTENANCE (2026-07-11): isolated current Rancher integration — ✅ live matrix green — v1.6.0
 
 Added an isolated `current` local-lab profile for Rancher `2.14.3` on
