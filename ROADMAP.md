@@ -288,7 +288,7 @@ against real captured bytes in that doc; §-refs point into it.
 
 ### L-0 — Universal envelope (one file, every tool)
 
-- [ ] **L-0** Drop noise at the serializer 🅜 — **do first**
+- [x] **L-0** Drop noise at the serializer 🅜 — **✅ done v1.15.0** (`src/rancher_mcp/envelope.py` `shape_envelope`, wired into the base `_shape_on_dump` after scrub; drops `suggestedNextSteps` + plumbing keys + empty `[]`/`{}`/`None`, preserves raw `payload` verbatim; `tests/unit/test_envelope_shaping.py`; zero churn — 658 green)
   - **Why:** the most pervasive noise is identical across all ~130 curated
     models and belongs in one place, not 400 edits. Empty `suggestedNextSteps:[]`
     (27 in one `cluster_health_check`), `nextPageToken:null`, and k8s/Rancher

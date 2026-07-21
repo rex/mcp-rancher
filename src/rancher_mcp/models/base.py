@@ -13,6 +13,7 @@ from pydantic import (
 )
 from pydantic.alias_generators import to_camel
 
+from rancher_mcp.envelope import shape_envelope
 from rancher_mcp.redaction import scrub_secrets
 
 
@@ -46,8 +47,11 @@ class RancherModel(BaseModel):
         guarantee across every tool, including secrets buried in an untyped
         ``payload`` blob (ADR-0001 / K-1), and (2) drops the multi-KB raw
         payload from curated responses so the agent isn't handed a 15-31 KB
-        firehose by default (K-2). Both are alias-agnostic, holding whether
-        the dump is by-alias (camelCase) or by-name.
+        firehose by default (K-2), and (3) strips universal envelope noise —
+        ``suggestedNextSteps``, plumbing keys, and empty ``[]``/``{}``/``None``
+        values — so healthy objects collapse instead of shipping scaffolding
+        (L-0 / ADR-0002). All three are alias-agnostic, holding whether the
+        dump is by-alias (camelCase) or by-name.
         """
 
         dumped = handler(self)
@@ -57,4 +61,4 @@ class RancherModel(BaseModel):
         if type(self).serializer_hides_payload:
             for key in ("payload", "responsePayload", "response_payload"):
                 mapping.pop(key, None)
-        return scrub_secrets(mapping)
+        return shape_envelope(scrub_secrets(mapping))

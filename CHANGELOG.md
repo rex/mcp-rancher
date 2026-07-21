@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.15.0] — 2026-07-21 — Agent: Claude
+### Changed
+- L-0 universal envelope: the base serializer now strips universal noise from every response — suggestedNextSteps deleted (pending L-3b re-add), k8s/Rancher plumbing keys removed, and empty []/{}/None values omitted so healthy objects collapse. Falsy scalars kept; the generic escape-hatch raw payload is preserved verbatim (still secret-scrubbed). New module src/rancher_mcp/envelope.py + tests/unit/test_envelope_shaping.py.
+
 ## [1.14.1] — 2026-07-21 — Agent: Claude
 ### Changed
 - Sanitize live prod identifiers from tracked files (public repo): replace the prod Rancher domain, client/brand names, and cluster IDs with placeholders in docs/live-validation-2026-05-06.md, ROADMAP.md, and scripts/live_probe.py. Option B (sanitize-forward); git history retains prior values by design.
