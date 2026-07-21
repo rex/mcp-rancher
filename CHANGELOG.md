@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.23.0] — 2026-07-21 — Agent: Claude
+### Changed
+- L-2c pods_list phase summary: a computed summary {running,succeeded,pending,failed,unhealthy} on the list separates terminal Completed Jobs (succeeded) from running health, so a namespace whose migration Jobs sit beside live pods no longer reads as half-down; unhealthy (running-not-ready/crash/unknown) is the single field an agent branches on.
+
 ## [1.22.0] — 2026-07-21 — Agent: Claude
 ### Changed
 - L-3a settings_list value shaping: the setting VALUES are the payload here (a 4 KB JSON blob, a full PEM), so the list builder shapes them — a JSON object collapses to valueType:json + keys + length (which versions are configured, not 4 KB of kubelet flags), a certificate to a marker, any value over 200 chars is truncated. Short values are untouched; the full value is a deliberate setting_get. ~9 KB -> ~1.2 KB.

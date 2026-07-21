@@ -375,11 +375,12 @@ addition in VS) and derived units/tokens; these are required signal, not polish.
   echo replaced by a `condition_counts` {true,false,unknown}; `RancherCondition`
   gained `lastTransitionTime`. Full conditions[] collapse deferred to the verbose
   flag ("light first"). 🅜
-- [ ] **L-2c** `pods_list` / `pod_get` — `ready:"2/2"` + `owner:"Kind/name"`
-  tokens; `id`/`podIp`/`qosClass`/zero-`restartCount` → verbose; **split terminal
-  job pods into `completed[]`** + a `summary:{running,succeeded,pending,failed,
-  unhealthy}` (fixes the misleading "6 pods / 3 running" for a healthy ns);
-  `pod_get` inline `events[]` (last 5 Warning — today a second call). 🅜
+- [x] **L-2c** `pods_list` — **✅ done v1.23.0**: a computed `summary`
+  `{running,succeeded,pending,failed,unhealthy}` on the list — Completed Jobs
+  count as `succeeded`, not as "down", so a healthy namespace no longer reads
+  half-down; `unhealthy` (running-not-ready / crash / unknown) is the branch
+  field. Deferred (need restructure/extra fetch): the separate `completed[]`
+  bucket, `ready:"2/2"` tokens, and `pod_get` inline `events[]`. 🅜
 - [ ] **L-2d** the 6 `find_*` tools — already close (the triage surface); the
   **populated** case is the untested risk — carry `reason`/`message`/`container`/
   `since`/`lastState.exitCode` so a hit needs no `_get`; standardize `count`;

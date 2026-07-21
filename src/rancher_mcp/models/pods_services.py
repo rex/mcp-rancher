@@ -2,7 +2,14 @@
 
 from typing import cast
 
-from pydantic import AliasChoices, AliasPath, Field, field_validator, model_validator
+from pydantic import (
+    AliasChoices,
+    AliasPath,
+    Field,
+    computed_field,
+    field_validator,
+    model_validator,
+)
 
 from rancher_mcp.models.base import RancherModel
 from rancher_mcp.models.clusters_nodes import RancherCondition
@@ -129,6 +136,29 @@ class RancherPodList(RancherModel):
     next_page_token: str | None = None
     applied_query_params: dict[str, str | int | bool] = Field(default_factory=dict)
     pods: list[RancherPodSummary] = Field(default_factory=_empty_pod_summaries)
+
+    @computed_field
+    @property
+    def summary(self) -> dict[str, int]:
+        """Phase counts so a namespace whose Completed migration Jobs sit beside
+        live pods doesn't read as half-down (L-2c). ``unhealthy`` is the field an
+        agent branches on: running-but-not-ready or an unknown/crash phase.
+        ``succeeded`` (terminal Jobs) is separated from ``running`` health."""
+
+        counts = {"running": 0, "succeeded": 0, "pending": 0, "failed": 0, "unhealthy": 0}
+        for pod in self.pods:
+            phase = (pod.phase or "").lower()
+            if phase == "succeeded":
+                counts["succeeded"] += 1
+            elif phase == "pending":
+                counts["pending"] += 1
+            elif phase == "failed":
+                counts["failed"] += 1
+            elif phase == "running" and pod.ready is not False:
+                counts["running"] += 1
+            else:  # running-but-not-ready, unknown, crash-looping
+                counts["unhealthy"] += 1
+        return counts
 
 
 class RancherServicePortSummary(RancherModel):
