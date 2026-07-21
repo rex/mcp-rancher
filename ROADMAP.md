@@ -367,8 +367,11 @@ addition in VS) and derived units/tokens; these are required signal, not polish.
   `summary.versions` upgrade-matrix roll-up on the list. Shared helpers landed:
   `rancher_mcp/units.py` (pure quantity math) + `tools/support/derive.py`
   (age/tokens/severity). `etcd.lastLocalSnapshot` deferred (dotted-annotation key
-  — small follow-on). Node paths (`info.os.*`, `requested.*`) are Rancher-conventional;
-  verify against prod. 🅢
+  — small follow-on). **Node paths VERIFIED against a live Rancher 2.14.3 (current
+  lab, 2026-07-21):** `info.os.{operatingSystem,kernelVersion,dockerVersion}` +
+  `requested.{cpu,memory}` all populate and derive correctly (`osImage=Debian 13`,
+  `cpuUtilization=24%`, `memoryCapacityHuman=5Gi`). Core Norman schema, unchanged
+  2.6.5→2.14.3 — 2.9.3 behaves identically. 🅢
 - [x] **L-2b** `cluster_health_check` — **✅ done v1.19.0**: `issues` are now
   structured `ClusterIssue` objects carrying `severity` + `since`/`ageDays` +
   `reason`/`message` inline (the #1/#2 field-agent asks); `conditionTypesTrue`

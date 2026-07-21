@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.26.3] — 2026-07-21 — Agent: Claude
+### Changed
+- Verified L-2a node field aliases against a live Rancher 2.14.3 (current dev lab): info.os.{operatingSystem,kernelVersion,dockerVersion} + requested.{cpu,memory} all populate and derive correctly through RancherNodeDetail (osImage=Debian 13, cpuUtilization=24%, memoryCapacityHuman=5Gi). Core Norman node schema is unchanged 2.6.5->2.14.3, so 2.9.3 behaves identically. Clears the one open Track L caveat; updated ROADMAP + TASK_STATE.
+
 ## [1.26.2] — 2026-07-21 — Agent: Claude
 ### Changed
 - Docs: annotate the Makefile lab targets with the Rancher version each profile brings up — legacy (default) = Rancher 2.6.5, current = Rancher 2.14.3 (source: devtools/devlab/profiles.py). Added a version-table header comment over the lab targets, per-target ## annotations, and version labels in the make help output; no behavior change.

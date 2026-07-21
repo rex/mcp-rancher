@@ -218,9 +218,12 @@ kept blast radius near-zero — attribute access unchanged, so all existing test
 stayed green throughout. New foundations: `rancher_mcp/units.py` (pure quantity math),
 `tools/support/derive.py` (age/severity/tokens), `envelope.py` (L-0).
 
-**⚠️ VERIFY AGAINST PROD:** L-2a node field aliases (`info.os.operatingSystem`/
-`kernelVersion`/`dockerVersion`, `requested.cpu`/`memory`) are Rancher-conventional
-but unverified against a live 2.9.3 node — a 1-line alias fix if any path differs.
+**✅ VERIFIED (2026-07-21, live current lab):** L-2a node field aliases
+(`info.os.{operatingSystem,kernelVersion,dockerVersion}`, `requested.{cpu,memory}`)
+confirmed against a real **Rancher 2.14.3** node via `/v3/nodes` → `RancherNodeDetail`:
+every field populates and the derivations are correct (`osImage=Debian 13`,
+`requestedCpu=960m`, `cpuUtilization=24%`, `memoryCapacityHuman=5Gi`). Core Norman
+schema is unchanged across 2.6.5→2.14.3, so 2.9.3 prod behaves identically. No fix needed.
 
 **Deferred (captured in ROADMAP Track L slice notes):** full `conditions[]` collapse
 (needs the verbose flag — "light first" stance); pod `completed[]` bucket +
