@@ -1,6 +1,6 @@
 """Deployment workload models."""
 
-from pydantic import AliasPath, Field
+from pydantic import AliasPath, Field, computed_field
 
 from rancher_mcp.models.base import RancherModel
 from rancher_mcp.models.workloads.common import (
@@ -29,28 +29,49 @@ class RancherDeploymentSummary(RancherModel):
         default="<unknown-namespace>",
         validation_alias=AliasPath("metadata", "namespace"),
     )
+    # The five raw replica ints below are now say-nothing-when-healthy (M-A7 /
+    # ADR-0002 rule #3): the `replicas` token collapses ready/desired into one
+    # glance-able value, and rule #2/#4's `reason`/`since` promotion covers the
+    # not-converged case those ints existed to explain. `exclude=True` only
+    # affects serialization — they stay real attributes so existing
+    # attribute-asserting tests (and `deployment_ready`/`deployment_rollout_
+    # complete`, which consume them directly) are unaffected.
     desired_replicas: int | None = Field(
         default=None,
         validation_alias=AliasPath("spec", "replicas"),
+        exclude=True,
     )
     ready_replicas: int | None = Field(
         default=None,
         validation_alias=AliasPath("status", "readyReplicas"),
+        exclude=True,
     )
     available_replicas: int | None = Field(
         default=None,
         validation_alias=AliasPath("status", "availableReplicas"),
+        exclude=True,
     )
     updated_replicas: int | None = Field(
         default=None,
         validation_alias=AliasPath("status", "updatedReplicas"),
+        exclude=True,
     )
     unavailable_replicas: int | None = Field(
         default=None,
         validation_alias=AliasPath("status", "unavailableReplicas"),
+        exclude=True,
     )
     ready: bool | None = None
     rollout_complete: bool | None = None
+    # Not-converged diagnosis promoted onto the item (M-A7 / ADR-0002 rules
+    # #2/#4): the builder (`tools/workloads/shared.py`) populates these from
+    # the deployment's own status conditions only when `ready_replicas !=
+    # desired_replicas` or the rollout isn't complete — e.g. `reason:
+    # "ProgressDeadlineExceeded"`. Both stay `None` (envelope-dropped) once
+    # converged, so a healthy deployment reads as one clean line and an agent
+    # never has to `_get` just to learn why a rollout is stuck.
+    reason: str | None = None
+    since: str | None = None
     strategy_type: str | None = Field(
         default=None,
         validation_alias=AliasPath("spec", "strategy", "type"),
@@ -61,6 +82,21 @@ class RancherDeploymentSummary(RancherModel):
         validation_alias=AliasPath("spec", "selector", "matchLabels"),
     )
     container_images: list[str] = Field(default_factory=list)
+
+    @computed_field
+    @property
+    def replicas(self) -> str | None:
+        """Collapsed ready/desired token, e.g. ``"2/2"`` (ADR-0002 rule #3 —
+        the same treatment ``nodes:"3/3"`` got on ``ClusterHealthSummary``).
+
+        A quick glance already reads exception-shaped (``"1/3"`` signals
+        trouble on its own); `reason`/`since` above carry the detail. ``None``
+        (envelope-dropped) until the deployment has reported status.
+        """
+
+        if self.ready_replicas is None or self.desired_replicas is None:
+            return None
+        return f"{self.ready_replicas}/{self.desired_replicas}"
 
 
 class RancherDeploymentDetail(RancherDeploymentSummary):

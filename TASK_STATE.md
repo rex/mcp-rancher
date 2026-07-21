@@ -250,11 +250,17 @@ say-nothing component-count fields are `exclude=True`'d now that an unhealthy
 component already folds into `issues[]` (a down etcd/controller-manager/
 scheduler now ranks `critical`, not the old blanket `warning`).
 
-**Next up (Wave A remainder, Sonnet-ownable):** M-A5 (`namespaces_list`
-`clusterId`), M-A7 (deployments `replicas:"2/2"` token), M-B4 (pod
-`completed[]` + `ready` token). M-A12 and Waves B-E (codegen, architecture,
-new features, infra) are Opus-owned per the plan's delegation policy —
-untouched this session.
+**Since this handoff:** M-A5 shipped (v1.30.0, `namespaces_list` per-item
+`clusterId` via the new `ListConfig.item_extras` codegen hook) and **M-A7**
+shipped (v1.31.0, `deployments_list`/`get`: `replicas:"2/2"` computed token +
+`exclude=True` on the five raw replica ints + `reason`/`since` promoted to the
+top level from `status.conditions[]` when a rollout isn't converged — see
+`docs/track-m-plan.md` M-A7 row and `CHANGELOG.md` [1.31.0]).
+
+**Next up (Wave A remainder, Sonnet-ownable):** M-B4 (pod `completed[]` +
+`ready` token; `pod_get` inline `events[]`). M-A12 and Waves B-E (codegen,
+architecture, new features, infra) are Opus-owned per the plan's delegation
+policy — untouched this session.
 
 ### MAINTENANCE (2026-07-11): isolated current Rancher integration — ✅ live matrix green — v1.6.0
 

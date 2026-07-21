@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import cast
 
+from rancher_mcp.models.clusters_nodes import RancherCondition
 from rancher_mcp.models.workloads import (
     RancherDaemonSetSummary,
     RancherDeploymentSummary,
@@ -18,6 +19,7 @@ from rancher_mcp.tools.support.conditions import (
 )
 from rancher_mcp.tools.support.values import int_value as _int_value
 from rancher_mcp.tools.support.values import mapping_value as _mapping_value
+from rancher_mcp.tools.support.values import status_to_bool as _status_to_bool
 from rancher_mcp.tools.support.values import string_dict as _string_dict
 from rancher_mcp.tools.support.values import string_value as _string_value
 from rancher_mcp.tools.workloads.readiness import (
@@ -33,6 +35,36 @@ from rancher_mcp.tools.workloads.readiness import (
     statefulset_ready as _statefulset_ready,
 )
 
+# Priority order for "why isn't this deployment converged" (M-A7 / ADR-0002
+# rules #2/#4): a live ReplicaFailure outranks a stalled Progressing condition
+# (e.g. reason=ProgressDeadlineExceeded), which outranks bare unavailability.
+# `unhealthy_status` is the condition status that means "this is the culprit".
+_ROLLOUT_FAILURE_CONDITIONS: tuple[tuple[str, bool], ...] = (
+    ("ReplicaFailure", True),
+    ("Progressing", False),
+    ("Available", False),
+)
+
+
+def _deployment_rollout_reason(
+    conditions: list[RancherCondition],
+) -> tuple[str | None, str | None]:
+    """Pick the (reason, since) that best explains a not-converged deployment.
+
+    Checked in `_ROLLOUT_FAILURE_CONDITIONS` priority order. Returns
+    ``(None, None)`` when no condition explains the mismatch (e.g. a
+    deliberate `spec.paused`) — the caller only invokes this once replica
+    counts are already known not to match, so an all-None result just means
+    "no condition-sourced signal to add", not an error.
+    """
+
+    by_type = {condition.type: condition for condition in conditions}
+    for condition_type, unhealthy_status in _ROLLOUT_FAILURE_CONDITIONS:
+        condition = by_type.get(condition_type)
+        if condition is not None and _status_to_bool(condition.status) is unhealthy_status:
+            return condition.reason, condition.last_transition_time
+    return None, None
+
 
 def _deployment_summary_from_payload(payload: Mapping[str, object]) -> RancherDeploymentSummary:
     """Normalize one deployment payload."""
@@ -43,6 +75,19 @@ def _deployment_summary_from_payload(payload: Mapping[str, object]) -> RancherDe
     generation = _int_value(metadata, "generation")
     observed_generation = _int_value(status, "observedGeneration")
     images = _container_images(_template_spec(payload))
+    rollout_complete = _deployment_rollout_complete(
+        desired_replicas=summary.desired_replicas,
+        ready_replicas=summary.ready_replicas,
+        available_replicas=summary.available_replicas,
+        updated_replicas=summary.updated_replicas,
+        generation=generation,
+        observed_generation=observed_generation,
+        paused=summary.paused,
+    )
+    reason: str | None = None
+    since: str | None = None
+    if summary.ready_replicas != summary.desired_replicas or rollout_complete is False:
+        reason, since = _deployment_rollout_reason(_conditions_from_status(status))
     return summary.model_copy(
         update={
             "id": _namespaced_id(metadata, "deployment"),
@@ -51,16 +96,10 @@ def _deployment_summary_from_payload(payload: Mapping[str, object]) -> RancherDe
                 summary.ready_replicas,
                 summary.available_replicas,
             ),
-            "rollout_complete": _deployment_rollout_complete(
-                desired_replicas=summary.desired_replicas,
-                ready_replicas=summary.ready_replicas,
-                available_replicas=summary.available_replicas,
-                updated_replicas=summary.updated_replicas,
-                generation=generation,
-                observed_generation=observed_generation,
-                paused=summary.paused,
-            ),
+            "rollout_complete": rollout_complete,
             "container_images": images,
+            "reason": reason,
+            "since": since,
         }
     )
 

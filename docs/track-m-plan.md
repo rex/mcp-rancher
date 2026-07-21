@@ -50,8 +50,12 @@ serializer, security, and new-tool design**. Never hand-edit `_generated_*.py`
 - [x] **M-A5** (v1.30.0) `namespaces_list`: populate per-item `clusterId` (round-trips).
   `models/projects_namespaces.py` + list builder (codegen: `ListConfig.item_extras`
   + `namespace_cluster_id()`, preferring the payload's own project-id linkage).
-- [ ] **M-A7** `deployments_list`/`get`: `replicas:"2/2"` collapse + promote
-  not-converged `reason`/`since`. deployments response model.
+- [x] **M-A7** (v1.31.0) `deployments_list`/`get`: `replicas:"2/2"` collapse + promote
+  not-converged `reason`/`since`. `models/workloads/deployments.py` (computed
+  `replicas`, `exclude=True` on the five raw replica ints) + `tools/workloads/
+  shared.py` (`_deployment_rollout_reason`, reusing `conditions_from_payload`)
+  + `catalog/curated_tools/deployments.yml` (`get.summary_copy_fields` +
+  `reason`/`since`, codegen'd — no hand-edit, no new hook needed).
 - [ ] **M-B4** pods: `completed[]` bucket + `ready:"2/2"` token; `pod_get`
   inline `events[]`. `models/pods_services.py` + pod tools.
 - [ ] **M-A12** drop redundant per-item dup (`id`==`namespace/name`, node

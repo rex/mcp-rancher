@@ -47,6 +47,8 @@ get:
     - ready
     - rollout_complete
     - container_images
+    - reason
+    - since
   locals:
     - name: metadata
       expression: 'mapping_value(payload, "metadata") or {}'

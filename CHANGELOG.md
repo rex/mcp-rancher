@@ -1,5 +1,38 @@
 # Changelog
 
+## [1.31.0] — 2026-07-21 — Agent: Claude
+### Changed
+- M-A7: `deployments_list`/`deployment_get` closed Track M's last Wave-A "gold
+  standard" polish (ADR-0002 rules #2-#4). Two changes to `RancherDeploymentSummary`
+  (`models/workloads/deployments.py`, inherited by `RancherDeploymentDetail`):
+  (1) a new `@computed_field replicas` collapses `readyReplicas`/`desiredReplicas`
+  into one `"2/2"` token at dump-time — the same treatment `nodes:"3/3"` got on
+  `ClusterHealthSummary` (M-A8) — and (2) the five raw replica ints
+  (`desired_replicas`/`ready_replicas`/`available_replicas`/`updated_replicas`/
+  `unavailable_replicas`) are now `exclude=True`'d: they stay real attributes (no
+  test churn) but drop out of the default dump, since `replicas` + `ready` +
+  `rolloutComplete` already cover the healthy case. New `reason`/`since` fields
+  promote the rollout-failure diagnosis to the top level whenever a deployment
+  isn't converged (`readyReplicas != desiredReplicas` or `rolloutComplete` is
+  false) — e.g. `reason: "ProgressDeadlineExceeded"` — sourced from the
+  deployment's own `status.conditions[]` via a new `_deployment_rollout_reason`
+  priority-pick (`tools/workloads/shared.py`: `ReplicaFailure` > `Progressing`
+  > `Available`, reusing the existing `conditions_from_payload` parser rather
+  than duplicating condition logic); both fields stay `None` (envelope-dropped)
+  once converged, matching the cert-manager `reason`/`message`/`since` precedent.
+  `deployment_get` is codegen'd: `catalog/curated_tools/deployments.yml`'s
+  `get.summary_copy_fields` gained `reason`/`since` so the generated
+  `_fetch_deployment_get` copies them from the shared summary builder — no
+  hand-edit of `_generated_deployments.py`, no new codegen hook needed (the
+  per-item `item_extras` hook from M-A5 wasn't necessary here since the list
+  path already gets both fields for free from the shared summary function).
+  4 new tests in a new `tests/unit/test_workloads_deployments_shaping_tools.py`
+  (split out to stay under the architecture line limit): converged
+  list/get render `replicas:"2/2"` with no `reason`/`since`/raw-int spam; a
+  stalled rollout (`ready:1 < desired:3`, `Progressing:False` reason
+  `ProgressDeadlineExceeded`) surfaces `reason`+`since` on both list and get.
+  `make validate` green (696 tests, 85% coverage).
+
 ## [1.30.0] — 2026-07-21 — Agent: Claude
 ### Changed
 - M-A5: `namespaces_list` items were being returned with `clusterId: ""` — a field

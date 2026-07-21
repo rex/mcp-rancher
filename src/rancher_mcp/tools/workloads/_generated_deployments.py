@@ -132,6 +132,8 @@ async def _fetch_deployment_get(
             "ready": summary.ready,
             "rollout_complete": summary.rollout_complete,
             "container_images": summary.container_images,
+            "reason": summary.reason,
+            "since": summary.since,
             "annotation_keys": sorted(string_dict(metadata_annotations)),
             "payload": dict(payload),
             "suggested_next_steps": [
