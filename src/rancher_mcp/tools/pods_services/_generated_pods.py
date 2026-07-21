@@ -6,6 +6,8 @@
 
 from __future__ import annotations
 
+import time
+
 from rancher_mcp.audit import audit_mutation
 from rancher_mcp.clients.steve import RancherSteveClient, SteveMutationClient
 from rancher_mcp.config import AppSettings, get_settings
@@ -23,6 +25,7 @@ from rancher_mcp.tools.pods_services.shared import (
     pod_events_best_effort,
     pod_summary_from_payload,
 )
+from rancher_mcp.tools.support.mutations import fetch_patch_before
 from rancher_mcp.tools.support.values import mapping_value
 
 
@@ -262,7 +265,17 @@ async def _patch_pod_set_labels(
     request_payload: dict[str, object] = patch_subtree
     request_payload = {"metadata": request_payload}
 
+    before = await fetch_patch_before(
+        lambda: client.get_json(f"/pods/{namespace}/{pod_name}"),
+        target_path="metadata",
+        patch_subtree=patch_subtree,
+        kind="pod",
+        action="set_labels",
+        name=pod_name,
+    )
+    patch_started_at = time.monotonic()
     await client.patch_json(f"/pods/{namespace}/{pod_name}", payload=request_payload)
+    duration_ms = int((time.monotonic() - patch_started_at) * 1000)
     return RancherMutationReceipt(
         instance=instance_name,
         plane="steve",
@@ -272,6 +285,8 @@ async def _patch_pod_set_labels(
         cluster_id=cluster_id,
         namespace=namespace,
         changed=dict(patch_subtree),
+        before=before,
+        duration_ms=duration_ms,
     )
 
 
@@ -334,7 +349,17 @@ async def _patch_pod_set_annotations(
     request_payload: dict[str, object] = patch_subtree
     request_payload = {"metadata": request_payload}
 
+    before = await fetch_patch_before(
+        lambda: client.get_json(f"/pods/{namespace}/{pod_name}"),
+        target_path="metadata",
+        patch_subtree=patch_subtree,
+        kind="pod",
+        action="set_annotations",
+        name=pod_name,
+    )
+    patch_started_at = time.monotonic()
     await client.patch_json(f"/pods/{namespace}/{pod_name}", payload=request_payload)
+    duration_ms = int((time.monotonic() - patch_started_at) * 1000)
     return RancherMutationReceipt(
         instance=instance_name,
         plane="steve",
@@ -344,6 +369,8 @@ async def _patch_pod_set_annotations(
         cluster_id=cluster_id,
         namespace=namespace,
         changed=dict(patch_subtree),
+        before=before,
+        duration_ms=duration_ms,
     )
 
 

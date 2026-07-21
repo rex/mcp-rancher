@@ -293,6 +293,22 @@ the plan's delegation policy). Wave B has M-A2/M-B1-B2/M-A11-K8b/M-K6 still
 open; Waves C-E (base serializer, security, new features, infra) are also
 Opus-owned — untouched this session.
 
+**Since that "Next up" note, per `docs/track-m-plan.md`:** M-A11/K-8b shipped
+(v1.36.0, capability-unavailable envelope), and M-SEC + M-DOC shipped
+(v1.37.0, sensitive singular GETs reveal real values — reverses L-0b for the
+reveal path; see CHANGELOG). **M-A2 now shipped too (v1.38.0)** — every
+curated patch tool's `RancherMutationReceipt` gains `before` (best-effort
+prior values of exactly the changed keys, via one extra GET on the same
+detail path immediately ahead of the patch — logged and swallowed on any
+failure, never blocks the mutation) and `durationMs` (the merge-patch HTTP
+call timed with `time.monotonic()`). Mechanism: new
+`tools/support/mutations.py` + a `scripts/codegen/templates/tool_module.py.j2`
+patch-block update, regenerated via `make codegen` (100 files, zero
+hand-edits). Tradeoff (one extra GET per mutation) is called out in
+CHANGELOG `[1.38.0]`. **Remaining in Wave B:** M-B1/B2 (`since`/`ageDays` +
+`reason`/`message` universal on conditions) and M-K6 (destructive `confirm:
+true`). Waves C-E remain Opus-owned and untouched.
+
 ### MAINTENANCE (2026-07-11): isolated current Rancher integration — ✅ live matrix green — v1.6.0
 
 Added an isolated `current` local-lab profile for Rancher `2.14.3` on

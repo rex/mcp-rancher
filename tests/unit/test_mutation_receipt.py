@@ -44,3 +44,41 @@ def test_receipt_empty_change_collapses_via_envelope() -> None:
 
     assert "changed" not in dumped  # empty → omitted
     assert dumped["action"] == "set_labels"
+
+
+def test_receipt_carries_before_and_duration_ms() -> None:
+    """M-A2: `before` (prior values) + `duration_ms` (patch timing) round-trip."""
+
+    dumped = RancherMutationReceipt(
+        instance="work",
+        plane="steve",
+        action="set_labels",
+        kind="deployment",
+        cluster_id="c-x",
+        namespace="kong",
+        name="api",
+        changed={"labels": {"env": "prod"}},
+        before={"labels": {"tier": "gold"}},
+        duration_ms=42,
+    ).model_dump(by_alias=True)
+
+    assert dumped["before"] == {"labels": {"tier": "gold"}}
+    assert dumped["durationMs"] == 42
+
+
+def test_receipt_before_and_duration_ms_drop_from_envelope_when_none() -> None:
+    """M-A2: unset `before`/`duration_ms` (e.g. a pre-fetch failure) never ship as null."""
+
+    dumped = RancherMutationReceipt(
+        instance="work",
+        plane="steve",
+        action="scale",
+        kind="deployment",
+        name="api",
+        changed={"replicas": 4},
+        before=None,
+        duration_ms=None,
+    ).model_dump(by_alias=True)
+
+    assert "before" not in dumped
+    assert "durationMs" not in dumped

@@ -6,6 +6,8 @@
 
 from __future__ import annotations
 
+import time
+
 from rancher_mcp.audit import audit_mutation
 from rancher_mcp.clients.management import ManagementDiscoveryClient, RancherManagementClient
 from rancher_mcp.config import AppSettings, get_settings
@@ -17,6 +19,7 @@ from rancher_mcp.services.instances import resolve_instance
 from rancher_mcp.services.resource_queries import build_steve_list_query_params
 from rancher_mcp.services.resources.builders_pagination import next_page_token_from_payload
 from rancher_mcp.services.safety import ensure_instance_writable
+from rancher_mcp.tools.support.mutations import fetch_patch_before
 from rancher_mcp.tools.support.values import mapping_value, string_dict
 from rancher_mcp.tools.workloads.paths import workload_collection_path, workload_resource_path
 from rancher_mcp.tools.workloads.shared import (
@@ -250,10 +253,22 @@ async def _patch_statefulset_scale(
     request_payload: dict[str, object] = patch_subtree
     request_payload = {"spec": request_payload}
 
+    before = await fetch_patch_before(
+        lambda: client.get_json(
+            workload_resource_path(cluster_id, namespace, "statefulsets", statefulset_name)
+        ),
+        target_path="spec",
+        patch_subtree=patch_subtree,
+        kind="statefulset",
+        action="scale",
+        name=statefulset_name,
+    )
+    patch_started_at = time.monotonic()
     await client.patch_json(
         workload_resource_path(cluster_id, namespace, "statefulsets", statefulset_name),
         payload=request_payload,
     )
+    duration_ms = int((time.monotonic() - patch_started_at) * 1000)
     return RancherMutationReceipt(
         instance=instance_name,
         plane="steve",
@@ -263,6 +278,8 @@ async def _patch_statefulset_scale(
         cluster_id=cluster_id,
         namespace=namespace,
         changed=dict(patch_subtree),
+        before=before,
+        duration_ms=duration_ms,
     )
 
 
@@ -321,10 +338,22 @@ async def _patch_statefulset_set_labels(
     request_payload: dict[str, object] = patch_subtree
     request_payload = {"metadata": request_payload}
 
+    before = await fetch_patch_before(
+        lambda: client.get_json(
+            workload_resource_path(cluster_id, namespace, "statefulsets", statefulset_name)
+        ),
+        target_path="metadata",
+        patch_subtree=patch_subtree,
+        kind="statefulset",
+        action="set_labels",
+        name=statefulset_name,
+    )
+    patch_started_at = time.monotonic()
     await client.patch_json(
         workload_resource_path(cluster_id, namespace, "statefulsets", statefulset_name),
         payload=request_payload,
     )
+    duration_ms = int((time.monotonic() - patch_started_at) * 1000)
     return RancherMutationReceipt(
         instance=instance_name,
         plane="steve",
@@ -334,6 +363,8 @@ async def _patch_statefulset_set_labels(
         cluster_id=cluster_id,
         namespace=namespace,
         changed=dict(patch_subtree),
+        before=before,
+        duration_ms=duration_ms,
     )
 
 
@@ -392,10 +423,22 @@ async def _patch_statefulset_set_annotations(
     request_payload: dict[str, object] = patch_subtree
     request_payload = {"metadata": request_payload}
 
+    before = await fetch_patch_before(
+        lambda: client.get_json(
+            workload_resource_path(cluster_id, namespace, "statefulsets", statefulset_name)
+        ),
+        target_path="metadata",
+        patch_subtree=patch_subtree,
+        kind="statefulset",
+        action="set_annotations",
+        name=statefulset_name,
+    )
+    patch_started_at = time.monotonic()
     await client.patch_json(
         workload_resource_path(cluster_id, namespace, "statefulsets", statefulset_name),
         payload=request_payload,
     )
+    duration_ms = int((time.monotonic() - patch_started_at) * 1000)
     return RancherMutationReceipt(
         instance=instance_name,
         plane="steve",
@@ -405,6 +448,8 @@ async def _patch_statefulset_set_annotations(
         cluster_id=cluster_id,
         namespace=namespace,
         changed=dict(patch_subtree),
+        before=before,
+        duration_ms=duration_ms,
     )
 
 

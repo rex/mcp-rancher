@@ -86,8 +86,14 @@ one-at-a-time (background + yield), never in parallel — version bumps serializ
   untouched. New `tests/unit/test_list_count_alias_uniform.py` (structural sweep +
   negative guard) plus call-through coverage for clusters/pods/nodes/secrets/
   deployments/services.
-- [ ] **M-A2** mutation receipt `before` snapshot + `durationMs`. Codegen
-  template (`tool_module.py.j2`) + `RancherMutationReceipt`.
+- [x] **M-A2** (v1.38.0) mutation receipt `before` snapshot + `durationMs`. Codegen
+  template (`tool_module.py.j2`) + `RancherMutationReceipt`. `before` shipped in
+  full (not deferred): one best-effort GET on the same detail path immediately
+  ahead of the patch, extracted via new `tools/support/mutations.py`
+  (`patch_before_snapshot` pure extraction + `fetch_patch_before` async
+  best-effort wrapper — logs and swallows any failure, never blocks the
+  patch). `durationMs` times only the `patch_json` call via `time.monotonic()`.
+  Tradeoff (one extra GET per mutation) called out in CHANGELOG.
 - [ ] **M-B1/B2** `since`/`ageDays` + `reason`/`message` universal on conditions
   (`tools/support/conditions.py` + base).
 - [x] **M-A11/K-8b** (v1.36.0) capability-unavailable envelope: `error_code:CAPABILITY_ERROR`,

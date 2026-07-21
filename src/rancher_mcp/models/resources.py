@@ -183,6 +183,17 @@ class RancherMutationReceipt(RancherModel):
     """The merge-patch leaf that was applied — exactly what changed
     (``{"replicas": 4}``, ``{"labels": {...}}``, ``{"paused": True}``). Not a
     pre/post diff; a follow-up get confirms the resulting state."""
+    before: dict[str, object] | None = None
+    """Best-effort prior values of exactly the keys in ``changed`` (e.g. for
+    ``set_labels``, ``{"labels": {...prior...}}``) — mirrors ``changed``
+    key-for-key so the receipt reads as a real audit record, ``before`` ->
+    ``changed``, not just the after-state. Populated via one extra GET
+    immediately before the patch; ``None`` when that pre-fetch failed for any
+    reason (never blocks or fails the mutation — M-A2 / ADR-0002)."""
+    duration_ms: int | None = None
+    """Wall-clock milliseconds the patch HTTP call took, timed with
+    ``time.monotonic()`` around the merge-patch request only (excludes the
+    best-effort ``before`` pre-fetch). Always populated on a successful patch."""
 
 
 class GenericResourceLinkResult(RancherModel):

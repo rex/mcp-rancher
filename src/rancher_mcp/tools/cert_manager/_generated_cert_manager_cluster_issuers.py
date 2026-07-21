@@ -6,6 +6,8 @@
 
 from __future__ import annotations
 
+import time
+
 from rancher_mcp.audit import audit_mutation
 from rancher_mcp.clients.management import ManagementDiscoveryClient, RancherManagementClient
 from rancher_mcp.config import AppSettings, get_settings
@@ -29,6 +31,7 @@ from rancher_mcp.tools.cert_manager.shared import (
     condition_types_true_from_payload,
     items,
 )
+from rancher_mcp.tools.support.mutations import fetch_patch_before
 from rancher_mcp.tools.support.values import mapping_value, string_dict
 
 
@@ -257,10 +260,22 @@ async def _patch_cert_manager_cluster_issuer_set_labels(
     request_payload: dict[str, object] = patch_subtree
     request_payload = {"metadata": request_payload}
 
+    before = await fetch_patch_before(
+        lambda: client.get_json(
+            cert_manager_cluster_resource_path(cluster_id, "clusterissuers", cluster_issuer_name)
+        ),
+        target_path="metadata",
+        patch_subtree=patch_subtree,
+        kind="cert_manager_cluster_issuer",
+        action="set_labels",
+        name=cluster_issuer_name,
+    )
+    patch_started_at = time.monotonic()
     await client.patch_json(
         cert_manager_cluster_resource_path(cluster_id, "clusterissuers", cluster_issuer_name),
         payload=request_payload,
     )
+    duration_ms = int((time.monotonic() - patch_started_at) * 1000)
     return RancherMutationReceipt(
         instance=instance_name,
         plane="steve",
@@ -269,6 +284,8 @@ async def _patch_cert_manager_cluster_issuer_set_labels(
         name=cluster_issuer_name,
         cluster_id=cluster_id,
         changed=dict(patch_subtree),
+        before=before,
+        duration_ms=duration_ms,
     )
 
 
@@ -323,10 +340,22 @@ async def _patch_cert_manager_cluster_issuer_set_annotations(
     request_payload: dict[str, object] = patch_subtree
     request_payload = {"metadata": request_payload}
 
+    before = await fetch_patch_before(
+        lambda: client.get_json(
+            cert_manager_cluster_resource_path(cluster_id, "clusterissuers", cluster_issuer_name)
+        ),
+        target_path="metadata",
+        patch_subtree=patch_subtree,
+        kind="cert_manager_cluster_issuer",
+        action="set_annotations",
+        name=cluster_issuer_name,
+    )
+    patch_started_at = time.monotonic()
     await client.patch_json(
         cert_manager_cluster_resource_path(cluster_id, "clusterissuers", cluster_issuer_name),
         payload=request_payload,
     )
+    duration_ms = int((time.monotonic() - patch_started_at) * 1000)
     return RancherMutationReceipt(
         instance=instance_name,
         plane="steve",
@@ -335,6 +364,8 @@ async def _patch_cert_manager_cluster_issuer_set_annotations(
         name=cluster_issuer_name,
         cluster_id=cluster_id,
         changed=dict(patch_subtree),
+        before=before,
+        duration_ms=duration_ms,
     )
 
 

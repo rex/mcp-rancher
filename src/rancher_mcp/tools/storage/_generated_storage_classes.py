@@ -6,6 +6,8 @@
 
 from __future__ import annotations
 
+import time
+
 from rancher_mcp.audit import audit_mutation
 from rancher_mcp.clients.management import ManagementDiscoveryClient, RancherManagementClient
 from rancher_mcp.config import AppSettings, get_settings
@@ -26,6 +28,7 @@ from rancher_mcp.tools.storage.shared import (
     storage_class_summary_from_payload,
     string_list,
 )
+from rancher_mcp.tools.support.mutations import fetch_patch_before
 from rancher_mcp.tools.support.values import mapping_value, string_dict
 
 
@@ -234,10 +237,19 @@ async def _patch_storage_class_set_labels(
     request_payload: dict[str, object] = patch_subtree
     request_payload = {"metadata": request_payload}
 
-    await client.patch_json(
-        storage_class_resource_path(cluster_id, storage_class_name),
-        payload=request_payload,
+    before = await fetch_patch_before(
+        lambda: client.get_json(storage_class_resource_path(cluster_id, storage_class_name)),
+        target_path="metadata",
+        patch_subtree=patch_subtree,
+        kind="storage_class",
+        action="set_labels",
+        name=storage_class_name,
     )
+    patch_started_at = time.monotonic()
+    await client.patch_json(
+        storage_class_resource_path(cluster_id, storage_class_name), payload=request_payload
+    )
+    duration_ms = int((time.monotonic() - patch_started_at) * 1000)
     return RancherMutationReceipt(
         instance=instance_name,
         plane="steve",
@@ -246,6 +258,8 @@ async def _patch_storage_class_set_labels(
         name=storage_class_name,
         cluster_id=cluster_id,
         changed=dict(patch_subtree),
+        before=before,
+        duration_ms=duration_ms,
     )
 
 
@@ -300,10 +314,19 @@ async def _patch_storage_class_set_annotations(
     request_payload: dict[str, object] = patch_subtree
     request_payload = {"metadata": request_payload}
 
-    await client.patch_json(
-        storage_class_resource_path(cluster_id, storage_class_name),
-        payload=request_payload,
+    before = await fetch_patch_before(
+        lambda: client.get_json(storage_class_resource_path(cluster_id, storage_class_name)),
+        target_path="metadata",
+        patch_subtree=patch_subtree,
+        kind="storage_class",
+        action="set_annotations",
+        name=storage_class_name,
     )
+    patch_started_at = time.monotonic()
+    await client.patch_json(
+        storage_class_resource_path(cluster_id, storage_class_name), payload=request_payload
+    )
+    duration_ms = int((time.monotonic() - patch_started_at) * 1000)
     return RancherMutationReceipt(
         instance=instance_name,
         plane="steve",
@@ -312,6 +335,8 @@ async def _patch_storage_class_set_annotations(
         name=storage_class_name,
         cluster_id=cluster_id,
         changed=dict(patch_subtree),
+        before=before,
+        duration_ms=duration_ms,
     )
 
 

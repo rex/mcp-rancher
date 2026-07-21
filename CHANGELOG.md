@@ -1,5 +1,41 @@
 # Changelog
 
+## [1.38.0] — 2026-07-21 — Agent: Claude
+### Changed
+- **M-A2 — mutation receipts gain `before` + `durationMs` (the field reports'
+  "highest-value part" of a receipt).** Every curated patch tool
+  (`*_set_labels`, `*_set_annotations`, `*_scale`, `*_pause`/`*_resume`,
+  `*_restart`, …) now returns a `RancherMutationReceipt` that is a real
+  audit record — `before` → `changed` — instead of a one-sided
+  confirmation:
+  - **`durationMs`** (always populated): the merge-patch HTTP call timed
+    with `time.monotonic()`, wrapped tightly around `client.patch_json(...)`
+    only (excludes the before-fetch below).
+  - **`before`** (best-effort): immediately ahead of the patch, one extra
+    GET on the same detail path fetches the current resource; the prior
+    values of exactly the keys in `changed` are extracted (mirroring it
+    key-for-key — e.g. `set_labels`'s `changed={"labels": {...}}` pairs with
+    `before={"labels": {...prior...}}`). ANY failure (network, auth, a
+    resource that vanished between the read and the write) is logged and
+    swallowed — `before` comes back `null` and the patch proceeds exactly as
+    before this change. Both fields drop from the envelope when unset (the
+    existing L-0 empty-value rule), so a failed pre-fetch is invisible noise,
+    not a null-scarred response.
+  - Mechanism: new `tools/support/mutations.py` (`patch_before_snapshot` —
+    pure path-navigation extraction; `fetch_patch_before` — the best-effort
+    async wrapper that logs-and-swallows) threaded through the codegen patch
+    block in `scripts/codegen/templates/tool_module.py.j2`. Regenerated via
+    `make codegen` — no `_generated_*.py` hand-edits. `RancherMutationReceipt`
+    (`models/resources.py`) gains `before: dict[str, object] | None` and
+    `duration_ms: int | None`.
+### Notes
+- **Tradeoff, made visible on purpose:** `before` costs one extra GET per
+  mutation (double the HTTP calls on every curated patch tool). This is the
+  field report's explicit ask — audit value over call-count — but it is a
+  real, permanent cost worth knowing about before reaching for a patch tool
+  in a latency- or rate-limit-sensitive loop. `duration_ms` only measures the
+  patch call itself, so the extra GET's latency doesn't hide inside it.
+
 ## [1.37.0] — 2026-07-21 — Agent: Claude
 ### Changed
 - **M-SEC — sensitive singular GETs now RETURN the real value (reverses L-0b for the

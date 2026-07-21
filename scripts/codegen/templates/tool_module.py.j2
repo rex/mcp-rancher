@@ -4,6 +4,9 @@ from __future__ import annotations
 
 {% set has_mutation = ('create' in operations) or ('apply' in operations) or ('delete' in operations) or ('patch' in operations) -%}
 {% set needs_capability_error = (('create' in operations) and create.confirmation_required) or (('apply' in operations) and apply.confirmation_required) or ('delete' in operations) or ('patch' in operations) -%}
+{% if patches -%}
+import time
+{% endif -%}
 {% if has_mutation -%}
 from rancher_mcp.audit import audit_mutation
 {% endif -%}
@@ -48,6 +51,9 @@ from rancher_mcp.services.resources.builders_pagination import next_page_token_f
 from rancher_mcp.tools.support.values import mapping_value, {{ support_value_imports|join(', ') }}
 {% else -%}
 from rancher_mcp.tools.support.values import mapping_value
+{% endif -%}
+{% if patches -%}
+from rancher_mcp.tools.support.mutations import fetch_patch_before
 {% endif -%}
 {% if path_helper -%}
 from {{ path_helper.module }} import {{ path_helper.list_function }}, {{ path_helper.detail_function }}
@@ -762,13 +768,25 @@ async def _patch_{{ display_name_singular }}_{{ patch.verb }}(
     request_payload: dict[str, object] = patch_subtree
     {%- endif %}
     {% if transport == 'k8s-proxy' -%}
-    await client.patch_json(
-        {{ path_helper.detail_function }}(cluster_id{% if namespaced %}, namespace{% endif %}{% if path_helper.resource_kind %}, "{{ path_helper.resource_kind }}"{% endif %}, {{ get.arg_name }}),
-        payload=request_payload,
-    )
+    {% set patch_resource_path -%}
+    {{ path_helper.detail_function }}(cluster_id{% if namespaced %}, namespace{% endif %}{% if path_helper.resource_kind %}, "{{ path_helper.resource_kind }}"{% endif %}, {{ get.arg_name }})
+    {%- endset %}
     {%- elif transport == 'steve' or transport == 'norman' -%}
-    await client.patch_json(f"{{ detail_path }}", payload=request_payload)
+    {% set patch_resource_path -%}
+    f"{{ detail_path }}"
+    {%- endset %}
     {%- endif %}
+    before = await fetch_patch_before(
+        lambda: client.get_json({{ patch_resource_path }}),
+        target_path="{{ patch.target_path }}",
+        patch_subtree=patch_subtree,
+        kind="{{ display_name_singular }}",
+        action="{{ patch.verb }}",
+        name={{ get.arg_name }},
+    )
+    patch_started_at = time.monotonic()
+    await client.patch_json({{ patch_resource_path }}, payload=request_payload)
+    duration_ms = int((time.monotonic() - patch_started_at) * 1000)
     return RancherMutationReceipt(
         instance=instance_name,
         plane="{{ plane }}",
@@ -782,6 +800,8 @@ async def _patch_{{ display_name_singular }}_{{ patch.verb }}(
         namespace=namespace,
         {% endif -%}
         changed=dict(patch_subtree),
+        before=before,
+        duration_ms=duration_ms,
     )
 
 
