@@ -1,5 +1,37 @@
 # Changelog
 
+## [1.28.0] — 2026-07-21 — Agent: Claude
+### Changed
+- M-A3: `cluster_get` brought up to the same response-shaping standard as L-2b's
+  `cluster_health_check` — it was the top-5 hand-tune target ADR-0002 missed. Adds typed
+  `issues[]` (severity/since/ageDays/reason/message) and `condition_counts`
+  ({true,false,unknown}) derived via the exact same logic `cluster_health_check` uses
+  (state + condition + component-status derivation; the two node-rollup issue types are
+  skipped since `cluster_get` makes only one `/v3/clusters/{id}` call, no second
+  `/v3/nodes` fetch). Drops the old `condition_types_true` echo. Adds `memory_capacity_human`
+  (mirrors `node_get`'s L-2a derivation). Raw `conditions[]`/`component_statuses[]` are off
+  the default dump now that typed `issues[]`/`condition_counts` replace them as signal —
+  both stay populated as Python attributes (`exclude=True` only affects serialization), so
+  existing attribute-asserting tests are unaffected. To reuse L-2b's derivation without a
+  models/tools circular import (`tools/ops/cluster_health.py` already imports
+  `tools/clusters_nodes/shared.py`), `ClusterIssue` moved from `models/ops/cluster_health.py`
+  to `models/clusters_nodes.py` (re-exported from its old location) and the
+  `_component_health`/`_condition_counts`/`_derive_issues` functions moved to a new
+  `tools/support/cluster_issues.py` (the `nodes` param is now optional), imported by both
+  `tools/ops/cluster_health.py` and the new `cluster_get` extras in
+  `tools/clusters_nodes/shared.py`. `catalog/curated_tools/clusters.yml` updated and
+  `_generated_clusters.py` regenerated via `make codegen`. 4 new/updated assertions in
+  `tests/unit/test_clusters_nodes_tools.py` proving `issues[]` severity/since, `condition_counts`,
+  the dropped `condition_types_true`/raw-conditions echo, and `memory_capacity_human`.
+  M-B6 (node etcd-snapshot annotation) investigated against the live Rancher 2.14.3 lab
+  (`make lab-current-status` — already running) and deferred: neither the raw Kubernetes
+  Node objects nor the Rancher v3 `management.cattle.io` Node CRD objects carry any
+  etcd/snapshot annotation on either lab cluster (checked directly via `kubectl` against
+  both the management and downstream kubeconfigs) — Rancher tracks RKE1 etcd backups via
+  the separate `etcdbackups.management.cattle.io` resource (already exposed by
+  `rancher_etcd_backup_get`/`_list`), not a node annotation, so there is nothing to surface
+  and no key to guess.
+
 ## [1.27.0] — 2026-07-21 — Agent: Claude
 ### Changed
 - M-A4: `namespace_workloads_summary` and `project_health_summary` no longer conflate

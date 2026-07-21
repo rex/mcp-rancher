@@ -12,7 +12,6 @@ from rancher_mcp.models.clusters_nodes import RancherCondition
 from rancher_mcp.models.ops.cluster_health import (
     ClusterHealthCheck,
     ClusterHealthSummary,
-    ClusterIssue,
     ClustersHealthSummary,
     NodeHealthRollup,
 )
@@ -22,138 +21,23 @@ from rancher_mcp.tools.clusters_nodes.shared import (
     data_items,
     node_summary_from_payload,
 )
-from rancher_mcp.tools.support.collections import object_items
-from rancher_mcp.tools.support.conditions import conditions_from_value
-from rancher_mcp.tools.support.derive import age_days, condition_severity
-from rancher_mcp.tools.support.values import status_to_bool, string_value
-
-# Rancher cluster conditions that represent optional features or configuration
-# choices — False means "not enabled", not "broken". Exclude from health issues.
-_FEATURE_FLAG_CONDITIONS: frozenset[str] = frozenset(
-    {
-        "AgentTlsStrictCheck",
-        "AlertingEnabled",
-        "BackupEnabled",
-        "CisScanEnabled",
-        "IstioEnabled",
-        "LoggingEnabled",
-        "MonitoringEnabled",
-        "OPAGatekeeperEnabled",
-        "PipelineEnabled",
-        "RotateCertificates",
-    }
+from rancher_mcp.tools.support.cluster_issues import (
+    component_health as _component_health,
 )
+from rancher_mcp.tools.support.cluster_issues import (
+    condition_counts as _condition_counts,
+)
+from rancher_mcp.tools.support.cluster_issues import (
+    derive_cluster_issues as _derive_issues,
+)
+from rancher_mcp.tools.support.conditions import conditions_from_value
+from rancher_mcp.tools.support.values import status_to_bool, string_value
 
 
 def _condition_types_false(conditions: list[RancherCondition]) -> list[str]:
     """Return sorted condition types whose status is explicitly false."""
 
     return sorted(c.type for c in conditions if status_to_bool(c.status) is False)
-
-
-def _component_health(
-    payload: dict[str, object],
-) -> tuple[int, int, list[str]]:
-    """Count healthy vs unhealthy components and return unhealthy names."""
-
-    raw = payload.get("componentStatuses")
-    if not isinstance(raw, list):
-        return 0, 0, []
-    healthy = 0
-    unhealthy = 0
-    unhealthy_names: list[str] = []
-    for item in object_items(payload, field="componentStatuses"):
-        name = string_value(item, "name") or "<unknown>"
-        conditions = object_items(item, field="conditions")
-        if not conditions:
-            unhealthy += 1
-            unhealthy_names.append(name)
-            continue
-        is_healthy = False
-        for cond in conditions:
-            cond_status = string_value(cond, "status")
-            if cond.get("type") == "Healthy" and status_to_bool(cond_status) is True:
-                is_healthy = True
-                break
-        if is_healthy:
-            healthy += 1
-        else:
-            unhealthy += 1
-            unhealthy_names.append(name)
-    return healthy, unhealthy, sorted(unhealthy_names)
-
-
-def _condition_counts(conditions: list[RancherCondition]) -> dict[str, int]:
-    """Count conditions by truthiness — replaces the ``condition_types_true`` echo."""
-
-    counts = {"true": 0, "false": 0, "unknown": 0}
-    for condition in conditions:
-        truth = status_to_bool(condition.status)
-        counts["true" if truth is True else "false" if truth is False else "unknown"] += 1
-    return counts
-
-
-def _derive_issues(
-    state: str | None,
-    conditions: list[RancherCondition],
-    component_unhealthy_names: list[str],
-    nodes: NodeHealthRollup,
-) -> list[ClusterIssue]:
-    """Derive structured, severity-ranked issues from cluster health signals.
-
-    Each condition-based issue carries its severity + ``since``/``age_days`` +
-    reason/message inline (ADR-0002), so an agent branches without a second call
-    and can tell a five-year-old benign state from a live incident.
-    """
-
-    issues: list[ClusterIssue] = []
-    if state is not None and state != "active":
-        issues.append(
-            ClusterIssue(
-                type="ClusterState",
-                severity="critical",
-                message=f"Cluster state is '{state}', expected 'active'",
-            )
-        )
-    for condition in conditions:
-        if status_to_bool(condition.status) is not False:
-            continue
-        if condition.type in _FEATURE_FLAG_CONDITIONS:
-            continue
-        issues.append(
-            ClusterIssue(
-                type=condition.type,
-                status=condition.status,
-                severity=condition_severity(condition.type, condition.status),
-                since=condition.last_transition_time,
-                age_days=age_days(condition.last_transition_time),
-                reason=condition.reason,
-                message=condition.message,
-            )
-        )
-    issues.extend(
-        ClusterIssue(
-            type="Component", severity="warning", message=f"Component '{name}' is unhealthy"
-        )
-        for name in component_unhealthy_names
-    )
-    if nodes.not_ready > 0:
-        issues.append(
-            ClusterIssue(
-                type="NodesNotReady",
-                severity="critical",
-                message=f"{nodes.not_ready}/{nodes.total} node(s) not ready",
-            )
-        )
-    if nodes.unschedulable > 0:
-        issues.append(
-            ClusterIssue(
-                type="NodesUnschedulable",
-                severity="warning",
-                message=f"{nodes.unschedulable}/{nodes.total} node(s) unschedulable",
-            )
-        )
-    return issues
 
 
 def _rollup_nodes_by_cluster(

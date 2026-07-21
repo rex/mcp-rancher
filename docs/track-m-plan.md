@@ -31,10 +31,19 @@ serializer, security, and new-tool design**. Never hand-edit `_generated_*.py`
 - [x] **M-A4** (v1.27.0) `namespace_workloads_summary` + `project_health_summary`: split
   `active` vs `completed`/`succeeded` so a healthy ns doesn't read half-down.
   `models/ops/rollups.py` + `tools/ops/` builders.
-- [ ] **M-A3+B6** `cluster_get`: typed `issues[]` (severity/since/ageDays/reason/
-  message) + `conditionCounts`, drop `conditionTypesTrue`, `memoryCapacityHuman`;
-  node: surface `etcd.lastLocalSnapshot` annotation. `models/clusters_nodes.py`
-  (+ reuse `ClusterIssue` from `models/ops/cluster_health.py`).
+- [x] **M-A3+B6** (v1.28.0) `cluster_get`: typed `issues[]` (severity/since/ageDays/reason/
+  message) + `conditionCounts`, drop `conditionTypesTrue`, `memoryCapacityHuman`.
+  `models/clusters_nodes.py` (`ClusterIssue` moved here from
+  `models/ops/cluster_health.py` to avoid a models-layer circular import; derivation
+  functions extracted to `tools/support/cluster_issues.py` and reused — not
+  duplicated — by both `cluster_health_check` and `cluster_get`).
+  **B6 deferred, not guessed:** node etcd-snapshot annotation checked directly
+  against the live Rancher 2.14.3 lab (`make lab-current-status`, already running) —
+  neither the raw Kubernetes Node objects nor the Rancher v3
+  `management.cattle.io` Node CRD objects carry any etcd/snapshot annotation on
+  either lab cluster. Rancher tracks RKE1 etcd backups via the separate
+  `etcdbackups.management.cattle.io` resource (already exposed by
+  `rancher_etcd_backup_get`/`_list`), not a node annotation — nothing to surface.
 - [ ] **M-A8+A9+A10** `cluster_health`: `nodes:"3/3"` token on the fleet summary;
   per-issue `hint`; drop say-nothing `componentHealthy/UnhealthyCount/Names`.
   `models/ops/cluster_health.py` + `tools/ops/cluster_health.py`.

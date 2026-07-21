@@ -13,6 +13,8 @@ from rancher_mcp.services.instances import resolve_instance
 from rancher_mcp.services.resources.builders_pagination import next_page_token_from_payload
 from rancher_mcp.tools.clusters_nodes.shared import (
     build_cluster_query_params,
+    cluster_condition_counts_from_payload,
+    cluster_issues_from_payload,
     cluster_summary_from_payload,
     data_items,
 )
@@ -105,8 +107,9 @@ async def _fetch_cluster_get(
             "id": summary.id,
             "name": summary.name,
             "ready": summary.ready,
-            "condition_types_true": summary.condition_types_true,
             "api_endpoint": string_value(payload, "apiEndpoint"),
+            "issues": cluster_issues_from_payload(payload),
+            "condition_counts": cluster_condition_counts_from_payload(payload),
             "action_keys": sorted(mapping_value(payload, "actions") or {}),
             "payload": dict(payload),
             "suggested_next_steps": [

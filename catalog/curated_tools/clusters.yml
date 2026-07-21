@@ -19,6 +19,8 @@ detail_response_model: rancher_mcp.models.clusters_nodes.RancherClusterDetail
 
 shared_imports:
   - cluster_summary_from_payload
+  - cluster_issues_from_payload
+  - cluster_condition_counts_from_payload
   - data_items
 support_value_imports:
   - string_value
@@ -44,11 +46,14 @@ get:
     - id
     - name
     - ready
-    - condition_types_true
   locals: []
   extras:
     - field: api_endpoint
       expression: 'string_value(payload, "apiEndpoint")'
+    - field: issues
+      expression: 'cluster_issues_from_payload(payload)'
+    - field: condition_counts
+      expression: 'cluster_condition_counts_from_payload(payload)'
   include_action_keys: true
   include_link_keys: false
   include_payload: true
@@ -65,5 +70,5 @@ tools:
     annotation_set: READ_ONLY
   get:
     name: rancher_cluster_get
-    description: Fetch one Rancher cluster by id via the Norman /v3 API. Returns the curated summary, API endpoint, action keys, component statuses, and full payload.
+    description: Fetch one Rancher cluster by id via the Norman /v3 API. Returns the curated summary, typed issues (severity/since/reason), condition counts, API endpoint, action keys, and full payload.
     annotation_set: READ_ONLY

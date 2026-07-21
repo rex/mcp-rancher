@@ -200,6 +200,80 @@ async def test_rancher_cluster_get_returns_typed_detail() -> None:
 
 
 @pytest.mark.asyncio
+async def test_rancher_cluster_get_emits_typed_issues_and_drops_condition_types_true() -> None:
+    """M-A3: cluster_get should reuse L-2b's issue derivation (severity/since/
+    ageDays/reason), expose conditionCounts + memoryCapacityHuman, and drop the
+    old conditionTypesTrue echo from the dumped shape. Raw conditions/component
+    statuses stay populated as attributes — only the dump-time shape changes."""
+
+    class UnhealthyClusterClient:
+        """Return a cluster payload with one false condition and one unhealthy component."""
+
+        async def get_json(self, path: str, params: object = None) -> dict[str, object]:
+            """Return a deterministic unhealthy-cluster payload."""
+
+            assert path == "/v3/clusters/unhealthy"
+            assert params is None
+            return {
+                "id": "unhealthy",
+                "name": "unhealthy",
+                "state": "active",
+                "provider": "imported",
+                "nodeVersion": 1,
+                "version": {"gitVersion": "v1.28.5"},
+                "nodeCount": 1,
+                "capacity": {"cpu": "4", "memory": "5294864Ki"},
+                "conditions": [
+                    {
+                        "type": "Ready",
+                        "status": "False",
+                        "reason": "ClusterUnreachable",
+                        "message": "cannot reach cluster",
+                        "lastTransitionTime": "2021-01-01T00:00:00Z",
+                    },
+                    {"type": "Provisioned", "status": "True"},
+                ],
+                "componentStatuses": [
+                    {
+                        "name": "controller-manager",
+                        "conditions": [{"type": "Healthy", "status": "False", "message": "down"}],
+                    }
+                ],
+            }
+
+    result = await rancher_cluster_get(
+        cluster_id="unhealthy",
+        instance="work",
+        settings=build_settings(),
+        client=UnhealthyClusterClient(),
+    )
+
+    # Attributes stay populated — dump-time shaping only (exclude=True), so
+    # attribute-asserting callers are unaffected by the shape change.
+    assert result.conditions[0].type == "Ready"
+    assert result.component_statuses[0].name == "controller-manager"
+
+    ready_issue = next(i for i in result.issues if i.type == "Ready")
+    assert ready_issue.severity == "critical"
+    assert ready_issue.since == "2021-01-01T00:00:00Z"
+    assert ready_issue.reason == "ClusterUnreachable"
+    assert ready_issue.age_days is not None
+    assert ready_issue.age_days > 1000  # 2021-01-01 is years in the past
+    assert any(i.type == "Component" for i in result.issues)
+
+    assert result.condition_counts == {"true": 1, "false": 1, "unknown": 0}
+    assert result.memory_capacity_human == "5Gi"
+
+    dumped = result.model_dump(by_alias=True)
+    assert "conditionTypesTrue" not in dumped
+    assert "conditions" not in dumped
+    assert "componentStatuses" not in dumped
+    assert dumped["conditionCounts"] == {"true": 1, "false": 1, "unknown": 0}
+    assert dumped["memoryCapacityHuman"] == "5Gi"
+    assert any(issue["type"] == "Ready" for issue in dumped["issues"])
+
+
+@pytest.mark.asyncio
 async def test_rancher_clusters_list_handles_empty_collection() -> None:
     """Curated clusters list should handle an empty Rancher collection cleanly."""
 

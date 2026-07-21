@@ -39,6 +39,12 @@ def _empty_component_statuses() -> list["RancherClusterComponentStatus"]:
     return []
 
 
+def _empty_cluster_issues() -> list["ClusterIssue"]:
+    """Return a typed empty cluster-issue list for Pydantic default factories."""
+
+    return []
+
+
 class RancherCondition(RancherModel):
     """One Rancher or Kubernetes condition."""
 
@@ -47,6 +53,32 @@ class RancherCondition(RancherModel):
     reason: str | None = None
     message: str | None = None
     last_transition_time: str | None = Field(default=None, validation_alias="lastTransitionTime")
+
+
+class ClusterIssue(RancherModel):
+    """One structured cluster-health issue — exception-shaped signal.
+
+    Carries the diagnosis inline (``severity`` + ``since``/``age_days`` +
+    ``reason``/``message``) so an agent branches without a second call
+    (ADR-0002 rules #2/#4). ``since``/``age_days`` separate a five-year-old
+    benign state from a live incident — the single highest-value addition in
+    the field spec.
+
+    Defined here (alongside ``RancherCondition``, not in
+    ``models/ops/cluster_health.py``) so both ``cluster_health_check`` (L-2b)
+    and ``cluster_get`` (M-A3) can share one type without a models-layer
+    circular import — ``models/ops/cluster_health.py`` already imports
+    ``RancherCondition`` from this module. It re-exports ``ClusterIssue`` from
+    its original location for backward compatibility.
+    """
+
+    type: str
+    status: str | None = None
+    severity: str = "warning"
+    since: str | None = None
+    age_days: int | None = None
+    reason: str | None = None
+    message: str | None = None
 
 
 class RancherClusterComponentStatus(RancherModel):
@@ -128,7 +160,10 @@ class RancherClusterSummary(RancherModel):
         default=None,
         validation_alias=AliasPath("capacity", "memory"),
     )
-    condition_types_true: list[str] = Field(default_factory=list)
+    # condition_types_true REMOVED (M-A3 / ADR-0002): the echo of every
+    # True-status condition type was noise once conditions are exception-
+    # shaped. RancherClusterDetail's `issues[]` + `condition_counts` below are
+    # its typed replacement — see also L-2b's `cluster_health_check`.
 
 
 class RancherClusterDetail(RancherClusterSummary):
@@ -136,15 +171,31 @@ class RancherClusterDetail(RancherClusterSummary):
 
     api_endpoint: str | None = None
     action_keys: list[str] = Field(default_factory=list)
+    # Raw echoes stay OFF the default dump (M-A3 / ADR-0002 rule #2): `issues[]`
+    # + `condition_counts` below are the typed replacement signal. The
+    # attributes stay populated from the payload — `exclude=True` only affects
+    # serialization, so attribute-asserting callers/tests are unaffected.
     conditions: list[RancherCondition] = Field(
         default_factory=_empty_conditions,
         validation_alias="conditions",
+        exclude=True,
     )
     component_statuses: list[RancherClusterComponentStatus] = Field(
         default_factory=_empty_component_statuses,
         validation_alias="componentStatuses",
+        exclude=True,
     )
+    issues: list[ClusterIssue] = Field(default_factory=_empty_cluster_issues)
+    condition_counts: dict[str, int] = Field(default_factory=dict)
     payload: dict[str, object] = Field(default_factory=dict)
+
+    @computed_field
+    @property
+    def memory_capacity_human(self) -> str | None:
+        """Cluster memory in human binary units (never raw ``Ki``) — mirrors
+        node_get's L-2a derivation (ADR-0002 rule #3)."""
+
+        return humanize_memory(self.memory_capacity)
 
 
 class RancherClusterList(RancherModel):

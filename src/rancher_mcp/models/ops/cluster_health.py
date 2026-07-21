@@ -3,7 +3,7 @@
 from pydantic import Field
 
 from rancher_mcp.models.base import RancherModel
-from rancher_mcp.models.clusters_nodes import RancherCondition
+from rancher_mcp.models.clusters_nodes import ClusterIssue, RancherCondition
 
 
 def _empty_conditions() -> list[RancherCondition]:
@@ -27,30 +27,12 @@ class NodeHealthRollup(RancherModel):
     unschedulable: int = 0
 
 
-def _empty_issues() -> list["ClusterIssue"]:
+def _empty_issues() -> list[ClusterIssue]:
     return []
 
 
 def _empty_counts() -> dict[str, int]:
     return {}
-
-
-class ClusterIssue(RancherModel):
-    """One structured cluster-health issue — exception-shaped signal.
-
-    Carries the diagnosis inline (``severity`` + ``since``/``age_days`` +
-    ``reason``/``message``) so an agent branches without a second call (ADR-0002
-    rules #2/#4). ``since``/``age_days`` separate a five-year-old benign state
-    from a live incident — the single highest-value addition in the field spec.
-    """
-
-    type: str
-    status: str | None = None
-    severity: str = "warning"
-    since: str | None = None
-    age_days: int | None = None
-    reason: str | None = None
-    message: str | None = None
 
 
 class ClusterHealthCheck(RancherModel):

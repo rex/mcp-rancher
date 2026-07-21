@@ -5,21 +5,31 @@ from __future__ import annotations
 from collections.abc import Mapping
 
 from rancher_mcp.models.clusters_nodes import (
+    ClusterIssue,
     RancherClusterComponentStatus,
     RancherClusterSummary,
     RancherCondition,
     RancherNodeSummary,
 )
-from rancher_mcp.tools.support.collections import object_items
-from rancher_mcp.tools.support.conditions import (
-    condition_is_true,
-    condition_types_true,
+from rancher_mcp.tools.support.cluster_issues import (
+    component_health as _component_health,
 )
+from rancher_mcp.tools.support.cluster_issues import (
+    condition_counts as _condition_counts,
+)
+from rancher_mcp.tools.support.cluster_issues import (
+    derive_cluster_issues as _derive_issues,
+)
+from rancher_mcp.tools.support.collections import object_items
+from rancher_mcp.tools.support.conditions import condition_is_true
 from rancher_mcp.tools.support.conditions import (
     conditions_from_payload as support_conditions_from_payload,
 )
 from rancher_mcp.tools.support.values import (
     bool_value as _bool_value,
+)
+from rancher_mcp.tools.support.values import (
+    string_value as _string_value,
 )
 
 
@@ -27,12 +37,6 @@ def _conditions_from_payload(payload: Mapping[str, object]) -> list[RancherCondi
     """Normalize top-level conditions from a Rancher payload."""
 
     return support_conditions_from_payload(payload)
-
-
-def _condition_types_true(payload: Mapping[str, object]) -> list[str]:
-    """Return sorted condition types whose status is true."""
-
-    return condition_types_true(_conditions_from_payload(payload))
 
 
 def _condition_is_true(payload: Mapping[str, object], condition_type: str) -> bool | None:
@@ -111,9 +115,27 @@ def _cluster_summary_from_payload(payload: Mapping[str, object]) -> RancherClust
             "id": summary.id or summary.name or "<unknown-cluster>",
             "name": summary.name or summary.id or "<unknown-cluster>",
             "ready": _condition_is_true(payload, "Ready"),
-            "condition_types_true": _condition_types_true(payload),
         }
     )
+
+
+def _cluster_issues_from_payload(payload: Mapping[str, object]) -> list[ClusterIssue]:
+    """Typed cluster issues for ``cluster_get`` (M-A3 / ADR-0002) — the same
+    condition + component derivation ``cluster_health_check`` uses (L-2b),
+    minus the node-health issues: ``cluster_get`` fetches only
+    ``/v3/clusters/{id}`` and makes no second ``/v3/nodes`` call."""
+
+    conditions = _conditions_from_payload(payload)
+    _, _, unhealthy_names = _component_health(payload)
+    state = _string_value(payload, "state")
+    return _derive_issues(state, conditions, unhealthy_names, None)
+
+
+def _cluster_condition_counts_from_payload(payload: Mapping[str, object]) -> dict[str, int]:
+    """Condition truthiness counts for ``cluster_get`` — replaces the old
+    ``condition_types_true`` echo (M-A3 / ADR-0002)."""
+
+    return _condition_counts(_conditions_from_payload(payload))
 
 
 def _node_summary_from_payload(payload: Mapping[str, object]) -> RancherNodeSummary:
@@ -163,6 +185,8 @@ def _data_items(payload: Mapping[str, object]) -> list[dict[str, object]]:
 build_cluster_query_params = _build_cluster_query_params
 build_node_query_params = _build_node_query_params
 cluster_summary_from_payload = _cluster_summary_from_payload
+cluster_issues_from_payload = _cluster_issues_from_payload
+cluster_condition_counts_from_payload = _cluster_condition_counts_from_payload
 component_statuses_from_payload = _component_statuses_from_payload
 conditions_from_payload = _conditions_from_payload
 data_items = _data_items
