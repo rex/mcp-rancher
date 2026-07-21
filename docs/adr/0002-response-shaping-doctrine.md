@@ -49,20 +49,41 @@ firehose. This ADR is that doctrine; **Track L** is its execution.
 - **Two hard invariants:** K-1 (secrets never emitted) holds at every
   verbosity level; the Rancher 2.6.5 compat floor is not regressed.
 
-## The governing test
+## The five rules
 
-Every field decision becomes mechanical under one question (VS):
+Every field decision follows from five rules (the field pass, "VS", crystallized
+these; §-refs point at the per-tool companion):
 
-> **Would this field ever change what the agent does next?**
+1. **Would this field ever change what I do next?** If no, it doesn't ship by
+   default — regardless of how "complete" it makes the response look.
+2. **Exception-shaped.** Healthy things collapse to one line; broken things
+   expand, with `reason` + `message` + **`since`** promoted to the top level.
+3. **Derive it for me.** Percentages, day counts (`ageDays`), human units
+   (`3.8Gi`, not `4005204Ki`), collapsed tokens (`ready:"2/2"`, `nodes:"3/3"`),
+   and roll-ups (a fleet version matrix). If the agent has to do arithmetic on
+   the response, that is a design bug.
+4. **Never make me call twice for the obvious follow-up.** If `ready:false`, the
+   `reason` ships *with* it. The flagship: a cert whose `ready:false` list item
+   forced a 3 KB `_get` whose entire value was `reason:"SecretMismatch"`.
+5. **Redact, don't delete.** A withheld secret leaves a marker
+   (`"[redacted: …]"` + a `redacted:true` flag) so the consumer knows a value
+   *existed* rather than inferring absence. This **corrects K-1**, which deleted
+   the registration-token `manifestUrl` field outright — destroying the fact
+   that a manifest exists at all.
 
-If no, it is noise — regardless of how "complete" it makes the response look.
-
-**Signal — always earns a slot:** (1) identity that round-trips (the `id`
-other tools *accept as input*); (2) a derived health verdict to branch on
-(`healthy:false`, `issueCount`, `topIssues[]` — `clusters_health_summary` is
-the reference); (3) desired-vs-actual (`desiredReplicas/readyReplicas/ready/
-rolloutComplete` — `deployments_list` is the gold standard); (4) enough to
-construct the next call without a lookup.
+**Signal — always earns a slot:** (1) identity that round-trips (the `id` other
+tools *accept as input*); (2) a derived health verdict to branch on
+(`healthy:false`, `severity`, `topIssues[]` — `clusters_health_summary` is the
+reference); (3) desired-vs-actual (`desiredReplicas/readyReplicas/ready/
+rolloutComplete` — `deployments_list` is the gold standard); (4) **temporal
+context** — `since` + `ageDays` on every issue/condition: *the single
+highest-value addition in the field spec.* A condition that flipped five years
+ago and one that flipped five minutes ago demand different responses and today
+render identically — it is what made a five-year-old benign state read as a live
+HIGH finding, costing a 15 KB call just to fetch one timestamp; (5) **`severity`**
+— without it "monitoring addon absent" and "Ready=False" both collapse to bare
+`healthy:false` (which made 2 of 12 clusters read unhealthy for a cosmetic
+reason); (6) enough to construct the next call without a lookup.
 
 **Noise — killed unconditionally, at every verbosity level:** k8s/Rancher
 plumbing (`managedFields`, `resourceVersion`, `uid`, `generation`,
@@ -107,6 +128,35 @@ target shapes (derived from real prod tool output) are documented separately
 by the field agent as the L-2 companion; this table is the philosophy those
 shapes instantiate.
 
+## Error envelope — one shape, and a `retryable` branch
+
+Errors obey the doctrine too. Today four "not found" variants render at four
+different qualities and none says *why*. The unified shape:
+
+```json
+{"error":"CAPABILITY_UNAVAILABLE","reason":"not_installed","capability":"cis-benchmark",
+ "resource":"cisscans","cluster":"<id>","message":"The rancher-cis-benchmark app is not installed …",
+ "remediation":"Install … or skip …","retryable":false}
+```
+
+`retryable` is the field that matters most — it tells the agent to stop rather
+than burn calls, and it structurally separates a missing app (`retryable:false`,
+`reason:"not_installed"`) from a transient tunnel drop (`retryable:true`,
+`reason:"tunnel_unavailable"`) — the distinction K-5 was reaching for. **Track K's
+K-5 (tunnel classification) and K-8b (curated "not installed") adopt this
+envelope** rather than spawning parallel error slices.
+
+## Guardrails — what NOT to do (the contrarian calls)
+
+- **Do not rename collection keys to a uniform `items`.** Keep `clusters` /
+  `pods` / … — ~200-tool churn for marginal gain; the win is removing noise, not
+  renaming it.
+- **Do** standardize the *count* key to `count` (today `clusterCount`,
+  `failingCount`, `stalledCount`, `blockingCount`, `unreadyCount` — the agent had
+  to parse each tool differently).
+- **Keep explicit `scope`** (e.g. `namespace:null`) — it is how the agent
+  confirms a cluster-wide sweep actually ran estate-wide vs silently defaulting.
+
 ## Considered Options
 
 1. **Per-tool hand-curation only** — reshape each tool bespoke.
@@ -149,13 +199,23 @@ Track L**. Confirmed by Pierce 2026-07-21 (all four design forks answered):
    field from serialized output entirely at L-0 (today it is mostly empty and,
    when populated, bare tool names an agent already knows). **It must return**
    in a later phase as a single **root-level pre-filled call** —
-   `{tool: "rancher_cluster_health_check", args: {cluster_id: "c-h26fc"}}` —
+   `{tool: "rancher_cluster_health_check", args: {cluster_id: "c-xxxxx"}}` —
    carrying the *arguments* (the part the agent lacks), not bare names. This
    deletion is deliberate and reversible-by-design; the re-add is tracked as a
    first-class slice (**L-3b**), not a nice-to-have.
 3. **Exception-shaping: light first** (promote `reason`/`message` to root,
    drop all-True `conditions[]`); full dynamic collapse is staged as L-2b.
 4. **This ADR** is written before code as the durable spec.
+5. **Redact, don't delete (corrects K-1).** Restore the registration-token
+   `manifestUrl` as a redaction marker + `manifestAvailable:true`; scrubbed
+   values leave a `redacted:true` flag; secret responses may expose key *names*
+   (`keys:["tls.crt","tls.key"]`), never values. Tracked as **L-0b**.
+6. **Derivation is first-class, not polish.** `since`/`ageDays` on every
+   issue/condition, `severity`, normalized units, and derived math
+   (`utilization`, `daysRemaining`, `ready:"2/2"`) are required signal per rules
+   2–3, threaded through the L-2 hand-tunes. Per-tool target shapes come from the
+   field companion (`2026-07-21-rancher-mcp-ideal-response-shapes.md`, local —
+   **not committed**: it carries live prod identifiers and this repo is public).
 
 **`verbose` mechanism:** one boolean to start; `verbose=true` returns the
 post-scrub raw object (K-1 still applies) as a debugging escape hatch, and the

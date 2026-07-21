@@ -281,8 +281,10 @@ directly — codegen slices change `scripts/codegen/` + `catalog/curated_tools/
 and the Rancher 2.6.5 compat floor hold across every slice.
 
 Legend: 🅢 small · 🅜 medium · 🅛 large. **VS** = the field-agent validation
-sweep (2026-07-21). Per-tool ideal target shapes for L-2 come from the VS
-companion (forthcoming, from prod tool-output analysis).
+sweep + the per-tool redesign spec `2026-07-21-rancher-mcp-ideal-response-shapes.md`
+(the L-2 companion — **local, NOT committed**: it carries live prod cluster
+IDs/IPs/hostnames and this repo is public). Every ideal shape below is measured
+against real captured bytes in that doc; §-refs point into it.
 
 ### L-0 — Universal envelope (one file, every tool)
 
@@ -304,6 +306,29 @@ companion (forthcoming, from prod tool-output analysis).
     unchanged; new `tests/unit/test_envelope_shaping.py`; suite green (expect
     real churn updating assertions that referenced the dropped keys).
   - **Predecessor:** K-1, K-2. Hand-written (serializer, not codegen).
+  - **Cross-cutting (not the serializer — per-model; lands in L-1 codegen lists
+    + L-2 hand-tuned lists):** standardize the count key to `count`; keep a
+    non-empty `scope` (e.g. `namespace:null`); **do NOT rename collection keys to
+    `items`** (ADR-0002 guardrail — ~200-tool churn for marginal gain).
+
+### L-0b — Redact, don't delete (corrects K-1) — security-adjacent
+
+- [ ] **L-0b** Restore withheld-secret markers 🅢
+  - **Why:** ADR-0002 rule #5. K-1 *deleted* the registration-token `manifestUrl`
+    outright, so the consumer can no longer tell a manifest exists (VS §14).
+    Silent removal destroys information; a marker preserves the fact while
+    withholding the value.
+  - **Fix:** (a) restore `manifestUrl` as a literal marker
+    `"[redacted: contains cluster registration token]"` + `manifestAvailable:true`
+    on the registration-token model; (b) have `scrub_secrets` (`redaction.py`)
+    stamp `redacted:true` on any object it masked (withheld ≠ absent); (c) expose
+    secret key *names* (`keys:["tls.crt","tls.key"]`) where safe — names aren't
+    values.
+  - **Acceptance:** no cleartext credential at any verbosity (K-1 invariant
+    holds); `manifestUrl` present-but-redacted; `redacted:true` on masked objects;
+    `test_secret_scrubbing.py` extended. **Reviewer escalated to Opus
+    (security.md — redaction/token code).**
+  - **Predecessor:** K-1. Touches `redaction.py` + fleet-registration + secret models.
 
 ### L-1 — Mutation receipts (codegen template)
 
@@ -315,11 +340,13 @@ companion (forthcoming, from prod tool-output analysis).
     are already lean (`RancherCuratedDeleteResult` drops `response_payload`
     via K-2 — VS's 31 KB `pod_delete` was pre-K-2), so the target is the
     metadata/state writes, not deletes.
-  - **Fix:** a shared receipt — `{ok, action, kind, name, namespace,
-    <one or two operation-relevant fields e.g. desiredReplicas/readyReplicas
-    for scale>}` — expressed once in the codegen template
-    (`scripts/codegen/templates/tool_module.py.j2`) + a receipt model, then
-    `make codegen`. ~60 tools, one pattern.
+  - **Fix:** a shared receipt — `{ok, action, kind, cluster, namespace, name,
+    before:{…}, result/after:{…}, durationMs, nextSteps}` — expressed once in the
+    codegen template (`scripts/codegen/templates/tool_module.py.j2`) + a receipt
+    model, then `make codegen`. `before` is the highest-value part (the only
+    pre-mutation record — audit-grade, VS §2) and may need capturing state
+    *before* the write (delete → a pre-GET; set_labels/scale already hold the
+    object). Scale/resize → `before:{replicas:2}, after:{replicas:4}`. ~60 tools.
   - **Acceptance:** metadata/state mutations return <0.5 KB receipts;
     `make check-codegen` + `make check-tool-manifest` green; deletes unchanged.
   - **Predecessor:** L-0.
@@ -328,19 +355,36 @@ companion (forthcoming, from prod tool-output analysis).
 
 VS priority order; per-tool target shapes from the companion. Exception-shaping
 is **light first** (promote `reason`/`message` to root, drop all-True
-`conditions[]`); the full "healthy collapses to one line" is L-2b.
+`conditions[]`); the full "healthy collapses to one line" is L-2b. **Every
+health/issue-bearing tool also gains `since` + `ageDays` and `severity` on each
+issue (ADR-0002 rules 2–3 — `since`/`ageDays` is the single highest-value
+addition in VS) and derived units/tokens; these are required signal, not polish.**
 
 - [ ] **L-2a** `node_get` / `nodes_list` — restore `requested` cpu/mem +
-  `os`/`kernel`/`runtime` as **always** typed fields (the direct K-2-over-trim
-  fix; ADR-0002 constraint) 🅢
+  `os`/`kernel`/`runtime` + `etcd.lastLocalSnapshot` as **always** typed fields
+  (the direct K-2-over-trim fix); **normalize memory to human units** (`3.8Gi`,
+  not `4005204Ki`), **derive `utilization` %**, fix the duplicate `Ready`
+  condition (real captured bug), `summary.versions` map on the list (the "killer
+  field for upgrade work"). 🅢
 - [ ] **L-2b** `cluster_health_check` — exception-shape 27 conditions → the 1
-  issue; promote `reason`/`message`; the pilot for full exception-shaping 🅜
-- [ ] **L-2c** `pods_list` / `pod_get` — phase, ready, restartCount, ownerRef;
-  exception-shape 🅜
-- [ ] **L-2d** the 6 `find_*` tools — already close (the triage surface); tighten
-  + fix discoverability (see L-3c) 🅢
-- [ ] **L-2e** `cert_manager_certificate*` — promote failure `reason`/`message`
-  (VS's cert case: the whole answer was `reason: SecretMismatch`) 🅢
+  issue with `since`/`ageDays`/`severity`; drop the `conditionTypesTrue` echo;
+  the pilot for full exception-shaping 🅜
+- [ ] **L-2c** `pods_list` / `pod_get` — `ready:"2/2"` + `owner:"Kind/name"`
+  tokens; `id`/`podIp`/`qosClass`/zero-`restartCount` → verbose; **split terminal
+  job pods into `completed[]`** + a `summary:{running,succeeded,pending,failed,
+  unhealthy}` (fixes the misleading "6 pods / 3 running" for a healthy ns);
+  `pod_get` inline `events[]` (last 5 Warning — today a second call). 🅜
+- [ ] **L-2d** the 6 `find_*` tools — already close (the triage surface); the
+  **populated** case is the untested risk — carry `reason`/`message`/`container`/
+  `since`/`lastState.exitCode` so a hit needs no `_get`; standardize `count`;
+  fix discoverability (see L-3c) 🅢
+- [ ] **L-2e** `cert_manager_certificate*` — carry the diagnosis on the **list**
+  item so the `_get` becomes unnecessary: promote `reason`/`message`/`since` +
+  derive `daysRemaining` (VS §12 flagship: the whole 3 KB `_get` existed only for
+  `reason:"SecretMismatch"`). 🅢
+- [ ] **L-2f** `clusters_health_summary` (the crown jewel — small upgrades):
+  collapse healthy clusters to one line, add a root `bySeverity` + a `versions`
+  fleet rollup (free upgrade matrix now that K-3 reports real versions). 🅢
   - **Templates (already good post-K-2):** `cluster_get`, `deployments_list` —
     use as the reference shape, no rework.
   - **Predecessor:** L-0. **Predecessor for full collapse (L-2b):** output-model
@@ -348,14 +392,16 @@ is **light first** (promote `reason`/`message` to root, drop all-True
 
 ### L-3 — Tail
 
-- [ ] **L-3a** `settings_list` — **value-level** truncation (VS G3; ~9 KB, a
-  single value 4 KB). NOT a payload problem (K-2 doesn't touch it) — the setting
-  *values* are huge (`k8s-version-to-service-options`, `internal-cacerts` PEM).
-  Add `max_value_length` / `values:false` summary. 🅜
+- [ ] **L-3a** `settings_list` — **value-level** truncation (VS §11; ~9 KB, one
+  value 4 KB — K-2 doesn't touch it, the *values* are the payload). Default cap
+  ~200 chars; for JSON-object values emit `keys[]` + `length` (the key list *is*
+  the signal — which versions are configured — the 4 KB of flags never was);
+  parse certificate values to `{subject, notAfter}` instead of dumping PEM; drop
+  `source`/`default:""` from the default view; full value via `setting_get`/verbose. 🅜
 - [ ] **L-3b** 🔁 **`suggestedNextSteps` MANDATORY RE-ADD** — CAPTURED, MUST
   RETURN. L-0 deletes it; this slice brings it back **correctly** as a single
   **root-level pre-filled call** carrying the *arguments*, not bare tool names:
-  `{tool: "rancher_cluster_health_check", args: {cluster_id: "c-h26fc"}}`. Do
+  `{tool: "rancher_cluster_health_check", args: {cluster_id: "c-xxxxx"}}`. Do
   NOT resurrect the per-object bare-name array. Blocked on L-0 landing first. 🅜
 - [ ] **L-3c** `find_*` discoverability — the cluster-wide sweep ("omit
   `namespace`") is a weak affordance even VS missed despite the docstring. Put
@@ -365,6 +411,12 @@ is **light first** (promote `reason`/`message` to root, drop all-True
   `rancher_server_version` returns *Rancher's*. Add build/version metadata to
   `server_health` or a new `server_info`. (Adjacent to shaping; folded here as
   a small usability fix.) 🅢
+- [ ] **L-3e** error envelope — the unified `{error, reason, capability, resource,
+  cluster, message, remediation, retryable}` (ADR-0002). `retryable` is the key
+  branch (stop vs retry) and separates a missing app (`not_installed`) from a
+  transient tunnel drop (`tunnel_unavailable`). Definition lives here; **Track K
+  K-5 (tunnel) + K-8b (curated not-installed) implement it** — this slice is the
+  shared shape + the `cluster_policy_reports_list` "404 page not found" fix. 🅜
 
 **Definition of done (Track L):** L-0 + L-1 shipped (long tail + mutations lean,
 no plumbing/empty noise); the ~15 L-2 tools match the companion target shapes

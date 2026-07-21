@@ -180,9 +180,17 @@ nice-to-have. See ADR-0002 Decision Outcome §2 + ROADMAP L-3b.
 - **K-8b** (curated "not installed" — `cluster_policy_reports` still `404 page
   not found`) stays in **Track K bucket ③** (unchanged).
 
-**INCOMING:** the field agent (Opus 4.8, live prod tool output) is producing
-per-tool ideal target shapes — the **L-2 companion**. L-2 slices consume it;
-L-0/L-1 do not block on it.
+**COMPANION RECEIVED + FOLDED IN:** `2026-07-21-rancher-mcp-ideal-response-shapes.md`
+— the field agent's per-tool redesign spec (real captured bytes, measured deltas).
+It added five things the first ADR-0002 draft missed, now folded into ADR-0002 +
+Track L: **`since`/`ageDays`** (VS's #1 — five-year-old vs five-minute-old states
+render identically today), **`severity`**, **derive/normalize units** (`3.8Gi`
+not `4005204Ki`; derived `utilization`/`daysRemaining`), **redact-don't-delete**
+(**corrects K-1** — new slice **L-0b**), and a **unified error envelope w/
+`retryable`** (**L-3e**). Also new: **L-2f** `clusters_health_summary`.
+⚠️ **This repo is PUBLIC and all three local reports carry live prod cluster
+IDs/IPs/hostnames/domains — do NOT commit them.** Protected via `.git/info/exclude`;
+committed docs (ADR-0002/ROADMAP) use sanitized placeholders (`c-xxxxx`).
 
 **Open USER decisions:** (a) ADR-0001 positioning lane (gates Track K bucket ③);
 (b) S3-key rotation; (c) K-12 `capabilities.yaml primary_target`.
