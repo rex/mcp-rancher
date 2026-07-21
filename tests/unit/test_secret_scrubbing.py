@@ -104,6 +104,18 @@ def test_scrub_ignores_empty_secret_values() -> None:
     assert scrub_secrets(raw) == raw  # nothing to leak → left as-is
 
 
+def test_scrub_marks_objects_where_a_value_was_withheld() -> None:
+    # ADR-0002 rule #5 (redact don't delete): an object whose value was masked
+    # gains a `redacted: True` marker, so withheld is distinguishable from absent.
+    scrubbed = scrub_secrets(
+        {"accessKey": "AKIAEXAMPLE", "bucket": "b"}
+    )  # pragma: allowlist secret
+    assert scrubbed["accessKey"] == REDACTED
+    assert scrubbed["redacted"] is True
+    # An object with nothing to withhold gains no marker.
+    assert "redacted" not in scrub_secrets({"bucket": "b"})
+
+
 def test_is_secret_key_normalizes_separators_and_case() -> None:
     for variant in ("accessKey", "access_key", "access-key", "AccessKey", "ACCESSKEY"):
         assert is_secret_key(variant)

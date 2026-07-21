@@ -71,8 +71,10 @@ def _secret_summary_from_payload(payload: Mapping[str, object]) -> RancherSecret
     """
 
     summary = RancherSecretSummary.model_validate(payload)
-    data = mapping_value(payload, "data") or {}
-    return summary.model_copy(update={"data_key_count": len(string_dict(data))})
+    data = string_dict(mapping_value(payload, "data") or {})
+    return summary.model_copy(
+        update={"data_key_count": len(data), "data_keys": sorted(data)},
+    )
 
 
 def _service_account_summary_from_payload(

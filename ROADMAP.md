@@ -313,7 +313,7 @@ against real captured bytes in that doc; §-refs point into it.
 
 ### L-0b — Redact, don't delete (corrects K-1) — security-adjacent
 
-- [ ] **L-0b** Restore withheld-secret markers 🅢
+- [x] **L-0b** Restore withheld-secret markers 🅢 — **✅ done v1.16.0** (registration-token `manifest_url` restored as a marker via the list builder — real token never reaches the list; `scrub_secrets` stamps `redacted:true` on masked objects; secret `data_keys` names exposed on the list summary; `tests/unit/test_redact_dont_delete.py`)
   - **Why:** ADR-0002 rule #5. K-1 *deleted* the registration-token `manifestUrl`
     outright, so the consumer can no longer tell a manifest exists (VS §14).
     Silent removal destroys information; a marker preserves the fact while

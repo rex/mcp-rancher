@@ -3,6 +3,7 @@
 import pytest
 
 from rancher_mcp.config import AppSettings
+from rancher_mcp.models.fleet_registration import MANIFEST_URL_REDACTED
 from rancher_mcp.tools.fleet_registration import (
     rancher_cluster_registration_token_get,
     rancher_cluster_registration_tokens_list,
@@ -92,10 +93,12 @@ async def test_rancher_cluster_registration_tokens_list_returns_typed_summaries(
 
     assert result.instance == "work"
     assert result.cluster_registration_token_count == 1
-    # The join credential (manifestUrl embeds a bearer token) must NOT be
-    # sprayed across the list surface — it lives on the deliberate detail get.
+    # Redact-don't-delete (L-0b): the list signals a manifest exists via a
+    # marker, but the real join URL (which embeds a bearer token) never appears
+    # — the full URL lives on the deliberate single-resource detail get.
     summary_dump = result.cluster_registration_tokens[0].model_dump(by_alias=True)
-    assert "manifestUrl" not in summary_dump
+    assert summary_dump["manifestUrl"] == MANIFEST_URL_REDACTED
+    assert "example_local.yaml" not in str(summary_dump)
 
 
 @pytest.mark.asyncio

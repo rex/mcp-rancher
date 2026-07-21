@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.16.0] — 2026-07-21 — Agent: Claude
+### Changed
+- L-0b redact-don't-delete (corrects K-1): the registration-token list now signals a manifest exists via a redaction marker (the real join token stays on the deliberate detail get) instead of omitting the field entirely; scrub_secrets stamps redacted:true on any object whose value it masked (withheld != absent); secret list summaries expose data-key NAMES (never values). ADR-0002 rule #5.
+
 ## [1.15.0] — 2026-07-21 — Agent: Claude
 ### Changed
 - L-0 universal envelope: the base serializer now strips universal noise from every response — suggestedNextSteps deleted (pending L-3b re-add), k8s/Rancher plumbing keys removed, and empty []/{}/None values omitted so healthy objects collapse. Falsy scalars kept; the generic escape-hatch raw payload is preserved verbatim (still secret-scrubbed). New module src/rancher_mcp/envelope.py + tests/unit/test_envelope_shaping.py.

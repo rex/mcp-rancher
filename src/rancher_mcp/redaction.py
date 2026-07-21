@@ -61,7 +61,10 @@ def scrub_secrets(value: Any) -> Any:
     Walks nested ``dict`` and ``list`` structures. For any mapping key that
     matches the secret denylist, the associated value is replaced with
     :data:`REDACTED` (empty / ``None`` values are left as-is — there is
-    nothing to leak). All other values pass through unchanged.
+    nothing to leak). Any mapping in which at least one value was redacted also
+    gains a ``redacted: True`` marker, so a consumer can tell a value was
+    *withheld* rather than *absent* (ADR-0002 rule #5, "redact don't delete").
+    All other values pass through unchanged.
 
     Pure: performs no I/O and does not mutate ``value`` (returns new
     containers). Idempotent, so it is safe to apply to already-scrubbed data.
@@ -69,11 +72,15 @@ def scrub_secrets(value: Any) -> Any:
 
     if isinstance(value, dict):
         scrubbed: dict[Any, Any] = {}
+        redacted_any = False
         for key, item in value.items():  # type: ignore[misc]
             if isinstance(key, str) and is_secret_key(key) and item not in (None, "", [], {}):
                 scrubbed[key] = REDACTED
+                redacted_any = True
             else:
                 scrubbed[key] = scrub_secrets(item)
+        if redacted_any:
+            scrubbed["redacted"] = True
         return scrubbed
     if isinstance(value, list):
         return [scrub_secrets(item) for item in value]  # type: ignore[misc]

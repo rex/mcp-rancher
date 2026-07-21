@@ -81,6 +81,10 @@ class RancherSecretSummary(RancherModel):
     )
     secret_type: str | None = Field(default=None, validation_alias=AliasPath("type"))
     data_key_count: int = 0
+    data_keys: list[str] = Field(default_factory=list)
+    """Data-key *names* only (e.g. ``["tls.crt", "tls.key"]``) — never values.
+    Names are safe and tell a consumer what a Secret contains without exposing
+    anything (L-0b / ADR-0002 rule #5). Populated by the list builder."""
     immutable: bool | None = None
 
 
@@ -91,7 +95,6 @@ class RancherSecretDetail(RancherSecretSummary):
     the unmasked payload when needed.
     """
 
-    data_keys: list[str] = Field(default_factory=list)
     annotation_keys: list[str] = Field(default_factory=list)
 
 

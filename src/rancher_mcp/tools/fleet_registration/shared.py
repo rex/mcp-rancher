@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 
 from rancher_mcp.models.fleet_registration import (
+    MANIFEST_URL_REDACTED,
     RancherClusterRegistrationTokenSummary,
     RancherFleetWorkspaceSummary,
 )
@@ -98,9 +99,19 @@ def _fleet_workspace_summary_from_payload(
 def _cluster_registration_token_summary_from_payload(
     payload: Mapping[str, object],
 ) -> RancherClusterRegistrationTokenSummary:
-    """Normalize one Rancher cluster-registration-token payload."""
+    """Normalize one Rancher cluster-registration-token payload.
 
-    return RancherClusterRegistrationTokenSummary.model_validate(payload)
+    Redact-don't-delete (L-0b): ``manifest_url`` is *always* overwritten with a
+    marker (or ``None``), so the real join token — which the payload embeds in
+    the manifest path — can never reach the list, while a present manifest is
+    still signalled.
+    """
+
+    summary = RancherClusterRegistrationTokenSummary.model_validate(payload)
+    has_manifest = bool(payload.get("manifestUrl"))
+    return summary.model_copy(
+        update={"manifest_url": MANIFEST_URL_REDACTED if has_manifest else None},
+    )
 
 
 action_keys = _action_keys
