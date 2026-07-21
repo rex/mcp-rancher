@@ -14,7 +14,7 @@ from rancher_mcp.models.cert_manager import (
     RancherCertManagerCertificateDetail,
     RancherCertManagerCertificateList,
 )
-from rancher_mcp.models.resources import RancherCuratedDeleteResult
+from rancher_mcp.models.resources import RancherCuratedDeleteResult, RancherMutationReceipt
 from rancher_mcp.rate_limit import rate_limit_writes
 from rancher_mcp.services.instances import resolve_instance
 from rancher_mcp.services.resources.builders_pagination import next_page_token_from_payload
@@ -260,8 +260,8 @@ async def _patch_cert_manager_certificate_set_labels(
     certificate_name: str,
     labels: dict[str, str],
     client: ManagementDiscoveryClient,
-) -> RancherCertManagerCertificateDetail:
-    """Set_labels one cert_manager_certificate via JSON merge-patch; returns the curated detail."""
+) -> RancherMutationReceipt:
+    """Set_labels one cert_manager_certificate via JSON merge-patch; returns a mutation receipt."""
 
     patch_subtree: dict[str, object] = {}
     patch_subtree["labels"] = labels
@@ -272,28 +272,21 @@ async def _patch_cert_manager_certificate_set_labels(
     request_payload: dict[str, object] = patch_subtree
     request_payload = {"metadata": request_payload}
 
-    payload = await client.patch_json(
+    await client.patch_json(
         cert_manager_namespaced_resource_path(
             cluster_id, namespace, "certificates", certificate_name
         ),
         payload=request_payload,
     )
-    summary = certificate_summary_from_payload(payload)
-
-    metadata = mapping_value(payload, "metadata") or {}
-    metadata_annotations = mapping_value(metadata, "annotations") or {}
-    detail = RancherCertManagerCertificateDetail.model_validate(payload)
-    return detail.model_copy(
-        update={
-            "ready": summary.ready,
-            "annotation_keys": sorted(string_dict(metadata_annotations)),
-            "condition_types_true": condition_types_true_from_payload(payload),
-            "payload": dict(payload),
-            "suggested_next_steps": [
-                "rancher_cert_manager_certificate_get",
-                "rancher_cert_manager_certificates_list",
-            ],
-        }
+    return RancherMutationReceipt(
+        instance=instance_name,
+        plane="steve",
+        action="set_labels",
+        kind="cert_manager_certificate",
+        name=certificate_name,
+        cluster_id=cluster_id,
+        namespace=namespace,
+        changed=dict(patch_subtree),
     )
 
 
@@ -307,7 +300,7 @@ async def rancher_cert_manager_certificate_set_labels(
     instance: str | None = None,
     settings: AppSettings | None = None,
     client: ManagementDiscoveryClient | None = None,
-) -> RancherCertManagerCertificateDetail:
+) -> RancherMutationReceipt:
     """Set_labels one cert_manager_certificate via JSON merge-patch."""
 
     resolved_settings = settings or get_settings()
@@ -340,8 +333,8 @@ async def _patch_cert_manager_certificate_set_annotations(
     certificate_name: str,
     annotations: dict[str, str],
     client: ManagementDiscoveryClient,
-) -> RancherCertManagerCertificateDetail:
-    """Set_annotations one cert_manager_certificate via JSON merge-patch; returns the curated detail."""
+) -> RancherMutationReceipt:
+    """Set_annotations one cert_manager_certificate via JSON merge-patch; returns a mutation receipt."""
 
     patch_subtree: dict[str, object] = {}
     patch_subtree["annotations"] = annotations
@@ -352,25 +345,21 @@ async def _patch_cert_manager_certificate_set_annotations(
     request_payload: dict[str, object] = patch_subtree
     request_payload = {"metadata": request_payload}
 
-    payload = await client.patch_json(
+    await client.patch_json(
         cert_manager_namespaced_resource_path(
             cluster_id, namespace, "certificates", certificate_name
         ),
         payload=request_payload,
     )
-    summary = certificate_summary_from_payload(payload)
-
-    metadata = mapping_value(payload, "metadata") or {}
-    metadata_annotations = mapping_value(metadata, "annotations") or {}
-    detail = RancherCertManagerCertificateDetail.model_validate(payload)
-    return detail.model_copy(
-        update={
-            "ready": summary.ready,
-            "annotation_keys": sorted(string_dict(metadata_annotations)),
-            "condition_types_true": condition_types_true_from_payload(payload),
-            "payload": dict(payload),
-            "suggested_next_steps": ["rancher_cert_manager_certificate_get"],
-        }
+    return RancherMutationReceipt(
+        instance=instance_name,
+        plane="steve",
+        action="set_annotations",
+        kind="cert_manager_certificate",
+        name=certificate_name,
+        cluster_id=cluster_id,
+        namespace=namespace,
+        changed=dict(patch_subtree),
     )
 
 
@@ -384,7 +373,7 @@ async def rancher_cert_manager_certificate_set_annotations(
     instance: str | None = None,
     settings: AppSettings | None = None,
     client: ManagementDiscoveryClient | None = None,
-) -> RancherCertManagerCertificateDetail:
+) -> RancherMutationReceipt:
     """Set_annotations one cert_manager_certificate via JSON merge-patch."""
 
     resolved_settings = settings or get_settings()
@@ -474,7 +463,7 @@ async def rancher_cert_manager_certificate_set_labels_tool(
     labels: dict[str, str],
     cluster_id: str = "local",
     instance: str | None = None,
-) -> RancherCertManagerCertificateDetail:
+) -> RancherMutationReceipt:
     """Public MCP wrapper for curated cert_manager_certificate set_labels."""
 
     return await rancher_cert_manager_certificate_set_labels(
@@ -492,7 +481,7 @@ async def rancher_cert_manager_certificate_set_annotations_tool(
     annotations: dict[str, str],
     cluster_id: str = "local",
     instance: str | None = None,
-) -> RancherCertManagerCertificateDetail:
+) -> RancherMutationReceipt:
     """Public MCP wrapper for curated cert_manager_certificate set_annotations."""
 
     return await rancher_cert_manager_certificate_set_annotations(

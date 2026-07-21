@@ -14,7 +14,7 @@ from rancher_mcp.models.prometheus_monitoring import (
     RancherServiceMonitorDetail,
     RancherServiceMonitorList,
 )
-from rancher_mcp.models.resources import RancherCuratedDeleteResult
+from rancher_mcp.models.resources import RancherCuratedDeleteResult, RancherMutationReceipt
 from rancher_mcp.rate_limit import rate_limit_writes
 from rancher_mcp.services.instances import resolve_instance
 from rancher_mcp.services.resources.builders_pagination import next_page_token_from_payload
@@ -238,8 +238,8 @@ async def _patch_service_monitor_set_labels(
     service_monitor_name: str,
     labels: dict[str, str],
     client: ManagementDiscoveryClient,
-) -> RancherServiceMonitorDetail:
-    """Set_labels one service_monitor via JSON merge-patch; returns the curated detail."""
+) -> RancherMutationReceipt:
+    """Set_labels one service_monitor via JSON merge-patch; returns a mutation receipt."""
 
     patch_subtree: dict[str, object] = {}
     patch_subtree["labels"] = labels
@@ -250,29 +250,21 @@ async def _patch_service_monitor_set_labels(
     request_payload: dict[str, object] = patch_subtree
     request_payload = {"metadata": request_payload}
 
-    payload = await client.patch_json(
+    await client.patch_json(
         monitoring_namespaced_resource_path(
             cluster_id, namespace, "servicemonitors", service_monitor_name
         ),
         payload=request_payload,
     )
-    summary = service_monitor_summary_from_payload(payload)
-
-    metadata = mapping_value(payload, "metadata") or {}
-    metadata_annotations = mapping_value(metadata, "annotations") or {}
-    detail = RancherServiceMonitorDetail.model_validate(payload)
-    return detail.model_copy(
-        update={
-            "endpoint_count": summary.endpoint_count,
-            "target_namespaces": summary.target_namespaces,
-            "annotation_keys": sorted(string_dict(metadata_annotations)),
-            "endpoint_ports": service_monitor_endpoint_ports(payload),
-            "payload": dict(payload),
-            "suggested_next_steps": [
-                "rancher_service_monitor_get",
-                "rancher_service_monitors_list",
-            ],
-        }
+    return RancherMutationReceipt(
+        instance=instance_name,
+        plane="steve",
+        action="set_labels",
+        kind="service_monitor",
+        name=service_monitor_name,
+        cluster_id=cluster_id,
+        namespace=namespace,
+        changed=dict(patch_subtree),
     )
 
 
@@ -286,7 +278,7 @@ async def rancher_service_monitor_set_labels(
     instance: str | None = None,
     settings: AppSettings | None = None,
     client: ManagementDiscoveryClient | None = None,
-) -> RancherServiceMonitorDetail:
+) -> RancherMutationReceipt:
     """Set_labels one service_monitor via JSON merge-patch."""
 
     resolved_settings = settings or get_settings()
@@ -319,8 +311,8 @@ async def _patch_service_monitor_set_annotations(
     service_monitor_name: str,
     annotations: dict[str, str],
     client: ManagementDiscoveryClient,
-) -> RancherServiceMonitorDetail:
-    """Set_annotations one service_monitor via JSON merge-patch; returns the curated detail."""
+) -> RancherMutationReceipt:
+    """Set_annotations one service_monitor via JSON merge-patch; returns a mutation receipt."""
 
     patch_subtree: dict[str, object] = {}
     patch_subtree["annotations"] = annotations
@@ -331,26 +323,21 @@ async def _patch_service_monitor_set_annotations(
     request_payload: dict[str, object] = patch_subtree
     request_payload = {"metadata": request_payload}
 
-    payload = await client.patch_json(
+    await client.patch_json(
         monitoring_namespaced_resource_path(
             cluster_id, namespace, "servicemonitors", service_monitor_name
         ),
         payload=request_payload,
     )
-    summary = service_monitor_summary_from_payload(payload)
-
-    metadata = mapping_value(payload, "metadata") or {}
-    metadata_annotations = mapping_value(metadata, "annotations") or {}
-    detail = RancherServiceMonitorDetail.model_validate(payload)
-    return detail.model_copy(
-        update={
-            "endpoint_count": summary.endpoint_count,
-            "target_namespaces": summary.target_namespaces,
-            "annotation_keys": sorted(string_dict(metadata_annotations)),
-            "endpoint_ports": service_monitor_endpoint_ports(payload),
-            "payload": dict(payload),
-            "suggested_next_steps": ["rancher_service_monitor_get"],
-        }
+    return RancherMutationReceipt(
+        instance=instance_name,
+        plane="steve",
+        action="set_annotations",
+        kind="service_monitor",
+        name=service_monitor_name,
+        cluster_id=cluster_id,
+        namespace=namespace,
+        changed=dict(patch_subtree),
     )
 
 
@@ -364,7 +351,7 @@ async def rancher_service_monitor_set_annotations(
     instance: str | None = None,
     settings: AppSettings | None = None,
     client: ManagementDiscoveryClient | None = None,
-) -> RancherServiceMonitorDetail:
+) -> RancherMutationReceipt:
     """Set_annotations one service_monitor via JSON merge-patch."""
 
     resolved_settings = settings or get_settings()
@@ -450,7 +437,7 @@ async def rancher_service_monitor_set_labels_tool(
     labels: dict[str, str],
     cluster_id: str = "local",
     instance: str | None = None,
-) -> RancherServiceMonitorDetail:
+) -> RancherMutationReceipt:
     """Public MCP wrapper for curated service_monitor set_labels."""
 
     return await rancher_service_monitor_set_labels(
@@ -468,7 +455,7 @@ async def rancher_service_monitor_set_annotations_tool(
     annotations: dict[str, str],
     cluster_id: str = "local",
     instance: str | None = None,
-) -> RancherServiceMonitorDetail:
+) -> RancherMutationReceipt:
     """Public MCP wrapper for curated service_monitor set_annotations."""
 
     return await rancher_service_monitor_set_annotations(

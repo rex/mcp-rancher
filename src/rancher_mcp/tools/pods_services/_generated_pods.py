@@ -11,7 +11,7 @@ from rancher_mcp.clients.steve import RancherSteveClient, SteveMutationClient
 from rancher_mcp.config import AppSettings, get_settings
 from rancher_mcp.exceptions import RancherCapabilityError
 from rancher_mcp.models.pods_services import RancherPodDetail, RancherPodList
-from rancher_mcp.models.resources import RancherCuratedDeleteResult
+from rancher_mcp.models.resources import RancherCuratedDeleteResult, RancherMutationReceipt
 from rancher_mcp.rate_limit import rate_limit_writes
 from rancher_mcp.services.instances import resolve_instance
 from rancher_mcp.services.resource_queries import build_steve_list_query_params
@@ -241,8 +241,8 @@ async def _patch_pod_set_labels(
     pod_name: str,
     labels: dict[str, str],
     client: SteveMutationClient,
-) -> RancherPodDetail:
-    """Set_labels one pod via JSON merge-patch; returns the curated detail."""
+) -> RancherMutationReceipt:
+    """Set_labels one pod via JSON merge-patch; returns a mutation receipt."""
 
     patch_subtree: dict[str, object] = {}
     patch_subtree["labels"] = labels
@@ -253,21 +253,16 @@ async def _patch_pod_set_labels(
     request_payload: dict[str, object] = patch_subtree
     request_payload = {"metadata": request_payload}
 
-    payload = await client.patch_json(f"/pods/{namespace}/{pod_name}", payload=request_payload)
-    summary = pod_summary_from_payload(payload)
-
-    detail = RancherPodDetail.model_validate(payload)
-    return detail.model_copy(
-        update={
-            "id": summary.id,
-            "ready": summary.ready,
-            "ready_containers": summary.ready_containers,
-            "total_containers": summary.total_containers,
-            "restart_count": summary.restart_count,
-            "link_keys": sorted(mapping_value(payload, "links") or {}),
-            "payload": dict(payload),
-            "suggested_next_steps": ["rancher_pod_get", "rancher_pods_list"],
-        }
+    await client.patch_json(f"/pods/{namespace}/{pod_name}", payload=request_payload)
+    return RancherMutationReceipt(
+        instance=instance_name,
+        plane="steve",
+        action="set_labels",
+        kind="pod",
+        name=pod_name,
+        cluster_id=cluster_id,
+        namespace=namespace,
+        changed=dict(patch_subtree),
     )
 
 
@@ -281,7 +276,7 @@ async def rancher_pod_set_labels(
     instance: str | None = None,
     settings: AppSettings | None = None,
     client: SteveMutationClient | None = None,
-) -> RancherPodDetail:
+) -> RancherMutationReceipt:
     """Set_labels one pod via JSON merge-patch."""
 
     resolved_settings = settings or get_settings()
@@ -318,8 +313,8 @@ async def _patch_pod_set_annotations(
     pod_name: str,
     annotations: dict[str, str],
     client: SteveMutationClient,
-) -> RancherPodDetail:
-    """Set_annotations one pod via JSON merge-patch; returns the curated detail."""
+) -> RancherMutationReceipt:
+    """Set_annotations one pod via JSON merge-patch; returns a mutation receipt."""
 
     patch_subtree: dict[str, object] = {}
     patch_subtree["annotations"] = annotations
@@ -330,21 +325,16 @@ async def _patch_pod_set_annotations(
     request_payload: dict[str, object] = patch_subtree
     request_payload = {"metadata": request_payload}
 
-    payload = await client.patch_json(f"/pods/{namespace}/{pod_name}", payload=request_payload)
-    summary = pod_summary_from_payload(payload)
-
-    detail = RancherPodDetail.model_validate(payload)
-    return detail.model_copy(
-        update={
-            "id": summary.id,
-            "ready": summary.ready,
-            "ready_containers": summary.ready_containers,
-            "total_containers": summary.total_containers,
-            "restart_count": summary.restart_count,
-            "link_keys": sorted(mapping_value(payload, "links") or {}),
-            "payload": dict(payload),
-            "suggested_next_steps": ["rancher_pod_get"],
-        }
+    await client.patch_json(f"/pods/{namespace}/{pod_name}", payload=request_payload)
+    return RancherMutationReceipt(
+        instance=instance_name,
+        plane="steve",
+        action="set_annotations",
+        kind="pod",
+        name=pod_name,
+        cluster_id=cluster_id,
+        namespace=namespace,
+        changed=dict(patch_subtree),
     )
 
 
@@ -358,7 +348,7 @@ async def rancher_pod_set_annotations(
     instance: str | None = None,
     settings: AppSettings | None = None,
     client: SteveMutationClient | None = None,
-) -> RancherPodDetail:
+) -> RancherMutationReceipt:
     """Set_annotations one pod via JSON merge-patch."""
 
     resolved_settings = settings or get_settings()
@@ -452,7 +442,7 @@ async def rancher_pod_set_labels_tool(
     labels: dict[str, str],
     cluster_id: str = "local",
     instance: str | None = None,
-) -> RancherPodDetail:
+) -> RancherMutationReceipt:
     """Public MCP wrapper for curated pod set_labels."""
 
     return await rancher_pod_set_labels(
@@ -470,7 +460,7 @@ async def rancher_pod_set_annotations_tool(
     annotations: dict[str, str],
     cluster_id: str = "local",
     instance: str | None = None,
-) -> RancherPodDetail:
+) -> RancherMutationReceipt:
     """Public MCP wrapper for curated pod set_annotations."""
 
     return await rancher_pod_set_annotations(

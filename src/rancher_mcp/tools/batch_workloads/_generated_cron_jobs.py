@@ -11,7 +11,7 @@ from rancher_mcp.clients.management import ManagementDiscoveryClient, RancherMan
 from rancher_mcp.config import AppSettings, get_settings
 from rancher_mcp.exceptions import RancherCapabilityError
 from rancher_mcp.models.batch_workloads import RancherCronJobDetail, RancherCronJobList
-from rancher_mcp.models.resources import RancherCuratedDeleteResult
+from rancher_mcp.models.resources import RancherCuratedDeleteResult, RancherMutationReceipt
 from rancher_mcp.rate_limit import rate_limit_writes
 from rancher_mcp.services.instances import resolve_instance
 from rancher_mcp.services.resources.builders_pagination import next_page_token_from_payload
@@ -240,8 +240,8 @@ async def _patch_cron_job_suspend(
     cron_job_name: str,
     suspend: bool,
     client: ManagementDiscoveryClient,
-) -> RancherCronJobDetail:
-    """Suspend one cron_job via JSON merge-patch; returns the curated detail."""
+) -> RancherMutationReceipt:
+    """Suspend one cron_job via JSON merge-patch; returns a mutation receipt."""
 
     patch_subtree: dict[str, object] = {}
     patch_subtree["suspend"] = suspend
@@ -252,24 +252,19 @@ async def _patch_cron_job_suspend(
     request_payload: dict[str, object] = patch_subtree
     request_payload = {"spec": request_payload}
 
-    payload = await client.patch_json(
+    await client.patch_json(
         batch_v1_resource_path(cluster_id, namespace, "cronjobs", cron_job_name),
         payload=request_payload,
     )
-    summary = cron_job_summary_from_payload(payload)
-
-    metadata = mapping_value(payload, "metadata") or {}
-    metadata_annotations = mapping_value(metadata, "annotations") or {}
-    detail = RancherCronJobDetail.model_validate(payload)
-    return detail.model_copy(
-        update={
-            "active_job_count": summary.active_job_count,
-            "annotation_keys": sorted(string_dict(metadata_annotations)),
-            "container_images": cron_job_container_images(payload),
-            "active_job_names": active_job_names(payload),
-            "payload": dict(payload),
-            "suggested_next_steps": ["rancher_cron_job_get", "rancher_jobs_list"],
-        }
+    return RancherMutationReceipt(
+        instance=instance_name,
+        plane="steve",
+        action="suspend",
+        kind="cron_job",
+        name=cron_job_name,
+        cluster_id=cluster_id,
+        namespace=namespace,
+        changed=dict(patch_subtree),
     )
 
 
@@ -283,7 +278,7 @@ async def rancher_cron_job_suspend(
     instance: str | None = None,
     settings: AppSettings | None = None,
     client: ManagementDiscoveryClient | None = None,
-) -> RancherCronJobDetail:
+) -> RancherMutationReceipt:
     """Suspend one cron_job via JSON merge-patch."""
 
     resolved_settings = settings or get_settings()
@@ -316,8 +311,8 @@ async def _patch_cron_job_set_labels(
     cron_job_name: str,
     labels: dict[str, str],
     client: ManagementDiscoveryClient,
-) -> RancherCronJobDetail:
-    """Set_labels one cron_job via JSON merge-patch; returns the curated detail."""
+) -> RancherMutationReceipt:
+    """Set_labels one cron_job via JSON merge-patch; returns a mutation receipt."""
 
     patch_subtree: dict[str, object] = {}
     patch_subtree["labels"] = labels
@@ -328,24 +323,19 @@ async def _patch_cron_job_set_labels(
     request_payload: dict[str, object] = patch_subtree
     request_payload = {"metadata": request_payload}
 
-    payload = await client.patch_json(
+    await client.patch_json(
         batch_v1_resource_path(cluster_id, namespace, "cronjobs", cron_job_name),
         payload=request_payload,
     )
-    summary = cron_job_summary_from_payload(payload)
-
-    metadata = mapping_value(payload, "metadata") or {}
-    metadata_annotations = mapping_value(metadata, "annotations") or {}
-    detail = RancherCronJobDetail.model_validate(payload)
-    return detail.model_copy(
-        update={
-            "active_job_count": summary.active_job_count,
-            "annotation_keys": sorted(string_dict(metadata_annotations)),
-            "container_images": cron_job_container_images(payload),
-            "active_job_names": active_job_names(payload),
-            "payload": dict(payload),
-            "suggested_next_steps": ["rancher_cron_job_get"],
-        }
+    return RancherMutationReceipt(
+        instance=instance_name,
+        plane="steve",
+        action="set_labels",
+        kind="cron_job",
+        name=cron_job_name,
+        cluster_id=cluster_id,
+        namespace=namespace,
+        changed=dict(patch_subtree),
     )
 
 
@@ -359,7 +349,7 @@ async def rancher_cron_job_set_labels(
     instance: str | None = None,
     settings: AppSettings | None = None,
     client: ManagementDiscoveryClient | None = None,
-) -> RancherCronJobDetail:
+) -> RancherMutationReceipt:
     """Set_labels one cron_job via JSON merge-patch."""
 
     resolved_settings = settings or get_settings()
@@ -392,8 +382,8 @@ async def _patch_cron_job_set_annotations(
     cron_job_name: str,
     annotations: dict[str, str],
     client: ManagementDiscoveryClient,
-) -> RancherCronJobDetail:
-    """Set_annotations one cron_job via JSON merge-patch; returns the curated detail."""
+) -> RancherMutationReceipt:
+    """Set_annotations one cron_job via JSON merge-patch; returns a mutation receipt."""
 
     patch_subtree: dict[str, object] = {}
     patch_subtree["annotations"] = annotations
@@ -404,24 +394,19 @@ async def _patch_cron_job_set_annotations(
     request_payload: dict[str, object] = patch_subtree
     request_payload = {"metadata": request_payload}
 
-    payload = await client.patch_json(
+    await client.patch_json(
         batch_v1_resource_path(cluster_id, namespace, "cronjobs", cron_job_name),
         payload=request_payload,
     )
-    summary = cron_job_summary_from_payload(payload)
-
-    metadata = mapping_value(payload, "metadata") or {}
-    metadata_annotations = mapping_value(metadata, "annotations") or {}
-    detail = RancherCronJobDetail.model_validate(payload)
-    return detail.model_copy(
-        update={
-            "active_job_count": summary.active_job_count,
-            "annotation_keys": sorted(string_dict(metadata_annotations)),
-            "container_images": cron_job_container_images(payload),
-            "active_job_names": active_job_names(payload),
-            "payload": dict(payload),
-            "suggested_next_steps": ["rancher_cron_job_get"],
-        }
+    return RancherMutationReceipt(
+        instance=instance_name,
+        plane="steve",
+        action="set_annotations",
+        kind="cron_job",
+        name=cron_job_name,
+        cluster_id=cluster_id,
+        namespace=namespace,
+        changed=dict(patch_subtree),
     )
 
 
@@ -435,7 +420,7 @@ async def rancher_cron_job_set_annotations(
     instance: str | None = None,
     settings: AppSettings | None = None,
     client: ManagementDiscoveryClient | None = None,
-) -> RancherCronJobDetail:
+) -> RancherMutationReceipt:
     """Set_annotations one cron_job via JSON merge-patch."""
 
     resolved_settings = settings or get_settings()
@@ -467,31 +452,26 @@ async def _patch_cron_job_resume(
     namespace: str,
     cron_job_name: str,
     client: ManagementDiscoveryClient,
-) -> RancherCronJobDetail:
-    """Resume one cron_job via JSON merge-patch; returns the curated detail."""
+) -> RancherMutationReceipt:
+    """Resume one cron_job via JSON merge-patch; returns a mutation receipt."""
 
     patch_subtree: dict[str, object] = {"suspend": False}
     request_payload: dict[str, object] = patch_subtree
     request_payload = {"spec": request_payload}
 
-    payload = await client.patch_json(
+    await client.patch_json(
         batch_v1_resource_path(cluster_id, namespace, "cronjobs", cron_job_name),
         payload=request_payload,
     )
-    summary = cron_job_summary_from_payload(payload)
-
-    metadata = mapping_value(payload, "metadata") or {}
-    metadata_annotations = mapping_value(metadata, "annotations") or {}
-    detail = RancherCronJobDetail.model_validate(payload)
-    return detail.model_copy(
-        update={
-            "active_job_count": summary.active_job_count,
-            "annotation_keys": sorted(string_dict(metadata_annotations)),
-            "container_images": cron_job_container_images(payload),
-            "active_job_names": active_job_names(payload),
-            "payload": dict(payload),
-            "suggested_next_steps": ["rancher_cron_job_get", "rancher_jobs_list"],
-        }
+    return RancherMutationReceipt(
+        instance=instance_name,
+        plane="steve",
+        action="resume",
+        kind="cron_job",
+        name=cron_job_name,
+        cluster_id=cluster_id,
+        namespace=namespace,
+        changed=dict(patch_subtree),
     )
 
 
@@ -504,7 +484,7 @@ async def rancher_cron_job_resume(
     instance: str | None = None,
     settings: AppSettings | None = None,
     client: ManagementDiscoveryClient | None = None,
-) -> RancherCronJobDetail:
+) -> RancherMutationReceipt:
     """Resume one cron_job via JSON merge-patch."""
 
     resolved_settings = settings or get_settings()
@@ -592,7 +572,7 @@ async def rancher_cron_job_suspend_tool(
     suspend: bool,
     cluster_id: str = "local",
     instance: str | None = None,
-) -> RancherCronJobDetail:
+) -> RancherMutationReceipt:
     """Public MCP wrapper for curated cron_job suspend."""
 
     return await rancher_cron_job_suspend(
@@ -610,7 +590,7 @@ async def rancher_cron_job_set_labels_tool(
     labels: dict[str, str],
     cluster_id: str = "local",
     instance: str | None = None,
-) -> RancherCronJobDetail:
+) -> RancherMutationReceipt:
     """Public MCP wrapper for curated cron_job set_labels."""
 
     return await rancher_cron_job_set_labels(
@@ -628,7 +608,7 @@ async def rancher_cron_job_set_annotations_tool(
     annotations: dict[str, str],
     cluster_id: str = "local",
     instance: str | None = None,
-) -> RancherCronJobDetail:
+) -> RancherMutationReceipt:
     """Public MCP wrapper for curated cron_job set_annotations."""
 
     return await rancher_cron_job_set_annotations(
@@ -645,7 +625,7 @@ async def rancher_cron_job_resume_tool(
     cron_job_name: str,
     cluster_id: str = "local",
     instance: str | None = None,
-) -> RancherCronJobDetail:
+) -> RancherMutationReceipt:
     """Public MCP wrapper for curated cron_job resume."""
 
     return await rancher_cron_job_resume(

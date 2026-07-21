@@ -104,11 +104,12 @@ async def test_rancher_horizontal_pod_autoscaler_set_min_max_round_trip() -> Non
     # Body is exactly the narrow patch — camelCase keys nested under target_path=spec.
     assert client.last_patch_payload == {"spec": {"minReplicas": 3, "maxReplicas": 15}}
 
-    # Response is shaped through get's pipeline — curated detail returned.
+    # Response is a compact mutation receipt (L-1), not the full detail.
+    assert result.ok is True
+    assert result.action == "set_min_max"
     assert result.name == "demo-hpa"
     assert result.namespace == "demo"
-    assert result.min_replicas == 3
-    assert result.max_replicas == 15
+    assert result.changed == {"minReplicas": 3, "maxReplicas": 15}
 
 
 @pytest.mark.asyncio

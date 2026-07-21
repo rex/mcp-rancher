@@ -169,5 +169,7 @@ async def test_rancher_statefulset_scale_uses_same_substrate_as_deployment_scale
     # substrate behavior across resource types.
     assert client.last_patch_payload == {"spec": {"replicas": 3}}
 
-    # Curated detail comes back through the get pipeline.
-    assert result.id == "apps/demo-db"
+    # Compact mutation receipt (L-1), not the full detail.
+    assert result.ok is True
+    assert result.action == "scale"
+    assert result.changed == {"replicas": 3}

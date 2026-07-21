@@ -108,7 +108,9 @@ async def test_rancher_persistent_volume_claim_set_labels_round_trip() -> None:
 
     # Response is parsed through the get pipeline.
     assert result.name == "demo-claim"
-    assert result.payload == _PATCHED_PVC_PAYLOAD
+    assert result.ok is True
+    assert result.action == "set_labels"
+    assert result.changed == {"labels": {"env": "prod"}}
 
 
 @pytest.mark.asyncio
@@ -232,7 +234,9 @@ async def test_rancher_persistent_volume_claim_set_annotations_round_trip() -> N
 
     # Response is parsed through the get pipeline.
     assert result.name == "demo-claim"
-    assert result.payload == _PATCHED_PVC_ANNOTATED_PAYLOAD
+    assert result.ok is True
+    assert result.action == "set_annotations"
+    assert result.changed == {"annotations": {"team": "platform"}}
 
 
 @pytest.mark.asyncio

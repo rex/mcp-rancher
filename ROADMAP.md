@@ -332,7 +332,7 @@ against real captured bytes in that doc; §-refs point into it.
 
 ### L-1 — Mutation receipts (codegen template)
 
-- [ ] **L-1** Metadata/state mutations return a receipt, not the full object 🅜
+- [x] **L-1** Metadata/state mutations return a receipt, not the full object 🅜 — **✅ done v1.17.0** (new `RancherMutationReceipt` `{ok, action, kind, name, changed}` via the codegen template; ~60 patch tools regenerated; `changed` = the merge-patch leaf — no pre-GET; deletes unchanged; `make check-codegen` clean; 19 mutation tests updated + `test_mutation_receipt.py`)
   - **Why:** `*_set_labels` / `*_set_annotations` (and `*_scale` / `*_restart`
     / `*_pause` / `*_resume` / `*_suspend` / `*_cordon`) return the **entire
     curated detail** to confirm a one-field change (see

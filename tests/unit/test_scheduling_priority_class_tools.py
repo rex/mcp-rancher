@@ -139,7 +139,9 @@ async def test_rancher_priority_class_set_labels_round_trip() -> None:
 
     # Response is parsed through the get pipeline.
     assert result.name == "system-critical"
-    assert result.payload == _PATCHED_PRIORITY_CLASS_PAYLOAD
+    assert result.ok is True
+    assert result.action == "set_labels"
+    assert result.changed == {"labels": {"env": "prod"}}
 
 
 @pytest.mark.asyncio
@@ -249,7 +251,9 @@ async def test_rancher_priority_class_set_annotations_round_trip() -> None:
 
     # Response is parsed through the get pipeline.
     assert result.name == "system-critical"
-    assert result.payload == _PATCHED_PRIORITY_CLASS_ANNOTATIONS_PAYLOAD
+    assert result.ok is True
+    assert result.action == "set_annotations"
+    assert result.changed == {"annotations": {"managed-by": "platform-team"}}
 
 
 @pytest.mark.asyncio

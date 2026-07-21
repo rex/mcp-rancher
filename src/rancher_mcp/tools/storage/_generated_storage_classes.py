@@ -10,7 +10,7 @@ from rancher_mcp.audit import audit_mutation
 from rancher_mcp.clients.management import ManagementDiscoveryClient, RancherManagementClient
 from rancher_mcp.config import AppSettings, get_settings
 from rancher_mcp.exceptions import RancherCapabilityError
-from rancher_mcp.models.resources import RancherCuratedDeleteResult
+from rancher_mcp.models.resources import RancherCuratedDeleteResult, RancherMutationReceipt
 from rancher_mcp.models.storage import RancherStorageClassDetail, RancherStorageClassList
 from rancher_mcp.rate_limit import rate_limit_writes
 from rancher_mcp.services.instances import resolve_instance
@@ -222,8 +222,8 @@ async def _patch_storage_class_set_labels(
     storage_class_name: str,
     labels: dict[str, str],
     client: ManagementDiscoveryClient,
-) -> RancherStorageClassDetail:
-    """Set_labels one storage_class via JSON merge-patch; returns the curated detail."""
+) -> RancherMutationReceipt:
+    """Set_labels one storage_class via JSON merge-patch; returns a mutation receipt."""
 
     patch_subtree: dict[str, object] = {}
     patch_subtree["labels"] = labels
@@ -234,24 +234,18 @@ async def _patch_storage_class_set_labels(
     request_payload: dict[str, object] = patch_subtree
     request_payload = {"metadata": request_payload}
 
-    payload = await client.patch_json(
+    await client.patch_json(
         storage_class_resource_path(cluster_id, storage_class_name),
         payload=request_payload,
     )
-    summary = storage_class_summary_from_payload(payload)
-
-    metadata = mapping_value(payload, "metadata") or {}
-    metadata_annotations = mapping_value(metadata, "annotations") or {}
-    detail = RancherStorageClassDetail.model_validate(payload)
-    return detail.model_copy(
-        update={
-            "default_class": summary.default_class,
-            "parameter_keys": summary.parameter_keys,
-            "mount_options": string_list(payload.get("mountOptions")),
-            "annotation_keys": sorted(string_dict(metadata_annotations)),
-            "payload": dict(payload),
-            "suggested_next_steps": ["rancher_storage_class_get"],
-        }
+    return RancherMutationReceipt(
+        instance=instance_name,
+        plane="steve",
+        action="set_labels",
+        kind="storage_class",
+        name=storage_class_name,
+        cluster_id=cluster_id,
+        changed=dict(patch_subtree),
     )
 
 
@@ -264,7 +258,7 @@ async def rancher_storage_class_set_labels(
     instance: str | None = None,
     settings: AppSettings | None = None,
     client: ManagementDiscoveryClient | None = None,
-) -> RancherStorageClassDetail:
+) -> RancherMutationReceipt:
     """Set_labels one storage_class via JSON merge-patch."""
 
     resolved_settings = settings or get_settings()
@@ -294,8 +288,8 @@ async def _patch_storage_class_set_annotations(
     storage_class_name: str,
     annotations: dict[str, str],
     client: ManagementDiscoveryClient,
-) -> RancherStorageClassDetail:
-    """Set_annotations one storage_class via JSON merge-patch; returns the curated detail."""
+) -> RancherMutationReceipt:
+    """Set_annotations one storage_class via JSON merge-patch; returns a mutation receipt."""
 
     patch_subtree: dict[str, object] = {}
     patch_subtree["annotations"] = annotations
@@ -306,24 +300,18 @@ async def _patch_storage_class_set_annotations(
     request_payload: dict[str, object] = patch_subtree
     request_payload = {"metadata": request_payload}
 
-    payload = await client.patch_json(
+    await client.patch_json(
         storage_class_resource_path(cluster_id, storage_class_name),
         payload=request_payload,
     )
-    summary = storage_class_summary_from_payload(payload)
-
-    metadata = mapping_value(payload, "metadata") or {}
-    metadata_annotations = mapping_value(metadata, "annotations") or {}
-    detail = RancherStorageClassDetail.model_validate(payload)
-    return detail.model_copy(
-        update={
-            "default_class": summary.default_class,
-            "parameter_keys": summary.parameter_keys,
-            "mount_options": string_list(payload.get("mountOptions")),
-            "annotation_keys": sorted(string_dict(metadata_annotations)),
-            "payload": dict(payload),
-            "suggested_next_steps": ["rancher_storage_class_get"],
-        }
+    return RancherMutationReceipt(
+        instance=instance_name,
+        plane="steve",
+        action="set_annotations",
+        kind="storage_class",
+        name=storage_class_name,
+        cluster_id=cluster_id,
+        changed=dict(patch_subtree),
     )
 
 
@@ -336,7 +324,7 @@ async def rancher_storage_class_set_annotations(
     instance: str | None = None,
     settings: AppSettings | None = None,
     client: ManagementDiscoveryClient | None = None,
-) -> RancherStorageClassDetail:
+) -> RancherMutationReceipt:
     """Set_annotations one storage_class via JSON merge-patch."""
 
     resolved_settings = settings or get_settings()
@@ -413,7 +401,7 @@ async def rancher_storage_class_set_labels_tool(
     labels: dict[str, str],
     cluster_id: str = "local",
     instance: str | None = None,
-) -> RancherStorageClassDetail:
+) -> RancherMutationReceipt:
     """Public MCP wrapper for curated storage_class set_labels."""
 
     return await rancher_storage_class_set_labels(
@@ -429,7 +417,7 @@ async def rancher_storage_class_set_annotations_tool(
     annotations: dict[str, str],
     cluster_id: str = "local",
     instance: str | None = None,
-) -> RancherStorageClassDetail:
+) -> RancherMutationReceipt:
     """Public MCP wrapper for curated storage_class set_annotations."""
 
     return await rancher_storage_class_set_annotations(

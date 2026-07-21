@@ -93,10 +93,12 @@ async def test_rancher_service_set_type_round_trip() -> None:
     # Body is exactly the narrow patch — type nested under target_path=spec.
     assert client.last_patch_payload == {"spec": {"type": "NodePort"}}
 
-    # Response is shaped through get's pipeline — curated detail returned.
+    # Response is a compact mutation receipt (L-1), not the full detail.
+    assert result.ok is True
+    assert result.action == "set_type"
     assert result.name == "demo-service"
     assert result.namespace == "demo"
-    assert result.service_type == "NodePort"
+    assert result.changed == {"type": "NodePort"}
 
 
 @pytest.mark.asyncio

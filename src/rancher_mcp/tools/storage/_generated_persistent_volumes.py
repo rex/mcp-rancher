@@ -10,6 +10,7 @@ from rancher_mcp.audit import audit_mutation
 from rancher_mcp.clients.management import ManagementDiscoveryClient, RancherManagementClient
 from rancher_mcp.config import AppSettings, get_settings
 from rancher_mcp.exceptions import RancherCapabilityError
+from rancher_mcp.models.resources import RancherMutationReceipt
 from rancher_mcp.models.storage import RancherPersistentVolumeDetail, RancherPersistentVolumeList
 from rancher_mcp.rate_limit import rate_limit_writes
 from rancher_mcp.services.instances import resolve_instance
@@ -163,8 +164,8 @@ async def _patch_persistent_volume_set_labels(
     volume_name: str,
     labels: dict[str, str],
     client: ManagementDiscoveryClient,
-) -> RancherPersistentVolumeDetail:
-    """Set_labels one persistent_volume via JSON merge-patch; returns the curated detail."""
+) -> RancherMutationReceipt:
+    """Set_labels one persistent_volume via JSON merge-patch; returns a mutation receipt."""
 
     patch_subtree: dict[str, object] = {}
     patch_subtree["labels"] = labels
@@ -175,20 +176,18 @@ async def _patch_persistent_volume_set_labels(
     request_payload: dict[str, object] = patch_subtree
     request_payload = {"metadata": request_payload}
 
-    payload = await client.patch_json(
+    await client.patch_json(
         persistent_volume_resource_path(cluster_id, volume_name),
         payload=request_payload,
     )
-    summary = persistent_volume_summary_from_payload(payload)
-
-    detail = RancherPersistentVolumeDetail.model_validate(payload)
-    return detail.model_copy(
-        update={
-            "volume_source_type": summary.volume_source_type,
-            "node_hostnames": persistent_volume_node_hostnames(payload),
-            "payload": dict(payload),
-            "suggested_next_steps": ["rancher_persistent_volume_get"],
-        }
+    return RancherMutationReceipt(
+        instance=instance_name,
+        plane="steve",
+        action="set_labels",
+        kind="persistent_volume",
+        name=volume_name,
+        cluster_id=cluster_id,
+        changed=dict(patch_subtree),
     )
 
 
@@ -201,7 +200,7 @@ async def rancher_persistent_volume_set_labels(
     instance: str | None = None,
     settings: AppSettings | None = None,
     client: ManagementDiscoveryClient | None = None,
-) -> RancherPersistentVolumeDetail:
+) -> RancherMutationReceipt:
     """Set_labels one persistent_volume via JSON merge-patch."""
 
     resolved_settings = settings or get_settings()
@@ -231,8 +230,8 @@ async def _patch_persistent_volume_set_annotations(
     volume_name: str,
     annotations: dict[str, str],
     client: ManagementDiscoveryClient,
-) -> RancherPersistentVolumeDetail:
-    """Set_annotations one persistent_volume via JSON merge-patch; returns the curated detail."""
+) -> RancherMutationReceipt:
+    """Set_annotations one persistent_volume via JSON merge-patch; returns a mutation receipt."""
 
     patch_subtree: dict[str, object] = {}
     patch_subtree["annotations"] = annotations
@@ -243,20 +242,18 @@ async def _patch_persistent_volume_set_annotations(
     request_payload: dict[str, object] = patch_subtree
     request_payload = {"metadata": request_payload}
 
-    payload = await client.patch_json(
+    await client.patch_json(
         persistent_volume_resource_path(cluster_id, volume_name),
         payload=request_payload,
     )
-    summary = persistent_volume_summary_from_payload(payload)
-
-    detail = RancherPersistentVolumeDetail.model_validate(payload)
-    return detail.model_copy(
-        update={
-            "volume_source_type": summary.volume_source_type,
-            "node_hostnames": persistent_volume_node_hostnames(payload),
-            "payload": dict(payload),
-            "suggested_next_steps": ["rancher_persistent_volume_get"],
-        }
+    return RancherMutationReceipt(
+        instance=instance_name,
+        plane="steve",
+        action="set_annotations",
+        kind="persistent_volume",
+        name=volume_name,
+        cluster_id=cluster_id,
+        changed=dict(patch_subtree),
     )
 
 
@@ -269,7 +266,7 @@ async def rancher_persistent_volume_set_annotations(
     instance: str | None = None,
     settings: AppSettings | None = None,
     client: ManagementDiscoveryClient | None = None,
-) -> RancherPersistentVolumeDetail:
+) -> RancherMutationReceipt:
     """Set_annotations one persistent_volume via JSON merge-patch."""
 
     resolved_settings = settings or get_settings()
@@ -332,7 +329,7 @@ async def rancher_persistent_volume_set_labels_tool(
     labels: dict[str, str],
     cluster_id: str = "local",
     instance: str | None = None,
-) -> RancherPersistentVolumeDetail:
+) -> RancherMutationReceipt:
     """Public MCP wrapper for curated persistent_volume set_labels."""
 
     return await rancher_persistent_volume_set_labels(
@@ -348,7 +345,7 @@ async def rancher_persistent_volume_set_annotations_tool(
     annotations: dict[str, str],
     cluster_id: str = "local",
     instance: str | None = None,
-) -> RancherPersistentVolumeDetail:
+) -> RancherMutationReceipt:
     """Public MCP wrapper for curated persistent_volume set_annotations."""
 
     return await rancher_persistent_volume_set_annotations(

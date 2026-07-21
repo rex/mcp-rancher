@@ -10,7 +10,7 @@ from rancher_mcp.audit import audit_mutation
 from rancher_mcp.clients.management import ManagementDiscoveryClient, RancherManagementClient
 from rancher_mcp.config import AppSettings, get_settings
 from rancher_mcp.exceptions import RancherCapabilityError
-from rancher_mcp.models.resources import RancherCuratedDeleteResult
+from rancher_mcp.models.resources import RancherCuratedDeleteResult, RancherMutationReceipt
 from rancher_mcp.models.workloads import RancherDeploymentDetail, RancherDeploymentList
 from rancher_mcp.rate_limit import rate_limit_writes
 from rancher_mcp.services.instances import resolve_instance
@@ -244,8 +244,8 @@ async def _patch_deployment_scale(
     deployment_name: str,
     replicas: int,
     client: ManagementDiscoveryClient,
-) -> RancherDeploymentDetail:
-    """Scale one deployment via JSON merge-patch; returns the curated detail."""
+) -> RancherMutationReceipt:
+    """Scale one deployment via JSON merge-patch; returns a mutation receipt."""
 
     patch_subtree: dict[str, object] = {}
     patch_subtree["replicas"] = replicas
@@ -256,25 +256,19 @@ async def _patch_deployment_scale(
     request_payload: dict[str, object] = patch_subtree
     request_payload = {"spec": request_payload}
 
-    payload = await client.patch_json(
+    await client.patch_json(
         workload_resource_path(cluster_id, namespace, "deployments", deployment_name),
         payload=request_payload,
     )
-    summary = deployment_summary_from_payload(payload)
-
-    metadata = mapping_value(payload, "metadata") or {}
-    metadata_annotations = mapping_value(metadata, "annotations") or {}
-    detail = RancherDeploymentDetail.model_validate(payload)
-    return detail.model_copy(
-        update={
-            "id": summary.id,
-            "ready": summary.ready,
-            "rollout_complete": summary.rollout_complete,
-            "container_images": summary.container_images,
-            "annotation_keys": sorted(string_dict(metadata_annotations)),
-            "payload": dict(payload),
-            "suggested_next_steps": ["rancher_deployment_get", "rancher_pods_list"],
-        }
+    return RancherMutationReceipt(
+        instance=instance_name,
+        plane="steve",
+        action="scale",
+        kind="deployment",
+        name=deployment_name,
+        cluster_id=cluster_id,
+        namespace=namespace,
+        changed=dict(patch_subtree),
     )
 
 
@@ -288,7 +282,7 @@ async def rancher_deployment_scale(
     instance: str | None = None,
     settings: AppSettings | None = None,
     client: ManagementDiscoveryClient | None = None,
-) -> RancherDeploymentDetail:
+) -> RancherMutationReceipt:
     """Scale one deployment via JSON merge-patch."""
 
     resolved_settings = settings or get_settings()
@@ -321,8 +315,8 @@ async def _patch_deployment_set_labels(
     deployment_name: str,
     labels: dict[str, str],
     client: ManagementDiscoveryClient,
-) -> RancherDeploymentDetail:
-    """Set_labels one deployment via JSON merge-patch; returns the curated detail."""
+) -> RancherMutationReceipt:
+    """Set_labels one deployment via JSON merge-patch; returns a mutation receipt."""
 
     patch_subtree: dict[str, object] = {}
     patch_subtree["labels"] = labels
@@ -333,25 +327,19 @@ async def _patch_deployment_set_labels(
     request_payload: dict[str, object] = patch_subtree
     request_payload = {"metadata": request_payload}
 
-    payload = await client.patch_json(
+    await client.patch_json(
         workload_resource_path(cluster_id, namespace, "deployments", deployment_name),
         payload=request_payload,
     )
-    summary = deployment_summary_from_payload(payload)
-
-    metadata = mapping_value(payload, "metadata") or {}
-    metadata_annotations = mapping_value(metadata, "annotations") or {}
-    detail = RancherDeploymentDetail.model_validate(payload)
-    return detail.model_copy(
-        update={
-            "id": summary.id,
-            "ready": summary.ready,
-            "rollout_complete": summary.rollout_complete,
-            "container_images": summary.container_images,
-            "annotation_keys": sorted(string_dict(metadata_annotations)),
-            "payload": dict(payload),
-            "suggested_next_steps": ["rancher_deployment_get", "rancher_pods_list"],
-        }
+    return RancherMutationReceipt(
+        instance=instance_name,
+        plane="steve",
+        action="set_labels",
+        kind="deployment",
+        name=deployment_name,
+        cluster_id=cluster_id,
+        namespace=namespace,
+        changed=dict(patch_subtree),
     )
 
 
@@ -365,7 +353,7 @@ async def rancher_deployment_set_labels(
     instance: str | None = None,
     settings: AppSettings | None = None,
     client: ManagementDiscoveryClient | None = None,
-) -> RancherDeploymentDetail:
+) -> RancherMutationReceipt:
     """Set_labels one deployment via JSON merge-patch."""
 
     resolved_settings = settings or get_settings()
@@ -398,8 +386,8 @@ async def _patch_deployment_set_annotations(
     deployment_name: str,
     annotations: dict[str, str],
     client: ManagementDiscoveryClient,
-) -> RancherDeploymentDetail:
-    """Set_annotations one deployment via JSON merge-patch; returns the curated detail."""
+) -> RancherMutationReceipt:
+    """Set_annotations one deployment via JSON merge-patch; returns a mutation receipt."""
 
     patch_subtree: dict[str, object] = {}
     patch_subtree["annotations"] = annotations
@@ -410,25 +398,19 @@ async def _patch_deployment_set_annotations(
     request_payload: dict[str, object] = patch_subtree
     request_payload = {"metadata": request_payload}
 
-    payload = await client.patch_json(
+    await client.patch_json(
         workload_resource_path(cluster_id, namespace, "deployments", deployment_name),
         payload=request_payload,
     )
-    summary = deployment_summary_from_payload(payload)
-
-    metadata = mapping_value(payload, "metadata") or {}
-    metadata_annotations = mapping_value(metadata, "annotations") or {}
-    detail = RancherDeploymentDetail.model_validate(payload)
-    return detail.model_copy(
-        update={
-            "id": summary.id,
-            "ready": summary.ready,
-            "rollout_complete": summary.rollout_complete,
-            "container_images": summary.container_images,
-            "annotation_keys": sorted(string_dict(metadata_annotations)),
-            "payload": dict(payload),
-            "suggested_next_steps": ["rancher_deployment_get"],
-        }
+    return RancherMutationReceipt(
+        instance=instance_name,
+        plane="steve",
+        action="set_annotations",
+        kind="deployment",
+        name=deployment_name,
+        cluster_id=cluster_id,
+        namespace=namespace,
+        changed=dict(patch_subtree),
     )
 
 
@@ -442,7 +424,7 @@ async def rancher_deployment_set_annotations(
     instance: str | None = None,
     settings: AppSettings | None = None,
     client: ManagementDiscoveryClient | None = None,
-) -> RancherDeploymentDetail:
+) -> RancherMutationReceipt:
     """Set_annotations one deployment via JSON merge-patch."""
 
     resolved_settings = settings or get_settings()
@@ -474,32 +456,26 @@ async def _patch_deployment_pause(
     namespace: str,
     deployment_name: str,
     client: ManagementDiscoveryClient,
-) -> RancherDeploymentDetail:
-    """Pause one deployment via JSON merge-patch; returns the curated detail."""
+) -> RancherMutationReceipt:
+    """Pause one deployment via JSON merge-patch; returns a mutation receipt."""
 
     patch_subtree: dict[str, object] = {"paused": True}
     request_payload: dict[str, object] = patch_subtree
     request_payload = {"spec": request_payload}
 
-    payload = await client.patch_json(
+    await client.patch_json(
         workload_resource_path(cluster_id, namespace, "deployments", deployment_name),
         payload=request_payload,
     )
-    summary = deployment_summary_from_payload(payload)
-
-    metadata = mapping_value(payload, "metadata") or {}
-    metadata_annotations = mapping_value(metadata, "annotations") or {}
-    detail = RancherDeploymentDetail.model_validate(payload)
-    return detail.model_copy(
-        update={
-            "id": summary.id,
-            "ready": summary.ready,
-            "rollout_complete": summary.rollout_complete,
-            "container_images": summary.container_images,
-            "annotation_keys": sorted(string_dict(metadata_annotations)),
-            "payload": dict(payload),
-            "suggested_next_steps": ["rancher_deployment_get", "rancher_deployment_resume"],
-        }
+    return RancherMutationReceipt(
+        instance=instance_name,
+        plane="steve",
+        action="pause",
+        kind="deployment",
+        name=deployment_name,
+        cluster_id=cluster_id,
+        namespace=namespace,
+        changed=dict(patch_subtree),
     )
 
 
@@ -512,7 +488,7 @@ async def rancher_deployment_pause(
     instance: str | None = None,
     settings: AppSettings | None = None,
     client: ManagementDiscoveryClient | None = None,
-) -> RancherDeploymentDetail:
+) -> RancherMutationReceipt:
     """Pause one deployment via JSON merge-patch."""
 
     resolved_settings = settings or get_settings()
@@ -542,32 +518,26 @@ async def _patch_deployment_resume(
     namespace: str,
     deployment_name: str,
     client: ManagementDiscoveryClient,
-) -> RancherDeploymentDetail:
-    """Resume one deployment via JSON merge-patch; returns the curated detail."""
+) -> RancherMutationReceipt:
+    """Resume one deployment via JSON merge-patch; returns a mutation receipt."""
 
     patch_subtree: dict[str, object] = {"paused": False}
     request_payload: dict[str, object] = patch_subtree
     request_payload = {"spec": request_payload}
 
-    payload = await client.patch_json(
+    await client.patch_json(
         workload_resource_path(cluster_id, namespace, "deployments", deployment_name),
         payload=request_payload,
     )
-    summary = deployment_summary_from_payload(payload)
-
-    metadata = mapping_value(payload, "metadata") or {}
-    metadata_annotations = mapping_value(metadata, "annotations") or {}
-    detail = RancherDeploymentDetail.model_validate(payload)
-    return detail.model_copy(
-        update={
-            "id": summary.id,
-            "ready": summary.ready,
-            "rollout_complete": summary.rollout_complete,
-            "container_images": summary.container_images,
-            "annotation_keys": sorted(string_dict(metadata_annotations)),
-            "payload": dict(payload),
-            "suggested_next_steps": ["rancher_deployment_get", "rancher_pods_list"],
-        }
+    return RancherMutationReceipt(
+        instance=instance_name,
+        plane="steve",
+        action="resume",
+        kind="deployment",
+        name=deployment_name,
+        cluster_id=cluster_id,
+        namespace=namespace,
+        changed=dict(patch_subtree),
     )
 
 
@@ -580,7 +550,7 @@ async def rancher_deployment_resume(
     instance: str | None = None,
     settings: AppSettings | None = None,
     client: ManagementDiscoveryClient | None = None,
-) -> RancherDeploymentDetail:
+) -> RancherMutationReceipt:
     """Resume one deployment via JSON merge-patch."""
 
     resolved_settings = settings or get_settings()
@@ -610,8 +580,8 @@ async def _patch_deployment_restart(
     namespace: str,
     deployment_name: str,
     client: ManagementDiscoveryClient,
-) -> RancherDeploymentDetail:
-    """Restart one deployment via JSON merge-patch; returns the curated detail."""
+) -> RancherMutationReceipt:
+    """Restart one deployment via JSON merge-patch; returns a mutation receipt."""
 
     from rancher_mcp.tools.support.dynamic_values import (
         deployment_restart_target_value as _target_value_factory,
@@ -621,25 +591,19 @@ async def _patch_deployment_restart(
     request_payload: dict[str, object] = patch_subtree
     request_payload = {"spec": request_payload}
 
-    payload = await client.patch_json(
+    await client.patch_json(
         workload_resource_path(cluster_id, namespace, "deployments", deployment_name),
         payload=request_payload,
     )
-    summary = deployment_summary_from_payload(payload)
-
-    metadata = mapping_value(payload, "metadata") or {}
-    metadata_annotations = mapping_value(metadata, "annotations") or {}
-    detail = RancherDeploymentDetail.model_validate(payload)
-    return detail.model_copy(
-        update={
-            "id": summary.id,
-            "ready": summary.ready,
-            "rollout_complete": summary.rollout_complete,
-            "container_images": summary.container_images,
-            "annotation_keys": sorted(string_dict(metadata_annotations)),
-            "payload": dict(payload),
-            "suggested_next_steps": ["rancher_deployment_get", "rancher_pods_list"],
-        }
+    return RancherMutationReceipt(
+        instance=instance_name,
+        plane="steve",
+        action="restart",
+        kind="deployment",
+        name=deployment_name,
+        cluster_id=cluster_id,
+        namespace=namespace,
+        changed=dict(patch_subtree),
     )
 
 
@@ -652,7 +616,7 @@ async def rancher_deployment_restart(
     instance: str | None = None,
     settings: AppSettings | None = None,
     client: ManagementDiscoveryClient | None = None,
-) -> RancherDeploymentDetail:
+) -> RancherMutationReceipt:
     """Restart one deployment via JSON merge-patch."""
 
     resolved_settings = settings or get_settings()
@@ -740,7 +704,7 @@ async def rancher_deployment_scale_tool(
     replicas: int,
     cluster_id: str = "local",
     instance: str | None = None,
-) -> RancherDeploymentDetail:
+) -> RancherMutationReceipt:
     """Public MCP wrapper for curated deployment scale."""
 
     return await rancher_deployment_scale(
@@ -758,7 +722,7 @@ async def rancher_deployment_set_labels_tool(
     labels: dict[str, str],
     cluster_id: str = "local",
     instance: str | None = None,
-) -> RancherDeploymentDetail:
+) -> RancherMutationReceipt:
     """Public MCP wrapper for curated deployment set_labels."""
 
     return await rancher_deployment_set_labels(
@@ -776,7 +740,7 @@ async def rancher_deployment_set_annotations_tool(
     annotations: dict[str, str],
     cluster_id: str = "local",
     instance: str | None = None,
-) -> RancherDeploymentDetail:
+) -> RancherMutationReceipt:
     """Public MCP wrapper for curated deployment set_annotations."""
 
     return await rancher_deployment_set_annotations(
@@ -793,7 +757,7 @@ async def rancher_deployment_pause_tool(
     deployment_name: str,
     cluster_id: str = "local",
     instance: str | None = None,
-) -> RancherDeploymentDetail:
+) -> RancherMutationReceipt:
     """Public MCP wrapper for curated deployment pause."""
 
     return await rancher_deployment_pause(
@@ -809,7 +773,7 @@ async def rancher_deployment_resume_tool(
     deployment_name: str,
     cluster_id: str = "local",
     instance: str | None = None,
-) -> RancherDeploymentDetail:
+) -> RancherMutationReceipt:
     """Public MCP wrapper for curated deployment resume."""
 
     return await rancher_deployment_resume(
@@ -825,7 +789,7 @@ async def rancher_deployment_restart_tool(
     deployment_name: str,
     cluster_id: str = "local",
     instance: str | None = None,
-) -> RancherDeploymentDetail:
+) -> RancherMutationReceipt:
     """Public MCP wrapper for curated deployment restart."""
 
     return await rancher_deployment_restart(

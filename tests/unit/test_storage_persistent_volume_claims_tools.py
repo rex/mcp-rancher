@@ -285,7 +285,9 @@ async def test_rancher_persistent_volume_claim_set_size_round_trip() -> None:
 
     # Response is parsed through the get pipeline.
     assert result.name == "demo-claim"
-    assert result.payload == _PATCHED_PVC_RESIZED_PAYLOAD
+    assert result.ok is True
+    assert result.action == "set_size"
+    assert result.changed == {"storage": "10Gi"}
 
 
 @pytest.mark.asyncio

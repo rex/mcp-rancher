@@ -266,7 +266,11 @@ async def test_rancher_deployment_set_annotations_uses_metadata_target_path() ->
     assert client.last_patch_payload == {
         "metadata": {"annotations": {"app.kubernetes.io/managed-by": "helm", "version": "1.0"}}
     }
-    assert result.id == "cattle-system/cattle-cluster-agent"
+    assert result.ok is True
+    assert result.action == "set_annotations"
+    assert result.changed == {
+        "annotations": {"app.kubernetes.io/managed-by": "helm", "version": "1.0"}
+    }
 
 
 @pytest.mark.asyncio

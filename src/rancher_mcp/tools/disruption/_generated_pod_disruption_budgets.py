@@ -14,7 +14,7 @@ from rancher_mcp.models.disruption import (
     RancherPodDisruptionBudgetDetail,
     RancherPodDisruptionBudgetList,
 )
-from rancher_mcp.models.resources import RancherCuratedDeleteResult
+from rancher_mcp.models.resources import RancherCuratedDeleteResult, RancherMutationReceipt
 from rancher_mcp.rate_limit import rate_limit_writes
 from rancher_mcp.services.instances import resolve_instance
 from rancher_mcp.services.resources.builders_pagination import next_page_token_from_payload
@@ -226,8 +226,8 @@ async def _patch_pod_disruption_budget_set_labels(
     budget_name: str,
     labels: dict[str, str],
     client: ManagementDiscoveryClient,
-) -> RancherPodDisruptionBudgetDetail:
-    """Set_labels one pod_disruption_budget via JSON merge-patch; returns the curated detail."""
+) -> RancherMutationReceipt:
+    """Set_labels one pod_disruption_budget via JSON merge-patch; returns a mutation receipt."""
 
     patch_subtree: dict[str, object] = {}
     patch_subtree["labels"] = labels
@@ -238,25 +238,19 @@ async def _patch_pod_disruption_budget_set_labels(
     request_payload: dict[str, object] = patch_subtree
     request_payload = {"metadata": request_payload}
 
-    payload = await client.patch_json(
+    await client.patch_json(
         pdb_resource_path(cluster_id, namespace, budget_name),
         payload=request_payload,
     )
-    summary = pdb_summary_from_payload(payload)
-
-    metadata = mapping_value(payload, "metadata") or {}
-    detail = RancherPodDisruptionBudgetDetail.model_validate(payload)
-    return detail.model_copy(
-        update={
-            "id": summary.id,
-            "disruption_allowed": summary.disruption_allowed,
-            "annotation_keys": sorted(string_dict(mapping_value(metadata, "annotations") or {})),
-            "payload": dict(payload),
-            "suggested_next_steps": [
-                "rancher_pod_disruption_budget_get",
-                "rancher_pod_disruption_budgets_list",
-            ],
-        }
+    return RancherMutationReceipt(
+        instance=instance_name,
+        plane="steve",
+        action="set_labels",
+        kind="pod_disruption_budget",
+        name=budget_name,
+        cluster_id=cluster_id,
+        namespace=namespace,
+        changed=dict(patch_subtree),
     )
 
 
@@ -270,7 +264,7 @@ async def rancher_pod_disruption_budget_set_labels(
     instance: str | None = None,
     settings: AppSettings | None = None,
     client: ManagementDiscoveryClient | None = None,
-) -> RancherPodDisruptionBudgetDetail:
+) -> RancherMutationReceipt:
     """Set_labels one pod_disruption_budget via JSON merge-patch."""
 
     resolved_settings = settings or get_settings()
@@ -303,8 +297,8 @@ async def _patch_pod_disruption_budget_set_annotations(
     budget_name: str,
     annotations: dict[str, str],
     client: ManagementDiscoveryClient,
-) -> RancherPodDisruptionBudgetDetail:
-    """Set_annotations one pod_disruption_budget via JSON merge-patch; returns the curated detail."""
+) -> RancherMutationReceipt:
+    """Set_annotations one pod_disruption_budget via JSON merge-patch; returns a mutation receipt."""
 
     patch_subtree: dict[str, object] = {}
     patch_subtree["annotations"] = annotations
@@ -315,22 +309,19 @@ async def _patch_pod_disruption_budget_set_annotations(
     request_payload: dict[str, object] = patch_subtree
     request_payload = {"metadata": request_payload}
 
-    payload = await client.patch_json(
+    await client.patch_json(
         pdb_resource_path(cluster_id, namespace, budget_name),
         payload=request_payload,
     )
-    summary = pdb_summary_from_payload(payload)
-
-    metadata = mapping_value(payload, "metadata") or {}
-    detail = RancherPodDisruptionBudgetDetail.model_validate(payload)
-    return detail.model_copy(
-        update={
-            "id": summary.id,
-            "disruption_allowed": summary.disruption_allowed,
-            "annotation_keys": sorted(string_dict(mapping_value(metadata, "annotations") or {})),
-            "payload": dict(payload),
-            "suggested_next_steps": ["rancher_pod_disruption_budget_get"],
-        }
+    return RancherMutationReceipt(
+        instance=instance_name,
+        plane="steve",
+        action="set_annotations",
+        kind="pod_disruption_budget",
+        name=budget_name,
+        cluster_id=cluster_id,
+        namespace=namespace,
+        changed=dict(patch_subtree),
     )
 
 
@@ -344,7 +335,7 @@ async def rancher_pod_disruption_budget_set_annotations(
     instance: str | None = None,
     settings: AppSettings | None = None,
     client: ManagementDiscoveryClient | None = None,
-) -> RancherPodDisruptionBudgetDetail:
+) -> RancherMutationReceipt:
     """Set_annotations one pod_disruption_budget via JSON merge-patch."""
 
     resolved_settings = settings or get_settings()
@@ -428,7 +419,7 @@ async def rancher_pod_disruption_budget_set_labels_tool(
     labels: dict[str, str],
     cluster_id: str = "local",
     instance: str | None = None,
-) -> RancherPodDisruptionBudgetDetail:
+) -> RancherMutationReceipt:
     """Public MCP wrapper for curated pod_disruption_budget set_labels."""
 
     return await rancher_pod_disruption_budget_set_labels(
@@ -446,7 +437,7 @@ async def rancher_pod_disruption_budget_set_annotations_tool(
     annotations: dict[str, str],
     cluster_id: str = "local",
     instance: str | None = None,
-) -> RancherPodDisruptionBudgetDetail:
+) -> RancherMutationReceipt:
     """Public MCP wrapper for curated pod_disruption_budget set_annotations."""
 
     return await rancher_pod_disruption_budget_set_annotations(

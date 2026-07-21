@@ -122,13 +122,11 @@ async def test_rancher_deployment_scale_sends_merge_patch_at_spec_subtree() -> N
     # Body is exactly the narrow patch — only the changed subtree.
     assert client.last_patch_payload == {"spec": {"replicas": 5}}
 
-    # Response is shaped through get's pipeline — same curated detail.
-    assert result.id == "cattle-system/cattle-cluster-agent"
-    # The echoed response carries the new replica count.
-    assert result.payload is not None
-    spec = result.payload.get("spec")
-    assert isinstance(spec, dict)
-    assert spec["replicas"] == 5
+    # Response is a compact mutation receipt (L-1), not the full detail.
+    assert result.ok is True
+    assert result.action == "scale"
+    assert result.name == "cattle-cluster-agent"
+    assert result.changed == {"replicas": 5}
 
 
 @pytest.mark.asyncio
@@ -267,7 +265,9 @@ async def test_rancher_deployment_set_labels_uses_metadata_target_path() -> None
     )
     assert client.last_patch_payload == {"metadata": {"labels": {"app": "cattle", "tier": "agent"}}}
 
-    assert result.id == "cattle-system/cattle-cluster-agent"
+    assert result.ok is True
+    assert result.action == "set_labels"
+    assert result.changed == {"labels": {"app": "cattle", "tier": "agent"}}
 
 
 @pytest.mark.asyncio

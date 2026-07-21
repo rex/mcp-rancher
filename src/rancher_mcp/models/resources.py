@@ -156,6 +156,35 @@ class RancherCuratedDeleteResult(RancherModel):
     a Status object with details about the deletion."""
 
 
+class RancherMutationReceipt(RancherModel):
+    """Compact confirmation of a curated metadata/state mutation (L-1 / ADR-0002).
+
+    Metadata/state mutations (``*_set_labels``, ``*_set_annotations``,
+    ``*_scale``, ``*_pause``, ``*_resume``, ``*_restart``, ``*_cordon`` …) return
+    this instead of the full curated detail: the agent needs to know the write
+    succeeded and *what changed*, not the entire object — a follow-up get
+    provides that. Turns a 1-3 KB detail into a ~200 B receipt. Deletes keep
+    their own :class:`RancherCuratedDeleteResult`.
+    """
+
+    instance: str
+    plane: str
+    ok: bool = True
+    """True on success. The decorator stack raises on failure, so reaching a
+    receipt means the mutation was accepted."""
+    action: str
+    """The mutation verb, e.g. ``scale`` / ``set_labels`` / ``pause``."""
+    kind: str
+    """The resource kind acted on, e.g. ``deployment``."""
+    cluster_id: str | None = None
+    namespace: str | None = None
+    name: str
+    changed: dict[str, object] = Field(default_factory=dict)
+    """The merge-patch leaf that was applied — exactly what changed
+    (``{"replicas": 4}``, ``{"labels": {...}}``, ``{"paused": True}``). Not a
+    pre/post diff; a follow-up get confirms the resulting state."""
+
+
 class GenericResourceLinkResult(RancherModel):
     """Normalized result from following a resource link."""
 

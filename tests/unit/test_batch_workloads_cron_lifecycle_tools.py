@@ -116,13 +116,11 @@ async def test_rancher_cron_job_suspend_round_trip() -> None:
     # Body is exactly the narrow patch — only the changed subtree.
     assert client.last_patch_payload == {"spec": {"suspend": True}}
 
-    # Response parses through curated detail — name must round-trip.
+    # Compact mutation receipt (L-1), not the full detail.
+    assert result.ok is True
+    assert result.action == "suspend"
     assert result.name == "nightly-cleanup"
-    # The echoed response carries the new suspend value.
-    assert result.payload is not None
-    spec = result.payload.get("spec")
-    assert isinstance(spec, dict)
-    assert spec["suspend"] is True
+    assert result.changed == {"suspend": True}
 
 
 @pytest.mark.asyncio
@@ -186,11 +184,10 @@ async def test_rancher_cron_job_resume_round_trip_emits_argless_target_value() -
     # target_path: spec, target_value: {suspend: false} -> {spec: {suspend: false}}
     assert client.last_patch_payload == {"spec": {"suspend": False}}
 
+    assert result.ok is True
+    assert result.action == "resume"
     assert result.name == "nightly-cleanup"
-    assert result.payload is not None
-    spec = result.payload.get("spec")
-    assert isinstance(spec, dict)
-    assert spec["suspend"] is False
+    assert result.changed == {"suspend": False}
 
 
 @pytest.mark.asyncio

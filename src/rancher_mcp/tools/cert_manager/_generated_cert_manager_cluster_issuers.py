@@ -14,7 +14,7 @@ from rancher_mcp.models.cert_manager import (
     RancherCertManagerClusterIssuerDetail,
     RancherCertManagerClusterIssuerList,
 )
-from rancher_mcp.models.resources import RancherCuratedDeleteResult
+from rancher_mcp.models.resources import RancherCuratedDeleteResult, RancherMutationReceipt
 from rancher_mcp.rate_limit import rate_limit_writes
 from rancher_mcp.services.instances import resolve_instance
 from rancher_mcp.services.resources.builders_pagination import next_page_token_from_payload
@@ -245,8 +245,8 @@ async def _patch_cert_manager_cluster_issuer_set_labels(
     cluster_issuer_name: str,
     labels: dict[str, str],
     client: ManagementDiscoveryClient,
-) -> RancherCertManagerClusterIssuerDetail:
-    """Set_labels one cert_manager_cluster_issuer via JSON merge-patch; returns the curated detail."""
+) -> RancherMutationReceipt:
+    """Set_labels one cert_manager_cluster_issuer via JSON merge-patch; returns a mutation receipt."""
 
     patch_subtree: dict[str, object] = {}
     patch_subtree["labels"] = labels
@@ -257,27 +257,18 @@ async def _patch_cert_manager_cluster_issuer_set_labels(
     request_payload: dict[str, object] = patch_subtree
     request_payload = {"metadata": request_payload}
 
-    payload = await client.patch_json(
+    await client.patch_json(
         cert_manager_cluster_resource_path(cluster_id, "clusterissuers", cluster_issuer_name),
         payload=request_payload,
     )
-    summary = cluster_issuer_summary_from_payload(payload)
-
-    metadata = mapping_value(payload, "metadata") or {}
-    metadata_annotations = mapping_value(metadata, "annotations") or {}
-    detail = RancherCertManagerClusterIssuerDetail.model_validate(payload)
-    return detail.model_copy(
-        update={
-            "ready": summary.ready,
-            "issuer_kind_used": summary.issuer_kind_used,
-            "annotation_keys": sorted(string_dict(metadata_annotations)),
-            "condition_types_true": condition_types_true_from_payload(payload),
-            "payload": dict(payload),
-            "suggested_next_steps": [
-                "rancher_cert_manager_cluster_issuer_get",
-                "rancher_cert_manager_cluster_issuers_list",
-            ],
-        }
+    return RancherMutationReceipt(
+        instance=instance_name,
+        plane="steve",
+        action="set_labels",
+        kind="cert_manager_cluster_issuer",
+        name=cluster_issuer_name,
+        cluster_id=cluster_id,
+        changed=dict(patch_subtree),
     )
 
 
@@ -290,7 +281,7 @@ async def rancher_cert_manager_cluster_issuer_set_labels(
     instance: str | None = None,
     settings: AppSettings | None = None,
     client: ManagementDiscoveryClient | None = None,
-) -> RancherCertManagerClusterIssuerDetail:
+) -> RancherMutationReceipt:
     """Set_labels one cert_manager_cluster_issuer via JSON merge-patch."""
 
     resolved_settings = settings or get_settings()
@@ -320,8 +311,8 @@ async def _patch_cert_manager_cluster_issuer_set_annotations(
     cluster_issuer_name: str,
     annotations: dict[str, str],
     client: ManagementDiscoveryClient,
-) -> RancherCertManagerClusterIssuerDetail:
-    """Set_annotations one cert_manager_cluster_issuer via JSON merge-patch; returns the curated detail."""
+) -> RancherMutationReceipt:
+    """Set_annotations one cert_manager_cluster_issuer via JSON merge-patch; returns a mutation receipt."""
 
     patch_subtree: dict[str, object] = {}
     patch_subtree["annotations"] = annotations
@@ -332,24 +323,18 @@ async def _patch_cert_manager_cluster_issuer_set_annotations(
     request_payload: dict[str, object] = patch_subtree
     request_payload = {"metadata": request_payload}
 
-    payload = await client.patch_json(
+    await client.patch_json(
         cert_manager_cluster_resource_path(cluster_id, "clusterissuers", cluster_issuer_name),
         payload=request_payload,
     )
-    summary = cluster_issuer_summary_from_payload(payload)
-
-    metadata = mapping_value(payload, "metadata") or {}
-    metadata_annotations = mapping_value(metadata, "annotations") or {}
-    detail = RancherCertManagerClusterIssuerDetail.model_validate(payload)
-    return detail.model_copy(
-        update={
-            "ready": summary.ready,
-            "issuer_kind_used": summary.issuer_kind_used,
-            "annotation_keys": sorted(string_dict(metadata_annotations)),
-            "condition_types_true": condition_types_true_from_payload(payload),
-            "payload": dict(payload),
-            "suggested_next_steps": ["rancher_cert_manager_cluster_issuer_get"],
-        }
+    return RancherMutationReceipt(
+        instance=instance_name,
+        plane="steve",
+        action="set_annotations",
+        kind="cert_manager_cluster_issuer",
+        name=cluster_issuer_name,
+        cluster_id=cluster_id,
+        changed=dict(patch_subtree),
     )
 
 
@@ -362,7 +347,7 @@ async def rancher_cert_manager_cluster_issuer_set_annotations(
     instance: str | None = None,
     settings: AppSettings | None = None,
     client: ManagementDiscoveryClient | None = None,
-) -> RancherCertManagerClusterIssuerDetail:
+) -> RancherMutationReceipt:
     """Set_annotations one cert_manager_cluster_issuer via JSON merge-patch."""
 
     resolved_settings = settings or get_settings()
@@ -443,7 +428,7 @@ async def rancher_cert_manager_cluster_issuer_set_labels_tool(
     labels: dict[str, str],
     cluster_id: str = "local",
     instance: str | None = None,
-) -> RancherCertManagerClusterIssuerDetail:
+) -> RancherMutationReceipt:
     """Public MCP wrapper for curated cert_manager_cluster_issuer set_labels."""
 
     return await rancher_cert_manager_cluster_issuer_set_labels(
@@ -459,7 +444,7 @@ async def rancher_cert_manager_cluster_issuer_set_annotations_tool(
     annotations: dict[str, str],
     cluster_id: str = "local",
     instance: str | None = None,
-) -> RancherCertManagerClusterIssuerDetail:
+) -> RancherMutationReceipt:
     """Public MCP wrapper for curated cert_manager_cluster_issuer set_annotations."""
 
     return await rancher_cert_manager_cluster_issuer_set_annotations(

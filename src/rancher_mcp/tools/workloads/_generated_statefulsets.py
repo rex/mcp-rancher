@@ -10,7 +10,7 @@ from rancher_mcp.audit import audit_mutation
 from rancher_mcp.clients.management import ManagementDiscoveryClient, RancherManagementClient
 from rancher_mcp.config import AppSettings, get_settings
 from rancher_mcp.exceptions import RancherCapabilityError
-from rancher_mcp.models.resources import RancherCuratedDeleteResult
+from rancher_mcp.models.resources import RancherCuratedDeleteResult, RancherMutationReceipt
 from rancher_mcp.models.workloads import RancherStatefulSetDetail, RancherStatefulSetList
 from rancher_mcp.rate_limit import rate_limit_writes
 from rancher_mcp.services.instances import resolve_instance
@@ -238,8 +238,8 @@ async def _patch_statefulset_scale(
     statefulset_name: str,
     replicas: int,
     client: ManagementDiscoveryClient,
-) -> RancherStatefulSetDetail:
-    """Scale one statefulset via JSON merge-patch; returns the curated detail."""
+) -> RancherMutationReceipt:
+    """Scale one statefulset via JSON merge-patch; returns a mutation receipt."""
 
     patch_subtree: dict[str, object] = {}
     patch_subtree["replicas"] = replicas
@@ -250,24 +250,19 @@ async def _patch_statefulset_scale(
     request_payload: dict[str, object] = patch_subtree
     request_payload = {"spec": request_payload}
 
-    payload = await client.patch_json(
+    await client.patch_json(
         workload_resource_path(cluster_id, namespace, "statefulsets", statefulset_name),
         payload=request_payload,
     )
-    summary = statefulset_summary_from_payload(payload)
-
-    metadata = mapping_value(payload, "metadata") or {}
-    metadata_annotations = mapping_value(metadata, "annotations") or {}
-    detail = RancherStatefulSetDetail.model_validate(payload)
-    return detail.model_copy(
-        update={
-            "id": summary.id,
-            "ready": summary.ready,
-            "container_images": summary.container_images,
-            "annotation_keys": sorted(string_dict(metadata_annotations)),
-            "payload": dict(payload),
-            "suggested_next_steps": ["rancher_statefulset_get", "rancher_pods_list"],
-        }
+    return RancherMutationReceipt(
+        instance=instance_name,
+        plane="steve",
+        action="scale",
+        kind="statefulset",
+        name=statefulset_name,
+        cluster_id=cluster_id,
+        namespace=namespace,
+        changed=dict(patch_subtree),
     )
 
 
@@ -281,7 +276,7 @@ async def rancher_statefulset_scale(
     instance: str | None = None,
     settings: AppSettings | None = None,
     client: ManagementDiscoveryClient | None = None,
-) -> RancherStatefulSetDetail:
+) -> RancherMutationReceipt:
     """Scale one statefulset via JSON merge-patch."""
 
     resolved_settings = settings or get_settings()
@@ -314,8 +309,8 @@ async def _patch_statefulset_set_labels(
     statefulset_name: str,
     labels: dict[str, str],
     client: ManagementDiscoveryClient,
-) -> RancherStatefulSetDetail:
-    """Set_labels one statefulset via JSON merge-patch; returns the curated detail."""
+) -> RancherMutationReceipt:
+    """Set_labels one statefulset via JSON merge-patch; returns a mutation receipt."""
 
     patch_subtree: dict[str, object] = {}
     patch_subtree["labels"] = labels
@@ -326,24 +321,19 @@ async def _patch_statefulset_set_labels(
     request_payload: dict[str, object] = patch_subtree
     request_payload = {"metadata": request_payload}
 
-    payload = await client.patch_json(
+    await client.patch_json(
         workload_resource_path(cluster_id, namespace, "statefulsets", statefulset_name),
         payload=request_payload,
     )
-    summary = statefulset_summary_from_payload(payload)
-
-    metadata = mapping_value(payload, "metadata") or {}
-    metadata_annotations = mapping_value(metadata, "annotations") or {}
-    detail = RancherStatefulSetDetail.model_validate(payload)
-    return detail.model_copy(
-        update={
-            "id": summary.id,
-            "ready": summary.ready,
-            "container_images": summary.container_images,
-            "annotation_keys": sorted(string_dict(metadata_annotations)),
-            "payload": dict(payload),
-            "suggested_next_steps": ["rancher_statefulset_get", "rancher_pods_list"],
-        }
+    return RancherMutationReceipt(
+        instance=instance_name,
+        plane="steve",
+        action="set_labels",
+        kind="statefulset",
+        name=statefulset_name,
+        cluster_id=cluster_id,
+        namespace=namespace,
+        changed=dict(patch_subtree),
     )
 
 
@@ -357,7 +347,7 @@ async def rancher_statefulset_set_labels(
     instance: str | None = None,
     settings: AppSettings | None = None,
     client: ManagementDiscoveryClient | None = None,
-) -> RancherStatefulSetDetail:
+) -> RancherMutationReceipt:
     """Set_labels one statefulset via JSON merge-patch."""
 
     resolved_settings = settings or get_settings()
@@ -390,8 +380,8 @@ async def _patch_statefulset_set_annotations(
     statefulset_name: str,
     annotations: dict[str, str],
     client: ManagementDiscoveryClient,
-) -> RancherStatefulSetDetail:
-    """Set_annotations one statefulset via JSON merge-patch; returns the curated detail."""
+) -> RancherMutationReceipt:
+    """Set_annotations one statefulset via JSON merge-patch; returns a mutation receipt."""
 
     patch_subtree: dict[str, object] = {}
     patch_subtree["annotations"] = annotations
@@ -402,24 +392,19 @@ async def _patch_statefulset_set_annotations(
     request_payload: dict[str, object] = patch_subtree
     request_payload = {"metadata": request_payload}
 
-    payload = await client.patch_json(
+    await client.patch_json(
         workload_resource_path(cluster_id, namespace, "statefulsets", statefulset_name),
         payload=request_payload,
     )
-    summary = statefulset_summary_from_payload(payload)
-
-    metadata = mapping_value(payload, "metadata") or {}
-    metadata_annotations = mapping_value(metadata, "annotations") or {}
-    detail = RancherStatefulSetDetail.model_validate(payload)
-    return detail.model_copy(
-        update={
-            "id": summary.id,
-            "ready": summary.ready,
-            "container_images": summary.container_images,
-            "annotation_keys": sorted(string_dict(metadata_annotations)),
-            "payload": dict(payload),
-            "suggested_next_steps": ["rancher_statefulset_get"],
-        }
+    return RancherMutationReceipt(
+        instance=instance_name,
+        plane="steve",
+        action="set_annotations",
+        kind="statefulset",
+        name=statefulset_name,
+        cluster_id=cluster_id,
+        namespace=namespace,
+        changed=dict(patch_subtree),
     )
 
 
@@ -433,7 +418,7 @@ async def rancher_statefulset_set_annotations(
     instance: str | None = None,
     settings: AppSettings | None = None,
     client: ManagementDiscoveryClient | None = None,
-) -> RancherStatefulSetDetail:
+) -> RancherMutationReceipt:
     """Set_annotations one statefulset via JSON merge-patch."""
 
     resolved_settings = settings or get_settings()
@@ -523,7 +508,7 @@ async def rancher_statefulset_scale_tool(
     replicas: int,
     cluster_id: str = "local",
     instance: str | None = None,
-) -> RancherStatefulSetDetail:
+) -> RancherMutationReceipt:
     """Public MCP wrapper for curated statefulset scale."""
 
     return await rancher_statefulset_scale(
@@ -541,7 +526,7 @@ async def rancher_statefulset_set_labels_tool(
     labels: dict[str, str],
     cluster_id: str = "local",
     instance: str | None = None,
-) -> RancherStatefulSetDetail:
+) -> RancherMutationReceipt:
     """Public MCP wrapper for curated statefulset set_labels."""
 
     return await rancher_statefulset_set_labels(
@@ -559,7 +544,7 @@ async def rancher_statefulset_set_annotations_tool(
     annotations: dict[str, str],
     cluster_id: str = "local",
     instance: str | None = None,
-) -> RancherStatefulSetDetail:
+) -> RancherMutationReceipt:
     """Public MCP wrapper for curated statefulset set_annotations."""
 
     return await rancher_statefulset_set_annotations(

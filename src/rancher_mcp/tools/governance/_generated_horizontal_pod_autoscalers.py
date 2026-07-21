@@ -14,7 +14,7 @@ from rancher_mcp.models.governance import (
     RancherHorizontalPodAutoscalerDetail,
     RancherHorizontalPodAutoscalerList,
 )
-from rancher_mcp.models.resources import RancherCuratedDeleteResult
+from rancher_mcp.models.resources import RancherCuratedDeleteResult, RancherMutationReceipt
 from rancher_mcp.rate_limit import rate_limit_writes
 from rancher_mcp.services.instances import resolve_instance
 from rancher_mcp.services.resources.builders_pagination import next_page_token_from_payload
@@ -263,8 +263,8 @@ async def _patch_horizontal_pod_autoscaler_set_labels(
     hpa_name: str,
     labels: dict[str, str],
     client: ManagementDiscoveryClient,
-) -> RancherHorizontalPodAutoscalerDetail:
-    """Set_labels one horizontal_pod_autoscaler via JSON merge-patch; returns the curated detail."""
+) -> RancherMutationReceipt:
+    """Set_labels one horizontal_pod_autoscaler via JSON merge-patch; returns a mutation receipt."""
 
     patch_subtree: dict[str, object] = {}
     patch_subtree["labels"] = labels
@@ -275,28 +275,19 @@ async def _patch_horizontal_pod_autoscaler_set_labels(
     request_payload: dict[str, object] = patch_subtree
     request_payload = {"metadata": request_payload}
 
-    payload = await client.patch_json(
+    await client.patch_json(
         autoscaling_v2_resource_path(cluster_id, namespace, "horizontalpodautoscalers", hpa_name),
         payload=request_payload,
     )
-    summary = hpa_summary_from_payload(payload)
-
-    metadata = mapping_value(payload, "metadata") or {}
-    metadata_annotations = mapping_value(metadata, "annotations") or {}
-    detail = RancherHorizontalPodAutoscalerDetail.model_validate(payload)
-    return detail.model_copy(
-        update={
-            "metric_count": summary.metric_count,
-            "able_to_scale": summary.able_to_scale,
-            "scaling_active": summary.scaling_active,
-            "annotation_keys": sorted(string_dict(metadata_annotations)),
-            "metric_types": hpa_metric_types(payload),
-            "payload": dict(payload),
-            "suggested_next_steps": [
-                "rancher_horizontal_pod_autoscaler_get",
-                "rancher_deployments_list",
-            ],
-        }
+    return RancherMutationReceipt(
+        instance=instance_name,
+        plane="steve",
+        action="set_labels",
+        kind="horizontal_pod_autoscaler",
+        name=hpa_name,
+        cluster_id=cluster_id,
+        namespace=namespace,
+        changed=dict(patch_subtree),
     )
 
 
@@ -310,7 +301,7 @@ async def rancher_horizontal_pod_autoscaler_set_labels(
     instance: str | None = None,
     settings: AppSettings | None = None,
     client: ManagementDiscoveryClient | None = None,
-) -> RancherHorizontalPodAutoscalerDetail:
+) -> RancherMutationReceipt:
     """Set_labels one horizontal_pod_autoscaler via JSON merge-patch."""
 
     resolved_settings = settings or get_settings()
@@ -343,8 +334,8 @@ async def _patch_horizontal_pod_autoscaler_set_annotations(
     hpa_name: str,
     annotations: dict[str, str],
     client: ManagementDiscoveryClient,
-) -> RancherHorizontalPodAutoscalerDetail:
-    """Set_annotations one horizontal_pod_autoscaler via JSON merge-patch; returns the curated detail."""
+) -> RancherMutationReceipt:
+    """Set_annotations one horizontal_pod_autoscaler via JSON merge-patch; returns a mutation receipt."""
 
     patch_subtree: dict[str, object] = {}
     patch_subtree["annotations"] = annotations
@@ -355,25 +346,19 @@ async def _patch_horizontal_pod_autoscaler_set_annotations(
     request_payload: dict[str, object] = patch_subtree
     request_payload = {"metadata": request_payload}
 
-    payload = await client.patch_json(
+    await client.patch_json(
         autoscaling_v2_resource_path(cluster_id, namespace, "horizontalpodautoscalers", hpa_name),
         payload=request_payload,
     )
-    summary = hpa_summary_from_payload(payload)
-
-    metadata = mapping_value(payload, "metadata") or {}
-    metadata_annotations = mapping_value(metadata, "annotations") or {}
-    detail = RancherHorizontalPodAutoscalerDetail.model_validate(payload)
-    return detail.model_copy(
-        update={
-            "metric_count": summary.metric_count,
-            "able_to_scale": summary.able_to_scale,
-            "scaling_active": summary.scaling_active,
-            "annotation_keys": sorted(string_dict(metadata_annotations)),
-            "metric_types": hpa_metric_types(payload),
-            "payload": dict(payload),
-            "suggested_next_steps": ["rancher_horizontal_pod_autoscaler_get"],
-        }
+    return RancherMutationReceipt(
+        instance=instance_name,
+        plane="steve",
+        action="set_annotations",
+        kind="horizontal_pod_autoscaler",
+        name=hpa_name,
+        cluster_id=cluster_id,
+        namespace=namespace,
+        changed=dict(patch_subtree),
     )
 
 
@@ -387,7 +372,7 @@ async def rancher_horizontal_pod_autoscaler_set_annotations(
     instance: str | None = None,
     settings: AppSettings | None = None,
     client: ManagementDiscoveryClient | None = None,
-) -> RancherHorizontalPodAutoscalerDetail:
+) -> RancherMutationReceipt:
     """Set_annotations one horizontal_pod_autoscaler via JSON merge-patch."""
 
     resolved_settings = settings or get_settings()
@@ -421,8 +406,8 @@ async def _patch_horizontal_pod_autoscaler_set_min_max(
     minReplicas: int,
     maxReplicas: int,
     client: ManagementDiscoveryClient,
-) -> RancherHorizontalPodAutoscalerDetail:
-    """Set_min_max one horizontal_pod_autoscaler via JSON merge-patch; returns the curated detail."""
+) -> RancherMutationReceipt:
+    """Set_min_max one horizontal_pod_autoscaler via JSON merge-patch; returns a mutation receipt."""
 
     patch_subtree: dict[str, object] = {}
     patch_subtree["minReplicas"] = minReplicas
@@ -434,25 +419,19 @@ async def _patch_horizontal_pod_autoscaler_set_min_max(
     request_payload: dict[str, object] = patch_subtree
     request_payload = {"spec": request_payload}
 
-    payload = await client.patch_json(
+    await client.patch_json(
         autoscaling_v2_resource_path(cluster_id, namespace, "horizontalpodautoscalers", hpa_name),
         payload=request_payload,
     )
-    summary = hpa_summary_from_payload(payload)
-
-    metadata = mapping_value(payload, "metadata") or {}
-    metadata_annotations = mapping_value(metadata, "annotations") or {}
-    detail = RancherHorizontalPodAutoscalerDetail.model_validate(payload)
-    return detail.model_copy(
-        update={
-            "metric_count": summary.metric_count,
-            "able_to_scale": summary.able_to_scale,
-            "scaling_active": summary.scaling_active,
-            "annotation_keys": sorted(string_dict(metadata_annotations)),
-            "metric_types": hpa_metric_types(payload),
-            "payload": dict(payload),
-            "suggested_next_steps": ["rancher_horizontal_pod_autoscaler_get"],
-        }
+    return RancherMutationReceipt(
+        instance=instance_name,
+        plane="steve",
+        action="set_min_max",
+        kind="horizontal_pod_autoscaler",
+        name=hpa_name,
+        cluster_id=cluster_id,
+        namespace=namespace,
+        changed=dict(patch_subtree),
     )
 
 
@@ -467,7 +446,7 @@ async def rancher_horizontal_pod_autoscaler_set_min_max(
     instance: str | None = None,
     settings: AppSettings | None = None,
     client: ManagementDiscoveryClient | None = None,
-) -> RancherHorizontalPodAutoscalerDetail:
+) -> RancherMutationReceipt:
     """Set_min_max one horizontal_pod_autoscaler via JSON merge-patch."""
 
     resolved_settings = settings or get_settings()
@@ -561,7 +540,7 @@ async def rancher_horizontal_pod_autoscaler_set_labels_tool(
     labels: dict[str, str],
     cluster_id: str = "local",
     instance: str | None = None,
-) -> RancherHorizontalPodAutoscalerDetail:
+) -> RancherMutationReceipt:
     """Public MCP wrapper for curated horizontal_pod_autoscaler set_labels."""
 
     return await rancher_horizontal_pod_autoscaler_set_labels(
@@ -579,7 +558,7 @@ async def rancher_horizontal_pod_autoscaler_set_annotations_tool(
     annotations: dict[str, str],
     cluster_id: str = "local",
     instance: str | None = None,
-) -> RancherHorizontalPodAutoscalerDetail:
+) -> RancherMutationReceipt:
     """Public MCP wrapper for curated horizontal_pod_autoscaler set_annotations."""
 
     return await rancher_horizontal_pod_autoscaler_set_annotations(
@@ -598,7 +577,7 @@ async def rancher_horizontal_pod_autoscaler_set_min_max_tool(
     maxReplicas: int,
     cluster_id: str = "local",
     instance: str | None = None,
-) -> RancherHorizontalPodAutoscalerDetail:
+) -> RancherMutationReceipt:
     """Public MCP wrapper for curated horizontal_pod_autoscaler set_min_max."""
 
     return await rancher_horizontal_pod_autoscaler_set_min_max(

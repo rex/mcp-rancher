@@ -11,7 +11,7 @@ from rancher_mcp.clients.steve import RancherSteveClient, SteveMutationClient
 from rancher_mcp.config import AppSettings, get_settings
 from rancher_mcp.exceptions import RancherCapabilityError
 from rancher_mcp.models.pods_services import RancherServiceDetail, RancherServiceList
-from rancher_mcp.models.resources import RancherCuratedDeleteResult
+from rancher_mcp.models.resources import RancherCuratedDeleteResult, RancherMutationReceipt
 from rancher_mcp.rate_limit import rate_limit_writes
 from rancher_mcp.services.instances import resolve_instance
 from rancher_mcp.services.resource_queries import build_steve_list_query_params
@@ -229,8 +229,8 @@ async def _patch_service_set_labels(
     service_name: str,
     labels: dict[str, str],
     client: SteveMutationClient,
-) -> RancherServiceDetail:
-    """Set_labels one service via JSON merge-patch; returns the curated detail."""
+) -> RancherMutationReceipt:
+    """Set_labels one service via JSON merge-patch; returns a mutation receipt."""
 
     patch_subtree: dict[str, object] = {}
     patch_subtree["labels"] = labels
@@ -241,21 +241,16 @@ async def _patch_service_set_labels(
     request_payload: dict[str, object] = patch_subtree
     request_payload = {"metadata": request_payload}
 
-    payload = await client.patch_json(
-        f"/services/{namespace}/{service_name}", payload=request_payload
-    )
-    summary = service_summary_from_payload(payload)
-
-    metadata = mapping_value(payload, "metadata") or {}
-    detail = RancherServiceDetail.model_validate(payload)
-    return detail.model_copy(
-        update={
-            "id": summary.id,
-            "relationship_types": relationship_types(metadata),
-            "link_keys": sorted(mapping_value(payload, "links") or {}),
-            "payload": dict(payload),
-            "suggested_next_steps": ["rancher_service_get", "rancher_services_list"],
-        }
+    await client.patch_json(f"/services/{namespace}/{service_name}", payload=request_payload)
+    return RancherMutationReceipt(
+        instance=instance_name,
+        plane="steve",
+        action="set_labels",
+        kind="service",
+        name=service_name,
+        cluster_id=cluster_id,
+        namespace=namespace,
+        changed=dict(patch_subtree),
     )
 
 
@@ -269,7 +264,7 @@ async def rancher_service_set_labels(
     instance: str | None = None,
     settings: AppSettings | None = None,
     client: SteveMutationClient | None = None,
-) -> RancherServiceDetail:
+) -> RancherMutationReceipt:
     """Set_labels one service via JSON merge-patch."""
 
     resolved_settings = settings or get_settings()
@@ -306,8 +301,8 @@ async def _patch_service_set_annotations(
     service_name: str,
     annotations: dict[str, str],
     client: SteveMutationClient,
-) -> RancherServiceDetail:
-    """Set_annotations one service via JSON merge-patch; returns the curated detail."""
+) -> RancherMutationReceipt:
+    """Set_annotations one service via JSON merge-patch; returns a mutation receipt."""
 
     patch_subtree: dict[str, object] = {}
     patch_subtree["annotations"] = annotations
@@ -318,21 +313,16 @@ async def _patch_service_set_annotations(
     request_payload: dict[str, object] = patch_subtree
     request_payload = {"metadata": request_payload}
 
-    payload = await client.patch_json(
-        f"/services/{namespace}/{service_name}", payload=request_payload
-    )
-    summary = service_summary_from_payload(payload)
-
-    metadata = mapping_value(payload, "metadata") or {}
-    detail = RancherServiceDetail.model_validate(payload)
-    return detail.model_copy(
-        update={
-            "id": summary.id,
-            "relationship_types": relationship_types(metadata),
-            "link_keys": sorted(mapping_value(payload, "links") or {}),
-            "payload": dict(payload),
-            "suggested_next_steps": ["rancher_service_get"],
-        }
+    await client.patch_json(f"/services/{namespace}/{service_name}", payload=request_payload)
+    return RancherMutationReceipt(
+        instance=instance_name,
+        plane="steve",
+        action="set_annotations",
+        kind="service",
+        name=service_name,
+        cluster_id=cluster_id,
+        namespace=namespace,
+        changed=dict(patch_subtree),
     )
 
 
@@ -346,7 +336,7 @@ async def rancher_service_set_annotations(
     instance: str | None = None,
     settings: AppSettings | None = None,
     client: SteveMutationClient | None = None,
-) -> RancherServiceDetail:
+) -> RancherMutationReceipt:
     """Set_annotations one service via JSON merge-patch."""
 
     resolved_settings = settings or get_settings()
@@ -383,8 +373,8 @@ async def _patch_service_set_type(
     service_name: str,
     type: str,
     client: SteveMutationClient,
-) -> RancherServiceDetail:
-    """Set_type one service via JSON merge-patch; returns the curated detail."""
+) -> RancherMutationReceipt:
+    """Set_type one service via JSON merge-patch; returns a mutation receipt."""
 
     patch_subtree: dict[str, object] = {}
     patch_subtree["type"] = type
@@ -395,21 +385,16 @@ async def _patch_service_set_type(
     request_payload: dict[str, object] = patch_subtree
     request_payload = {"spec": request_payload}
 
-    payload = await client.patch_json(
-        f"/services/{namespace}/{service_name}", payload=request_payload
-    )
-    summary = service_summary_from_payload(payload)
-
-    metadata = mapping_value(payload, "metadata") or {}
-    detail = RancherServiceDetail.model_validate(payload)
-    return detail.model_copy(
-        update={
-            "id": summary.id,
-            "relationship_types": relationship_types(metadata),
-            "link_keys": sorted(mapping_value(payload, "links") or {}),
-            "payload": dict(payload),
-            "suggested_next_steps": ["rancher_service_get"],
-        }
+    await client.patch_json(f"/services/{namespace}/{service_name}", payload=request_payload)
+    return RancherMutationReceipt(
+        instance=instance_name,
+        plane="steve",
+        action="set_type",
+        kind="service",
+        name=service_name,
+        cluster_id=cluster_id,
+        namespace=namespace,
+        changed=dict(patch_subtree),
     )
 
 
@@ -423,7 +408,7 @@ async def rancher_service_set_type(
     instance: str | None = None,
     settings: AppSettings | None = None,
     client: SteveMutationClient | None = None,
-) -> RancherServiceDetail:
+) -> RancherMutationReceipt:
     """Set_type one service via JSON merge-patch."""
 
     resolved_settings = settings or get_settings()
@@ -513,7 +498,7 @@ async def rancher_service_set_labels_tool(
     labels: dict[str, str],
     cluster_id: str = "local",
     instance: str | None = None,
-) -> RancherServiceDetail:
+) -> RancherMutationReceipt:
     """Public MCP wrapper for curated service set_labels."""
 
     return await rancher_service_set_labels(
@@ -531,7 +516,7 @@ async def rancher_service_set_annotations_tool(
     annotations: dict[str, str],
     cluster_id: str = "local",
     instance: str | None = None,
-) -> RancherServiceDetail:
+) -> RancherMutationReceipt:
     """Public MCP wrapper for curated service set_annotations."""
 
     return await rancher_service_set_annotations(
@@ -549,7 +534,7 @@ async def rancher_service_set_type_tool(
     type: str,
     cluster_id: str = "local",
     instance: str | None = None,
-) -> RancherServiceDetail:
+) -> RancherMutationReceipt:
     """Public MCP wrapper for curated service set_type."""
 
     return await rancher_service_set_type(

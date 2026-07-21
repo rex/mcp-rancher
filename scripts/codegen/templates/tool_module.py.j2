@@ -24,8 +24,12 @@ from rancher_mcp.exceptions import RancherCapabilityError
 from rancher_mcp.rate_limit import rate_limit_writes
 {% endif -%}
 from rancher_mcp.models.{{ pack }} import {{ list_model_name }}, {{ detail_model_name }}
-{% if 'delete' in operations -%}
+{% if ('delete' in operations) and ('patch' in operations) -%}
+from rancher_mcp.models.resources import RancherCuratedDeleteResult, RancherMutationReceipt
+{% elif 'delete' in operations -%}
 from rancher_mcp.models.resources import RancherCuratedDeleteResult
+{% elif 'patch' in operations -%}
+from rancher_mcp.models.resources import RancherMutationReceipt
 {% endif -%}
 from rancher_mcp.services.instances import resolve_instance
 {% if has_mutation -%}
@@ -704,8 +708,8 @@ async def _patch_{{ display_name_singular }}_{{ patch.verb }}(
     {{ arg.name }}: {{ arg_python_type(arg.type) }}{% if not arg.required %} | None{% endif %},
     {%- endfor %}
     client: {{ client_protocol }},
-) -> {{ detail_model_name }}:
-    """{{ patch.verb|capitalize }} one {{ display_name_singular }} via JSON merge-patch; returns the curated detail."""
+) -> RancherMutationReceipt:
+    """{{ patch.verb|capitalize }} one {{ display_name_singular }} via JSON merge-patch; returns a mutation receipt."""
 
     {% if patch.args -%}
     patch_subtree: dict[str, object] = {}
@@ -737,39 +741,26 @@ async def _patch_{{ display_name_singular }}_{{ patch.verb }}(
     request_payload: dict[str, object] = patch_subtree
     {%- endif %}
     {% if transport == 'k8s-proxy' -%}
-    payload = await client.patch_json(
+    await client.patch_json(
         {{ path_helper.detail_function }}(cluster_id{% if namespaced %}, namespace{% endif %}{% if path_helper.resource_kind %}, "{{ path_helper.resource_kind }}"{% endif %}, {{ get.arg_name }}),
         payload=request_payload,
     )
     {%- elif transport == 'steve' or transport == 'norman' -%}
-    payload = await client.patch_json(f"{{ detail_path }}", payload=request_payload)
+    await client.patch_json(f"{{ detail_path }}", payload=request_payload)
     {%- endif %}
-    {% if get.summary_copy_fields -%}
-    summary = {{ summary_function }}(payload)
-    {% endif -%}
-    {%- for local in get.locals %}
-    {{ local.name }} = {{ local.expression }}
-    {%- endfor %}
-    detail = {{ detail_model_name }}.model_validate(payload)
-    return detail.model_copy(
-        update={
-            {%- for field in get.summary_copy_fields %}
-            "{{ field }}": summary.{{ field }},
-            {%- endfor %}
-            {%- for extra in get.extras %}
-            "{{ extra.field }}": {{ extra.expression }},
-            {%- endfor %}
-            {%- if get.include_action_keys %}
-            "action_keys": sorted(mapping_value(payload, "actions") or {}),
-            {%- endif %}
-            {%- if get.include_link_keys %}
-            "link_keys": sorted(mapping_value(payload, "links") or {}),
-            {%- endif %}
-            {%- if get.include_payload %}
-            "payload": dict(payload),
-            {%- endif %}
-            "suggested_next_steps": [{% for step in patch.next_steps %}"{{ step }}"{% if not loop.last %}, {% endif %}{% endfor %}],
-        }
+    return RancherMutationReceipt(
+        instance=instance_name,
+        plane="{{ plane }}",
+        action="{{ patch.verb }}",
+        kind="{{ display_name_singular }}",
+        name={{ get.arg_name }},
+        {% if cluster_id_required -%}
+        cluster_id=cluster_id,
+        {% endif -%}
+        {% if namespaced -%}
+        namespace=namespace,
+        {% endif -%}
+        changed=dict(patch_subtree),
     )
 
 
@@ -792,7 +783,7 @@ async def rancher_{{ display_name_singular }}_{{ patch.verb }}(
     instance: str | None = None,
     settings: AppSettings | None = None,
     client: {{ client_protocol }} | None = None,
-) -> {{ detail_model_name }}:
+) -> RancherMutationReceipt:
     """{{ patch.verb|capitalize }} one {{ display_name_singular }} via JSON merge-patch."""
 
     resolved_settings = settings or get_settings()
@@ -1034,7 +1025,7 @@ async def rancher_{{ display_name_singular }}_{{ patch.verb }}_tool(
     cluster_id: str = "local",
     {% endif -%}
     instance: str | None = None,
-) -> {{ detail_model_name }}:
+) -> RancherMutationReceipt:
     """Public MCP wrapper for curated {{ display_name_singular }} {{ patch.verb }}."""
 
     return await rancher_{{ display_name_singular }}_{{ patch.verb }}(

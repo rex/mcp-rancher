@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.17.0] — 2026-07-21 — Agent: Claude
+### Changed
+- L-1 mutation receipts: metadata/state mutations (set_labels, set_annotations, scale, pause, resume, restart, suspend, cordon, set_size, set_type, set_min_max, ...) now return a compact RancherMutationReceipt {ok, action, kind, name, changed} instead of the full curated detail — ~200 B vs 1-3 KB. 'changed' is the merge-patch leaf (what was set), captured with no extra API call. ~60 tools regenerated via the codegen template; deletes keep RancherCuratedDeleteResult. The single highest-leverage size win in the server.
+
 ## [1.16.0] — 2026-07-21 — Agent: Claude
 ### Changed
 - L-0b redact-don't-delete (corrects K-1): the registration-token list now signals a manifest exists via a redaction marker (the real join token stays on the deliberate detail get) instead of omitting the field entirely; scrub_secrets stamps redacted:true on any object whose value it masked (withheld != absent); secret list summaries expose data-key NAMES (never values). ADR-0002 rule #5.

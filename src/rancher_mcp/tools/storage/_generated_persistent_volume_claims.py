@@ -10,7 +10,7 @@ from rancher_mcp.audit import audit_mutation
 from rancher_mcp.clients.management import ManagementDiscoveryClient, RancherManagementClient
 from rancher_mcp.config import AppSettings, get_settings
 from rancher_mcp.exceptions import RancherCapabilityError
-from rancher_mcp.models.resources import RancherCuratedDeleteResult
+from rancher_mcp.models.resources import RancherCuratedDeleteResult, RancherMutationReceipt
 from rancher_mcp.models.storage import (
     RancherPersistentVolumeClaimDetail,
     RancherPersistentVolumeClaimList,
@@ -252,8 +252,8 @@ async def _patch_persistent_volume_claim_set_labels(
     claim_name: str,
     labels: dict[str, str],
     client: ManagementDiscoveryClient,
-) -> RancherPersistentVolumeClaimDetail:
-    """Set_labels one persistent_volume_claim via JSON merge-patch; returns the curated detail."""
+) -> RancherMutationReceipt:
+    """Set_labels one persistent_volume_claim via JSON merge-patch; returns a mutation receipt."""
 
     patch_subtree: dict[str, object] = {}
     patch_subtree["labels"] = labels
@@ -264,21 +264,19 @@ async def _patch_persistent_volume_claim_set_labels(
     request_payload: dict[str, object] = patch_subtree
     request_payload = {"metadata": request_payload}
 
-    payload = await client.patch_json(
+    await client.patch_json(
         persistent_volume_claim_resource_path(cluster_id, namespace, claim_name),
         payload=request_payload,
     )
-    summary = persistent_volume_claim_summary_from_payload(payload)
-
-    metadata = mapping_value(payload, "metadata") or {}
-    detail = RancherPersistentVolumeClaimDetail.model_validate(payload)
-    return detail.model_copy(
-        update={
-            "id": summary.id,
-            "annotation_keys": sorted(string_dict(mapping_value(metadata, "annotations") or {})),
-            "payload": dict(payload),
-            "suggested_next_steps": ["rancher_persistent_volume_claim_get"],
-        }
+    return RancherMutationReceipt(
+        instance=instance_name,
+        plane="steve",
+        action="set_labels",
+        kind="persistent_volume_claim",
+        name=claim_name,
+        cluster_id=cluster_id,
+        namespace=namespace,
+        changed=dict(patch_subtree),
     )
 
 
@@ -292,7 +290,7 @@ async def rancher_persistent_volume_claim_set_labels(
     instance: str | None = None,
     settings: AppSettings | None = None,
     client: ManagementDiscoveryClient | None = None,
-) -> RancherPersistentVolumeClaimDetail:
+) -> RancherMutationReceipt:
     """Set_labels one persistent_volume_claim via JSON merge-patch."""
 
     resolved_settings = settings or get_settings()
@@ -325,8 +323,8 @@ async def _patch_persistent_volume_claim_set_annotations(
     claim_name: str,
     annotations: dict[str, str],
     client: ManagementDiscoveryClient,
-) -> RancherPersistentVolumeClaimDetail:
-    """Set_annotations one persistent_volume_claim via JSON merge-patch; returns the curated detail."""
+) -> RancherMutationReceipt:
+    """Set_annotations one persistent_volume_claim via JSON merge-patch; returns a mutation receipt."""
 
     patch_subtree: dict[str, object] = {}
     patch_subtree["annotations"] = annotations
@@ -337,21 +335,19 @@ async def _patch_persistent_volume_claim_set_annotations(
     request_payload: dict[str, object] = patch_subtree
     request_payload = {"metadata": request_payload}
 
-    payload = await client.patch_json(
+    await client.patch_json(
         persistent_volume_claim_resource_path(cluster_id, namespace, claim_name),
         payload=request_payload,
     )
-    summary = persistent_volume_claim_summary_from_payload(payload)
-
-    metadata = mapping_value(payload, "metadata") or {}
-    detail = RancherPersistentVolumeClaimDetail.model_validate(payload)
-    return detail.model_copy(
-        update={
-            "id": summary.id,
-            "annotation_keys": sorted(string_dict(mapping_value(metadata, "annotations") or {})),
-            "payload": dict(payload),
-            "suggested_next_steps": ["rancher_persistent_volume_claim_get"],
-        }
+    return RancherMutationReceipt(
+        instance=instance_name,
+        plane="steve",
+        action="set_annotations",
+        kind="persistent_volume_claim",
+        name=claim_name,
+        cluster_id=cluster_id,
+        namespace=namespace,
+        changed=dict(patch_subtree),
     )
 
 
@@ -365,7 +361,7 @@ async def rancher_persistent_volume_claim_set_annotations(
     instance: str | None = None,
     settings: AppSettings | None = None,
     client: ManagementDiscoveryClient | None = None,
-) -> RancherPersistentVolumeClaimDetail:
+) -> RancherMutationReceipt:
     """Set_annotations one persistent_volume_claim via JSON merge-patch."""
 
     resolved_settings = settings or get_settings()
@@ -398,8 +394,8 @@ async def _patch_persistent_volume_claim_set_size(
     claim_name: str,
     storage: str,
     client: ManagementDiscoveryClient,
-) -> RancherPersistentVolumeClaimDetail:
-    """Set_size one persistent_volume_claim via JSON merge-patch; returns the curated detail."""
+) -> RancherMutationReceipt:
+    """Set_size one persistent_volume_claim via JSON merge-patch; returns a mutation receipt."""
 
     patch_subtree: dict[str, object] = {}
     patch_subtree["storage"] = storage
@@ -412,21 +408,19 @@ async def _patch_persistent_volume_claim_set_size(
     request_payload = {"resources": request_payload}
     request_payload = {"spec": request_payload}
 
-    payload = await client.patch_json(
+    await client.patch_json(
         persistent_volume_claim_resource_path(cluster_id, namespace, claim_name),
         payload=request_payload,
     )
-    summary = persistent_volume_claim_summary_from_payload(payload)
-
-    metadata = mapping_value(payload, "metadata") or {}
-    detail = RancherPersistentVolumeClaimDetail.model_validate(payload)
-    return detail.model_copy(
-        update={
-            "id": summary.id,
-            "annotation_keys": sorted(string_dict(mapping_value(metadata, "annotations") or {})),
-            "payload": dict(payload),
-            "suggested_next_steps": ["rancher_persistent_volume_claim_get"],
-        }
+    return RancherMutationReceipt(
+        instance=instance_name,
+        plane="steve",
+        action="set_size",
+        kind="persistent_volume_claim",
+        name=claim_name,
+        cluster_id=cluster_id,
+        namespace=namespace,
+        changed=dict(patch_subtree),
     )
 
 
@@ -440,7 +434,7 @@ async def rancher_persistent_volume_claim_set_size(
     instance: str | None = None,
     settings: AppSettings | None = None,
     client: ManagementDiscoveryClient | None = None,
-) -> RancherPersistentVolumeClaimDetail:
+) -> RancherMutationReceipt:
     """Set_size one persistent_volume_claim via JSON merge-patch."""
 
     resolved_settings = settings or get_settings()
@@ -528,7 +522,7 @@ async def rancher_persistent_volume_claim_set_labels_tool(
     labels: dict[str, str],
     cluster_id: str = "local",
     instance: str | None = None,
-) -> RancherPersistentVolumeClaimDetail:
+) -> RancherMutationReceipt:
     """Public MCP wrapper for curated persistent_volume_claim set_labels."""
 
     return await rancher_persistent_volume_claim_set_labels(
@@ -546,7 +540,7 @@ async def rancher_persistent_volume_claim_set_annotations_tool(
     annotations: dict[str, str],
     cluster_id: str = "local",
     instance: str | None = None,
-) -> RancherPersistentVolumeClaimDetail:
+) -> RancherMutationReceipt:
     """Public MCP wrapper for curated persistent_volume_claim set_annotations."""
 
     return await rancher_persistent_volume_claim_set_annotations(
@@ -564,7 +558,7 @@ async def rancher_persistent_volume_claim_set_size_tool(
     storage: str,
     cluster_id: str = "local",
     instance: str | None = None,
-) -> RancherPersistentVolumeClaimDetail:
+) -> RancherMutationReceipt:
     """Public MCP wrapper for curated persistent_volume_claim set_size."""
 
     return await rancher_persistent_volume_claim_set_size(
