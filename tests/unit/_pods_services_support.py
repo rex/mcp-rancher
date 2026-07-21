@@ -7,6 +7,10 @@ consumed by the pod/service list and get test modules; operation-specific
 stubs stay with the tests that use them.
 """
 
+from __future__ import annotations
+
+import pytest
+
 from rancher_mcp.config import AppSettings
 
 
@@ -184,3 +188,61 @@ class StubSteveClient:
                 },
             }
         raise AssertionError(f"unexpected Steve path: {path}")
+
+
+class StubEventsManagementClient:
+    """Deterministic k8s-proxy management client stub for `pod_get`'s
+    secondary events fetch (M-B4).
+
+    `pod_events_best_effort` (`tools/pods_services/shared.py`) opens its own
+    `RancherManagementClient` independent of whatever `client=` a test passes
+    for the primary (Steve) pod fetch — a different plane entirely. Tests
+    swap that constructor via `patch_pod_events_client` so `pod_get` never
+    makes a real network call for events.
+    """
+
+    def __init__(
+        self,
+        items: list[dict[str, object]] | None = None,
+        *,
+        raises: bool = False,
+    ) -> None:
+        self.items = items if items is not None else []
+        self.raises = raises
+        self.calls: list[tuple[str, object]] = []
+
+    async def __aenter__(self) -> StubEventsManagementClient:
+        """Enter the async context manager `pod_events_best_effort` opens it in."""
+
+        return self
+
+    async def __aexit__(self, *_exc_info: object) -> None:
+        """Exit the async context manager; nothing to clean up."""
+
+        return None
+
+    async def get_json(self, path: str, params: object = None) -> dict[str, object]:
+        """Return the canned events collection, or raise when `raises=True`."""
+
+        self.calls.append((path, params))
+        if self.raises:
+            raise RuntimeError("simulated events endpoint failure")
+        return {"items": self.items}
+
+
+def patch_pod_events_client(
+    monkeypatch: pytest.MonkeyPatch,
+    client: StubEventsManagementClient,
+) -> None:
+    """Patch `pod_get`'s secondary events-fetch client for one test.
+
+    Without this, every `rancher_pod_get` call attempts a real
+    `RancherManagementClient` connection for the best-effort events fetch —
+    slow and network-dependent. Pass a bare `StubEventsManagementClient()`
+    (no items) when a test doesn't care about events at all.
+    """
+
+    monkeypatch.setattr(
+        "rancher_mcp.tools.pods_services.shared.RancherManagementClient",
+        lambda *_args, **_kwargs: client,
+    )

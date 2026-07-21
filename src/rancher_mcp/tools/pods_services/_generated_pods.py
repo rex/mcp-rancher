@@ -10,6 +10,7 @@ from rancher_mcp.audit import audit_mutation
 from rancher_mcp.clients.steve import RancherSteveClient, SteveMutationClient
 from rancher_mcp.config import AppSettings, get_settings
 from rancher_mcp.exceptions import RancherCapabilityError
+from rancher_mcp.models.discovery import RancherInstanceConfig
 from rancher_mcp.models.pods_services import RancherPodDetail, RancherPodList
 from rancher_mcp.models.resources import RancherCuratedDeleteResult, RancherMutationReceipt
 from rancher_mcp.rate_limit import rate_limit_writes
@@ -19,6 +20,7 @@ from rancher_mcp.services.resources.builders_pagination import next_page_token_f
 from rancher_mcp.services.safety import ensure_instance_writable
 from rancher_mcp.tools.pods_services.shared import (
     data_items,
+    pod_events_best_effort,
     pod_summary_from_payload,
 )
 from rancher_mcp.tools.support.values import mapping_value
@@ -111,6 +113,7 @@ async def rancher_pods_list(
 
 async def _fetch_pod_get(
     instance_name: str,
+    instance_config: RancherInstanceConfig,
     cluster_id: str,
     namespace: str,
     pod_name: str,
@@ -125,10 +128,13 @@ async def _fetch_pod_get(
     return detail.model_copy(
         update={
             "id": summary.id,
-            "ready": summary.ready,
+            "ready_condition": summary.ready_condition,
             "ready_containers": summary.ready_containers,
             "total_containers": summary.total_containers,
             "restart_count": summary.restart_count,
+            "events": await pod_events_best_effort(
+                instance_name, instance_config, cluster_id, namespace, pod_name
+            ),
             "link_keys": sorted(mapping_value(payload, "links") or {}),
             "payload": dict(payload),
             "suggested_next_steps": ["rancher_pods_list", "rancher_services_list"],
@@ -149,7 +155,9 @@ async def rancher_pod_get(
     resolved_settings = settings or get_settings()
     instance_name, instance_config = resolve_instance(resolved_settings, instance)
     if client is not None:
-        return await _fetch_pod_get(instance_name, cluster_id, namespace, pod_name, client)
+        return await _fetch_pod_get(
+            instance_name, instance_config, cluster_id, namespace, pod_name, client
+        )
     async with RancherSteveClient(
         instance_name,
         instance_config,
@@ -157,6 +165,7 @@ async def rancher_pod_get(
     ) as steve_client:
         return await _fetch_pod_get(
             instance_name,
+            instance_config,
             cluster_id,
             namespace,
             pod_name,

@@ -1,5 +1,80 @@
 # Changelog
 
+## [1.32.0] — 2026-07-21 — Agent: Claude
+### Changed
+- M-B4 Part 1: `pods_list`/`pod_get` collapse ready-container counts into one
+  `ready:"N/M"` token (ADR-0002 rule #3 — the same treatment `nodes:"3/3"`
+  (M-A8) and `replicas:"2/2"` (M-A7) got), plus a bonus `owner:"ReplicaSet/x"`
+  token collapsing `ownerKind`+`ownerName`. `RancherPodSummary`
+  (`models/pods_services.py`, inherited by `RancherPodDetail`): the pre-existing
+  boolean `ready` field is renamed `ready_condition` (it backs
+  `classify_pod_health`'s health-bucket classification and is genuinely
+  distinct from container-ready counts — the raw Kubernetes `Ready`
+  *condition* vs. a readyContainers/totalContainers ratio — so it stays a real,
+  `exclude=True`'d attribute rather than being silently dropped) to free the
+  `ready` name for the new `@computed_field` string token.
+  `ready_containers`/`total_containers`/`owner_kind`/`owner_name` are now
+  `exclude=True`'d too — pure duplication once the tokens cover them, but kept
+  as real attributes (no test churn beyond the renamed field).
+  `RancherPodList.summary`'s own `classify_pod_health(pod.phase, pod.ready)`
+  call updates to `pod.ready_condition` accordingly.
+  `pod_get`'s codegen'd copy path threads `ready_condition` through
+  `catalog/curated_tools/pods.yml`'s `get.summary_copy_fields` (regenerated
+  `_generated_pods.py`, no hand-edit). `restart_count` is untouched (kept
+  visible — an independent, non-duplicated signal per ADR-0002's conditional-
+  signal table). `pods_list.summary`'s existing running/succeeded/pending/
+  failed/unhealthy buckets (L-2c) already cover "completed"; not re-added.
+- M-B4 Part 2 (the field report's flagship ask): `pod_get` inlines the pod's
+  10 most recent Kubernetes events, most-recent first, as a new
+  `events: [{type, reason, message, count, lastSeen}]` field on
+  `RancherPodDetail` only — never on `pods_list` — turning a broken-pod
+  diagnosis from two tool calls into one. Best-effort by design: the events
+  fetch runs on a *second*, k8s-proxy-plane client
+  (`RancherManagementClient`) alongside the primary Steve-plane pod fetch;
+  any failure (unreachable tunnel, unsupported endpoint on an older Rancher,
+  malformed response) is logged (`structlog`, `pod_events_fetch_failed`) and
+  swallowed — `pod_get` always still returns the pod, `events` simply omitted
+  (envelope-dropped whenever empty). New `RancherPodEventSummary` model
+  (`models/pods_services.py`) is deliberately leaner than
+  `models/ops/events.py`'s `RancherEventSummary`: the involved object (this
+  pod) is already known from the surrounding response, so
+  `name`/`namespace`/`involvedKind`/`involvedName` would be pure repetition
+  (ADR-0002 rule #1). Reuses `rancher_cluster_events_list`'s exact client +
+  endpoint pattern (`tools/ops/events.py`: `ManagementDiscoveryClient` against
+  the namespaced core-API events collection via `tools/ops/paths.
+  k8s_core_ns_path`/`k8s_items`), narrowed server-side with an
+  `involvedObject.name=<pod>,involvedObject.namespace=<ns>,
+  involvedObject.kind=Pod` field selector instead of a namespace-wide fetch
+  (`tools/pods_services/shared.py`: `_fetch_pod_events` +
+  `pod_events_best_effort`).
+  `pod_get` is codegen'd with no prior seam for a secondary cross-plane
+  fetch, so this slice adds one minimal, general codegen hook rather than
+  hand-editing `_generated_pods.py`: `GetConfig.needs_instance_config`
+  (`scripts/codegen/descriptor/configs.py`) threads
+  `instance_config: RancherInstanceConfig` into `_fetch_<x>_get` and both
+  `rancher_<x>_get` call sites alongside the existing `instance_name`
+  (`scripts/codegen/templates/tool_module.py.j2`) — opt-in, so `make codegen`
+  regenerates all other 26 packs byte-identical (verified). With
+  `instance_config` in scope, `pods.yml`'s `get.extras` is plain awaited
+  Python (`await pod_events_best_effort(instance_name, instance_config,
+  cluster_id, namespace, pod_name)`) — valid because `_fetch_pod_get` is
+  already `async def`; no new async-extras mechanism was needed. The
+  `tools.ops.paths` import inside `_fetch_pod_events` is deliberately
+  deferred (function-local, not module-level): `tools/ops/__init__.py`
+  eagerly imports `tools/ops/rollups.py`, which imports
+  `pod_ready_from_status` from this same module — a module-level import of
+  `tools.ops.paths` here would complete a circular-import cycle through the
+  `tools.ops` package `__init__`.
+  9 new/updated tests: `test_pods_services_pods_shaping_tools.py` (new —
+  ready/owner token collapse on list + get; events inlined most-recent-first
+  with the exact field-selector asserted; the >10 cap; and the critical
+  best-effort test proving `pod_get` still returns the pod when the events
+  fetch RAISES) plus updated assertions in `test_pod_summary.py` and
+  `test_pods_services_pods_read_tools.py`. New `StubEventsManagementClient` +
+  `patch_pod_events_client` in `_pods_services_support.py` stub the secondary
+  events client so no test makes a real network call.
+  `make validate` green (701 tests, 85% coverage).
+
 ## [1.31.0] — 2026-07-21 — Agent: Claude
 ### Changed
 - M-A7: `deployments_list`/`deployment_get` closed Track M's last Wave-A "gold

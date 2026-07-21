@@ -196,6 +196,21 @@ class GetConfig(BaseModel):
     extras: list[DetailExtra] = []
     """Additional computed update keys."""
 
+    needs_instance_config: bool = False
+    """If True, thread `instance_config: RancherInstanceConfig` into the
+    get-fetch helper (`_fetch_<x>_get`) and both `rancher_<x>_get` call sites,
+    alongside the existing `instance_name`. Opt-in and additive: False (the
+    default) changes zero currently-generated files.
+
+    Enables a `get.extras` expression to open a SECOND, differently-scoped
+    client (e.g. a k8s-proxy `RancherManagementClient` for a cross-plane
+    secondary fetch) without codegen needing any knowledge of that fetch —
+    the expression is plain awaited Python, valid because the surrounding
+    `_fetch_<x>_get` is already `async def` (M-B4: `pod_get`'s best-effort
+    inline `events[]`, fetched via a client the primary Steve-plane fetch
+    can't reach). `instance_name` alone is not enough to construct a second
+    client — `instance_config` (URL, token, TLS) is required too."""
+
     include_link_keys: bool = True
     """Add `link_keys: sorted(mapping_value(payload, "links") or {})`."""
 

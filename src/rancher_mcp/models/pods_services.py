@@ -45,6 +45,12 @@ def _empty_service_ports() -> list["RancherServicePortSummary"]:
     return []
 
 
+def _empty_pod_events() -> list["RancherPodEventSummary"]:
+    """Return a typed empty pod-event list for Pydantic default factories."""
+
+    return []
+
+
 class RancherPodContainerSummary(RancherModel):
     """Typed summary for one pod container."""
 
@@ -89,9 +95,20 @@ class RancherPodSummary(RancherModel):
         validation_alias=AliasPath("metadata", "namespace"),
     )
     phase: str | None = Field(default=None, validation_alias=AliasPath("status", "phase"))
-    ready: bool | None = None
-    ready_containers: int | None = None
-    total_containers: int | None = None
+    # `ready_condition` is the pod's raw Kubernetes `Ready` *condition*
+    # (renamed from the old `ready` field — used only internally by
+    # `classify_pod_health`, below and in `RancherPodList.summary`). Superseded
+    # on the wire by the collapsed `ready` token computed further down (M-B4 /
+    # ADR-0002 rule #3): `exclude=True` keeps it a real attribute (health
+    # classification is unaffected) but drops it from the default dump now
+    # that the token already covers the healthy-glance case.
+    ready_condition: bool | None = Field(default=None, exclude=True)
+    # The now-redundant individual int counts (M-B4 / ADR-0002 rule #3): kept
+    # as real attributes (`_pod_summary_from_payload` still populates them,
+    # `ready` below still reads them) but `exclude=True`'d from the dump now
+    # that `ready:"2/2"` covers the healthy-glance case in one token.
+    ready_containers: int | None = Field(default=None, exclude=True)
+    total_containers: int | None = Field(default=None, exclude=True)
     restart_count: int | None = None
     pod_ip: str | None = Field(default=None, validation_alias=AliasPath("status", "podIP"))
     node_name: str | None = Field(default=None, validation_alias=AliasPath("spec", "nodeName"))
@@ -99,11 +116,54 @@ class RancherPodSummary(RancherModel):
     owner_kind: str | None = Field(
         default=None,
         validation_alias=AliasPath("metadata", "ownerReferences", 0, "kind"),
+        exclude=True,
     )
     owner_name: str | None = Field(
         default=None,
         validation_alias=AliasPath("metadata", "ownerReferences", 0, "name"),
+        exclude=True,
     )
+
+    @computed_field
+    @property
+    def ready(self) -> str | None:
+        """Collapsed ready-container token, e.g. ``"2/2"`` (M-B4 / ADR-0002 rule
+        #3 — the same treatment ``nodes:"3/3"`` (M-A8) and ``replicas:"2/2"``
+        (M-A7) got). ``None`` (envelope-dropped) until container statuses are
+        known — a quick glance already reads exception-shaped (``"1/2"``
+        signals trouble on its own)."""
+
+        if self.ready_containers is None or self.total_containers is None:
+            return None
+        return f"{self.ready_containers}/{self.total_containers}"
+
+    @computed_field
+    @property
+    def owner(self) -> str | None:
+        """Collapsed owner-reference token, e.g. ``"ReplicaSet/foo"`` (M-B4).
+        ``None`` (envelope-dropped) when the pod has no owner reference."""
+
+        if self.owner_kind is None or self.owner_name is None:
+            return None
+        return f"{self.owner_kind}/{self.owner_name}"
+
+
+class RancherPodEventSummary(RancherModel):
+    """Typed summary for one Kubernetes event inlined onto a pod detail (M-B4).
+
+    Deliberately leaner than
+    :class:`~rancher_mcp.models.ops.events.RancherEventSummary`: the involved
+    object (this pod) is already known from the surrounding `pod_get`
+    response, so repeating `name`/`namespace`/`involvedKind`/`involvedName`
+    per event would be pure plumbing (ADR-0002 rule #1 — "would this field
+    ever change what I do next?").
+    """
+
+    type: str | None = None
+    reason: str | None = None
+    message: str | None = None
+    count: int | None = None
+    last_seen: str | None = None
 
 
 class RancherPodDetail(RancherPodSummary):
@@ -123,6 +183,13 @@ class RancherPodDetail(RancherPodSummary):
         default_factory=_empty_container_summaries,
         validation_alias=AliasPath("status", "containerStatuses"),
     )
+    # Best-effort inline recent events (M-B4) — `pod_get` ONLY, never the
+    # list (this field lives on Detail, not Summary). Populated by
+    # `pod_events_best_effort` (`tools/pods_services/shared.py`) via a
+    # secondary k8s-proxy fetch; empty (envelope-dropped) whenever there are
+    # no events OR the secondary fetch fails — events must never break the
+    # core pod get.
+    events: list[RancherPodEventSummary] = Field(default_factory=_empty_pod_events)
     payload: dict[str, object] = Field(default_factory=dict)
 
 
@@ -173,7 +240,7 @@ class RancherPodList(RancherModel):
 
         counts = {"running": 0, "succeeded": 0, "pending": 0, "failed": 0, "unhealthy": 0}
         for pod in self.pods:
-            counts[classify_pod_health(pod.phase, pod.ready)] += 1
+            counts[classify_pod_health(pod.phase, pod.ready_condition)] += 1
         return counts
 
 

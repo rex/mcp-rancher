@@ -12,7 +12,7 @@ from rancher_mcp.models.pods_services import RancherPodList, RancherPodSummary
 
 def _pod(phase: str, *, ready: bool = True) -> RancherPodSummary:
     pod = RancherPodSummary.model_validate({"metadata": {"name": "p"}, "status": {"phase": phase}})
-    return pod.model_copy(update={"ready": ready})
+    return pod.model_copy(update={"ready_condition": ready})
 
 
 def _summary(pods: list[RancherPodSummary]) -> dict[str, int]:

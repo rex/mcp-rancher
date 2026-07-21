@@ -19,6 +19,7 @@ detail_response_model: rancher_mcp.models.pods_services.RancherPodDetail
 # Imports from tools/<pack>/shared.py
 shared_imports:
   - data_items
+  - pod_events_best_effort
   - pod_summary_from_payload
 summary_function: pod_summary_from_payload
 
@@ -41,12 +42,15 @@ get:
   arg_name: pod_name
   summary_copy_fields:
     - id
-    - ready
+    - ready_condition
     - ready_containers
     - total_containers
     - restart_count
+  needs_instance_config: true
   locals: []
-  extras: []
+  extras:
+    - field: events
+      expression: await pod_events_best_effort(instance_name, instance_config, cluster_id, namespace, pod_name)
   include_link_keys: true
   include_payload: true
   next_steps:
@@ -89,7 +93,7 @@ tools:
     annotation_set: READ_ONLY
   get:
     name: rancher_pod_get
-    description: Fetch one pod by namespace and name. Returns the curated summary plus full payload and link keys.
+    description: Fetch one pod by namespace and name. Returns the curated summary plus full payload, link keys, and the pod's 10 most recent Kubernetes events (best-effort — omitted if the events fetch fails).
     annotation_set: READ_ONLY
   delete:
     name: rancher_pod_delete

@@ -23,6 +23,9 @@ from rancher_mcp.exceptions import RancherCapabilityError
 {% if has_mutation -%}
 from rancher_mcp.rate_limit import rate_limit_writes
 {% endif -%}
+{% if get and get.needs_instance_config -%}
+from rancher_mcp.models.discovery import RancherInstanceConfig
+{% endif -%}
 from rancher_mcp.models.{{ pack }} import {{ list_model_name }}, {{ detail_model_name }}
 {% if ('delete' in operations) and ('patch' in operations) -%}
 from rancher_mcp.models.resources import RancherCuratedDeleteResult, RancherMutationReceipt
@@ -236,6 +239,9 @@ async def rancher_{{ display_name_plural }}_list(
 {% if 'get' in operations -%}
 async def _fetch_{{ display_name_singular }}_get(
     instance_name: str,
+    {% if get.needs_instance_config -%}
+    instance_config: RancherInstanceConfig,
+    {% endif -%}
     {% if cluster_id_required -%}
     cluster_id: str,
     {% endif -%}
@@ -300,7 +306,7 @@ async def rancher_{{ display_name_singular }}_get(
     resolved_settings = settings or get_settings()
     instance_name, instance_config = resolve_instance(resolved_settings, instance)
     if client is not None:
-        return await _fetch_{{ display_name_singular }}_get(instance_name, {% if cluster_id_required %}cluster_id, {% endif %}{% if namespaced %}namespace, {% endif %}{{ get.arg_name }}, client)
+        return await _fetch_{{ display_name_singular }}_get(instance_name, {% if get.needs_instance_config %}instance_config, {% endif %}{% if cluster_id_required %}cluster_id, {% endif %}{% if namespaced %}namespace, {% endif %}{{ get.arg_name }}, client)
     {% if transport == 'steve' -%}
     async with {{ client_class }}(
         instance_name,
@@ -312,6 +318,9 @@ async def rancher_{{ display_name_singular }}_get(
     {%- endif %}
         return await _fetch_{{ display_name_singular }}_get(
             instance_name,
+            {% if get.needs_instance_config -%}
+            instance_config,
+            {% endif -%}
             {% if cluster_id_required -%}
             cluster_id,
             {% endif -%}

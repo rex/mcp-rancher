@@ -56,8 +56,16 @@ serializer, security, and new-tool design**. Never hand-edit `_generated_*.py`
   shared.py` (`_deployment_rollout_reason`, reusing `conditions_from_payload`)
   + `catalog/curated_tools/deployments.yml` (`get.summary_copy_fields` +
   `reason`/`since`, codegen'd — no hand-edit, no new hook needed).
-- [ ] **M-B4** pods: `completed[]` bucket + `ready:"2/2"` token; `pod_get`
-  inline `events[]`. `models/pods_services.py` + pod tools.
+- [x] **M-B4** (v1.32.0) pods: `ready:"N/M"` container token + bonus `owner`
+  token on `pods_list`/`pod_get` (renamed the pre-existing boolean `ready` to
+  `ready_condition`, still backing `classify_pod_health`); `pod_get` inline
+  best-effort `events[]` via a new codegen `GetConfig.needs_instance_config`
+  hook (threads `instance_config` into `_fetch_<x>_get` for a secondary
+  k8s-proxy client, opt-in, zero impact on the other 26 packs). Part 2 shipped
+  in full — not deferred. `completed[]` bucket not re-added: `pods_list.summary`
+  (L-2c) already separates `succeeded` from `running`/`unhealthy`.
+  `models/pods_services.py` + `tools/pods_services/shared.py` +
+  `scripts/codegen/{descriptor/configs.py,templates/tool_module.py.j2}`.
 - [ ] **M-A12** drop redundant per-item dup (`id`==`namespace/name`, node
   `name`==`id`) + collapse `ownerKind`+`ownerName`→`owner`. (Opus — envelope-adjacent.)
 

@@ -257,10 +257,23 @@ shipped (v1.31.0, `deployments_list`/`get`: `replicas:"2/2"` computed token +
 top level from `status.conditions[]` when a rollout isn't converged — see
 `docs/track-m-plan.md` M-A7 row and `CHANGELOG.md` [1.31.0]).
 
-**Next up (Wave A remainder, Sonnet-ownable):** M-B4 (pod `completed[]` +
-`ready` token; `pod_get` inline `events[]`). M-A12 and Waves B-E (codegen,
-architecture, new features, infra) are Opus-owned per the plan's delegation
-policy — untouched this session.
+**M-B4 shipped (v1.32.0)** — both parts, in full: (1) `pods_list`/`pod_get`
+collapse `ready:"N/M"` (+ bonus `owner:"ReplicaSet/x"`) tokens, renaming the
+pre-existing boolean `ready` field to `ready_condition` (kept, `exclude=True`,
+still backs `classify_pod_health`); (2) `pod_get` inlines the pod's 10 most
+recent Kubernetes events (most-recent first, `involvedObject` field-selector
+scoped, best-effort — a raising events fetch never breaks `pod_get`) via a
+new opt-in codegen hook, `GetConfig.needs_instance_config`
+(`scripts/codegen/descriptor/configs.py` +
+`scripts/codegen/templates/tool_module.py.j2`), threading `instance_config`
+into `_fetch_<x>_get` for a secondary k8s-proxy client — zero impact on the
+other 26 packs (verified via full `make codegen`). See `docs/track-m-plan.md`
+M-B4 row and `CHANGELOG.md` [1.32.0].
+
+**Next up:** Wave A is done except **M-A12** (drop redundant per-item dup +
+`owner` collapse elsewhere — explicitly Opus-owned, "envelope-adjacent," per
+the plan's delegation policy). Waves B-E (codegen, base serializer, security,
+new features, infra) are also Opus-owned — untouched this session.
 
 ### MAINTENANCE (2026-07-11): isolated current Rancher integration — ✅ live matrix green — v1.6.0
 
