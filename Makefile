@@ -70,23 +70,23 @@ help:
 	@echo "  $(GREEN)make check-codegen$(RESET)        Verify codegen output matches descriptors"
 	@echo "  $(GREEN)make validate$(RESET)             Run codegen + architecture + lint + typecheck + tests"
 	@echo ""
-	@echo "$(BOLD)Local Lab$(RESET)"
-	@echo "  $(GREEN)make lab-up$(RESET)               Start the management + downstream kind clusters w/ Rancher"
-	@echo "  $(GREEN)make lab-down$(RESET)             Tear down the running local lab"
-	@echo "  $(GREEN)make lab-reset$(RESET)            Tear down the lab and remove repo-local runtime state"
-	@echo "  $(GREEN)make lab-status$(RESET)           Show local lab status for both clusters"
-	@echo "  $(GREEN)make lab-logs$(RESET)             Show recent Rancher deployment logs"
+	@echo "$(BOLD)Local Lab$(RESET)   $(CYAN)legacy = Rancher 2.6.5 (default)  ·  current = Rancher 2.14.3  (isolated; ports 8443/9443)$(RESET)"
+	@echo "  $(GREEN)make lab-up$(RESET)               Start the $(BOLD)legacy$(RESET) lab — Rancher $(BOLD)2.6.5$(RESET) (mgmt + downstream kind, :8443)"
+	@echo "  $(GREEN)make lab-down$(RESET)             Tear down the legacy (2.6.5) lab"
+	@echo "  $(GREEN)make lab-reset$(RESET)            Tear down the legacy (2.6.5) lab and remove repo-local runtime state"
+	@echo "  $(GREEN)make lab-status$(RESET)           Show legacy (2.6.5) lab status for both clusters"
+	@echo "  $(GREEN)make lab-logs$(RESET)             Show recent legacy Rancher (2.6.5) deployment logs"
 	@echo "  $(GREEN)make lab-tools$(RESET)            Download the repo-managed kind binary"
-	@echo "  $(GREEN)make lab-current-up$(RESET)       Start the isolated current Rancher lab"
-	@echo "  $(GREEN)make lab-current-down$(RESET)     Stop the isolated current Rancher lab"
-	@echo "  $(GREEN)make lab-current-status$(RESET)   Show isolated current Rancher lab status"
-	@echo "  $(GREEN)make integration-current$(RESET)  Run the full live suite on current Rancher only"
-	@echo "  $(GREEN)make lab-rancher-up$(RESET)       Install or upgrade Rancher on the management cluster"
-	@echo "  $(GREEN)make lab-rancher-down$(RESET)     Uninstall Rancher from the management cluster"
-	@echo "  $(GREEN)make lab-kind-up$(RESET)          Start the managed and downstream kind clusters"
-	@echo "  $(GREEN)make lab-kind-down$(RESET)        Stop both managed kind clusters"
+	@echo "  $(GREEN)make lab-current-up$(RESET)       Start the $(BOLD)current$(RESET) lab — Rancher $(BOLD)2.14.3$(RESET) (isolated, :9443)"
+	@echo "  $(GREEN)make lab-current-down$(RESET)     Stop the current (2.14.3) lab"
+	@echo "  $(GREEN)make lab-current-status$(RESET)   Show current (2.14.3) lab status"
+	@echo "  $(GREEN)make integration-current$(RESET)  Run the full live suite on current Rancher (2.14.3) only"
+	@echo "  $(GREEN)make lab-rancher-up$(RESET)       Install/upgrade Rancher on the mgmt cluster (2.6.5; --profile current → 2.14.3)"
+	@echo "  $(GREEN)make lab-rancher-down$(RESET)     Uninstall Rancher from the management cluster (2.6.5 legacy)"
+	@echo "  $(GREEN)make lab-kind-up$(RESET)          Start the managed + downstream kind clusters (legacy profile)"
+	@echo "  $(GREEN)make lab-kind-down$(RESET)        Stop both managed kind clusters (legacy profile)"
 	@echo "  $(GREEN)make capture-fixtures$(RESET)     Capture sanitized Rancher contract fixtures"
-	@echo "  $(GREEN)make mock-rancher$(RESET)         Run a fixture-backed mock Rancher server"
+	@echo "  $(GREEN)make mock-rancher$(RESET)         Run a fixture-backed mock Rancher server (no version — fixtures)"
 	@echo ""
 	@echo "$(BOLD)Live diagnostics (Track G)$(RESET)"
 	@echo "  $(GREEN)make live-health$(RESET)          Probe server_version + server_health on every instance"
@@ -234,24 +234,40 @@ validate: check-codegen check-tool-manifest check-readme-badges check-server-jso
 
 # ─── Local Lab ────────────────────────────────────────────────────────
 
-## lab-up: Start the full local Rancher lab plus the downstream simulated cluster
+# ── Local Rancher dev lab — VERSION-PINNED PROFILES ────────────────────────────
+# Source of truth: devtools/devlab/profiles.py  (resolution: devtools/devlab/cli.py).
+# Two isolated, version-pinned profiles the lab can bring up:
+#
+#   PROFILE   RANCHER   kind      k8s node image(s)          cert-manager  https
+#   legacy    2.6.5     v0.23.0   v1.20.15 mgmt/v1.23.17 dn  v1.7.1        :8443   ← DEFAULT
+#   current   2.14.3    v0.32.0   v1.33.12 (both)            v1.21.0       :9443
+#
+# Which profile each target uses (cli.py: `profile or (current if integration else legacy)`):
+#   • Plain `make lab-*` / `lab-rancher-*` / `lab-kind-*`  → LEGACY   → Rancher 2.6.5
+#   • `make lab-current-*` / `integration-current`         → CURRENT  → Rancher 2.14.3
+#   • bare `devlab integration` (no Make target)           → CURRENT  → Rancher 2.14.3
+# The two labs use distinct cluster names + ports, so they can run at the same time.
+# NOTE: neither profile is the 2.9.3 *production* target — the lab covers the 2.6.5
+# compat floor and a newer 2.14.3; there is no 2.9.3 lab profile.
+
+## lab-up: Start the LEGACY local Rancher lab (Rancher 2.6.5) + downstream cluster
 lab-up:
 	$(PYTHON) -m devtools.devlab up
 
-## lab-down: Stop the full local Rancher development lab
+## lab-down: Stop the LEGACY local Rancher lab (Rancher 2.6.5)
 lab-down:
 	$(PYTHON) -m devtools.devlab down
 
-## lab-reset: Destroy the full local lab and repo-local runtime state
+## lab-reset: Destroy the LEGACY local lab (Rancher 2.6.5) and repo-local runtime state
 lab-reset:
 	@read -r -p "This destroys the local lab clusters and repo-local runtime state. Continue? [y/N] " REPLY; \
 	case "$$REPLY" in [Yy]) $(PYTHON) -m devtools.devlab reset ;; *) echo "$(YELLOW)Cancelled.$(RESET)" ;; esac
 
-## lab-status: Show local lab status
+## lab-status: Show LEGACY local lab status (Rancher 2.6.5)
 lab-status:
 	$(PYTHON) -m devtools.devlab status
 
-## lab-logs: Show recent Rancher lab logs
+## lab-logs: Show recent LEGACY Rancher lab logs (Rancher 2.6.5)
 lab-logs:
 	$(PYTHON) -m devtools.devlab logs
 
@@ -259,35 +275,35 @@ lab-logs:
 lab-tools:
 	$(PYTHON) -m devtools.devlab ensure-tools
 
-## lab-current-up: Start the isolated current Rancher local lab
+## lab-current-up: Start the isolated CURRENT Rancher local lab (Rancher 2.14.3)
 lab-current-up:
 	$(PYTHON) -m devtools.devlab up --profile current
 
-## lab-current-down: Stop the isolated current Rancher local lab
+## lab-current-down: Stop the isolated CURRENT Rancher local lab (Rancher 2.14.3)
 lab-current-down:
 	$(PYTHON) -m devtools.devlab down --profile current
 
-## lab-current-status: Show isolated current Rancher local lab status
+## lab-current-status: Show isolated CURRENT Rancher local lab status (Rancher 2.14.3)
 lab-current-status:
 	$(PYTHON) -m devtools.devlab status --profile current
 
-## integration-current: Run the full local integration suite against current Rancher
+## integration-current: Run the full local integration suite against CURRENT Rancher (2.14.3)
 integration-current:
 	$(PYTHON) -m devtools.devlab integration --profile current
 
-## lab-rancher-up: Install or upgrade Rancher on the management cluster
+## lab-rancher-up: Install/upgrade Rancher on the mgmt cluster (LEGACY 2.6.5; add --profile current for 2.14.3)
 lab-rancher-up:
 	$(PYTHON) -m devtools.devlab rancher-up
 
-## lab-rancher-down: Uninstall Rancher from the management cluster
+## lab-rancher-down: Uninstall Rancher from the management cluster (LEGACY 2.6.5 profile)
 lab-rancher-down:
 	$(PYTHON) -m devtools.devlab rancher-down
 
-## lab-kind-up: Start the managed and downstream kind clusters
+## lab-kind-up: Start the managed and downstream kind clusters (LEGACY profile — kind v0.23.0)
 lab-kind-up:
 	$(PYTHON) -m devtools.devlab kind-up
 
-## lab-kind-down: Stop the managed and downstream kind clusters
+## lab-kind-down: Stop the managed and downstream kind clusters (LEGACY profile)
 lab-kind-down:
 	$(PYTHON) -m devtools.devlab kind-down
 

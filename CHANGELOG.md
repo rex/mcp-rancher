@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.26.2] — 2026-07-21 — Agent: Claude
+### Changed
+- Docs: annotate the Makefile lab targets with the Rancher version each profile brings up — legacy (default) = Rancher 2.6.5, current = Rancher 2.14.3 (source: devtools/devlab/profiles.py). Added a version-table header comment over the lab targets, per-target ## annotations, and version labels in the make help output; no behavior change.
+
 ## [1.26.1] — 2026-07-21 — Agent: Claude
 ### Changed
 - Track L handoff: record all three waves complete (v1.14.1 -> v1.26.0, make validate green) in TASK_STATE and the ROADMAP definition-of-done, with deferred items and the prod-verification note for the node field aliases.
