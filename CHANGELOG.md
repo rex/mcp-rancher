@@ -1,5 +1,25 @@
 # Changelog
 
+## [1.27.0] — 2026-07-21 — Agent: Claude
+### Changed
+- M-A4: `namespace_workloads_summary` and `project_health_summary` no longer conflate
+  terminal Job/Completed pods with live ones — a namespace/project with 3 Running + 3
+  Completed pods used to report `podCount:6, podsRunning:3` (reads half-down) with the
+  Completed pods invisible to any bucket. `NamespaceWorkloadsSummary` gains
+  `pods_succeeded`; `ProjectHealthSummary` gains `succeeded_pods`; both now derive every
+  pod-health bucket from the shared `classify_pod_health` helper (extracted from
+  `RancherPodList.summary`, L-2c) in `models/pods_services.py`, so all three surfaces
+  agree byte-for-byte on what succeeded/running/pending/failed/unhealthy mean. As a
+  side effect this also fixes a real latent bug the shared classifier surfaced: a
+  running-but-not-ready pod was previously silently counted as healthy `pods_running`
+  (namespace) or invisible to `failing_pods` (project) — it now correctly lands in the
+  failed/failing bucket at both rollups. Also factored `pod_ready_from_status` out of
+  `tools/pods_services/shared.py`'s pod-summary builder so the rollups derive readiness
+  the same way as the curated pod tools without needing the full container-status
+  parse. `models/ops/rollups.py`, `models/pods_services.py`,
+  `tools/pods_services/shared.py`, `tools/ops/rollups.py`; 4 new/updated tests in
+  `tests/unit/test_ops_rollups_tools.py`.
+
 ## [1.26.6] — 2026-07-21 — Agent: Claude
 ### Added
 - Track M plan (`docs/track-m-plan.md`): cross-turn tracker for the full post-Track-L

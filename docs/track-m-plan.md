@@ -28,7 +28,7 @@ serializer, security, and new-tool design**. Never hand-edit `_generated_*.py`
 
 ## Wave A — localized model hand-tunes (Sonnet, sequential)
 
-- [ ] **M-A4** `namespace_workloads_summary` + `project_health_summary`: split
+- [x] **M-A4** (v1.27.0) `namespace_workloads_summary` + `project_health_summary`: split
   `active` vs `completed`/`succeeded` so a healthy ns doesn't read half-down.
   `models/ops/rollups.py` + `tools/ops/` builders.
 - [ ] **M-A3+B6** `cluster_get`: typed `issues[]` (severity/since/ageDays/reason/

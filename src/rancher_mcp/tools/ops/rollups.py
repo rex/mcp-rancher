@@ -13,14 +13,28 @@ from rancher_mcp.models.ops.rollups import (
     ProjectHealthSummary,
     WorkloadControllerCounts,
 )
+from rancher_mcp.models.pods_services import classify_pod_health
 from rancher_mcp.services.instances import resolve_instance
 from rancher_mcp.tools.ops.paths import k8s_apps_ns_path, k8s_core_ns_path, k8s_items
+from rancher_mcp.tools.pods_services.shared import pod_ready_from_status
 from rancher_mcp.tools.support.values import mapping_value, string_value
 from rancher_mcp.tools.workloads.readiness import (
     daemonset_ready,
     deployment_rollout_complete,
     statefulset_ready,
 )
+
+# Empty-bucket template for the shared `classify_pod_health` phase classifier
+# (M-A4) — copied per call site so pod-health tallies never leak state across
+# namespaces/projects. Bucket meanings are canonical in
+# `rancher_mcp.models.pods_services.classify_pod_health`.
+_EMPTY_POD_HEALTH: dict[str, int] = {
+    "running": 0,
+    "succeeded": 0,
+    "pending": 0,
+    "failed": 0,
+    "unhealthy": 0,
+}
 
 
 def _safe_int(value: object) -> int:
@@ -60,16 +74,11 @@ async def _build_namespace_workloads(
     pod_path = k8s_core_ns_path(cluster_id, namespace, "pods")
     pod_payload = await client.get_json(pod_path)
     pods = k8s_items(pod_payload)
-    running = pending = failed = 0
+    pod_health = dict(_EMPTY_POD_HEALTH)
     for pod in pods:
         status = mapping_value(pod, "status") or {}
         phase = string_value(status, "phase")
-        if phase == "Running":
-            running += 1
-        elif phase == "Pending":
-            pending += 1
-        elif phase == "Failed":
-            failed += 1
+        pod_health[classify_pod_health(phase, pod_ready_from_status(status))] += 1
 
     dep_path = k8s_apps_ns_path(cluster_id, namespace, "deployments")
     dep_payload = await client.get_json(dep_path)
@@ -134,9 +143,13 @@ async def _build_namespace_workloads(
         cluster_id=cluster_id,
         namespace=namespace,
         pod_count=len(pods),
-        pods_running=running,
-        pods_pending=pending,
-        pods_failed=failed,
+        pods_running=pod_health["running"],
+        pods_pending=pod_health["pending"],
+        # `unhealthy` (running-but-not-ready / unknown phase) folds into
+        # `pods_failed` at this rollup's granularity — this model has no
+        # separate unhealthy bucket, only succeeded/failed (M-A4).
+        pods_failed=pod_health["failed"] + pod_health["unhealthy"],
+        pods_succeeded=pod_health["succeeded"],
         workloads=wc,
     )
 
@@ -212,9 +225,9 @@ async def _build_project_health(
         ns_names = [string_value(_metadata(ns), "name") or "<unknown>" for ns in ns_items]
 
     total_pods = 0
-    failing_pods = 0
     total_workloads = 0
     unhealthy_workloads = 0
+    pod_health = dict(_EMPTY_POD_HEALTH)
 
     for ns_name in ns_names:
         if cluster_id is None:
@@ -226,8 +239,7 @@ async def _build_project_health(
         for pod in pods:
             status = mapping_value(pod, "status") or {}
             phase = string_value(status, "phase")
-            if phase in ("Failed", "Unknown", "Pending"):
-                failing_pods += 1
+            pod_health[classify_pod_health(phase, pod_ready_from_status(status))] += 1
 
         dep_payload = await client.get_json(k8s_apps_ns_path(cluster_id, ns_name, "deployments"))
         deployments = k8s_items(dep_payload)
@@ -279,6 +291,12 @@ async def _build_project_health(
             ):
                 unhealthy_workloads += 1
 
+    # Pending/failed/unhealthy all count against project health at this
+    # rollup's granularity (unchanged from the pre-M-A4 Failed/Unknown/Pending
+    # set, now additionally catching running-but-not-ready pods via the
+    # shared `classify_pod_health` bucket) — succeeded pods never do.
+    failing_pods = pod_health["pending"] + pod_health["failed"] + pod_health["unhealthy"]
+
     return ProjectHealthSummary(
         instance=instance_name,
         project_id=project_id,
@@ -289,6 +307,7 @@ async def _build_project_health(
         namespaces=ns_names,
         total_pods=total_pods,
         failing_pods=failing_pods,
+        succeeded_pods=pod_health["succeeded"],
         total_workloads=total_workloads,
         unhealthy_workloads=unhealthy_workloads,
         suggested_next_steps=[

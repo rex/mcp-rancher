@@ -126,6 +126,32 @@ class RancherPodDetail(RancherPodSummary):
     payload: dict[str, object] = Field(default_factory=dict)
 
 
+def classify_pod_health(phase: str | None, ready: bool | None) -> str:
+    """Classify a pod's phase + readiness into a shared health bucket.
+
+    Returns one of ``running`` / ``succeeded`` / ``pending`` / ``failed`` /
+    ``unhealthy`` — the single canonical definition shared by
+    :attr:`RancherPodList.summary` (L-2c) and the namespace/project rollups
+    (``models/ops/rollups.py`` + ``tools/ops/rollups.py``, M-A4) so every
+    curated pod-health surface agrees on what each bucket means.
+    ``succeeded`` (terminal Job pods) is deliberately excluded from every
+    other bucket so a completed Job never makes a healthy namespace/project
+    read half-down. ``unhealthy`` covers running-but-not-ready pods and any
+    unrecognized or missing phase (e.g. ``Unknown``).
+    """
+
+    normalized = (phase or "").lower()
+    if normalized == "succeeded":
+        return "succeeded"
+    if normalized == "pending":
+        return "pending"
+    if normalized == "failed":
+        return "failed"
+    if normalized == "running" and ready is not False:
+        return "running"
+    return "unhealthy"
+
+
 class RancherPodList(RancherModel):
     """Typed list response for pods in one namespace."""
 
@@ -147,17 +173,7 @@ class RancherPodList(RancherModel):
 
         counts = {"running": 0, "succeeded": 0, "pending": 0, "failed": 0, "unhealthy": 0}
         for pod in self.pods:
-            phase = (pod.phase or "").lower()
-            if phase == "succeeded":
-                counts["succeeded"] += 1
-            elif phase == "pending":
-                counts["pending"] += 1
-            elif phase == "failed":
-                counts["failed"] += 1
-            elif phase == "running" and pod.ready is not False:
-                counts["running"] += 1
-            else:  # running-but-not-ready, unknown, crash-looping
-                counts["unhealthy"] += 1
+            counts[classify_pod_health(pod.phase, pod.ready)] += 1
         return counts
 
 

@@ -25,16 +25,27 @@ from rancher_mcp.tools.support.values import (
 )
 
 
+def _pod_ready_from_status(status: Mapping[str, object]) -> bool | None:
+    """Derive a pod's Ready condition from its raw ``status`` mapping.
+
+    Shared by :func:`_pod_summary_from_payload` and the namespace/project
+    rollups (``tools/ops/rollups.py``, M-A4) so both derive "is this pod
+    ready" the same way, without either needing the full container-status
+    parse that only the pod-detail surfaces require.
+    """
+
+    return _condition_is_true(_conditions_from_status(status), "Ready")
+
+
 def _pod_summary_from_payload(payload: Mapping[str, object]) -> RancherPodSummary:
     """Normalize one pod payload."""
 
     summary = RancherPodSummary.model_validate(payload)
     status = _mapping_value(payload, "status") or {}
-    conditions = _conditions_from_status(status)
     containers = _container_summaries(status)
     return summary.model_copy(
         update={
-            "ready": _condition_is_true(conditions, "Ready"),
+            "ready": _pod_ready_from_status(status),
             "ready_containers": sum(1 for container in containers if container.ready is True),
             "total_containers": len(containers),
             "restart_count": sum(container.restart_count or 0 for container in containers),
@@ -85,6 +96,7 @@ conditions_from_status = _conditions_from_status
 container_summaries = _container_summaries
 data_items = _data_items
 mapping_value = _mapping_value
+pod_ready_from_status = _pod_ready_from_status
 pod_summary_from_payload = _pod_summary_from_payload
 relationship_types = _relationship_types
 service_summary_from_payload = _service_summary_from_payload
