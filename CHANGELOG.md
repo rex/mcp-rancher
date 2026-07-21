@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.14.1] — 2026-07-21 — Agent: Claude
+### Changed
+- Sanitize live prod identifiers from tracked files (public repo): replace the prod Rancher domain, client/brand names, and cluster IDs with placeholders in docs/live-validation-2026-05-06.md, ROADMAP.md, and scripts/live_probe.py. Option B (sanitize-forward); git history retains prior values by design.
+
 ## [1.14.0] — 2026-07-21 — Agent: Claude
 ### Changed
 - ADR-0002 + Track L updated from the field agent's per-tool redesign spec: doctrine gains since/ageDays + severity + unit-normalization/derived-math + the unified error envelope (retryable); redact-don't-delete correction to K-1 as new slice L-0b; enriched mutation receipts (before/after/durationMs); new slices L-2f (clusters_health_summary) and L-3e (error envelope). Sanitized a prod cluster ID from committed docs (repo is public).

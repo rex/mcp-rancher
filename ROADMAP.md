@@ -246,7 +246,7 @@ Real work; each is days, not hours. Do these last.
 
 - [ ] **K-10** Accept friendly cluster name as a `cluster_id` alias (P5) — 🅢/🅜
   - **Why:** every mutation needs a `clusters_list` id lookup first; operators
-    know `puttery-pittsburgh-onprem`, not `c-m-dlrpzlnl` (R1 #8). Resolve
+    know `venue-pittsburgh-onprem`, not `c-m-xxxxx` (R1 #8). Resolve
     name→id at the boundary.
 
 - [ ] **K-11** Audit-gate hook for external change-audit (P10) — 🅜

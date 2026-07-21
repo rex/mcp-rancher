@@ -275,7 +275,7 @@ async def cmd_lifecycle(args: argparse.Namespace) -> int:
     r = await _call(
         mcp,
         "rancher_config_map_set_annotations",
-        {**common, "annotations": {"smoke.driveshack.io/timestamp": "smoke"}},
+        {**common, "annotations": {"smoke.example.com/timestamp": "smoke"}},
     )
     print(f"  annotation_keys={r['data'].get('annotationKeys') if r['ok'] else r['error']}")
 

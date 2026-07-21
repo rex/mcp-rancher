@@ -7,7 +7,7 @@ First Track G live-validation run after VPN access to prod was enabled and prod 
 | Instance | URL | Version | Read-only flag |
 |---|---|---|---|
 | `lab` | `https://localhost:8443` (port-forward of `cattle-system/svc/rancher` in kind cluster `rancher-mcp-management`) | **v2.6.5** (compat floor) | `false` (full r/w) |
-| `work` (and `default` alias) | `https://rancher.driveshack.io` | **v2.9.3** (primary target) | **`true`** (curated mutations refused at AppSettings layer) |
+| `work` (and `default` alias) | `https://rancher.example.com` | **v2.9.3** (primary target) | **`true`** (curated mutations refused at AppSettings layer) |
 
 ## Authorization scope
 
@@ -24,7 +24,7 @@ All 6 read-only probes succeeded against both lab and prod:
 | `rancher_server_health` | n/a | `healthy: true` | `healthy: true` |
 | `rancher_settings_list` | Norman | 5 sample (agent-image, agent-rollout-*) | identical sample IDs |
 | `rancher_features_list` | Norman | 10 features (continuous-delivery, fleet, harvester, istio-virtual-service-ui, legacy, …) | 10 features (continuous-delivery, fleet, harvester, dashboard, harvester-baremetal-container-workload, …) |
-| `rancher_clusters_list` | Norman | 2 clusters: `local` (Rancher mgmt), `venue-local` | **12 clusters**: `local` (named "manager"), `c-h26fc` (central-dc-prod), 10× `c-m-*` puttery downstream clusters |
+| `rancher_clusters_list` | Norman | 2 clusters: `local` (Rancher mgmt), `venue-local` | **12 clusters**: `local` (named "manager"), `c-xxxxx` (central-dc), 10× `c-m-*` venue downstream clusters |
 | `rancher_norman_schema_list` | discovery | 373 schemas | **314 schemas** |
 | `rancher_capability_domain_list` | discovery | `domainCount` keys present | identical |
 | `rancher_api_plane_list` | meta | 2 planes (Norman + Steve) | identical |
@@ -52,7 +52,7 @@ Resource: `default/live-validation-smoke` ConfigMap, created and torn down in 6 
 | 0 | `rancher_config_map_get` | `NOT_FOUND` (clean precondition) | n/a | 48ms |
 | 1 | `rancher_config_map_create` | created `data_keys=['key1', 'smoke']` | `configmap_create outcome=success` | 13ms |
 | 2 | `rancher_config_map_set_labels` | patched (multi-patch substrate) | `configmap_set_labels outcome=success` | 11ms |
-| 3 | `rancher_config_map_set_annotations` | patched, `annotationKeys=['smoke.driveshack.io/timestamp']` | `configmap_set_annotations outcome=success` | 9ms |
+| 3 | `rancher_config_map_set_annotations` | patched, `annotationKeys=['smoke.example.com/timestamp']` | `configmap_set_annotations outcome=success` | 9ms |
 | 4 | `rancher_config_map_apply` (PUT) | replaced — `data_keys=['key1', 'key2', 'smoke']` | `configmap_apply outcome=success` | 10ms |
 | 5 | `rancher_config_map_delete` (DESTRUCTIVE) | `deleted=true`, phrase echoed | `configmap_delete outcome=success` | 9ms |
 | 6 | `rancher_config_map_get` | `NOT_FOUND` (delete confirmed) | n/a | 9ms |
@@ -71,7 +71,7 @@ Resource: `default/live-validation-smoke` ConfigMap, created and torn down in 6 
 ### Major (deserves follow-up)
 
 - **Norman schema count**: lab=373 vs prod=314 (-59). Expected: 2.9.3 dropped legacy Norman types as Steve became primary. Worth capturing the schema diff as a fixture for completeness.
-- **Cluster count**: prod manages 12 active clusters (1 mgmt + 1 central + 10 puttery downstream). Lab only has the kind clusters. Live validation against downstream clusters is OUT OF SCOPE for this run (would need explicit per-cluster authorization).
+- **Cluster count**: prod manages 12 active clusters (1 mgmt + 1 central + 10 venue downstream). Lab only has the kind clusters. Live validation against downstream clusters is OUT OF SCOPE for this run (would need explicit per-cluster authorization).
 
 ### Minor / cosmetic (track but don't block)
 
