@@ -90,10 +90,16 @@ one-at-a-time (background + yield), never in parallel — version bumps serializ
   template (`tool_module.py.j2`) + `RancherMutationReceipt`.
 - [ ] **M-B1/B2** `since`/`ageDays` + `reason`/`message` universal on conditions
   (`tools/support/conditions.py` + base).
-- [ ] **M-A11/K-8b** capability-unavailable envelope: `error:CAPABILITY_UNAVAILABLE`,
-  `reason:not_installed`, `capability`/`resource`/`remediation`, `retryable:false`
-  across the 4 app-absent list tools + curated 404s. `tools/support/errors.py` +
-  capability layer.
+- [x] **M-A11/K-8b** (v1.36.0) capability-unavailable envelope: `error_code:CAPABILITY_ERROR`,
+  `reason:not_installed`, `capability`/`resource`/`remediation`, `cluster`,
+  `retryable:false` across the 4 app-absent list tools (`cluster_policy_reports_list`,
+  `cis_scans_list`, `notifiers_list`, `cluster_alert_rules_list`) — reuses the
+  L-3e/K-8a envelope key names (`error_code`/`CAPABILITY_ERROR`) rather than
+  the ADR sketch's `error`/`CAPABILITY_UNAVAILABLE`, per "extend, don't fork".
+  New `tools/support/capability_unavailable.py` (capability layer) +
+  `tools/support/errors.py` (`_error_envelope` extension) + `exceptions.py`
+  (`RancherCapabilityError` optional kwargs) + `server.py` wiring. No
+  generated file touched.
 - [ ] **M-K6** destructive `confirm: true` replacing the magic phrase (~34
   generated tools). Codegen template + guard.
 

@@ -1,5 +1,48 @@
 # Changelog
 
+## [1.36.0] — 2026-07-21 — Agent: Claude
+### Changed
+- **M-A11/K-8b: unified capability-unavailable envelope for curated "app not
+  installed" tools** (ADR-0002 error-envelope doctrine). `cluster_policy_reports_list`
+  no longer leaks a raw `404 page not found`; `cis_scans_list`, `notifiers_list`,
+  and `cluster_alert_rules_list` no longer return a bare schema-name message
+  with no classification or remediation. All four now raise the same
+  `RancherCapabilityError` / `CAPABILITY_ERROR` envelope K-8a already
+  established for the generic steve/norman resource tools, extended (not
+  forked) with `capability` (the Rancher app/chart name), `resource` (the
+  schema/CRD plural), `remediation` (an actionable next step), and `cluster` —
+  alongside the existing `reason:"not_installed"` / `retryable:false`
+  classification from L-3e/K-8a.
+
+  New `tools/support/capability_unavailable.py` maps exactly the 4 affected
+  tool names to their capability/resource/remediation and wraps each
+  registered tool's `fn` so a `RancherNotFoundError` (404) on these LIST
+  endpoints — which, absent a separate schema-lookup step, means the type
+  isn't registered at all, never "this one named item is missing" — becomes
+  the capability-unavailable envelope. Applied at server-construction time via
+  `apply_capability_unavailable_translation(mcp)`, ordered innermost (before
+  metrics, before structured-errors) in `server.py`. `RancherCapabilityError`
+  gained optional `capability`/`resource`/`remediation`/`cluster_id` kwargs
+  (all `None` by default — existing raise sites unaffected) and
+  `tools/support/errors.py`'s `_error_envelope` surfaces them via the same
+  `getattr` pattern already used for `hint`, when present. No generated file
+  or codegen template was touched — the 4 tools' fetch logic and their pack
+  `__init__.py` registration stay codegen-owned; the translation wraps
+  `tool.fn` post-registration by name, entirely from hand-written modules.
+  An installed-but-empty collection still returns 200 with zero items on both
+  the Rancher 2.6.5 compat floor and 2.9.3, so a working tool is unaffected —
+  only an actual 404 is reclassified.
+
+  New `tests/unit/test_capability_unavailable.py` (10 tests): each of the 4
+  tools' 404 case, a regression guard proving `cluster_policy_reports_list`'s
+  envelope carries neither "404" nor "page not found", a working
+  (200-empty-list) call passing through untouched, a transient 5xx and a
+  dropped-tunnel error both staying unmistranslated (retryable classification
+  preserved), and the bulk-apply wiring helper wrapping only the 4 mapped
+  tool names. Plus 2 new tests in `tests/unit/test_error_envelope.py` proving
+  the envelope extension is additive (old capability-error raise sites gain
+  no new keys).
+
 ## [1.35.0] — 2026-07-21 — Agent: Claude
 ### Changed
 - **M-A1: uniform `count` key across all LIST tool responses** (response-shape

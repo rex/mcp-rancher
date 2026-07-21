@@ -16,9 +16,33 @@ class ConfigurationError(RancherMCPError):
 
 
 class RancherCapabilityError(RancherMCPError):
-    """Raised when a requested schema capability is not available."""
+    """Raised when a requested schema capability is not available.
+
+    Optionally carries structured capability-unavailable context (M-A11/K-8b):
+    ``capability`` (the Rancher app/chart name), ``resource`` (the schema/CRD
+    plural), ``remediation`` (an actionable next step), and ``cluster_id``
+    (which cluster was checked). All default to ``None`` so existing raise
+    sites (confirmation-phrase mismatches, read-only-instance guards, K-8a's
+    bare schema-not-found message) are unaffected — the error envelope
+    (``tools/support/errors.py``) surfaces whichever of these are set.
+    """
 
     error_code: str = "CAPABILITY_ERROR"
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        capability: str | None = None,
+        resource: str | None = None,
+        remediation: str | None = None,
+        cluster_id: str | None = None,
+    ) -> None:
+        self.capability = capability
+        self.resource = resource
+        self.remediation = remediation
+        self.cluster_id = cluster_id
+        super().__init__(message)
 
 
 class RancherManagementPlaneUnreachableError(RancherMCPError):

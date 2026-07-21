@@ -56,6 +56,22 @@ def _error_envelope(exc: Exception) -> str:
     hint = getattr(exc, "hint", None)
     if hint:
         payload["hint"] = hint
+    # M-A11/K-8b: capability-unavailable enrichment — same envelope, extended
+    # (not a parallel one). getattr (not isinstance) mirrors the `hint`
+    # pattern above: any exception carrying these attributes gets them
+    # surfaced, not just RancherCapabilityError.
+    capability = getattr(exc, "capability", None)
+    if capability:
+        payload["capability"] = capability
+    resource = getattr(exc, "resource", None)
+    if resource:
+        payload["resource"] = resource
+    cluster_id = getattr(exc, "cluster_id", None)
+    if cluster_id:
+        payload["cluster"] = cluster_id
+    remediation = getattr(exc, "remediation", None)
+    if remediation:
+        payload["remediation"] = remediation
     if isinstance(exc, RancherAPIError):
         payload["http_status"] = exc.status_code
         if exc.field:

@@ -50,6 +50,9 @@ def register_all_tools(mcp: FastMCP) -> None:
     from rancher_mcp.tools.scheduling import register_scheduling_tools
     from rancher_mcp.tools.settings_features import register_settings_feature_tools
     from rancher_mcp.tools.storage import register_storage_tools
+    from rancher_mcp.tools.support.capability_unavailable import (
+        apply_capability_unavailable_translation,
+    )
     from rancher_mcp.tools.support.errors import apply_structured_errors_to_all_tools
     from rancher_mcp.tools.workloads import register_workload_tools
 
@@ -87,9 +90,12 @@ def register_all_tools(mcp: FastMCP) -> None:
     register_scheduling_tools(mcp)
     register_mcp_resources(mcp)
     register_mcp_prompts(mcp)
-    # Order: metrics is INNER so it sees the original RancherMCPError;
-    # structured_errors is OUTER and translates that to ToolError at the
-    # MCP boundary.
+    # Order: capability-unavailable translation is INNERMOST (M-A11/K-8b) so
+    # a 404'd optional-app list becomes RancherCapabilityError before metrics
+    # or structured_errors see it; metrics is next, so it records the
+    # translated error_code; structured_errors is OUTERMOST and translates
+    # whatever RancherMCPError survives to a ToolError at the MCP boundary.
+    apply_capability_unavailable_translation(mcp)
     apply_metrics_to_all_tools(mcp)
     apply_structured_errors_to_all_tools(mcp)
 

@@ -39,3 +39,41 @@ def test_permanent_errors_are_not_retryable() -> None:
 def test_server_errors_retry_but_client_errors_do_not() -> None:
     assert _env(RancherAPIError(503, "unavailable"))["retryable"] is True
     assert _env(RancherAPIError(400, "bad request"))["retryable"] is False
+
+
+def test_capability_unavailable_envelope_carries_structured_context() -> None:
+    """M-A11/K-8b: the same envelope, extended with capability/resource/
+    remediation/cluster — not a parallel shape.
+
+    Curated tools whose app/CRD is an optional install attach this context
+    when raising RancherCapabilityError; the envelope surfaces it alongside
+    the existing reason/retryable classification from L-3e/K-8a.
+    """
+
+    exc = RancherCapabilityError(
+        "The rancher-cis-benchmark app is not installed on this cluster.",
+        capability="rancher-cis-benchmark",
+        resource="cisscans",
+        remediation=(
+            "Install the rancher-cis-benchmark app via Apps & Marketplace, or skip CIS scanning."
+        ),
+        cluster_id="c-abc123",
+    )
+    envelope = _env(exc)
+    assert envelope["error_code"] == "CAPABILITY_ERROR"
+    assert envelope["reason"] == "not_installed"
+    assert envelope["retryable"] is False
+    assert envelope["capability"] == "rancher-cis-benchmark"
+    assert envelope["resource"] == "cisscans"
+    assert envelope["cluster"] == "c-abc123"
+    assert "Apps & Marketplace" in envelope["remediation"]
+
+
+def test_capability_error_without_structured_context_omits_new_fields() -> None:
+    """Old raise sites (no capability/resource/...) must not gain empty keys."""
+
+    envelope = _env(RancherCapabilityError("instance 'prod' is configured read-only for mutations"))
+    assert "capability" not in envelope
+    assert "resource" not in envelope
+    assert "cluster" not in envelope
+    assert "remediation" not in envelope
