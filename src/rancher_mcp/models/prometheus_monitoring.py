@@ -71,7 +71,7 @@ class RancherPrometheusRuleList(RancherModel):
     instance: str
     cluster_id: str
     namespace: str
-    prometheus_rule_count: int
+    prometheus_rule_count: int = Field(serialization_alias="count")  # M-A1: uniform count key
     next_page_token: str | None = None
     applied_query_params: dict[str, str | int | bool] = Field(default_factory=dict)
     prometheus_rules: list[RancherPrometheusRuleSummary] = Field(
@@ -108,7 +108,7 @@ class RancherServiceMonitorList(RancherModel):
     instance: str
     cluster_id: str
     namespace: str
-    service_monitor_count: int
+    service_monitor_count: int = Field(serialization_alias="count")  # M-A1: uniform count key
     next_page_token: str | None = None
     applied_query_params: dict[str, str | int | bool] = Field(default_factory=dict)
     service_monitors: list[RancherServiceMonitorSummary] = Field(
@@ -145,7 +145,7 @@ class RancherPodMonitorList(RancherModel):
     instance: str
     cluster_id: str
     namespace: str
-    pod_monitor_count: int
+    pod_monitor_count: int = Field(serialization_alias="count")  # M-A1: uniform count key
     next_page_token: str | None = None
     applied_query_params: dict[str, str | int | bool] = Field(default_factory=dict)
     pod_monitors: list[RancherPodMonitorSummary] = Field(

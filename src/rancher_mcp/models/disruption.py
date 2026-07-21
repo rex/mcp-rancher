@@ -88,7 +88,7 @@ class RancherPodDisruptionBudgetList(RancherModel):
     instance: str
     cluster_id: str
     namespace: str
-    budget_count: int
+    budget_count: int = Field(serialization_alias="count")  # M-A1: uniform count key
     next_page_token: str | None = None
     applied_query_params: dict[str, str | int | bool] = Field(default_factory=dict)
     pod_disruption_budgets: list[RancherPodDisruptionBudgetSummary] = Field(

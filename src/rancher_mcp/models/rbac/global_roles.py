@@ -39,6 +39,6 @@ class RancherGlobalRoleList(RancherModel):
     """Typed list response for Rancher global roles."""
 
     instance: str
-    global_role_count: int
+    global_role_count: int = Field(serialization_alias="count")  # M-A1: uniform count key
     applied_query_params: dict[str, str | int | bool] = Field(default_factory=dict)
     global_roles: list[RancherGlobalRoleSummary] = Field(default_factory=_empty_global_roles)

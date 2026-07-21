@@ -55,7 +55,7 @@ class RancherIngressList(RancherModel):
     instance: str
     cluster_id: str
     namespace: str
-    ingress_count: int
+    ingress_count: int = Field(serialization_alias="count")  # M-A1: uniform count key
     next_page_token: str | None = None
     applied_query_params: dict[str, str | int | bool] = Field(default_factory=dict)
     ingresses: list[RancherIngressSummary] = Field(default_factory=_empty_ingress_summaries)
@@ -97,7 +97,7 @@ class RancherNetworkPolicyList(RancherModel):
     instance: str
     cluster_id: str
     namespace: str
-    network_policy_count: int
+    network_policy_count: int = Field(serialization_alias="count")  # M-A1: uniform count key
     next_page_token: str | None = None
     applied_query_params: dict[str, str | int | bool] = Field(default_factory=dict)
     network_policies: list[RancherNetworkPolicySummary] = Field(
@@ -143,7 +143,7 @@ class RancherEndpointSliceList(RancherModel):
     instance: str
     cluster_id: str
     namespace: str
-    endpoint_slice_count: int
+    endpoint_slice_count: int = Field(serialization_alias="count")  # M-A1: uniform count key
     next_page_token: str | None = None
     applied_query_params: dict[str, str | int | bool] = Field(default_factory=dict)
     endpoint_slices: list[RancherEndpointSliceSummary] = Field(

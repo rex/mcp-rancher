@@ -71,7 +71,7 @@ class RancherSettingList(RancherModel):
     """Typed list response for Rancher settings."""
 
     instance: str
-    setting_count: int
+    setting_count: int = Field(serialization_alias="count")  # M-A1: uniform count key
     applied_query_params: dict[str, str | int | bool] = Field(default_factory=dict)
     settings: list[RancherSettingSummary] = Field(default_factory=_empty_settings)
 
@@ -103,6 +103,6 @@ class RancherFeatureList(RancherModel):
     """Typed list response for Rancher features."""
 
     instance: str
-    feature_count: int
+    feature_count: int = Field(serialization_alias="count")  # M-A1: uniform count key
     applied_query_params: dict[str, str | int | bool] = Field(default_factory=dict)
     features: list[RancherFeatureSummary] = Field(default_factory=_empty_features)

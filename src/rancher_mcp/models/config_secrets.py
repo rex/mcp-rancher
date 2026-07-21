@@ -60,7 +60,7 @@ class RancherConfigMapList(RancherModel):
     instance: str
     cluster_id: str
     namespace: str
-    config_map_count: int
+    config_map_count: int = Field(serialization_alias="count")  # M-A1: uniform count key
     next_page_token: str | None = None
     applied_query_params: dict[str, str | int | bool] = Field(default_factory=dict)
     config_maps: list[RancherConfigMapSummary] = Field(
@@ -104,7 +104,7 @@ class RancherSecretList(RancherModel):
     instance: str
     cluster_id: str
     namespace: str
-    secret_count: int
+    secret_count: int = Field(serialization_alias="count")  # M-A1: uniform count key
     next_page_token: str | None = None
     applied_query_params: dict[str, str | int | bool] = Field(default_factory=dict)
     secrets: list[RancherSecretSummary] = Field(default_factory=_empty_secret_summaries)
@@ -144,7 +144,7 @@ class RancherServiceAccountList(RancherModel):
     instance: str
     cluster_id: str
     namespace: str
-    service_account_count: int
+    service_account_count: int = Field(serialization_alias="count")  # M-A1: uniform count key
     next_page_token: str | None = None
     applied_query_params: dict[str, str | int | bool] = Field(default_factory=dict)
     service_accounts: list[RancherServiceAccountSummary] = Field(

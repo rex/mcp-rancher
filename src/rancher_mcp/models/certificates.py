@@ -62,7 +62,7 @@ class RancherCertificateList(RancherModel):
     """Typed list response for Rancher certificates."""
 
     instance: str
-    certificate_count: int
+    certificate_count: int = Field(serialization_alias="count")  # M-A1: uniform count key
     applied_query_params: dict[str, str | int | bool] = Field(default_factory=dict)
     certificates: list[RancherCertificateSummary] = Field(
         default_factory=_empty_certificate_summaries,
@@ -93,7 +93,9 @@ class RancherNamespacedCertificateList(RancherModel):
     """Typed list response for Rancher namespaced certificates."""
 
     instance: str
-    namespaced_certificate_count: int
+    namespaced_certificate_count: int = Field(
+        serialization_alias="count"
+    )  # M-A1: uniform count key
     applied_query_params: dict[str, str | int | bool] = Field(default_factory=dict)
     namespaced_certificates: list[RancherNamespacedCertificateSummary] = Field(
         default_factory=_empty_namespaced_certificate_summaries,

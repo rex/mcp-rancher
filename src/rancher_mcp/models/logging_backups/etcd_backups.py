@@ -40,6 +40,6 @@ class RancherEtcdBackupList(RancherModel):
     """Typed list response for Rancher etcd backups."""
 
     instance: str
-    etcd_backup_count: int
+    etcd_backup_count: int = Field(serialization_alias="count")  # M-A1: uniform count key
     applied_query_params: dict[str, str | int | bool] = Field(default_factory=dict)
     etcd_backups: list[RancherEtcdBackupSummary] = Field(default_factory=_empty_etcd_backups)

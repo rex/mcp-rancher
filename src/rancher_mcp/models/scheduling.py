@@ -54,7 +54,7 @@ class RancherPriorityClassList(RancherModel):
 
     instance: str
     cluster_id: str
-    priority_class_count: int
+    priority_class_count: int = Field(serialization_alias="count")  # M-A1: uniform count key
     next_page_token: str | None = None
     applied_query_params: dict[str, str | int | bool] = Field(default_factory=dict)
     priority_classes: list[RancherPriorityClassSummary] = Field(
@@ -86,7 +86,7 @@ class RancherRuntimeClassList(RancherModel):
 
     instance: str
     cluster_id: str
-    runtime_class_count: int
+    runtime_class_count: int = Field(serialization_alias="count")  # M-A1: uniform count key
     next_page_token: str | None = None
     applied_query_params: dict[str, str | int | bool] = Field(default_factory=dict)
     runtime_classes: list[RancherRuntimeClassSummary] = Field(

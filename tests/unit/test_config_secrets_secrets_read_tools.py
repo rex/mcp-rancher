@@ -35,6 +35,13 @@ async def test_rancher_secrets_list_masks_values_and_exposes_type() -> None:
     # Defensively: the typed summary must NOT carry data values.
     assert "data" not in sec.model_dump()
 
+    # M-A1: the dumped count key is uniform `count`, never `secretCount`;
+    # the named collection key (`secrets`) stays as-is.
+    dumped = result.model_dump(by_alias=True)
+    assert dumped["count"] == 1
+    assert "secretCount" not in dumped
+    assert "secrets" in dumped
+
 
 @pytest.mark.asyncio
 async def test_rancher_secrets_list_filters_by_type() -> None:

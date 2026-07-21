@@ -63,7 +63,7 @@ class RancherClusterDriverList(RancherModel):
     """Typed list response for Rancher cluster drivers."""
 
     instance: str
-    cluster_driver_count: int
+    cluster_driver_count: int = Field(serialization_alias="count")  # M-A1: uniform count key
     applied_query_params: dict[str, str | int | bool] = Field(default_factory=dict)
     cluster_drivers: list[RancherClusterDriverSummary] = Field(
         default_factory=_empty_cluster_driver_summaries,
@@ -99,7 +99,7 @@ class RancherNodeDriverList(RancherModel):
     """Typed list response for Rancher node drivers."""
 
     instance: str
-    node_driver_count: int
+    node_driver_count: int = Field(serialization_alias="count")  # M-A1: uniform count key
     applied_query_params: dict[str, str | int | bool] = Field(default_factory=dict)
     node_drivers: list[RancherNodeDriverSummary] = Field(
         default_factory=_empty_node_driver_summaries,
@@ -134,7 +134,7 @@ class RancherCloudCredentialList(RancherModel):
     """Typed list response for Rancher cloud credentials. Values masked."""
 
     instance: str
-    cloud_credential_count: int
+    cloud_credential_count: int = Field(serialization_alias="count")  # M-A1: uniform count key
     applied_query_params: dict[str, str | int | bool] = Field(default_factory=dict)
     cloud_credentials: list[RancherCloudCredentialSummary] = Field(
         default_factory=_empty_cloud_credential_summaries,
@@ -166,7 +166,7 @@ class RancherNodeTemplateList(RancherModel):
     """Typed list response for Rancher node templates."""
 
     instance: str
-    node_template_count: int
+    node_template_count: int = Field(serialization_alias="count")  # M-A1: uniform count key
     applied_query_params: dict[str, str | int | bool] = Field(default_factory=dict)
     node_templates: list[RancherNodeTemplateSummary] = Field(
         default_factory=_empty_node_template_summaries,

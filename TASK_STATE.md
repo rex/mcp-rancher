@@ -270,10 +270,28 @@ into `_fetch_<x>_get` for a secondary k8s-proxy client — zero impact on the
 other 26 packs (verified via full `make codegen`). See `docs/track-m-plan.md`
 M-B4 row and `CHANGELOG.md` [1.32.0].
 
+**Since that handoff:** M-SETTINGS shipped (v1.34.0, `settings_list` value/default
+shaping parity) and **M-A1 shipped (v1.35.0)** — uniform `count` key across
+every curated LIST tool (78 fields / 41 model files), via
+`Field(serialization_alias="count")` on the hand-maintained models in
+`src/rancher_mcp/models/`, the same pattern the 5 failure-finders already used
+(`models/ops/failure_finders.py`, L-2d). **Codegen turned out not to be
+involved at all** — the generated tool modules only wire `count_field`
+through by attribute name (unchanged), so `make codegen` regenerates
+byte-identical output; the whole slice lived in hand-maintained models. Health/
+summary rollups with multiple sibling counts and per-item `_count` fields were
+deliberately left alone (see `docs/track-m-plan.md` M-A1 row + `CHANGELOG.md`
+[1.35.0] for the full left-alone list). New
+`tests/unit/test_list_count_alias_uniform.py` (structural sweep over all 78
+fields + a negative guard over 11 fields that must stay unaliased) plus
+call-through coverage for the named representative sample (clusters, pods,
+nodes, secrets, deployments, services).
+
 **Next up:** Wave A is done except **M-A12** (drop redundant per-item dup +
 `owner` collapse elsewhere — explicitly Opus-owned, "envelope-adjacent," per
-the plan's delegation policy). Waves B-E (codegen, base serializer, security,
-new features, infra) are also Opus-owned — untouched this session.
+the plan's delegation policy). Wave B has M-A2/M-B1-B2/M-A11-K8b/M-K6 still
+open; Waves C-E (base serializer, security, new features, infra) are also
+Opus-owned — untouched this session.
 
 ### MAINTENANCE (2026-07-11): isolated current Rancher integration — ✅ live matrix green — v1.6.0
 

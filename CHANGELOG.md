@@ -1,5 +1,47 @@
 # Changelog
 
+## [1.35.0] — 2026-07-21 — Agent: Claude
+### Changed
+- **M-A1: uniform `count` key across all LIST tool responses** (response-shape
+  refinement — ADR-0002's guardrail explicitly asks to standardize the *count*
+  key while keeping named collection keys as-is). Every curated LIST tool's
+  collection-count field now dumps as `count` instead of a per-tool camelCase
+  name — `clusterCount`, `podCount`, `settingCount`, `nodeCount`,
+  `secretCount`, `ingressCount`, `serviceCount`, `deploymentCount`,
+  `volumeCount`, `certManagerCertificateCount`, and 68 more (78 fields across
+  41 model files, ~78 tools). Named collection keys (`clusters`/`pods`/
+  `secrets`/...) are unchanged — only the paired count field moves, via
+  `Field(serialization_alias="count")` on the hand-maintained models in
+  `src/rancher_mcp/models/`, the exact precedent already shipped for the 5
+  failure-finder tools (`models/ops/failure_finders.py`, L-2d). Python
+  attribute names are unchanged (`cluster_count`, `pod_count`, ...), so no
+  internal caller or attribute-asserting test broke.
+
+  Codegen was not involved: the generated tool modules
+  (`tools/<pack>/_generated_*.py`) wire `{{ list.count_field }}=len(...)`
+  through by attribute name only, which is untouched — `make codegen`
+  regenerates byte-identical output. The count-field alias lives entirely in
+  the hand-maintained Pydantic models.
+
+  Left deliberately alone (semantic / multi-count fields, per the ADR-0002
+  guardrail — collapsing these to `count` would collide and destroy
+  meaning): health/summary rollups with several sibling counts
+  (`ClustersHealthSummary.healthy_count`/`unhealthy_count`,
+  `RancherPolicyReportSummary.pass_count`/`fail_count`/...), and per-item
+  fields that happen to end in `_count` but describe one object rather than a
+  list (`RancherServiceAccountSummary.secret_count`,
+  `RancherPodSummary.restart_count`, `RancherClusterSummary.node_count`, the
+  CIS-scan/backup `retention_count`, ...).
+
+  New `tests/unit/test_list_count_alias_uniform.py`: table-driven structural
+  proof that all 78 renamed fields alias to `count`, plus a negative table
+  proving the semantic/multi-count fields were left alone. Call-through
+  (real tool + dumped-JSON) coverage added/augmented for the representative
+  sample named in the slice — clusters and nodes (new minimal-stub tests in
+  the same file), pods, services, secrets, and deployments (augmented into
+  their existing `test_*_read_tools.py` / `test_workloads_deployments_tools.py`
+  modules).
+
 ## [1.34.0] — 2026-07-21 — Agent: Claude
 ### Changed
 - **M-SETTINGS**: `rancher_settings_list` shrinks from 31.8 KB to ~20.6 KB for

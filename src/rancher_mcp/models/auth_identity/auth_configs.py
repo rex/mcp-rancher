@@ -41,6 +41,6 @@ class RancherAuthConfigList(RancherModel):
     """Typed list response for Rancher auth configs."""
 
     instance: str
-    auth_config_count: int
+    auth_config_count: int = Field(serialization_alias="count")  # M-A1: uniform count key
     applied_query_params: dict[str, str | int | bool] = Field(default_factory=dict)
     auth_configs: list[RancherAuthConfigSummary] = Field(default_factory=_empty_auth_configs)

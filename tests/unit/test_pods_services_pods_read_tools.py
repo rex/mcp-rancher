@@ -38,6 +38,13 @@ async def test_rancher_pods_list_returns_typed_summaries() -> None:
     assert result.pods[0].owner == "ReplicaSet/cattle-cluster-agent-rs"
     assert result.pods[0].owner_kind == "ReplicaSet"
 
+    # M-A1: the dumped count key is uniform `count`, never `podCount`; the
+    # named collection key (`pods`) stays as-is.
+    dumped = result.model_dump(by_alias=True)
+    assert dumped["count"] == 1
+    assert "podCount" not in dumped
+    assert "pods" in dumped
+
 
 @pytest.mark.asyncio
 async def test_rancher_pod_get_returns_typed_detail(monkeypatch: pytest.MonkeyPatch) -> None:

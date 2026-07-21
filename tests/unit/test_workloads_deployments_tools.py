@@ -40,6 +40,13 @@ async def test_rancher_deployments_list_returns_typed_summaries() -> None:
     assert result.deployments[0].ready is True
     assert result.deployments[0].rollout_complete is True
 
+    # M-A1: the dumped count key is uniform `count`, never `deploymentCount`;
+    # the named collection key (`deployments`) stays as-is.
+    dumped = result.model_dump(by_alias=True)
+    assert dumped["count"] == 1
+    assert "deploymentCount" not in dumped
+    assert "deployments" in dumped
+
 
 @pytest.mark.asyncio
 async def test_rancher_deployment_get_returns_typed_detail() -> None:

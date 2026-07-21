@@ -32,5 +32,5 @@ class RancherEventList(RancherModel):
     instance: str
     cluster_id: str
     namespace: str | None
-    event_count: int
+    event_count: int = Field(serialization_alias="count")  # M-A1: uniform count key
     events: list[RancherEventSummary] = Field(default_factory=_empty_events)

@@ -30,6 +30,13 @@ async def test_rancher_services_list_returns_typed_summaries() -> None:
     assert result.services[0].id == "cattle-system/cattle-cluster-agent"
     assert result.services[0].service_type == "ClusterIP"
 
+    # M-A1: the dumped count key is uniform `count`, never `serviceCount`;
+    # the named collection key (`services`) stays as-is.
+    dumped = result.model_dump(by_alias=True)
+    assert dumped["count"] == 1
+    assert "serviceCount" not in dumped
+    assert "services" in dumped
+
 
 @pytest.mark.asyncio
 async def test_rancher_services_list_handles_empty_collection() -> None:

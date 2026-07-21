@@ -74,8 +74,18 @@ one-at-a-time (background + yield), never in parallel — version bumps serializ
 
 ## Wave B — cross-cutting / codegen (Opus)
 
-- [ ] **M-A1** uniform `count` key across ~100+ list models (was: per-tool
-  `clusterCount`/`podCount`/…). Codegen + hand models.
+- [x] **M-A1** (v1.35.0) uniform `count` key across ~100+ list models (was: per-tool
+  `clusterCount`/`podCount`/…). Codegen + hand models. **Codegen turned out not to be
+  involved** — the generated tool modules only wire `count_field` through by attribute
+  name (untouched); the alias lives entirely in the hand-maintained `RancherModel`
+  subclasses (`src/rancher_mcp/models/`), same pattern as the pre-existing finders
+  (`models/ops/failure_finders.py`, L-2d). 78 fields across 41 files renamed via
+  `Field(serialization_alias="count")`; multi-count rollups (`healthy_count`/
+  `unhealthy_count`, policy-report `pass_count`/`fail_count`/...) and per-item fields
+  (`restart_count`, `retention_count`, ServiceAccount's own `secret_count`, ...) left
+  untouched. New `tests/unit/test_list_count_alias_uniform.py` (structural sweep +
+  negative guard) plus call-through coverage for clusters/pods/nodes/secrets/
+  deployments/services.
 - [ ] **M-A2** mutation receipt `before` snapshot + `durationMs`. Codegen
   template (`tool_module.py.j2`) + `RancherMutationReceipt`.
 - [ ] **M-B1/B2** `since`/`ageDays` + `reason`/`message` universal on conditions

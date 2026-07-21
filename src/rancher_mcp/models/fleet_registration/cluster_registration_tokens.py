@@ -66,7 +66,9 @@ class RancherClusterRegistrationTokenList(RancherModel):
     """Typed list response for Rancher cluster registration tokens."""
 
     instance: str
-    cluster_registration_token_count: int
+    cluster_registration_token_count: int = Field(
+        serialization_alias="count"
+    )  # M-A1: uniform count key
     applied_query_params: dict[str, str | int | bool] = Field(default_factory=dict)
     cluster_registration_tokens: list[RancherClusterRegistrationTokenSummary] = Field(
         default_factory=_empty_cluster_registration_tokens

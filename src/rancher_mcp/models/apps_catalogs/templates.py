@@ -53,6 +53,6 @@ class RancherTemplateList(RancherModel):
     """Typed list response for Rancher templates."""
 
     instance: str
-    template_count: int
+    template_count: int = Field(serialization_alias="count")  # M-A1: uniform count key
     applied_query_params: dict[str, str | int | bool] = Field(default_factory=dict)
     templates: list[RancherTemplateSummary] = Field(default_factory=_empty_templates)

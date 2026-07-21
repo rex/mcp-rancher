@@ -55,7 +55,7 @@ class GenericResourceList(RancherModel):
     cluster_id: str | None = None
     namespace: str | None = None
     collection_path: str
-    resource_count: int
+    resource_count: int = Field(serialization_alias="count")  # M-A1: uniform count key
     resource_type: str | None = None
     collection_action_keys: list[str] = Field(default_factory=list)
     collection_link_keys: list[str] = Field(default_factory=list)
@@ -227,7 +227,7 @@ class GenericResourceWatchResult(RancherModel):
     cluster_id: str | None = None
     namespace: str | None = None
     watch_path: str
-    event_count: int
+    event_count: int = Field(serialization_alias="count")  # M-A1: uniform count key
     truncated: bool = False
     applied_query_params: dict[str, str | int | bool] = Field(default_factory=dict)
     events: list[GenericResourceWatchEvent] = Field(default_factory=_empty_watch_events)

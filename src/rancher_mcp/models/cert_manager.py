@@ -100,7 +100,9 @@ class RancherCertManagerCertificateList(RancherModel):
     instance: str
     cluster_id: str
     namespace: str
-    cert_manager_certificate_count: int
+    cert_manager_certificate_count: int = Field(
+        serialization_alias="count"
+    )  # M-A1: uniform count key
     next_page_token: str | None = None
     applied_query_params: dict[str, str | int | bool] = Field(default_factory=dict)
     cert_manager_certificates: list[RancherCertManagerCertificateSummary] = Field(
@@ -150,7 +152,7 @@ class RancherCertManagerIssuerList(RancherModel):
     instance: str
     cluster_id: str
     namespace: str
-    cert_manager_issuer_count: int
+    cert_manager_issuer_count: int = Field(serialization_alias="count")  # M-A1: uniform count key
     next_page_token: str | None = None
     applied_query_params: dict[str, str | int | bool] = Field(default_factory=dict)
     cert_manager_issuers: list[RancherCertManagerIssuerSummary] = Field(
@@ -175,7 +177,9 @@ class RancherCertManagerClusterIssuerList(RancherModel):
 
     instance: str
     cluster_id: str
-    cert_manager_cluster_issuer_count: int
+    cert_manager_cluster_issuer_count: int = Field(
+        serialization_alias="count"
+    )  # M-A1: uniform count key
     next_page_token: str | None = None
     applied_query_params: dict[str, str | int | bool] = Field(default_factory=dict)
     cert_manager_cluster_issuers: list[RancherCertManagerClusterIssuerSummary] = Field(

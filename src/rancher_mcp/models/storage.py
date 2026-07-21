@@ -51,7 +51,7 @@ class RancherStorageClassList(RancherModel):
 
     instance: str
     cluster_id: str
-    storage_class_count: int
+    storage_class_count: int = Field(serialization_alias="count")  # M-A1: uniform count key
     next_page_token: str | None = None
     applied_query_params: dict[str, str | int | bool] = Field(default_factory=dict)
     storage_classes: list[RancherStorageClassSummary] = Field(
@@ -122,7 +122,7 @@ class RancherPersistentVolumeList(RancherModel):
 
     instance: str
     cluster_id: str
-    volume_count: int
+    volume_count: int = Field(serialization_alias="count")  # M-A1: uniform count key
     next_page_token: str | None = None
     applied_query_params: dict[str, str | int | bool] = Field(default_factory=dict)
     persistent_volumes: list[RancherPersistentVolumeSummary] = Field(
@@ -194,7 +194,7 @@ class RancherPersistentVolumeClaimList(RancherModel):
     instance: str
     cluster_id: str
     namespace: str
-    claim_count: int
+    claim_count: int = Field(serialization_alias="count")  # M-A1: uniform count key
     next_page_token: str | None = None
     applied_query_params: dict[str, str | int | bool] = Field(default_factory=dict)
     persistent_volume_claims: list[RancherPersistentVolumeClaimSummary] = Field(
