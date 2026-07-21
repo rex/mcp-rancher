@@ -62,7 +62,11 @@ class ClusterIssue(RancherModel):
     ``reason``/``message``) so an agent branches without a second call
     (ADR-0002 rules #2/#4). ``since``/``age_days`` separate a five-year-old
     benign state from a live incident — the single highest-value addition in
-    the field spec.
+    the field spec. ``hint`` (M-A9) is an optional short remediation string
+    for the small set of conditions/components with an unambiguous fix
+    (e.g. a missing monitoring app); it defaults to ``None`` for anything not
+    confidently mapped, and the base serializer drops a ``None`` hint from the
+    dumped shape.
 
     Defined here (alongside ``RancherCondition``, not in
     ``models/ops/cluster_health.py``) so both ``cluster_health_check`` (L-2b)
@@ -79,6 +83,7 @@ class ClusterIssue(RancherModel):
     age_days: int | None = None
     reason: str | None = None
     message: str | None = None
+    hint: str | None = None
 
 
 class RancherClusterComponentStatus(RancherModel):

@@ -40,6 +40,35 @@ FEATURE_FLAG_CONDITIONS: frozenset[str] = frozenset(
 )
 
 
+# Core control-plane components whose failure is critical — a down etcd,
+# controller-manager, or scheduler means the cluster brain itself is failing,
+# not merely a degraded add-on (M-A10 / ADR-0002 rule #2). Matched by prefix so
+# Rancher's per-member names ("etcd-0", "etcd-1", ...) count as etcd too.
+_CRITICAL_COMPONENT_PREFIXES: tuple[str, ...] = ("etcd", "controller-manager", "scheduler")
+
+# Small, obviously-correct hint mapping from condition type to a short
+# remediation string (M-A9 / ADR-0002 rule #4: ship the follow-up with the
+# exception, no second call). Deliberately minimal — only conditions whose fix
+# is unambiguous; unmapped conditions get hint=None (the base serializer drops
+# a None hint from the dumped shape).
+_CONDITION_HINTS: dict[str, str] = {
+    "Ready": "Cluster control plane is not Ready; check node and component health.",
+    "PrometheusOperatorDeployed": "The rancher-monitoring app is not installed on this cluster.",
+}
+
+
+def _component_issue_severity(name: str) -> str:
+    """Classify a down component: etcd/controller-manager/scheduler are critical."""
+
+    return "critical" if name.lower().startswith(_CRITICAL_COMPONENT_PREFIXES) else "warning"
+
+
+def _condition_hint(condition_type: str) -> str | None:
+    """Look up a short remediation hint for a known-mappable condition type."""
+
+    return _CONDITION_HINTS.get(condition_type)
+
+
 def component_health(payload: Mapping[str, object]) -> tuple[int, int, list[str]]:
     """Count healthy vs unhealthy components and return unhealthy names."""
 
@@ -121,11 +150,14 @@ def derive_cluster_issues(
                 age_days=age_days(condition.last_transition_time),
                 reason=condition.reason,
                 message=condition.message,
+                hint=_condition_hint(condition.type),
             )
         )
     issues.extend(
         ClusterIssue(
-            type="Component", severity="warning", message=f"Component '{name}' is unhealthy"
+            type="Component",
+            severity=_component_issue_severity(name),
+            message=f"Component '{name}' is unhealthy",
         )
         for name in component_unhealthy_names
     )

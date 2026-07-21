@@ -1,5 +1,38 @@
 # Changelog
 
+## [1.29.0] — 2026-07-21 — Agent: Claude
+### Changed
+- M-A8+A9+A10: three localized hand-tunes to the cluster-health surface, closing out
+  Track M's Wave A `cluster_health` slice. **M-A8** collapses `clusters_health_summary`'s
+  per-cluster `node_count`/`nodes_ready`/`nodes_not_ready` integers into one derived
+  `nodes:"1/2"` (ready/total) token on `ClusterHealthSummary` (ADR-0002 rule #3) — the
+  three raw ints move to `exclude=True` (stay populated as attributes; only the dump
+  shape changes) so a quick glance already reads exception-shaped without three fields
+  saying the same thing three ways. **M-A9** adds an optional `hint: str | None` to
+  `ClusterIssue`, populated by a small, deliberately minimal mapping in
+  `derive_cluster_issues` (`tools/support/cluster_issues.py`): `Ready=False` →
+  "Cluster control plane is not Ready; check node and component health.";
+  `PrometheusOperatorDeployed=False` → "The rancher-monitoring app is not installed on
+  this cluster."; every other condition type gets `hint=None`, which the base serializer
+  already drops from the dump. Shared via `derive_cluster_issues`, so `cluster_get`'s
+  `issues[]` (M-A3) picks up the same hints for free. **M-A10** exception-shapes
+  `cluster_health_check`'s three "say-nothing when healthy"
+  `component_healthy_count`/`component_unhealthy_count`/`component_unhealthy_names`
+  fields to `exclude=True` on `ClusterHealthCheck` — the signal they carried already
+  folds into `issues[]` as a `type:"Component"` entry (existing since M-A3's shared
+  derivation); `_component_issue_severity` (new) now ranks a down `etcd`/
+  `controller-manager`/`scheduler` as `critical` (core control-plane) instead of the
+  previous blanket `warning`, matched by name prefix so Rancher's per-member
+  `etcd-0`/`etcd-1` names count too. Net: a healthy cluster's dump drops all three
+  component-count fields; an unhealthy component still surfaces, now with the right
+  severity. `models/clusters_nodes.py`, `models/ops/cluster_health.py`,
+  `tools/support/cluster_issues.py` — no changes needed in `tools/ops/cluster_health.py`
+  itself, since it already only calls the shared derivation. 6 new/updated assertions in
+  `tests/unit/test_ops_cluster_health_tools.py`: the `nodes` token and its dropped raw
+  ints, a mapped-vs-unmapped hint pair, a healthy cluster's dump missing all three
+  component-count keys, and an unhealthy `controller-manager` landing in `issues[]` at
+  `severity:"critical"`.
+
 ## [1.28.0] — 2026-07-21 — Agent: Claude
 ### Changed
 - M-A3: `cluster_get` brought up to the same response-shaping standard as L-2b's

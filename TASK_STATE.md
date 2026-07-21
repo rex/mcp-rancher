@@ -236,6 +236,26 @@ schema is unchanged across 2.6.5→2.14.3, so 2.9.3 prod behaves identically. No
 enrichment + discoverability (L-3c); node etcd-snapshot annotation. **K-8b**
 (`cluster_policy_reports` "404 page not found") stays in Track K bucket ③.
 
+### 📌 HANDOFF (2026-07-21): Track M in progress — M-A8+A9+A10 shipped — v1.29.0
+
+Post-Track-L field-report remediation, tracked in `docs/track-m-plan.md`
+(the cross-turn tracker for this initiative — check it before picking up more
+Track M work; every item has a Slice ID and a `[x]`/`[~]`/`[ ]`/`[!]` state).
+Shipped this session: M-A4 (v1.27.0, workload active/completed split), M-A3+B6
+(v1.28.0, `cluster_get` typed issues), **M-A8+A9+A10 (v1.29.0)** —
+`clusters_health_summary` collapses per-cluster node counts into a
+`nodes:"N/M"` token, `ClusterIssue` gained an optional `hint` (a small
+Ready/PrometheusOperatorDeployed mapping), and `cluster_health_check`'s three
+say-nothing component-count fields are `exclude=True`'d now that an unhealthy
+component already folds into `issues[]` (a down etcd/controller-manager/
+scheduler now ranks `critical`, not the old blanket `warning`).
+
+**Next up (Wave A remainder, Sonnet-ownable):** M-A5 (`namespaces_list`
+`clusterId`), M-A7 (deployments `replicas:"2/2"` token), M-B4 (pod
+`completed[]` + `ready` token). M-A12 and Waves B-E (codegen, architecture,
+new features, infra) are Opus-owned per the plan's delegation policy —
+untouched this session.
+
 ### MAINTENANCE (2026-07-11): isolated current Rancher integration — ✅ live matrix green — v1.6.0
 
 Added an isolated `current` local-lab profile for Rancher `2.14.3` on

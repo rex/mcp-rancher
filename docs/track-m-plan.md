@@ -44,7 +44,7 @@ serializer, security, and new-tool design**. Never hand-edit `_generated_*.py`
   either lab cluster. Rancher tracks RKE1 etcd backups via the separate
   `etcdbackups.management.cattle.io` resource (already exposed by
   `rancher_etcd_backup_get`/`_list`), not a node annotation — nothing to surface.
-- [ ] **M-A8+A9+A10** `cluster_health`: `nodes:"3/3"` token on the fleet summary;
+- [x] **M-A8+A9+A10** (v1.29.0) `cluster_health`: `nodes:"3/3"` token on the fleet summary;
   per-issue `hint`; drop say-nothing `componentHealthy/UnhealthyCount/Names`.
   `models/ops/cluster_health.py` + `tools/ops/cluster_health.py`.
 - [ ] **M-A5** `namespaces_list`: populate per-item `clusterId` (round-trips).
