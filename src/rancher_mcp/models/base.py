@@ -9,6 +9,7 @@ from pydantic import (
     ConfigDict,
     Field,
     SerializerFunctionWrapHandler,
+    computed_field,
     model_serializer,
 )
 from pydantic.alias_generators import to_camel
@@ -36,6 +37,28 @@ class RancherModel(BaseModel):
     serializer_hides_payload: ClassVar[bool] = True
 
     suggested_next_steps: list[str] = Field(default_factory=list)
+
+    @computed_field
+    @property
+    def next_steps(self) -> list[dict[str, object]]:
+        """Pre-filled follow-up calls (L-3b / ADR-0002 Decision §2).
+
+        L-0 deleted the old bare ``suggestedNextSteps`` string array; this
+        re-adds it *correctly* as ``{tool, args}`` — the tool names the model
+        already declares, each pre-filled with the scope args the agent lacks
+        (``cluster_id``/``namespace`` read from this result). Emitted at the root
+        only: nested items never set ``suggested_next_steps``, so their
+        ``next_steps`` is empty and the envelope drops it.
+        """
+
+        if not self.suggested_next_steps:
+            return []
+        args: dict[str, object] = {}
+        for key in ("cluster_id", "namespace"):
+            value = getattr(self, key, None)
+            if value is not None:
+                args[key] = value
+        return [{"tool": name, "args": dict(args)} for name in self.suggested_next_steps]
 
     @model_serializer(mode="wrap")
     def _shape_on_dump(self, handler: SerializerFunctionWrapHandler) -> Any:

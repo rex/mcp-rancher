@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.26.0] — 2026-07-21 — Agent: Claude
+### Changed
+- L-3b suggestedNextSteps pre-filled re-add: the bare next-step string array L-0 deleted returns as a root-level nextSteps of pre-filled {tool, args} calls, carrying the scope args (cluster_id/namespace) the agent lacks — not bare names. Implemented as one base-model computed field that reuses the tool names each result already declares and reads the model's own scope fields, so all ~130 tools got it at once with zero churn; nested items carry no names so their nextSteps collapses (root-only). Completes Track L.
+
 ## [1.25.0] — 2026-07-21 — Agent: Claude
 ### Changed
 - L-3e error envelope retryable branch: every error now carries retryable (transient->retry vs permanent->stop — the field agent's most-wanted field) plus a machine-branchable reason (tunnel_unavailable vs not_installed vs rate_limited), so an agent branches without parsing English. A dropped tunnel (retryable) is structurally distinct from a missing app (not retryable) even though both once surfaced as a bare 404/error. 5xx retryable, 4xx not.

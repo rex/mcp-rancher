@@ -409,11 +409,13 @@ addition in VS) and derived units/tokens; these are required signal, not polish.
   any value >200 chars truncated. Short values untouched; full value via
   `setting_get`. Cert subject/notAfter parsing deferred (needs a crypto dep);
   `source`/`default:""` drop deferred (minor vs the 4 KB win). 🅜
-- [ ] **L-3b** 🔁 **`suggestedNextSteps` MANDATORY RE-ADD** — CAPTURED, MUST
-  RETURN. L-0 deletes it; this slice brings it back **correctly** as a single
-  **root-level pre-filled call** carrying the *arguments*, not bare tool names:
-  `{tool: "rancher_cluster_health_check", args: {cluster_id: "c-xxxxx"}}`. Do
-  NOT resurrect the per-object bare-name array. Blocked on L-0 landing first. 🅜
+- [x] **L-3b** 🔁 **`suggestedNextSteps` RE-ADD** — **✅ done v1.26.0**: returned as
+  a root-level `nextSteps` of pre-filled `{tool, args}` calls, carrying the scope
+  args (`cluster_id`/`namespace`) the agent lacks — NOT bare names. Implemented
+  as a single base-model `@computed_field` that transforms the names each tool
+  already declares + reads the model's own scope fields, so all ~130 tools got it
+  at once (zero churn). Nested items carry no names → their `nextSteps` collapses
+  away (root-only, as specified). The mandated re-add is delivered.
 - [ ] **L-3c** `find_*` discoverability — the cluster-wide sweep ("omit
   `namespace`") is a weak affordance even VS missed despite the docstring. Put
   the capability in the first line of the description, or name the sweep
