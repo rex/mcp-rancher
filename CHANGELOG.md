@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.26.6] — 2026-07-21 — Agent: Claude
+### Added
+- Track M plan (`docs/track-m-plan.md`): cross-turn tracker for the full post-Track-L
+  remediation — the field-report backlog (uniform `count`, receipt `before`/`durationMs`,
+  `cluster_get` issues[], workloads active/completed split, `namespaces_list` clusterId,
+  action-path receipts, deployment/pod token collapses, capability-unavailable envelope,
+  exception-shaping, diagnosis verbs, friendly names, audit hook) plus two new maintainer
+  directives: sensitive singular GETs return real values (reverses L-0b for the reveal
+  path; list still redacts) and healthy-collapse/error-expand exception shaping.
+- Read-surface capture sweep findings recorded (0 residual plumbing leaks; `settings_list`
+  still 31.8 KB via unshaped `default` + duplicated id/name + `source`).
+
 ## [1.26.5] — 2026-07-21 — Agent: Claude
 ### Changed
 - Compaction handoff: record the v1.26.4 Track L release (PyPI + MCP Registry + GitHub, all jobs green), the 17/17 live validation against Rancher 2.14.3, and the dev-lab teardown in TASK_STATE.
