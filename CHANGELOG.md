@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.25.0] — 2026-07-21 — Agent: Claude
+### Changed
+- L-3e error envelope retryable branch: every error now carries retryable (transient->retry vs permanent->stop — the field agent's most-wanted field) plus a machine-branchable reason (tunnel_unavailable vs not_installed vs rate_limited), so an agent branches without parsing English. A dropped tunnel (retryable) is structurally distinct from a missing app (not retryable) even though both once surfaced as a bare 404/error. 5xx retryable, 4xx not.
+
 ## [1.24.0] — 2026-07-21 — Agent: Claude
 ### Changed
 - L-2d find_* count standardization: all six finder tools now emit a uniform count key (via serialization_alias) instead of six different ones (failingCount/stalledCount/unreadyCount/blockingCount/unboundCount) — so an agent parses every finder the same way. Attribute access is unchanged (zero churn). Completes Track L Wave 2.

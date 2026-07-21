@@ -422,12 +422,12 @@ addition in VS) and derived units/tokens; these are required signal, not polish.
   reports `mcp_server_version` (rancher-mcp's OWN version), so an agent confirms
   its build without inspecting the venv. Fixed `__version__` (was a stale
   hardcoded `0.1.0`) to read the installed package metadata. 🅢
-- [ ] **L-3e** error envelope — the unified `{error, reason, capability, resource,
-  cluster, message, remediation, retryable}` (ADR-0002). `retryable` is the key
-  branch (stop vs retry) and separates a missing app (`not_installed`) from a
-  transient tunnel drop (`tunnel_unavailable`). Definition lives here; **Track K
-  K-5 (tunnel) + K-8b (curated not-installed) implement it** — this slice is the
-  shared shape + the `cluster_policy_reports_list` "404 page not found" fix. 🅜
+- [x] **L-3e** error envelope — **✅ done v1.25.0**: every error envelope now
+  carries `retryable` (transient→retry vs permanent→stop — the field agent's
+  "field that matters most") + a machine `reason` (`tunnel_unavailable` vs
+  `not_installed` vs `rate_limited`), so the agent branches without parsing
+  English. 5xx retryable, 4xx not. The `cluster_policy_reports_list` "404 page
+  not found" tool-specific fix stays in **Track K K-8b** (bucket ③). 🅜
 
 **Definition of done (Track L):** L-0 + L-1 shipped (long tail + mutations lean,
 no plumbing/empty noise); the ~15 L-2 tools match the companion target shapes
