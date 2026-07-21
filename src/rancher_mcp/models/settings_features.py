@@ -25,18 +25,40 @@ class RancherSettingSummary(RancherModel):
     ``valueType:"json"`` + ``keys`` (the shape *is* the signal), a certificate
     becomes a marker, and any long value is truncated. The full value is a
     deliberate ``setting_get`` (ADR-0002).
+
+    M-SETTINGS extends the identical treatment to ``default`` (a setting's
+    factory value — e.g. ``cluster-agent-default-affinity``'s default is its
+    own 1815 B raw JSON blob) via the same ``_shape_setting_value`` helper,
+    under its own ``default*`` fields so a customized setting whose *current*
+    value and *factory* default are both oversized shapes each independently
+    without either clobbering the other's markers.
+
+    ``name`` is dropped from the dump: a Rancher setting's ``id`` IS its
+    ``name`` (byte-identical, verified against real Rancher data — see
+    ``tests/unit/test_settings_value_shaping.py``); ``id`` survives because
+    ``rancher_setting_get``'s ``setting_id`` argument is what round-trips
+    against it. ``source`` (provenance) is dropped per ADR-0002 rule #1 — it
+    never changes what an agent does next. Both stay real, ``exclude=True``'d
+    attributes rather than being deleted outright (matching the
+    ``ready_containers``-style precedent elsewhere in this codebase) so
+    parsing the raw payload never breaks and any future code needing them
+    still can.
     """
 
     id: str = "<unknown-setting>"
-    name: str = "<unknown-setting>"
+    name: str = Field(default="<unknown-setting>", exclude=True)
     value: str | None = None
     default: str | None = None
-    source: str | None = None
+    source: str | None = Field(default=None, exclude=True)
     customized: bool | None = None
     value_type: str | None = None
     truncated: bool | None = None
     length: int | None = None
     keys: list[str] = Field(default_factory=list)
+    default_type: str | None = None
+    default_truncated: bool | None = None
+    default_length: int | None = None
+    default_keys: list[str] = Field(default_factory=list)
 
 
 class RancherSettingDetail(RancherSettingSummary):

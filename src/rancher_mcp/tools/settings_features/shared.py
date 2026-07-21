@@ -58,15 +58,24 @@ def _build_feature_query_params(
 _MAX_VALUE_LEN = 200
 
 
-def _shape_setting_value(value: str | None) -> dict[str, object]:
-    """Shape a raw setting value (L-3a): a JSON object collapses to its ``keys``
-    (the shape is the signal, not the 4 KB of args), a PEM to a marker, and any
-    long value is truncated. Returns model-copy fields; empty when no shaping."""
+def _shape_setting_value(value: str | None, *, field: str = "value") -> dict[str, object]:
+    """Shape a raw setting field (L-3a for ``value``; M-SETTINGS reuses this
+    unchanged for ``default``): a JSON object collapses to its ``keys`` (the
+    shape is the signal, not the KBs of blob), a PEM to a marker, and any long
+    value is truncated. ``field`` namespaces the emitted keys (``value`` /
+    ``valueType`` / ... vs ``default`` / ``defaultType`` / ...) so shaping both
+    ``value`` and ``default`` on one setting can never clobber each other.
+    Returns model-copy fields; empty when no shaping applies."""
 
     if not value:
         return {}
+    type_key = "value_type" if field == "value" else f"{field}_type"
+    truncated_key = "truncated" if field == "value" else f"{field}_truncated"
+    length_key = "length" if field == "value" else f"{field}_length"
+    keys_key = "keys" if field == "value" else f"{field}_keys"
+
     if "BEGIN CERTIFICATE" in value:
-        return {"value": None, "value_type": "certificate", "truncated": True, "length": len(value)}
+        return {field: None, type_key: "certificate", truncated_key: True, length_key: len(value)}
     stripped = value.strip()
     if stripped.startswith("{"):
         try:
@@ -76,22 +85,24 @@ def _shape_setting_value(value: str | None) -> dict[str, object]:
         if isinstance(parsed, dict):
             keys = cast("dict[str, object]", parsed).keys()
             return {
-                "value": None,
-                "value_type": "json",
-                "truncated": True,
-                "length": len(value),
-                "keys": sorted(str(key) for key in keys),
+                field: None,
+                type_key: "json",
+                truncated_key: True,
+                length_key: len(value),
+                keys_key: sorted(str(key) for key in keys),
             }
     if len(value) > _MAX_VALUE_LEN:
-        return {"value": value[:_MAX_VALUE_LEN], "truncated": True, "length": len(value)}
+        return {field: value[:_MAX_VALUE_LEN], truncated_key: True, length_key: len(value)}
     return {}
 
 
 def _setting_summary_from_payload(payload: Mapping[str, object]) -> RancherSettingSummary:
-    """Normalize one Rancher setting payload, shaping oversized values (L-3a)."""
+    """Normalize one Rancher setting payload, shaping oversized ``value`` and
+    ``default`` identically (L-3a / M-SETTINGS) via the shared helper."""
 
     summary = RancherSettingSummary.model_validate(payload)
-    shaped = _shape_setting_value(summary.value)
+    shaped = _shape_setting_value(summary.value, field="value")
+    shaped.update(_shape_setting_value(summary.default, field="default"))
     return summary.model_copy(update=shaped) if shaped else summary
 
 

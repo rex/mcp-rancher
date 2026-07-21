@@ -96,8 +96,12 @@ one-at-a-time (background + yield), never in parallel — version bumps serializ
 - [ ] **M-B5** `verbose` flag (raw post-scrub object escape hatch).
 - [ ] **M-SCHEMA** `steve/norman_schema_list` lean index (id+type; methods/links
   behind detail get). 41.6/33.6 KB → ~small.
-- [ ] **M-SETTINGS** `settings_list`: shape `default` like `value`, drop dup
-  `id`/`name`, drop `source`. 31.8 KB → ~5-8 KB. (overlaps A1/A12/B7)
+- [x] **M-SETTINGS** (v1.34.0) `settings_list`: shape `default` like `value`, drop dup
+  `id`/`name`, drop `source`. 31.8 KB → ~20.6 KB measured (35% cut; short of the
+  ~5-8 KB estimate — the retained signal fields `id`+`value`+`default`+
+  `customized` plus per-row JSON key-name overhead across 171 settings floor
+  higher than the estimate assumed; closing the rest needs a 5th, unrequested
+  change — see the M-SETTINGS follow-up task). (overlaps A1/A12/B7)
 
 ## Wave D — new features (Opus design + Sonnet impl)
 

@@ -1,5 +1,29 @@
 # Changelog
 
+## [1.34.0] — 2026-07-21 — Agent: Claude
+### Changed
+- **M-SETTINGS**: `rancher_settings_list` shrinks from 31.8 KB to ~20.6 KB for
+  the real 171-setting lab response (35% reduction; measured against the
+  `capture/0319__rancher_settings_list__noargs.json` field-pass capture).
+  `default` (a setting's factory value — `cluster-agent-default-affinity`'s
+  is its own 1815 B raw JSON blob) now gets the identical L-3a treatment as
+  `value`: a JSON object collapses to `defaultType:"json"` + `defaultKeys`,
+  a certificate becomes `defaultType:"certificate"`, and any long string
+  truncates — via the same `_shape_setting_value` helper
+  (`tools/settings_features/shared.py`), generalized with a `field` param so
+  shaping `value` and `default` on one setting never clobbers the other's
+  markers (a customized setting can have both oversized simultaneously).
+  Dropped the `name`/`id` duplicate (verified byte-identical against real
+  Rancher data — `id` survives because `rancher_setting_get`'s `setting_id`
+  argument is what round-trips against it) and the `source` provenance field
+  (ADR-0002 rule #1 — never decision-changing). `customized` and the L-3a
+  `value` shaping are untouched. `name`/`source` stay real, `exclude=True`'d
+  attributes rather than deleted outright (parsing never breaks). Model:
+  `models/settings_features.py` (`RancherSettingSummary`, inherited by
+  `RancherSettingDetail`); hand-written, not codegen'd — no `catalog/` or
+  `_generated_*.py` changes. 6 new unit tests in
+  `tests/unit/test_settings_value_shaping.py`.
+
 ## [1.33.0] — 2026-07-21 — Agent: Claude
 ### Fixed
 - **Version files now stay in lockstep with `VERSION` on every commit.** The vendored
