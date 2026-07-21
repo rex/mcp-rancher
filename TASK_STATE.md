@@ -200,11 +200,15 @@ committed docs (ADR-0002/ROADMAP) use sanitized placeholders (`c-xxxxx`).
 
 ### ✅ TRACK L — EXECUTED (2026-07-21): all three waves complete, v1.14.1 → v1.26.0
 
-**14 slices shipped, all committed + pushed, `make validate` green (686 tests, 85%).**
-NOT released — per Pierce, the release happens **all at once when cohesive**; it IS
-cohesive now, awaiting his release call. Release flow reminder: `bump_version.py`
-only writes VERSION+CHANGELOG — sync pyproject/server.json(×2)/uv.lock + `uv lock`
-before tagging (see [[release-1-0-0]]).
+**14 slices shipped + ✅ RELEASED as v1.26.4 (2026-07-21).** `make validate` green
+(686 tests, 85%). Tag `v1.26.4` (signed) published all four release jobs green —
+PyPI (`uvx rancher-mcp`), MCP Registry (`io.github.rex/rancher-mcp`), GitHub
+Release — the first publish since v1.12.3, so one tag shipped all of Track L.
+Release flow worked as documented: `bump_version.py patch` → synced
+pyproject/server.json(×2)/uv.lock from the frozen 1.12.3 → `uv lock` → one commit
+→ signed tag → push (see [[release-1-0-0]]). **Live-validated 17/17 end-to-end
+against Rancher 2.14.3** (`docs/live-validation-2026-07-21-track-l.md`); the
+current dev lab was then torn down (`make lab-current-down`).
 
 - **Step 0** sanitize (v1.14.1) · **Wave 1**: L-0 envelope (v1.15.0), L-0b
   redact-markers (v1.16.0), L-1 mutation receipts (v1.17.0) · **Wave 2**: L-2a node

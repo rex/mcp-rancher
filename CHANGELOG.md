@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.26.5] — 2026-07-21 — Agent: Claude
+### Changed
+- Compaction handoff: record the v1.26.4 Track L release (PyPI + MCP Registry + GitHub, all jobs green), the 17/17 live validation against Rancher 2.14.3, and the dev-lab teardown in TASK_STATE.
+
 ## [1.26.4] — 2026-07-21 — Agent: Claude
 ### Changed
 - Track L live-validation record + release: 17/17 reshaped-tool checks pass end-to-end against a real Rancher 2.14.3 (docs/live-validation-2026-07-21-track-l.md), including a full config_map create->set_labels->delete mutation cycle. This tag publishes the entire Track L response-shaping effort (v1.14.1-v1.26.4): universal envelope, redact-don't-delete, mutation receipts, node/health/cert/pod/settings shaping, self-version, retryable errors, and pre-filled next-steps.
