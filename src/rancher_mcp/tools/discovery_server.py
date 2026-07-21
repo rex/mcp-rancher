@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from rancher_mcp import __version__ as mcp_server_version
 from rancher_mcp.clients.management import ManagementDiscoveryClient, RancherManagementClient
 from rancher_mcp.config import AppSettings, get_settings
 from rancher_mcp.models.management import ServerHealth, ServerVersion
@@ -42,7 +43,11 @@ async def _fetch_server_version(
     payload = await client.get_json("/v3/settings/server-version")
     raw_value = payload.get("value")
     version = raw_value if isinstance(raw_value, str) else None
-    return ServerVersion(instance=instance_name, rancher_version=version)
+    return ServerVersion(
+        instance=instance_name,
+        rancher_version=version,
+        mcp_server_version=mcp_server_version,
+    )
 
 
 async def rancher_server_version(

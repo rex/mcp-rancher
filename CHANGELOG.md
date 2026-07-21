@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.21.0] — 2026-07-21 — Agent: Claude
+### Changed
+- L-3d self-version: rancher_server_version now also reports mcp_server_version (the rancher-mcp server's OWN version), so an agent can confirm which build it is driving without inspecting the venv. Fixed the package __version__ (was a stale hardcoded 0.1.0) to read the installed package metadata via importlib.metadata.
+
 ## [1.20.0] — 2026-07-21 — Agent: Claude
 ### Changed
 - L-2e cert-manager list diagnosis: the Certificate list item now carries the failure reason/message/since (from the Ready condition) plus a derived daysRemaining, so a ready:false cert needs no follow-up _get (the field agent's flagship round-trip — a 3 KB _get whose entire value was reason:SecretMismatch). Diagnosis fields drop from the envelope when the cert is healthy. Added derive.days_until (expiry countdown).

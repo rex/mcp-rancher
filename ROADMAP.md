@@ -415,10 +415,10 @@ addition in VS) and derived units/tokens; these are required signal, not polish.
   `namespace`") is a weak affordance even VS missed despite the docstring. Put
   the capability in the first line of the description, or name the sweep
   explicitly. 🅢
-- [ ] **L-3d** self-version tool — the server can't report its OWN version;
-  `rancher_server_version` returns *Rancher's*. Add build/version metadata to
-  `server_health` or a new `server_info`. (Adjacent to shaping; folded here as
-  a small usability fix.) 🅢
+- [x] **L-3d** self-version — **✅ done v1.21.0**: `rancher_server_version` now also
+  reports `mcp_server_version` (rancher-mcp's OWN version), so an agent confirms
+  its build without inspecting the venv. Fixed `__version__` (was a stale
+  hardcoded `0.1.0`) to read the installed package metadata. 🅢
 - [ ] **L-3e** error envelope — the unified `{error, reason, capability, resource,
   cluster, message, remediation, retryable}` (ADR-0002). `retryable` is the key
   branch (stop vs retry) and separates a missing app (`not_installed`) from a

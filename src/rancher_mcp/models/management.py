@@ -12,7 +12,10 @@ class ServerHealth(RancherModel):
 
 
 class ServerVersion(RancherModel):
-    """Rancher server version metadata."""
+    """Rancher server version metadata (plus this MCP server's own version)."""
 
     instance: str
     rancher_version: str | None = None
+    mcp_server_version: str | None = None
+    """The rancher-mcp server's OWN version — so an agent can confirm which
+    build it is driving without inspecting the venv (L-3d)."""

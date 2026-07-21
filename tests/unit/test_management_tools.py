@@ -2,6 +2,7 @@
 
 import pytest
 
+import rancher_mcp
 from rancher_mcp.config import AppSettings
 from rancher_mcp.tools.discovery import rancher_server_health, rancher_server_version
 
@@ -68,3 +69,6 @@ async def test_rancher_server_version_parses_setting_value() -> None:
 
     assert result.instance == "work"
     assert result.rancher_version == "v2.6.5"
+    # L-3d: the tool also reports rancher-mcp's OWN version (no venv inspection).
+    assert result.mcp_server_version == rancher_mcp.__version__
+    assert result.mcp_server_version
