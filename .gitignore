@@ -36,3 +36,9 @@ tfplan.*
 
 # Claude Code session transcripts
 [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]-*.txt
+
+# make capture-sweep output (devtools/capture_sweep/) — raw per-call JSON
+# dumps + manifest from the live local lab. Never committed; also carried
+# in .git/info/exclude, but that's per-clone only — this is the durable copy.
+capture/
+capture_manifest.json

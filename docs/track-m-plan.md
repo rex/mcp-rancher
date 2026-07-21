@@ -143,7 +143,7 @@ one-at-a-time (background + yield), never in parallel — version bumps serializ
 
 ## Wave E — infra / docs
 
-- [ ] **M-HARNESS** promote the sweep harness to `devtools/` as `make capture-sweep`.
+- [x] **M-HARNESS** (v1.39.0) promote the sweep harness to `devtools/` as `make capture-sweep`.
 - [x] **M-DOC** (v1.37.0) reg-token model docstring reconciled — the get is now
   genuinely audited (via M-SEC's `apply_sensitive_reveal_audit`), so the claim is true.
 - [!] **M-K12** `instance_list` `primaryTargetVersion` label — SURFACE: needs the

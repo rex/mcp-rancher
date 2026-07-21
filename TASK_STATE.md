@@ -309,6 +309,25 @@ CHANGELOG `[1.38.0]`. **Remaining in Wave B:** M-B1/B2 (`since`/`ageDays` +
 `reason`/`message` universal on conditions) and M-K6 (destructive `confirm:
 true`). Waves C-E remain Opus-owned and untouched.
 
+**M-HARNESS shipped (v1.39.0)** — Wave E infra item: the proven throwaway
+sweep harness (`plan_capture.py` + `capture_all.py`) is now a permanent,
+tested devtool, `make capture-sweep` → new `devtools/capture_sweep/` package
+(naming/pool/combos/scan/models/enumerator/login/crawler/report/cli, one
+responsibility per module). Preserves the three load-bearing mechanics
+verbatim: real IMPL-fn resolution (never the registered `_tool` wrapper),
+`configure_logging("CRITICAL")` before any call, and lab-only `AppSettings`
+via explicit init kwargs so the repo `.env` PROD token can never load.
+Live-verified against the CURRENT (2.14.3) lab: 693 calls, 121/176 read-only
+tools exercised, zero residual plumbing leaks. 43 new pure-logic unit tests
+(no live-lab dependency). `capture/` + `capture_manifest.json` added to the
+tracked `.gitignore` (were only in the per-clone `.git/info/exclude` before).
+Deliberate adaptations from the reference are called out in CHANGELOG
+`[1.39.0]` — notably a real bug fix in `harvest()` (GET-tool responses were
+being mis-keyed into an unread family bucket) and dropping the reference's
+bonus write-lifecycle sample (redundant with `make live-lifecycle`, and out
+of scope for a READ-ONLY sweep). Wave E otherwise untouched (M-K12 still
+blocked on the `primary_target` decision).
+
 ### MAINTENANCE (2026-07-11): isolated current Rancher integration — ✅ live matrix green — v1.6.0
 
 Added an isolated `current` local-lab profile for Rancher `2.14.3` on

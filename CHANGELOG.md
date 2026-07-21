@@ -1,5 +1,52 @@
 # Changelog
 
+## [1.39.0] — 2026-07-21 — Agent: Claude
+### Added
+- **M-HARNESS — `make capture-sweep`: exhaustive read-only tool capture sweep,
+  promoted from a proven throwaway analysis harness to a permanent, tested
+  devtool.** Drives every satisfiable read-only MCP tool through its real code
+  path against the CURRENT local dev lab, writing one JSON file per call to
+  `./capture/` plus a `capture_manifest.json` and `capture/SUMMARY.md` report
+  (response sizes, a residual-plumbing/long-string scan, per-tool coverage,
+  error-code breakdown). New `devtools/capture_sweep/` package — one
+  responsibility per module, matching the `devtools/devlab/` style: `naming`
+  (family/singularization), `pool` (discovered-resource `Pool` + `harvest`),
+  `combos` (arg-combination planning across 5 satisfiability shapes),
+  `scan` (plumbing/long-string detector), `models` (`ToolPlan`/`SweepOutcome`),
+  `enumerator` (tool-registry introspection), `login` (lab login + lab-only
+  `AppSettings`), `crawler` (the fixpoint wave-crawl), `report`, `cli`.
+  Preserves the reference implementation's three load-bearing mechanics
+  verbatim: (1) calls each tool's real IMPL fn (`resolve_impl_fn`, resolved via
+  the wrapper's `__module__` + the tool's registered name) — never the
+  registered `_tool` wrapper, which rejects `settings`/`instance` kwargs;
+  (2) `configure_logging("CRITICAL")` before any tool call, so structlog's
+  library-default dev renderer never dumps settings/locals on an error;
+  (3) `AppSettings` built from explicit lab-only init kwargs (fresh login
+  token + lab URL) so the repo's own `.env` PRODUCTION token can never load.
+  Verified end-to-end against the live CURRENT (2.14.3) lab: 693 calls,
+  121/176 read-only tools exercised, zero residual plumbing leaks.
+  `capture/` + `capture_manifest.json` added to the tracked `.gitignore`
+  (previously only in the per-clone `.git/info/exclude`).
+  43 new pure-logic unit tests (naming, pool/harvest, scan, arg-combo
+  planning, `resolve_impl_fn`, report rendering) — none require the live lab.
+### Notes
+- **Deliberate adaptations from the throwaway reference**, called out for
+  visibility: the sweep is READ-ONLY only — the reference's bonus
+  create/patch/delete configmap lifecycle sample (to inspect the write-receipt
+  shape) is dropped as out of scope and redundant with the existing
+  `make live-lifecycle`; the crawl instance is marked `read_only: true`
+  (reference used `false`) as a free extra safety rail now that no write
+  calls are ever planned; `plan_capture.py` + `capture_all.py`'s two-script,
+  intermediate-`capture_plan.json` handoff is fused into one in-memory
+  enumerate-then-crawl pipeline; a real bug in the reference's `harvest()`
+  (unconditionally using the LIST-tool family-name deriver, which silently
+  mis-keyed every GET-tool harvest, e.g. `config_map_get` instead of
+  `config_map`) is fixed so GET responses feed the same family bucket LIST
+  responses do; `analyze_big.py`'s bespoke, hardcoded-tool-name structural
+  breakdown is intentionally not ported — general size/plumbing/long-string
+  signal is already in the report, and that script's specific per-field byte
+  breakdown was a one-off investigation, not a reusable harness feature.
+
 ## [1.38.0] — 2026-07-21 — Agent: Claude
 ### Changed
 - **M-A2 — mutation receipts gain `before` + `durationMs` (the field reports'

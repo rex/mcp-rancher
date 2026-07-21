@@ -11,7 +11,7 @@
         check-precommit check-skeleton sync-skeleton fix test test-unit \
         version clean clean-all \
         codegen check-codegen tool-manifest check-tool-manifest \
-        capture-fixtures mock-rancher \
+        capture-fixtures capture-sweep mock-rancher \
         live-health live-read-matrix live-steve live-lifecycle \
         lab-up lab-down lab-reset lab-status lab-logs lab-tools \
         lab-current-up lab-current-down lab-current-status integration-current \
@@ -86,6 +86,7 @@ help:
 	@echo "  $(GREEN)make lab-kind-up$(RESET)          Start the managed + downstream kind clusters (legacy profile)"
 	@echo "  $(GREEN)make lab-kind-down$(RESET)        Stop both managed kind clusters (legacy profile)"
 	@echo "  $(GREEN)make capture-fixtures$(RESET)     Capture sanitized Rancher contract fixtures"
+	@echo "  $(GREEN)make capture-sweep$(RESET)        Exhaustive read-only tool capture sweep against the CURRENT lab"
 	@echo "  $(GREEN)make mock-rancher$(RESET)         Run a fixture-backed mock Rancher server (no version — fixtures)"
 	@echo ""
 	@echo "$(BOLD)Live diagnostics (Track G)$(RESET)"
@@ -318,6 +319,10 @@ lab-kind-down:
 ## capture-fixtures: Capture sanitized Rancher contract fixtures from the live devlab
 capture-fixtures:
 	$(PYTHON) scripts/capture_contract_fixtures.py
+
+## capture-sweep: Exhaustive read-only tool capture sweep against the CURRENT lab (./capture/)
+capture-sweep:
+	$(PYTHON) -m devtools.capture_sweep
 
 ## mock-rancher: Run the fixture-backed mock Rancher server for local provider validation
 mock-rancher:
