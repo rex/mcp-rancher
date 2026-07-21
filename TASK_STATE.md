@@ -196,6 +196,39 @@ committed docs (ADR-0002/ROADMAP) use sanitized placeholders (`c-xxxxx`).
 (b) S3-key rotation; (c) K-12 `capabilities.yaml primary_target`.
 [resolved 2026-07-21: the response-shaping/verbose design — now ADR-0002.]
 
+---
+
+### ✅ TRACK L — EXECUTED (2026-07-21): all three waves complete, v1.14.1 → v1.26.0
+
+**14 slices shipped, all committed + pushed, `make validate` green (686 tests, 85%).**
+NOT released — per Pierce, the release happens **all at once when cohesive**; it IS
+cohesive now, awaiting his release call. Release flow reminder: `bump_version.py`
+only writes VERSION+CHANGELOG — sync pyproject/server.json(×2)/uv.lock + `uv lock`
+before tagging (see [[release-1-0-0]]).
+
+- **Step 0** sanitize (v1.14.1) · **Wave 1**: L-0 envelope (v1.15.0), L-0b
+  redact-markers (v1.16.0), L-1 mutation receipts (v1.17.0) · **Wave 2**: L-2a node
+  diagnostics (v1.18.0), L-2b/L-2f health issues+rollups (v1.19.0), L-2e cert
+  diagnosis (v1.20.0), L-2c pod summary (v1.23.0), L-2d finder count (v1.24.0) ·
+  **Wave 3**: L-3d self-version (v1.21.0), L-3a settings shaping (v1.22.0), L-3e
+  error `retryable` (v1.25.0), L-3b pre-filled next-steps (v1.26.0).
+
+**Key architecture wins:** shaping at dump-time (base serializer + `@computed_field`)
+kept blast radius near-zero — attribute access unchanged, so all existing tests
+stayed green throughout. New foundations: `rancher_mcp/units.py` (pure quantity math),
+`tools/support/derive.py` (age/severity/tokens), `envelope.py` (L-0).
+
+**⚠️ VERIFY AGAINST PROD:** L-2a node field aliases (`info.os.operatingSystem`/
+`kernelVersion`/`dockerVersion`, `requested.cpu`/`memory`) are Rancher-conventional
+but unverified against a live 2.9.3 node — a 1-line alias fix if any path differs.
+
+**Deferred (captured in ROADMAP Track L slice notes):** full `conditions[]` collapse
+(needs the verbose flag — "light first" stance); pod `completed[]` bucket +
+`ready:"2/2"` tokens + `pod_get` inline `events[]`; cert subject/notAfter parse
+(needs a crypto dep); `settings` `source`/`default:""` drop; `find_*` populated-case
+enrichment + discoverability (L-3c); node etcd-snapshot annotation. **K-8b**
+(`cluster_policy_reports` "404 page not found") stays in Track K bucket ③.
+
 ### MAINTENANCE (2026-07-11): isolated current Rancher integration — ✅ live matrix green — v1.6.0
 
 Added an isolated `current` local-lab profile for Rancher `2.14.3` on

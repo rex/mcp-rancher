@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.26.1] — 2026-07-21 — Agent: Claude
+### Changed
+- Track L handoff: record all three waves complete (v1.14.1 -> v1.26.0, make validate green) in TASK_STATE and the ROADMAP definition-of-done, with deferred items and the prod-verification note for the node field aliases.
+
 ## [1.26.0] — 2026-07-21 — Agent: Claude
 ### Changed
 - L-3b suggestedNextSteps pre-filled re-add: the bare next-step string array L-0 deleted returns as a root-level nextSteps of pre-filled {tool, args} calls, carrying the scope args (cluster_id/namespace) the agent lacks — not bare names. Implemented as one base-model computed field that reuses the tool names each result already declares and reads the model's own scope fields, so all ~130 tools got it at once with zero churn; nested items carry no names so their nextSteps collapses (root-only). Completes Track L.

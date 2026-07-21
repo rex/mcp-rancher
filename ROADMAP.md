@@ -431,11 +431,14 @@ addition in VS) and derived units/tokens; these are required signal, not polish.
   English. 5xx retryable, 4xx not. The `cluster_policy_reports_list` "404 page
   not found" tool-specific fix stays in **Track K K-8b** (bucket ③). 🅜
 
-**Definition of done (Track L):** L-0 + L-1 shipped (long tail + mutations lean,
-no plumbing/empty noise); the ~15 L-2 tools match the companion target shapes
-with exception-shaped defaults; `suggestedNextSteps` deleted then re-added in
-pre-filled form (L-3b); `settings_list` under ~2 KB default. K-1 and 2.6.5
-green throughout.
+**Definition of done (Track L): ✅ MET (2026-07-21, v1.14.1 → v1.26.0).** All 14
+slices shipped + pushed; `make validate` green (686 tests, 85%). L-0 + L-1 landed
+(long tail + mutations lean, no plumbing/empty noise); the L-2 tools carry
+structured/derived signal (since/severity/units/receipts/diagnosis); L-3a shrank
+`settings_list`; `suggestedNextSteps` deleted (L-0) then re-added pre-filled (L-3b).
+K-1 and the 2.6.5 floor green throughout. NOT yet released (cohesive-package
+release is Pierce's call). Per-slice status in the checkboxes above; deferred
+items are noted inline per slice. See `TASK_STATE.md` for the execution handoff.
 
 ---
 
