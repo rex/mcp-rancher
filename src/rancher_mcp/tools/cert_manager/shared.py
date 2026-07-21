@@ -15,6 +15,7 @@ from rancher_mcp.tools.support.conditions import (
     condition_types_true,
     conditions_from_value,
 )
+from rancher_mcp.tools.support.derive import days_until
 from rancher_mcp.tools.support.values import mapping_value, string_value
 
 
@@ -73,13 +74,38 @@ def _detect_issuer_kind(payload: Mapping[str, object]) -> str | None:
     return None
 
 
+def _cert_diagnosis(
+    payload: Mapping[str, object],
+) -> tuple[str | None, str | None, str | None]:
+    """Return (reason, message, since) from the Ready condition when not ready."""
+
+    for cond in _conditions(payload):
+        if cond.type == "Ready" and cond.status != "True":
+            return cond.reason, cond.message, cond.last_transition_time
+    return None, None, None
+
+
 def _certificate_summary_from_payload(
     payload: Mapping[str, object],
 ) -> RancherCertManagerCertificateSummary:
-    """Normalize one cert-manager Certificate payload."""
+    """Normalize one cert-manager Certificate payload.
+
+    L-2e: carry the diagnosis (reason/message/since) and a derived
+    ``days_remaining`` on the list item, so a ``ready:false`` cert needs no
+    follow-up detail get (ADR-0002 rule #4).
+    """
 
     summary = RancherCertManagerCertificateSummary.model_validate(payload)
-    return summary.model_copy(update={"ready": _ready_from_conditions(payload)})
+    reason, message, since = _cert_diagnosis(payload)
+    return summary.model_copy(
+        update={
+            "ready": _ready_from_conditions(payload),
+            "days_remaining": days_until(summary.not_after),
+            "reason": reason,
+            "message": message,
+            "since": since,
+        }
+    )
 
 
 def _issuer_summary_from_payload(

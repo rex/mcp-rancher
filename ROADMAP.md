@@ -384,10 +384,11 @@ addition in VS) and derived units/tokens; these are required signal, not polish.
   **populated** case is the untested risk — carry `reason`/`message`/`container`/
   `since`/`lastState.exitCode` so a hit needs no `_get`; standardize `count`;
   fix discoverability (see L-3c) 🅢
-- [ ] **L-2e** `cert_manager_certificate*` — carry the diagnosis on the **list**
-  item so the `_get` becomes unnecessary: promote `reason`/`message`/`since` +
-  derive `daysRemaining` (VS §12 flagship: the whole 3 KB `_get` existed only for
-  `reason:"SecretMismatch"`). 🅢
+- [x] **L-2e** `cert_manager_certificate*` — **✅ done v1.20.0**: the Certificate
+  list item now carries `reason`/`message`/`since` (from the Ready condition) +
+  derived `daysRemaining`, so a `ready:false` cert needs no follow-up `_get` (VS
+  §12 flagship). Diagnosis fields envelope-drop when healthy. Added
+  `derive.days_until`. 🅢
 - [x] **L-2f** `clusters_health_summary` — **✅ done v1.19.0** (with L-2b): root
   `by_severity` histogram (answers "care at all?" before reading a row) + a
   `versions` fleet rollup (the upgrade matrix); per-cluster `top_issues` are now

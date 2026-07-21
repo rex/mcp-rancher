@@ -77,6 +77,13 @@ class RancherCertManagerCertificateSummary(RancherModel):
         validation_alias=AliasPath("status", "renewalTime"),
     )
     ready: bool | None = None
+    # Diagnosis promoted onto the LIST item so a `ready:false` cert needs no
+    # follow-up `_get` (L-2e / ADR-0002 rule #4). Derived + condition-sourced by
+    # the list builder; absent (envelope-dropped) when the cert is healthy.
+    days_remaining: int | None = None
+    reason: str | None = None
+    message: str | None = None
+    since: str | None = None
 
 
 class RancherCertManagerCertificateDetail(RancherCertManagerCertificateSummary):

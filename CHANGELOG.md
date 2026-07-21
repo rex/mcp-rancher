@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.20.0] — 2026-07-21 — Agent: Claude
+### Changed
+- L-2e cert-manager list diagnosis: the Certificate list item now carries the failure reason/message/since (from the Ready condition) plus a derived daysRemaining, so a ready:false cert needs no follow-up _get (the field agent's flagship round-trip — a 3 KB _get whose entire value was reason:SecretMismatch). Diagnosis fields drop from the envelope when the cert is healthy. Added derive.days_until (expiry countdown).
+
 ## [1.19.0] — 2026-07-21 — Agent: Claude
 ### Changed
 - L-2b + L-2f health exception-shaping: cluster_health_check issues are now structured ClusterIssue objects carrying severity + since/ageDays + reason/message inline (a five-year-old benign condition no longer reads the same as a live incident, and reason/message no longer require a second call); the conditionTypesTrue echo is replaced by a condition_counts summary. clusters_health_summary gains a root by_severity histogram and a versions upgrade-matrix rollup. RancherCondition gained lastTransitionTime.

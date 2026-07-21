@@ -21,6 +21,7 @@ from rancher_mcp.units import humanize_memory, parse_quantity, percent
 __all__ = [
     "age_days",
     "condition_severity",
+    "days_until",
     "humanize_memory",
     "owner_token",
     "parse_quantity",
@@ -42,6 +43,24 @@ def age_days(timestamp: str | None, *, now: datetime | None = None) -> int | Non
         moment = moment.replace(tzinfo=UTC)
     reference = now or datetime.now(UTC)
     return max(0, (reference - moment).days)
+
+
+def days_until(timestamp: str | None, *, now: datetime | None = None) -> int | None:
+    """Whole days from now until an ISO-8601 timestamp (negative once past).
+
+    The inverse of :func:`age_days` — for expiry countdowns (``daysRemaining``).
+    """
+
+    if not isinstance(timestamp, str) or not timestamp:
+        return None
+    try:
+        moment = datetime.fromisoformat(timestamp)
+    except ValueError:
+        return None
+    if moment.tzinfo is None:
+        moment = moment.replace(tzinfo=UTC)
+    reference = now or datetime.now(UTC)
+    return (moment - reference).days
 
 
 def ready_token(ready: int | None, total: int | None) -> str | None:
