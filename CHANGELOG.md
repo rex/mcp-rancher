@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.18.0] — 2026-07-21 — Agent: Claude
+### Changed
+- L-2a node diagnostics + L-2.0 derivation helpers: node_get restores requested cpu/mem and os/kernel/runtime as always-on typed fields (the K-2 over-trim fix — satisfies the 'diagnostics must not cost 30 KB' constraint at ~40 bytes each), humanizes memory (3.8Gi not 4005204Ki) and derives cpu/memory utilization %, dedupes the duplicate Ready condition, and rolls up a node-version upgrade matrix on the list. New foundational rancher_mcp/units.py (pure Kubernetes-quantity math) + tools/support/derive.py (age_days, tokens, condition severity).
+
 ## [1.17.0] — 2026-07-21 — Agent: Claude
 ### Changed
 - L-1 mutation receipts: metadata/state mutations (set_labels, set_annotations, scale, pause, resume, restart, suspend, cordon, set_size, set_type, set_min_max, ...) now return a compact RancherMutationReceipt {ok, action, kind, name, changed} instead of the full curated detail — ~200 B vs 1-3 KB. 'changed' is the merge-patch leaf (what was set), captured with no extra API call. ~60 tools regenerated via the codegen template; deletes keep RancherCuratedDeleteResult. The single highest-leverage size win in the server.

@@ -2,9 +2,17 @@
 
 from typing import cast
 
-from pydantic import AliasChoices, AliasPath, Field, field_validator, model_validator
+from pydantic import (
+    AliasChoices,
+    AliasPath,
+    Field,
+    computed_field,
+    field_validator,
+    model_validator,
+)
 
 from rancher_mcp.models.base import RancherModel
+from rancher_mcp.units import humanize_memory, percent
 
 
 def _empty_cluster_summaries() -> list["RancherClusterSummary"]:
@@ -197,12 +205,66 @@ class RancherNodeDetail(RancherNodeSummary):
         default=None,
         validation_alias=AliasPath("allocatable", "pods"),
     )
+    # Operational diagnostics K-2 dropped with the raw payload — restored as
+    # always-on typed fields (L-2a / ADR-0002): headroom and host identity.
+    requested_cpu: str | None = Field(default=None, validation_alias=AliasPath("requested", "cpu"))
+    requested_memory: str | None = Field(
+        default=None,
+        validation_alias=AliasPath("requested", "memory"),
+    )
+    os_image: str | None = Field(
+        default=None,
+        validation_alias=AliasPath("info", "os", "operatingSystem"),
+    )
+    kernel_version: str | None = Field(
+        default=None,
+        validation_alias=AliasPath("info", "os", "kernelVersion"),
+    )
+    container_runtime: str | None = Field(
+        default=None,
+        validation_alias=AliasPath("info", "os", "dockerVersion"),
+    )
     action_keys: list[str] = Field(default_factory=list)
     conditions: list[RancherCondition] = Field(
         default_factory=_empty_conditions,
         validation_alias="conditions",
     )
     payload: dict[str, object] = Field(default_factory=dict)
+
+    @field_validator("conditions")
+    @classmethod
+    def _dedupe_conditions(cls, value: list[RancherCondition]) -> list[RancherCondition]:
+        """Drop duplicate condition types — Rancher sometimes emits Ready twice."""
+
+        seen: set[str] = set()
+        unique: list[RancherCondition] = []
+        for condition in value:
+            if condition.type in seen:
+                continue
+            seen.add(condition.type)
+            unique.append(condition)
+        return unique
+
+    @computed_field
+    @property
+    def memory_capacity_human(self) -> str | None:
+        """Node memory in human binary units (never raw ``Ki``) — ADR-0002 rule #3."""
+
+        return humanize_memory(self.memory_capacity)
+
+    @computed_field
+    @property
+    def cpu_utilization(self) -> str | None:
+        """Requested-vs-capacity CPU as a percent — the headroom read, derived."""
+
+        return percent(self.requested_cpu, self.cpu_capacity)
+
+    @computed_field
+    @property
+    def memory_utilization(self) -> str | None:
+        """Requested-vs-capacity memory as a percent, derived."""
+
+        return percent(self.requested_memory, self.memory_capacity)
 
 
 class RancherNodeList(RancherModel):
@@ -213,3 +275,28 @@ class RancherNodeList(RancherModel):
     next_page_token: str | None = None
     applied_query_params: dict[str, str | int | bool] = Field(default_factory=dict)
     nodes: list[RancherNodeSummary] = Field(default_factory=_empty_node_summaries)
+
+    @computed_field
+    @property
+    def summary(self) -> dict[str, object]:
+        """Fleet roll-up — ready/notReady/unschedulable counts and a version
+        histogram (the upgrade matrix). Derived so the agent needn't tally
+        nodes by hand across a cluster mid-roll (L-2a / ADR-0002 rule #3)."""
+
+        versions: dict[str, int] = {}
+        ready = not_ready = unschedulable = 0
+        for node in self.nodes:
+            if node.kubernetes_version:
+                versions[node.kubernetes_version] = versions.get(node.kubernetes_version, 0) + 1
+            if node.ready is True:
+                ready += 1
+            elif node.ready is False:
+                not_ready += 1
+            if node.unschedulable is True:
+                unschedulable += 1
+        return {
+            "ready": ready,
+            "notReady": not_ready,
+            "unschedulable": unschedulable,
+            "versions": versions,
+        }

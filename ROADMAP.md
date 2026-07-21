@@ -360,12 +360,15 @@ health/issue-bearing tool also gains `since` + `ageDays` and `severity` on each
 issue (ADR-0002 rules 2–3 — `since`/`ageDays` is the single highest-value
 addition in VS) and derived units/tokens; these are required signal, not polish.**
 
-- [ ] **L-2a** `node_get` / `nodes_list` — restore `requested` cpu/mem +
-  `os`/`kernel`/`runtime` + `etcd.lastLocalSnapshot` as **always** typed fields
-  (the direct K-2-over-trim fix); **normalize memory to human units** (`3.8Gi`,
-  not `4005204Ki`), **derive `utilization` %**, fix the duplicate `Ready`
-  condition (real captured bug), `summary.versions` map on the list (the "killer
-  field for upgrade work"). 🅢
+- [x] **L-2a** `node_get` / `nodes_list` — **✅ done v1.18.0**: restored `requested`
+  cpu/mem + `os`/`kernel`/`runtime` as always-on typed fields (K-2-over-trim fix)
+  via Norman node aliases; `memoryCapacityHuman` (`3.8Gi`) + `cpu`/`memoryUtilization`
+  as `@computed_field`s; duplicate `Ready` deduped via a field-validator;
+  `summary.versions` upgrade-matrix roll-up on the list. Shared helpers landed:
+  `rancher_mcp/units.py` (pure quantity math) + `tools/support/derive.py`
+  (age/tokens/severity). `etcd.lastLocalSnapshot` deferred (dotted-annotation key
+  — small follow-on). Node paths (`info.os.*`, `requested.*`) are Rancher-conventional;
+  verify against prod. 🅢
 - [ ] **L-2b** `cluster_health_check` — exception-shape 27 conditions → the 1
   issue with `since`/`ageDays`/`severity`; drop the `conditionTypesTrue` echo;
   the pilot for full exception-shaping 🅜
