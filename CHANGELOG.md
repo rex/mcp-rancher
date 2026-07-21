@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.33.0] — 2026-07-21 — Agent: Claude
+### Fixed
+- **Version files now stay in lockstep with `VERSION` on every commit.** The vendored
+  skeleton `bump_version.py` only writes VERSION + CHANGELOG, so `pyproject.toml`,
+  `server.json` (both the top-level `version` and every `packages[*].version`), and
+  `uv.lock`'s editable `rancher-mcp` entry had frozen at 1.26.4 while VERSION advanced to
+  1.32.0 — meaning a server built from source self-reported the wrong version and the
+  release guard would only reconcile at tag time. New project-owned `scripts/sync_versions.py`
+  (write + `--check`) propagates VERSION into all of them; it is verified canonical against
+  `uv lock` for the local editable package (version-only edit, no dependency-graph change).
+### Added
+- `check-versions` gate (pre-commit + `make validate`) fails any commit whose
+  pyproject/server.json/uv.lock drift from VERSION; `make sync-versions` fixes drift. This
+  closes the long-standing release gotcha permanently — packaged releases remain gated
+  separately by the tag-triggered publish, so continuous sync is risk-free.
+
 ## [1.32.0] — 2026-07-21 — Agent: Claude
 ### Changed
 - M-B4 Part 1: `pods_list`/`pod_get` collapse ready-container counts into one

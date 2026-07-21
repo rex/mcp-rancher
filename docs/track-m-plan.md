@@ -21,10 +21,13 @@ Cross-turn progress tracker. `[x]` = shipped (version), `[~]` = in progress,
 ## Delegation policy
 
 Sonnet MAX subagents own **unambiguous, localized** slices end-to-end
-(implement → tests → `make lint typecheck test` → `bump_version.py minor` +
-CHANGELOG → commit → push → tick this file). Opus owns **codegen, base
+(implement → tests → `make lint typecheck test` → `bump_version.py minor` →
+**`python scripts/sync_versions.py`** (propagates VERSION into pyproject/
+server.json/uv.lock — enforced by the `check-versions` gate) → fill CHANGELOG →
+`git add -A` → commit → push → tick this file). Opus owns **codegen, base
 serializer, security, and new-tool design**. Never hand-edit `_generated_*.py`
-(use `make codegen`). Never touch VERSION/CHANGELOG in parallel.
+(use `make codegen`). Never touch VERSION/CHANGELOG in parallel. Subagents run
+one-at-a-time (background + yield), never in parallel — version bumps serialize.
 
 ## Wave A — localized model hand-tunes (Sonnet, sequential)
 

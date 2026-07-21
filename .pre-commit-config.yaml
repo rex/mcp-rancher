@@ -107,3 +107,9 @@ repos:
         language: script
         pass_filenames: false
         files: ^server\.json$
+      - id: check-versions
+        name: version files in sync with VERSION (pyproject/server.json/uv.lock)
+        entry: scripts/sync_versions.py --check
+        language: script
+        pass_filenames: false
+        always_run: true

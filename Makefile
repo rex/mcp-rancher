@@ -228,8 +228,16 @@ check-readme-badges:
 check-server-json:
 	@$(PYTHON) scripts/check_server_json.py
 
+## sync-versions: Propagate VERSION into pyproject/server.json/uv.lock
+sync-versions:
+	@$(PYTHON) scripts/sync_versions.py
+
+## check-versions: Fail if pyproject/server.json/uv.lock drift from VERSION (CI gate)
+check-versions:
+	@$(PYTHON) scripts/sync_versions.py --check
+
 ## validate: Run the repo's aggregate validation flow
-validate: check-codegen check-tool-manifest check-readme-badges check-server-json check-architecture lint typecheck test
+validate: check-codegen check-tool-manifest check-readme-badges check-server-json check-versions check-architecture lint typecheck test
 	@echo "$(GREEN)Validation complete.$(RESET)"
 
 # ─── Local Lab ────────────────────────────────────────────────────────
