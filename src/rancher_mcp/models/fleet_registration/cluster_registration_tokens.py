@@ -1,5 +1,7 @@
 """Cluster-registration-token models for curated Rancher onboarding tools."""
 
+from typing import ClassVar
+
 from pydantic import Field
 
 from rancher_mcp.models.base import RancherModel
@@ -41,10 +43,17 @@ class RancherClusterRegistrationTokenDetail(RancherClusterRegistrationTokenSumma
 
     This detail intentionally returns the join credential — ``manifest_url``,
     ``token``, and the ``*_command`` fields all embed it — because surfacing
-    the join command is the tool's whole purpose. Retrieving it is an
-    explicit, audited single-resource fetch, mirroring how reading one
-    Secret's value is a deliberate act. See ROADMAP K-1.
+    the join command is the tool's whole purpose. Retrieving it is a
+    deliberate, **audited** single-resource reveal: the get tool is wrapped by
+    ``audit.apply_sensitive_reveal_audit`` (M-SEC), which emits an
+    ``operation="reveal"`` record on every call (identity only, never the value),
+    mirroring how reading one Secret's value via ``secret_get`` is likewise a
+    deliberate, audited act. The list surface never carries the real value
+    (redaction marker only). ``serializer_reveals_secrets`` documents the intent
+    and future-proofs the model against the central scrub. See SECURITY.md / K-1.
     """
+
+    serializer_reveals_secrets: ClassVar[bool] = True
 
     manifest_url: str | None = None
     created: str | None = None

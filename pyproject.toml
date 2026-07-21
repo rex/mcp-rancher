@@ -1,6 +1,6 @@
 [project]
 name = "rancher-mcp"
-version = "1.36.0"
+version = "1.37.0"
 description = "Capability-aware MCP server for Rancher-managed Kubernetes: discovery, generic resource access, and curated operator workflows across the Norman and Steve planes (Rancher 2.6.5–2.9.3)"
 readme = "README.md"
 license = "MIT"
@@ -81,7 +81,7 @@ select = ["E", "W", "F", "I", "B", "C4", "UP", "SIM", "TID", "ANN", "S", "LOG"]
 ignore = ["ANN401"]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["S101"]
+"tests/**" = ["S101", "S105", "S106"]
 "src/**/_generated_*.py" = ["E501"]
 # Vendored agentic-skeleton gate scripts (synced verbatim by
 # scripts/sync_skeleton.py — editing them creates skeleton drift). They

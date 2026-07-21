@@ -132,3 +132,61 @@ def audit_mutation(
         return wrapper
 
     return decorator
+
+
+# Read tools whose single-resource DETAIL intentionally reveals a real credential
+# value (M-SEC). These are NOT covered by ``audit_mutation`` (they are reads), so
+# each invocation must still leave a forensic ``operation="reveal"`` record.
+# Keyed by REGISTERED tool name → (plane, the kwarg holding the resource id).
+# Mutations that also return the detail (e.g. secret_create) are already audited
+# via ``audit_mutation`` and are deliberately not re-listed here.
+_REVEAL_TOOLS: dict[str, tuple[str, str]] = {
+    "rancher_secret_get": ("steve", "secret_name"),
+    "rancher_cluster_registration_token_get": ("management", "cluster_registration_token_id"),
+}
+
+
+def _wrap_reveal_audit(
+    fn: Callable[..., Awaitable[Any]],
+    tool_name: str,
+    plane: str,
+    id_kwarg: str,
+) -> Callable[..., Awaitable[Any]]:
+    """Wrap a reveal get tool to emit an audit record on each successful reveal."""
+
+    @functools.wraps(fn)
+    async def wrapper(*args: Any, **kwargs: Any) -> Any:
+        result = await fn(*args, **kwargs)
+        emit_audit(
+            AuditEntry(
+                tool_name=tool_name,
+                operation="reveal",
+                plane=plane,
+                outcome="success",
+                instance=kwargs.get("instance"),
+                cluster_id=kwargs.get("cluster_id"),
+                namespace=kwargs.get("namespace"),
+                resource_id=kwargs.get(id_kwarg),
+                arg_keys=sorted(kwargs.keys()),
+            )
+        )
+        return result
+
+    return wrapper
+
+
+def apply_sensitive_reveal_audit(mcp: Any) -> None:
+    """Wrap each sensitive-reveal get tool so every credential reveal is audited.
+
+    The single-resource get of a Secret / registration token returns the real
+    value (M-SEC) — a legitimate, deliberate reveal that must nonetheless leave
+    a forensic trail. Resource *identity* (instance/cluster/namespace/name) is
+    captured; the value itself is never logged. A failed get reveals nothing, so
+    no record is emitted on error. Call once at server construction.
+    """
+
+    for tool in mcp._tool_manager._tools.values():
+        info = _REVEAL_TOOLS.get(tool.name)
+        if info is not None:
+            plane, id_kwarg = info
+            tool.fn = _wrap_reveal_audit(tool.fn, tool.name, plane, id_kwarg)

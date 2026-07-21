@@ -14,6 +14,7 @@ def register_all_tools(mcp: FastMCP) -> None:
     handshake to complete before the heavy imports begin.
     """
     # Local imports are intentional: keep module-level import cost near-zero.
+    from rancher_mcp.audit import apply_sensitive_reveal_audit
     from rancher_mcp.metrics import apply_metrics_to_all_tools
     from rancher_mcp.tools.alerts import register_alerts_tools
     from rancher_mcp.tools.apps_catalogs import register_app_catalog_tools
@@ -90,11 +91,13 @@ def register_all_tools(mcp: FastMCP) -> None:
     register_scheduling_tools(mcp)
     register_mcp_resources(mcp)
     register_mcp_prompts(mcp)
-    # Order: capability-unavailable translation is INNERMOST (M-A11/K-8b) so
-    # a 404'd optional-app list becomes RancherCapabilityError before metrics
-    # or structured_errors see it; metrics is next, so it records the
-    # translated error_code; structured_errors is OUTERMOST and translates
-    # whatever RancherMCPError survives to a ToolError at the MCP boundary.
+    # Order (each apply wraps the previous, so the LAST is outermost at call time):
+    # sensitive-reveal audit is INNERMOST (M-SEC) — it wraps the impl and emits an
+    # audit record on the raw successful reveal; capability-unavailable translation
+    # (M-A11/K-8b) turns a 404'd optional-app list into RancherCapabilityError next;
+    # metrics records the translated error_code; structured_errors is OUTERMOST and
+    # translates whatever RancherMCPError survives to a ToolError at the MCP boundary.
+    apply_sensitive_reveal_audit(mcp)
     apply_capability_unavailable_translation(mcp)
     apply_metrics_to_all_tools(mcp)
     apply_structured_errors_to_all_tools(mcp)

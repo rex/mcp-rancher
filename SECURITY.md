@@ -48,15 +48,23 @@ disclosure.
   redacted wherever they appear — **including inside an untyped `payload`
   blob** that no typed field would otherwise mask. It is enforced once, on the
   base response model, so the guarantee holds for every tool.
-- Kubernetes Secret values never appear in curated responses (key names and
-  counts only). Certificate private keys are structurally absent from the
-  certificate tools.
-- A cluster registration token is a node-join credential; it is kept off the
-  list surface, so obtaining one is a deliberate single-resource
+- Kubernetes Secret **values are redacted on the list/summary surface** (key
+  names and counts only). The single-resource `rancher_secret_get` is the
+  deliberate, **audited** reveal — it returns the decoded values (mirroring
+  `kubectl get secret -o yaml`), because a `secret_get` that withholds the value
+  is useless (M-SEC). Certificate private keys remain structurally absent from
+  the certificate tools.
+- A cluster registration token is a node-join credential; the list surface
+  carries only a redaction marker, so obtaining the real join command is a
+  deliberate, **audited** single-resource
   `rancher_cluster_registration_token_get`.
-- Reading a masked value where it is legitimately needed (a Secret's contents,
-  a cloud credential's config) is a deliberate, auditable step via the generic
-  `rancher_steve_resource_get` / `rancher_norman_resource_get` escape hatch.
+- Both reveals above emit an `operation="reveal"` audit record — resource
+  identity only, never the value (see `audit.apply_sensitive_reveal_audit`). The
+  central scrubber still masks credentials **everywhere else**, including inside
+  any untyped `payload` and on every list/summary. The generic
+  `rancher_steve_resource_get` / `rancher_norman_resource_get` remain the
+  full-payload escape hatch for values a curated tool does not yet surface (e.g.
+  a cloud credential's driver config).
 
 **Logging**
 

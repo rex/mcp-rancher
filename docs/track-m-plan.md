@@ -107,8 +107,14 @@ one-at-a-time (background + yield), never in parallel — version bumps serializ
 
 - [ ] **M-EXC** exception-shaping (healthy-collapse / error-expand). Base
   serializer + output-model fields optional.
-- [ ] **M-SEC** sensitive-get reveal (secret/cloud-cred/reg-token) + SECURITY.md
-  + ADR-0002 + audit hook on reveal.
+- [x] **M-SEC** (v1.37.0) `secret_get` returns decoded values (reveal on explicit get;
+  list still masks) via a `serializer_reveals_secrets` ClassVar that skips the base
+  scrub for the reveal DETAIL model alone; reg-token get already revealed and is now
+  genuinely **audited** (`apply_sensitive_reveal_audit`, identity-only). SECURITY.md +
+  ADR-0002 reconciled. Folds in **M-DOC** (reg-token "audited" docstring now true).
+- [ ] **M-SEC-2** (follow-up) `cloud_credential_get` config reveal + certificate
+  private-key reveal — needs driver-specific `*credentialConfig` extraction verified
+  against a real payload (do NOT guess); Rancher keeps the secret access key write-only.
 - [ ] **M-B5** `verbose` flag (raw post-scrub object escape hatch).
 - [ ] **M-SCHEMA** `steve/norman_schema_list` lean index (id+type; methods/links
   behind detail get). 41.6/33.6 KB → ~small.
@@ -132,7 +138,7 @@ one-at-a-time (background + yield), never in parallel — version bumps serializ
 ## Wave E — infra / docs
 
 - [ ] **M-HARNESS** promote the sweep harness to `devtools/` as `make capture-sweep`.
-- [ ] **M-DOC** reg-token model docstring: it claims the get is "audited" — it
-  isn't (fold into M-SEC's audit hook or soften).
+- [x] **M-DOC** (v1.37.0) reg-token model docstring reconciled — the get is now
+  genuinely audited (via M-SEC's `apply_sensitive_reveal_audit`), so the claim is true.
 - [!] **M-K12** `instance_list` `primaryTargetVersion` label — SURFACE: needs the
   `catalog/capabilities.yaml primary_target` (2.6.5 vs 2.9.3) decision.

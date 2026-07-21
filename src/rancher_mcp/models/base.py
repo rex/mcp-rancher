@@ -36,6 +36,15 @@ class RancherModel(BaseModel):
     # models set this False. See ROADMAP K-2 / report B3.
     serializer_hides_payload: ClassVar[bool] = True
 
+    # When True, the base serializer does NOT run the credential scrubber over
+    # this model's dump. Set ONLY by single-resource *sensitive-reveal* detail
+    # models (e.g. secret_get) where returning the real value is the tool's whole
+    # purpose — the deliberate, audited reveal that mirrors `kubectl get secret
+    # -o yaml`. LIST/summary models NEVER set this, so browse surfaces stay
+    # redacted; every other model keeps the K-1 central scrub. The reveal is
+    # audited (see audit.apply_sensitive_reveal_audit). See SECURITY.md / ADR-0002.
+    serializer_reveals_secrets: ClassVar[bool] = False
+
     suggested_next_steps: list[str] = Field(default_factory=list)
 
     @computed_field
@@ -84,4 +93,8 @@ class RancherModel(BaseModel):
         if type(self).serializer_hides_payload:
             for key in ("payload", "responsePayload", "response_payload"):
                 mapping.pop(key, None)
-        return shape_envelope(scrub_secrets(mapping))
+        # Sensitive-reveal detail models (secret_get) intentionally bypass the
+        # scrub — the explicit single-resource get is the audited reveal. Every
+        # other model keeps the K-1 guarantee.
+        scrubbed = mapping if type(self).serializer_reveals_secrets else scrub_secrets(mapping)
+        return shape_envelope(scrubbed)

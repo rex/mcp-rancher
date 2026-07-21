@@ -217,6 +217,21 @@ Track L**. Confirmed by Pierce 2026-07-21 (all four design forks answered):
    field companion (`2026-07-21-rancher-mcp-ideal-response-shapes.md`, local —
    **not committed**: it carries live prod identifiers and this repo is public).
 
+7. **Sensitive singular GETs REVEAL (M-SEC, Pierce 2026-07-21) — supersedes the
+   Secret row's "never the values, at any level".** A `secret_get` that withholds
+   the value is useless, so the single-resource DETAIL returns the real value:
+   `secret_get` returns the decoded `data`; `cluster_registration_token_get`
+   returns the join command. This is the deliberate *reveal* (mirrors `kubectl
+   get secret -o yaml`), gated to the explicit single-resource get — the
+   LIST/summary surface still redacts (names / counts / markers only), and the
+   K-1 central scrub still applies to every other model and to any untyped
+   payload. Each reveal is **audited** (`apply_sensitive_reveal_audit`, identity
+   only — never the value). Mechanism: a `serializer_reveals_secrets` ClassVar on
+   the reveal DETAIL model skips the base serializer's scrub for that model
+   alone. `cloud_credential_get` config + certificate-private-key reveal are the
+   tracked follow-up (**M-SEC-2**). This narrows rule #5 (redact-don't-delete) to
+   the browse surfaces; the retrieve surface reveals.
+
 **`verbose` mechanism:** one boolean to start; `verbose=true` returns the
 post-scrub raw object (K-1 still applies) as a debugging escape hatch, and the
 generic `steve/norman_resource_get` remains the deliberate full-payload path.

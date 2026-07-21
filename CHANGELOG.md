@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.37.0] — 2026-07-21 — Agent: Claude
+### Changed
+- **M-SEC — sensitive singular GETs now RETURN the real value (reverses L-0b for the
+  reveal path).** `rancher_secret_get` returns the **decoded** Secret `data` (UTF-8 where
+  decodable, raw base64 for binary), mirroring `kubectl get secret -o yaml` — a
+  `secret_get` that withholds the value was useless. The `secrets_list`/summary surface
+  is unchanged (key names + counts only), and the K-1 central credential scrubber still
+  masks everything else, including any untyped `payload`. Mechanism: a new
+  `serializer_reveals_secrets` ClassVar on the reveal DETAIL model skips the base
+  serializer's scrub for that model alone (off by default everywhere else).
+- The `cluster_registration_token_get` docstring's "audited" claim is now TRUE (M-DOC):
+  both reveals are wrapped by `audit.apply_sensitive_reveal_audit`, which emits an
+  `operation="reveal"` audit record on every call — resource identity only, never the
+  value. SECURITY.md + ADR-0002 reconciled to the reveal-on-explicit-get policy.
+### Notes
+- `cloud_credential_get` config reveal + certificate-private-key reveal are tracked as
+  the follow-up **M-SEC-2** (they need driver-specific `*credentialConfig` extraction
+  verified against a real payload — not guessed).
+
 ## [1.36.0] — 2026-07-21 — Agent: Claude
 ### Changed
 - **M-A11/K-8b: unified capability-unavailable envelope for curated "app not
