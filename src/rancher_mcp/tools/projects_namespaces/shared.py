@@ -104,9 +104,10 @@ def _namespace_summary_from_payload(
 ) -> RancherNamespaceSummary:
     """Normalize one downstream namespace payload.
 
-    The cluster_id field on the summary is left at its default; it is
-    set by the caller (list response sets it once at the list level,
-    detail sets it from the fetch helper's cluster_id arg).
+    The cluster_id field on the summary is left at its model default here;
+    the list/get fetch helpers immediately override it via
+    `namespace_cluster_id()` so every namespace this normalizer touches ends
+    up carrying a non-empty, queryable cluster_id (never the "" default).
     """
 
     summary = RancherNamespaceSummary.model_validate(payload)
@@ -116,6 +117,27 @@ def _namespace_summary_from_payload(
             "finalizer_count": len(_string_list(metadata.get("finalizers"))),
         }
     )
+
+
+def _namespace_cluster_id(namespace: RancherNamespaceSummary, queried_cluster_id: str) -> str:
+    """Resolve a namespace's cluster id so it round-trips as other tools' input.
+
+    Rancher writes ``field.cattle.io/projectId`` as ``<clusterId>:<shortProjectId>``
+    in the namespace's own annotations; when present, that prefix is the
+    namespace's self-describing cluster linkage and is preferred over the
+    caller-supplied value. Namespaces with no project assignment (common —
+    e.g. unmanaged system namespaces) carry no such linkage, so fall back to
+    the cluster the list/get call queried: the Steve client is always scoped
+    to one cluster, so that value is always correct, just not self-described
+    by the payload.
+    """
+
+    project_id = namespace.project_id
+    if project_id and ":" in project_id:
+        candidate, _, _ = project_id.partition(":")
+        if candidate:
+            return candidate
+    return queried_cluster_id
 
 
 def _namespace_cattle_conditions(metadata: Mapping[str, object]) -> list[RancherCondition]:
@@ -192,6 +214,7 @@ build_project_query_params = _build_project_query_params
 data_items = _data_items
 mapping_value = _mapping_value
 namespace_cattle_conditions = _namespace_cattle_conditions
+namespace_cluster_id = _namespace_cluster_id
 namespace_summary_from_payload = _namespace_summary_from_payload
 payload_conditions = _conditions_from_payload
 project_summary_from_payload = _project_summary_from_payload

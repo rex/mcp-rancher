@@ -20,6 +20,7 @@ from rancher_mcp.tools.projects_namespaces.shared import (
     build_namespace_query_params,
     data_items,
     namespace_cattle_conditions,
+    namespace_cluster_id,
     namespace_summary_from_payload,
     string_dict,
 )
@@ -48,6 +49,14 @@ async def _fetch_namespaces_list(
     )
     payload = await client.get_json("/namespaces", params=query_params or None)
     namespaces = [namespace_summary_from_payload(item) for item in data_items(payload)]
+    namespaces = [
+        namespace.model_copy(
+            update={
+                "cluster_id": namespace_cluster_id(namespace, cluster_id),
+            }
+        )
+        for namespace in namespaces
+    ]
     if phase is not None:
         namespaces = [namespace for namespace in namespaces if namespace.phase == phase]
     return RancherNamespaceList(
@@ -130,7 +139,7 @@ async def _fetch_namespace_get(
         update={
             "id": summary.id,
             "finalizer_count": summary.finalizer_count,
-            "cluster_id": cluster_id,
+            "cluster_id": namespace_cluster_id(summary, cluster_id),
             "label_keys": sorted(string_dict(metadata_labels)),
             "annotation_keys": sorted(string_dict(metadata_annotations)),
             "cattle_conditions": namespace_cattle_conditions(metadata),

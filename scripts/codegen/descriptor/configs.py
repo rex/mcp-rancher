@@ -56,6 +56,37 @@ class PathHelper(BaseModel):
     pre-bound to one resource (e.g. `storage_class_collection_path`)."""
 
 
+class DetailExtra(BaseModel):
+    """An extra computed value patched onto a `model_copy` update.
+
+    Used by `GetConfig.extras` (one detail object) and `ListConfig.item_extras`
+    (each list item, after `summary_function` builds it). The expression
+    renders as inline Python; the descriptor author owns the expression.
+    Local variable names declared in `detail_locals` (get) or the per-item
+    loop variable named after `display_name_singular` (list) are in scope.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    field: str
+    """Update key on the model (e.g. `relationship_types`, `cluster_id`)."""
+
+    expression: str
+    """Python expression to assign (e.g. `relationship_types(metadata)`)."""
+
+
+class DetailLocal(BaseModel):
+    """A local variable extracted before the detail model copy update."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    name: str
+    """Local variable name (e.g. `metadata`)."""
+
+    expression: str
+    """Python expression to assign (e.g. `mapping_value(payload, "metadata") or {}`)."""
+
+
 class ListConfig(BaseModel):
     """List operation configuration."""
 
@@ -138,34 +169,14 @@ class ListConfig(BaseModel):
     next_steps: list[str] = []
     """Suggested next-step tool names included in the list response."""
 
-
-class DetailExtra(BaseModel):
-    """An extra computed value passed into the detail model copy update.
-
-    The expression renders as inline Python; the descriptor author owns
-    the expression. Local variable names declared in `detail_locals` are
-    in scope.
-    """
-
-    model_config = ConfigDict(extra="forbid")
-
-    field: str
-    """Update key on the detail model (e.g. `relationship_types`)."""
-
-    expression: str
-    """Python expression to assign (e.g. `relationship_types(metadata)`)."""
-
-
-class DetailLocal(BaseModel):
-    """A local variable extracted before the detail model copy update."""
-
-    model_config = ConfigDict(extra="forbid")
-
-    name: str
-    """Local variable name (e.g. `metadata`)."""
-
-    expression: str
-    """Python expression to assign (e.g. `mapping_value(payload, "metadata") or {}`)."""
+    item_extras: list[DetailExtra] = []
+    """Additional computed values patched onto each list item after
+    `summary_function` builds it (e.g. injecting the queried `cluster_id`
+    when the raw payload doesn't self-describe it). Rendered as
+    `<item>.model_copy(update={...})` per item in a comprehension where the
+    loop variable is named after `display_name_singular` and the fetch
+    helper's own parameters (e.g. `cluster_id`) are in scope. Empty by
+    default — zero codegen impact for descriptors that don't set it."""
 
 
 class GetConfig(BaseModel):

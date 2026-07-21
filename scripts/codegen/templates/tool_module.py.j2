@@ -114,6 +114,18 @@ async def _fetch_{{ display_name_plural }}_list(
     )
     {%- endif %}
     {{ display_name_plural }} = [{{ summary_function }}(item) for item in {{ items_function }}(payload)]
+    {%- if list.item_extras %}
+    {{ display_name_plural }} = [
+        {{ display_name_singular }}.model_copy(
+            update={
+                {%- for extra in list.item_extras %}
+                "{{ extra.field }}": {{ extra.expression }},
+                {%- endfor %}
+            }
+        )
+        for {{ display_name_singular }} in {{ display_name_plural }}
+    ]
+    {%- endif %}
     {%- for filter in list.filters %}
     {%- if filter.predicate == 'is_true' %}
     if {{ filter.name }} is True:

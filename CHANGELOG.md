@@ -1,5 +1,34 @@
 # Changelog
 
+## [1.30.0] — 2026-07-21 — Agent: Claude
+### Changed
+- M-A5: `namespaces_list` items were being returned with `clusterId: ""` — a field
+  report flagged that the identifier a namespace item carries must be the one other
+  tools accept as input, and an empty string doesn't round-trip. `RancherNamespaceSummary.cluster_id`
+  (`models/projects_namespaces.py`) was only ever set on the list *root*
+  (`RancherNamespaceList.cluster_id`), never injected per-item. Fixed at the builder,
+  per ADR-0002's rule that identity-that-round-trips is always-signal: a new
+  `namespace_cluster_id(namespace, queried_cluster_id)` helper (`tools/projects_namespaces/shared.py`)
+  prefers the namespace's own `field.cattle.io/projectId` annotation
+  (`<clusterId>:<shortProjectId>`) when present — more accurate, self-describing —
+  and falls back to the cluster the list/get call queried otherwise (the Steve client
+  is always scoped to one cluster, so the fallback is always correct, just not
+  self-described by namespaces with no project assigned, which is the common case).
+  `namespaces_list` is codegen'd, so the fix threads through the descriptor rather than
+  hand-editing `_generated_namespaces.py`: `ListConfig` gained a new opt-in
+  `item_extras` field (`scripts/codegen/descriptor/configs.py`, reusing the existing
+  `field`/`expression` shape from `GetConfig.extras`) and `tool_module.py.j2` renders
+  it as a `<item>.model_copy(update={...})` pass over the built summaries — empty by
+  default, so `make codegen` regenerates all other 26 packs byte-identical (verified).
+  `catalog/curated_tools/namespaces.yml` sets `list.item_extras` to inject
+  `namespace_cluster_id(namespace, cluster_id)` per item, and upgrades `get.extras`'
+  `cluster_id` expression to the same helper for consistency (`namespace_get` already
+  carried a correct, queried-argument `cluster_id`; it now prefers the more-accurate
+  payload-derived value too). 3 new/updated assertions in
+  `tests/unit/test_projects_namespaces_namespaces_tools.py` plus one new test proving
+  `namespaces_list` items carry a non-empty, queried `cluster_id` even when the
+  payload has no project assigned (the case with no self-describing linkage at all).
+
 ## [1.29.0] — 2026-07-21 — Agent: Claude
 ### Changed
 - M-A8+A9+A10: three localized hand-tunes to the cluster-health surface, closing out

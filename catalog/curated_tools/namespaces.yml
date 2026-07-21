@@ -20,6 +20,7 @@ detail_response_model: rancher_mcp.models.projects_namespaces.RancherNamespaceDe
 shared_imports:
   - data_items
   - namespace_cattle_conditions
+  - namespace_cluster_id
   - namespace_summary_from_payload
   - string_dict
 summary_function: namespace_summary_from_payload
@@ -57,6 +58,9 @@ list:
       summary_field: phase
   count_field: namespace_count
   collection_field: namespaces
+  item_extras:
+    - field: cluster_id
+      expression: namespace_cluster_id(namespace, cluster_id)
   next_steps:
     - rancher_namespace_get
     - rancher_pods_list
@@ -76,7 +80,7 @@ get:
       expression: 'mapping_value(metadata, "labels") or {}'
   extras:
     - field: cluster_id
-      expression: cluster_id
+      expression: namespace_cluster_id(summary, cluster_id)
     - field: label_keys
       expression: sorted(string_dict(metadata_labels))
     - field: annotation_keys

@@ -47,8 +47,9 @@ serializer, security, and new-tool design**. Never hand-edit `_generated_*.py`
 - [x] **M-A8+A9+A10** (v1.29.0) `cluster_health`: `nodes:"3/3"` token on the fleet summary;
   per-issue `hint`; drop say-nothing `componentHealthy/UnhealthyCount/Names`.
   `models/ops/cluster_health.py` + `tools/ops/cluster_health.py`.
-- [ ] **M-A5** `namespaces_list`: populate per-item `clusterId` (round-trips).
-  `models/projects_namespaces.py` + list builder.
+- [x] **M-A5** (v1.30.0) `namespaces_list`: populate per-item `clusterId` (round-trips).
+  `models/projects_namespaces.py` + list builder (codegen: `ListConfig.item_extras`
+  + `namespace_cluster_id()`, preferring the payload's own project-id linkage).
 - [ ] **M-A7** `deployments_list`/`get`: `replicas:"2/2"` collapse + promote
   not-converged `reason`/`since`. deployments response model.
 - [ ] **M-B4** pods: `completed[]` bucket + `ready:"2/2"` token; `pod_get`
