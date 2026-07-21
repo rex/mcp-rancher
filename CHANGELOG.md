@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.26.4] — 2026-07-21 — Agent: Claude
+### Changed
+- Track L live-validation record + release: 17/17 reshaped-tool checks pass end-to-end against a real Rancher 2.14.3 (docs/live-validation-2026-07-21-track-l.md), including a full config_map create->set_labels->delete mutation cycle. This tag publishes the entire Track L response-shaping effort (v1.14.1-v1.26.4): universal envelope, redact-don't-delete, mutation receipts, node/health/cert/pod/settings shaping, self-version, retryable errors, and pre-filled next-steps.
+
 ## [1.26.3] — 2026-07-21 — Agent: Claude
 ### Changed
 - Verified L-2a node field aliases against a live Rancher 2.14.3 (current dev lab): info.os.{operatingSystem,kernelVersion,dockerVersion} + requested.{cpu,memory} all populate and derive correctly through RancherNodeDetail (osImage=Debian 13, cpuUtilization=24%, memoryCapacityHuman=5Gi). Core Norman node schema is unchanged 2.6.5->2.14.3, so 2.9.3 behaves identically. Clears the one open Track L caveat; updated ROADMAP + TASK_STATE.
