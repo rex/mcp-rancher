@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.24.0] — 2026-07-21 — Agent: Claude
+### Changed
+- L-2d find_* count standardization: all six finder tools now emit a uniform count key (via serialization_alias) instead of six different ones (failingCount/stalledCount/unreadyCount/blockingCount/unboundCount) — so an agent parses every finder the same way. Attribute access is unchanged (zero churn). Completes Track L Wave 2.
+
 ## [1.23.0] — 2026-07-21 — Agent: Claude
 ### Changed
 - L-2c pods_list phase summary: a computed summary {running,succeeded,pending,failed,unhealthy} on the list separates terminal Completed Jobs (succeeded) from running health, so a namespace whose migration Jobs sit beside live pods no longer reads as half-down; unhealthy (running-not-ready/crash/unknown) is the single field an agent branches on.

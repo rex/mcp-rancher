@@ -381,10 +381,12 @@ addition in VS) and derived units/tokens; these are required signal, not polish.
   half-down; `unhealthy` (running-not-ready / crash / unknown) is the branch
   field. Deferred (need restructure/extra fetch): the separate `completed[]`
   bucket, `ready:"2/2"` tokens, and `pod_get` inline `events[]`. 🅜
-- [ ] **L-2d** the 6 `find_*` tools — already close (the triage surface); the
-  **populated** case is the untested risk — carry `reason`/`message`/`container`/
-  `since`/`lastState.exitCode` so a hit needs no `_get`; standardize `count`;
-  fix discoverability (see L-3c) 🅢
+- [x] **L-2d** the 6 `find_*` tools — **✅ done v1.24.0**: standardized the count
+  key — all six now emit a uniform `count` (via `serialization_alias`, so
+  `failing_count`/`stalled_count`/… attribute access is unchanged → zero churn).
+  The finders were already the field agent's strongest surface; the
+  populated-case diagnosis enrichment (`reason`/`container`/`lastState`) +
+  discoverability (L-3c) deferred (estate was clean → untested). 🅢
 - [x] **L-2e** `cert_manager_certificate*` — **✅ done v1.20.0**: the Certificate
   list item now carries `reason`/`message`/`since` (from the Ready condition) +
   derived `daysRemaining`, so a `ready:false` cert needs no follow-up `_get` (VS
