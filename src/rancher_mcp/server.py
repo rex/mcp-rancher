@@ -55,7 +55,10 @@ def register_all_tools(mcp: FastMCP) -> None:
     from rancher_mcp.tools.support.capability_unavailable import (
         apply_capability_unavailable_translation,
     )
-    from rancher_mcp.tools.support.errors import apply_structured_errors_to_all_tools
+    from rancher_mcp.tools.support.errors import (
+        apply_bare_json_errors,
+        apply_structured_errors_to_all_tools,
+    )
     from rancher_mcp.tools.workloads import register_workload_tools
 
     register_discovery_tools(mcp)
@@ -103,6 +106,10 @@ def register_all_tools(mcp: FastMCP) -> None:
     apply_capability_unavailable_translation(mcp)
     apply_metrics_to_all_tools(mcp)
     apply_structured_errors_to_all_tools(mcp)
+    # Not a tool wrapper: patches the tool MANAGER, so it sits outside even
+    # `Tool.run` — the only place we can undo the SDK's prose preamble and
+    # guarantee every emitted error is valid JSON (AE-03).
+    apply_bare_json_errors(mcp)
 
 
 def stamp_server_version(mcp: FastMCP) -> None:

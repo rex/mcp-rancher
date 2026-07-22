@@ -1,5 +1,29 @@
 # Changelog
 
+## [1.48.0] — 2026-07-22 — Agent: Claude
+### Fixed
+- **AE-03 — errors were structured JSON wrapped in prose, so nothing could
+  parse them.** `Tool.run` catches everything and re-raises
+  `ToolError(f"Error executing tool {name}: {e}")`, so the envelope built by
+  `wrap_with_structured_errors` reached the client as
+  `Error executing tool rancher_pods_list: {"error_code": ...}` — on which
+  `JSON.parse` fails. An agent that cannot parse the error cannot branch on
+  `retryable`, so it either abandons a transient failure or retries a permanent
+  one forever; the envelope's whole purpose was being thrown away one layer
+  below where it was built.
+
+  New `apply_bare_json_errors` unwraps the preamble at the tool-manager seam
+  (the SDK exposes no hook for the format string itself). Errors that never had
+  an envelope now get one instead of passing through, so the guarantee is
+  total — **every** failure this server emits parses as JSON. That closes two
+  gaps the per-tool wrapper structurally could not reach: argument validation
+  (runs before `tool.fn` is entered) and unknown-tool dispatch.
+
+### Added
+- `tests/unit/test_bare_json_errors.py`, covering all three error paths plus a
+  canary asserting the SDK *still* adds the preamble — if a future SDK stops,
+  the unwrap becomes dead weight and should be deleted rather than left to rot.
+
 ## [1.47.0] — 2026-07-22 — Agent: Claude
 ### Fixed
 - **F1/AE-33 — the server never reported its own version.** Two independent
