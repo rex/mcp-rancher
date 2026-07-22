@@ -1,5 +1,34 @@
 # Changelog
 
+## [1.50.0] — 2026-07-22 — Agent: Claude
+### Added
+- **The regression gate for the class of bug that killed every
+  collection-returning tool.** A field operator's verdict on the count-field
+  P0: *"that test is worth more than the fix, because this drift will recur."*
+  Our unit tests assert the model **dump** and never the published
+  **outputSchema**, which is exactly the gap the P0 slipped through.
+
+  `tests/unit/test_output_schema_dump_parity.py` builds the real production
+  registry and, for every tool, synthesizes a fully-populated instance from the
+  model's own schema, dumps it through the *exact* call FastMCP makes
+  (`model_dump(mode="json", by_alias=True)` — running the real wrap-serializer,
+  envelope shaping and secret scrubbing), then asserts every schema-required
+  key is actually present, recursing into nested list-item models.
+
+  Covers 321 tools / 177 models, all of which publish a structured
+  `outputSchema` (a canary fails if that regresses). **Result on the current
+  tree: zero findings** — independent confirmation that the v1.44.0 P0 fix is
+  complete. Verified to catch the original `clusterCount` split, the same split
+  on a nested list-item model, a required `exclude=True` field, and a required
+  key dropped by the envelope's plumbing denylist.
+
+  Note: the obvious implementation — diffing `model_json_schema(mode=
+  "validation")` against `mode="serialization"` — does not work here.
+  Serialization mode returns a bare `{}` for every `RancherModel`, because the
+  class-level `@model_serializer(mode="wrap")` in `models/base.py` is opaque to
+  pydantic's schema generator. A permanent test pins that finding so a future
+  pydantic release that changes it doesn't go unnoticed.
+
 ## [1.49.0] — 2026-07-22 — Agent: Claude
 All three fixes came out of an operator triaging a real post-power-loss outage.
 
