@@ -54,6 +54,37 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 
 ## Next Slice
 
+### 📌 HANDOFF (2026-07-22): M-SEC-2 (secret reveal gated opt-in) CLOSED — v1.45.0
+
+An agent-fitness audit flagged AE-01 ("no credential material in responses")
+against M-SEC's (v1.37.0) "`secret_get` returns decoded values by default":
+agent context is persisted into transcripts/summaries the operator doesn't
+control, so a decoded credential must never be the *accidental* default
+shape. Maintainer ruling: gate the reveal behind an explicit parameter
+(detail in `docs/track-m-plan.md` Wave C, `CHANGELOG.md` v1.45.0,
+`docs/adr/0002-response-shaping-doctrine.md` §7 item 8):
+- `rancher_secret_get(..., reveal: bool = False)` — default returns
+  `dataKeys`/counts only (`data` suppressed to `{}`, dropped by the L-0
+  empty-value envelope); `reveal=true` restores the M-SEC decoded values
+  **and** the `operation="reveal"` audit record. A names-only call is no
+  longer logged as a reveal (`audit._REVEAL_TOOLS` gained a per-tool
+  `gate_kwarg`). `rancher_secret_create` (no `reveal` input) now also never
+  emits values, closing a related M-SEC-era leak.
+- `rancher_cluster_registration_token_get` is **unchanged, out of scope** —
+  unconditional reveal + audit stays, since the tool's whole purpose is the
+  join command.
+- New descriptor-only codegen hook (`GetConfig.reveal_param` /
+  `reveal_gated_extras` / `RevealGatedExtra` in `scripts/codegen/descriptor/
+  configs.py` + `scripts/codegen/templates/tool_module.py.j2`), exercised
+  only by `catalog/curated_tools/secrets.yml`; zero impact on any other
+  descriptor. No `_generated_*.py` hand-edited (`make codegen` regenerated
+  `tools/config_secrets/_generated_secrets.py`).
+- Verified: `agenteval --schema-only` still **91.5/100, grade A** (only
+  pre-existing AE-32 findings remain); `make validate` green (900 tests).
+- The `cloud_credential_get`/certificate-private-key follow-up that used to
+  be tracked as "M-SEC-2" is retracked as **M-SEC-3** (still open) since this
+  slice now owns the M-SEC-2 id.
+
 ### 📌 HANDOFF (2026-07-21): Track N (agenteval agent-fitness) CLOSED — v1.43.0
 
 Orthogonal to Track K below (untouched, still the open priority). The vendored

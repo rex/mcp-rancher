@@ -855,7 +855,7 @@ wheels = [
 
 [[package]]
 name = "rancher-mcp"
-version = "1.45.0"
+version = "1.45.1"
 source = { editable = "." }
 dependencies = [
     { name = "httpx" },

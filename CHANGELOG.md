@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.45.1] — 2026-07-22 — Agent: Claude
+### Changed
+- Docs only: `TASK_STATE.md` §"Next Slice" handoff note for M-SEC-2 (v1.45.0),
+  per AGENTS.md §11 end-of-session discipline. No code change.
+
 ## [1.45.0] — 2026-07-22 — Agent: Claude
 ### Changed
 - **M-SEC-2 — `rancher_secret_get`'s reveal is now opt-in, not the default.**
