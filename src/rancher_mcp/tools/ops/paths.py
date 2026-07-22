@@ -43,6 +43,33 @@ def k8s_core_ns_path(cluster_id: str, namespace: str, resource: str) -> str:
     return k8s_core_path(cluster_id, resource, namespace)
 
 
+def k8s_core_named_path(
+    cluster_id: str,
+    namespace: str,
+    resource: str,
+    name: str,
+    subresource: str | None = None,
+) -> str:
+    """Namespaced core-API path addressing one named resource, optionally
+    with a subresource (e.g. a pod's ``log``, M-K7 diagnostics).
+
+    Unlike ``k8s_core_ns_path`` (a collection path meant to be filtered with
+    a query-string field selector), every segment here is quoted
+    independently so a ``name``/``subresource`` value is never accidentally
+    swallowed by the single ``quote(resource, safe="")`` the collection-path
+    helpers above use.
+    """
+
+    base = (
+        f"/k8s/clusters/{quote(cluster_id, safe='')}/api/v1/"
+        f"namespaces/{quote(namespace, safe='')}/"
+        f"{quote(resource, safe='')}/{quote(name, safe='')}"
+    )
+    if subresource:
+        base += f"/{quote(subresource, safe='')}"
+    return base
+
+
 def k8s_apps_ns_path(cluster_id: str, namespace: str, resource: str) -> str:
     """Namespaced apps/v1 path (kept for the rollups call sites)."""
 

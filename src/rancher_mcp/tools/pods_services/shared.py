@@ -22,17 +22,17 @@ from rancher_mcp.tools.support.conditions import (
 from rancher_mcp.tools.support.conditions import (
     conditions_from_payload as _conditions_from_status,
 )
-from rancher_mcp.tools.support.values import (
-    int_value as _int_value,
+from rancher_mcp.tools.support.k8s_events import (
+    event_summary_fields as _event_summary_fields,
+)
+from rancher_mcp.tools.support.k8s_events import (
+    involved_object_field_selector as _involved_object_field_selector,
 )
 from rancher_mcp.tools.support.values import (
     mapping_value as _mapping_value,
 )
 from rancher_mcp.tools.support.values import (
     string_list as _string_list,
-)
-from rancher_mcp.tools.support.values import (
-    string_value as _string_value,
 )
 
 _logger = structlog.get_logger("rancher_mcp.tools.pods_services")
@@ -109,26 +109,10 @@ def _relationship_types(metadata: Mapping[str, object]) -> list[str]:
     return sorted(relationship_values)
 
 
-def _pod_events_field_selector(namespace: str, pod_name: str) -> str:
-    """Build the ``involvedObject`` field selector scoping events to one pod."""
-
-    return (
-        f"involvedObject.name={pod_name},"
-        f"involvedObject.namespace={namespace},"
-        "involvedObject.kind=Pod"
-    )
-
-
 def _pod_event_summary(item: Mapping[str, object]) -> RancherPodEventSummary:
     """Normalize one raw Kubernetes event into the lean pod-inlined shape."""
 
-    return RancherPodEventSummary(
-        type=_string_value(item, "type"),
-        reason=_string_value(item, "reason"),
-        message=_string_value(item, "message"),
-        count=_int_value(item, "count"),
-        last_seen=_string_value(item, "lastTimestamp") or _string_value(item, "firstTimestamp"),
-    )
+    return RancherPodEventSummary(**_event_summary_fields(item))
 
 
 async def _fetch_pod_events(
@@ -144,7 +128,10 @@ async def _fetch_pod_events(
     against the namespaced core-API events collection, via
     ``tools/ops/paths.k8s_core_ns_path``/``k8s_items``) — narrowed server-side
     with an ``involvedObject`` field selector instead of a namespace-wide
-    fetch, since `pod_get` only wants one pod's events.
+    fetch, since `pod_get` only wants one pod's events. The field-selector
+    format itself is shared with M-K7's any-kind ``resource_events`` tool via
+    ``tools/support/k8s_events.involved_object_field_selector`` (module-level
+    import — safe here, unlike the ``tools.ops.paths`` import just below).
 
     The `tools.ops.paths` import is deliberately deferred to inside this
     function rather than hoisted to module scope: `tools/ops/__init__.py`
@@ -158,7 +145,7 @@ async def _fetch_pod_events(
     from rancher_mcp.tools.ops.paths import k8s_core_ns_path, k8s_items
 
     path = k8s_core_ns_path(cluster_id, namespace, "events")
-    field_selector = _pod_events_field_selector(namespace, pod_name)
+    field_selector = _involved_object_field_selector(namespace, pod_name, "Pod")
     payload = await client.get_json(path, params={"fieldSelector": field_selector})
     events = [_pod_event_summary(item) for item in k8s_items(payload)]
     events.sort(key=lambda event: event.last_seen or "", reverse=True)

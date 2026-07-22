@@ -26,6 +26,7 @@ def register_all_tools(mcp: FastMCP) -> None:
     from rancher_mcp.tools.clusters_nodes import register_cluster_node_tools
     from rancher_mcp.tools.compliance import register_compliance_tools
     from rancher_mcp.tools.config_secrets import register_config_secrets_tools
+    from rancher_mcp.tools.diagnostics import register_diagnostics_tools
     from rancher_mcp.tools.discovery import register_discovery_tools
     from rancher_mcp.tools.disruption import register_disruption_tools
     from rancher_mcp.tools.fleet_registration import register_fleet_registration_tools
@@ -62,6 +63,7 @@ def register_all_tools(mcp: FastMCP) -> None:
     register_fleet_registration_tools(mcp)
     register_logging_backup_tools(mcp)
     register_ops_tools(mcp)
+    register_diagnostics_tools(mcp)
     register_resource_tools(mcp)
     register_cluster_node_tools(mcp)
     register_pod_service_tools(mcp)

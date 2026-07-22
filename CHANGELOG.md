@@ -1,5 +1,67 @@
 # Changelog
 
+## [1.41.0] — 2026-07-21 — Agent: Claude
+### Added
+- **M-K7 — `rancher_pod_logs` + `rancher_resource_events`: the diagnosis
+  verbs a 2026-07 field report named as the #1 reason an operator dropped
+  this server for `kubectl` mid-incident.** New hand-written (not codegen)
+  `tools/diagnostics/` package, registered alongside the other curated
+  families in `server.py`. `pod_describe` (the row's third planned tool) is
+  deliberately **not** built: M-B4 already inlines `events[]` + status +
+  conditions onto `pod_get`, so a separate describe would be redundant —
+  narrowed from 3 to 2 genuinely-missing verbs.
+  **`rancher_pod_logs`** (`tools/diagnostics/pod_logs.py`) fetches one pod
+  container's log tail via the same k8s-proxy `ManagementDiscoveryClient`
+  plane M-B4's `pod_events_best_effort` uses (`GET .../pods/{name}/log`,
+  `RancherManagementClient.get_text` — already existed on the client
+  protocol/impl, so no new client method was needed). Omitting `container`
+  on a single-container pod auto-resolves it (one extra k8s-proxy GET of
+  the pod's own spec); a multi-container pod with no `container` raises a
+  new clean, structured `RancherAmbiguousContainerError`
+  (`error_code=AMBIGUOUS_CONTAINER`) listing every candidate name in
+  `hint` rather than guessing or 400ing raw — the log endpoint is never
+  even called in that case. `tail_lines` defaults to 200, clamps to a
+  2000 hard cap; `truncated` is `True` whenever the returned line count
+  reaches the (possibly-clamped) requested cap, an honest signal mirroring
+  `kubectl logs --tail=N`'s own inability to prove completeness (ADR-0002
+  rule #2). `previous=true` reads the last terminated instance's logs for
+  crash-loop diagnosis. Returns `RancherPodLogResult`
+  (`models/diagnostics.py`): `lines: list[str]` (split via `splitlines()`)
+  plus a uniform `count` (M-A1) alias for the line count.
+  **`rancher_resource_events`** (`tools/diagnostics/resource_events.py`)
+  generalizes M-B4's pod-scoped events fetch to any namespaced `kind`
+  (Deployment, PersistentVolumeClaim, …) via the identical
+  `involvedObject.name=…,involvedObject.namespace=…,involvedObject.kind=…`
+  field selector, most-recent-first, capped to 20. Returns
+  `RancherResourceEventList` (`models/ops/events.py`, alongside the
+  pre-existing namespace-wide `RancherEventList`).
+  **Reuse over duplication**, per the task's explicit ask: extracted the
+  field-selector builder and the raw-event-to-lean-fields mapping out of
+  `tools/pods_services/shared.py` into a new
+  `tools/support/k8s_events.py` (`involved_object_field_selector`,
+  `event_summary_fields`) — M-B4's `_fetch_pod_events` now calls the same
+  shared helpers `resource_events` does, instead of the pod-scoped
+  field-selector string being hand-rolled twice. `event_summary_fields`
+  returns a `TypedDict` (not a bare `dict[str, object]`) so
+  `**`-unpacking it into either Pydantic model's constructor stays fully
+  typed under `pyright --strict` — a bare dict return failed strict
+  typecheck on every unpacked keyword. New `tools/ops/paths.k8s_core_named_path`
+  (namespaced core-API path addressing one named resource plus an optional
+  subresource, e.g. `pods/{name}/log`) alongside the pre-existing
+  collection-only `k8s_core_ns_path`. No 2.6.5 regression: both the pod
+  log and core Events endpoints are unchanged raw Kubernetes core API,
+  identical on 2.6.5 and 2.14.3.
+  9 new tests (`tests/unit/test_diagnostics_pod_logs_tools.py`,
+  `tests/unit/test_diagnostics_resource_events_tools.py`) covering
+  single/multi-container resolution, the ambiguous-container clean error
+  (and that the log endpoint is never reached in that case), explicit
+  `container` skipping the discovery GET, `truncated` at and below the
+  cap, hard-cap clamping, the exact field selector, most-recent-first
+  ordering, the 20-event cap, and clean `RancherNotFoundError` propagation
+  for both tools — all stubbed, no live lab. Tool count 319 → 321
+  (`docs/tool-manifest.json`, README badges via `make tool-manifest` +
+  `make sync-readme-badges`).
+
 ## [1.40.0] — 2026-07-21 — Agent: Claude
 ### Added
 - **M-B1/B2 — `since`/`ageDays` + `reason`/`message` universal on every

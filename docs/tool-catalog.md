@@ -508,6 +508,18 @@ Note: optional Longhorn chart — tools 404 if chart isn't installed.
 | ✅ | rancher_find_services_without_endpoints | k8s-proxy | aggregate | `tools/ops/` |
 | ✅ | rancher_find_stalled_rollouts | k8s-proxy | aggregate | `tools/ops/` |
 
+### Diagnosis verbs — pod logs / any-resource events (2 tools — Track M / M-K7)
+
+| Status | Tool | Plane | Verb | Source |
+|---|---|---|---|---|
+| ✅ | rancher_pod_logs | k8s-proxy | get (subresource) | `tools/diagnostics/` |
+| ✅ | rancher_resource_events | k8s-proxy | list (field-selector) | `tools/diagnostics/` |
+
+Note: hand-written, not codegen — new operator verbs, not generic CRUD.
+`pod_describe` was considered and deliberately not built: `pod_get`
+(M-B4) already inlines `events[]` + status + conditions, so a separate
+describe tool would be redundant.
+
 ---
 
 ## Planned tools

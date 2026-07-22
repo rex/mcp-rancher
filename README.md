@@ -7,7 +7,7 @@
 <p align="center">
   <a href="https://github.com/rex/mcp-rancher/actions/workflows/validate.yml"><img src="https://img.shields.io/github/actions/workflow/status/rex/mcp-rancher/validate.yml?branch=main&label=CI" alt="CI" /></a>
   <a href="https://modelcontextprotocol.io"><img src="https://img.shields.io/badge/MCP-server-2b6cd0" alt="MCP server" /></a>
-  <a href="docs/tool-manifest.json"><img src="https://img.shields.io/badge/tools-319-2b6cd0" alt="319 tools" /></a>
+  <a href="docs/tool-manifest.json"><img src="https://img.shields.io/badge/tools-321-2b6cd0" alt="321 tools" /></a>
   <a href="https://www.python.org/"><img src="https://img.shields.io/badge/python-3.12%2B-3776ab?logo=python&logoColor=white" alt="Python 3.12+" /></a>
   <a href="https://github.com/microsoft/pyright"><img src="https://img.shields.io/badge/types-pyright%20strict-blue" alt="Pyright strict" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-lightgrey" alt="MIT license" /></a>
@@ -52,7 +52,7 @@ auditability, guardrails, and the management-plane view entirely.
 
 ## The tool surface
 
-**319 tools: 176 read-only · 143 writes · 38 destructive** — counted from the
+**321 tools: 178 read-only · 143 writes · 38 destructive** — counted from the
 registry itself, not by hand. [`docs/tool-manifest.json`](docs/tool-manifest.json)
 is **generated from the live FastMCP registry** (`make tool-manifest`) and a CI
 gate fails the build if it ever drifts from the code. Per-tool descriptions,

@@ -140,7 +140,19 @@ one-at-a-time (background + yield), never in parallel — version bumps serializ
 
 ## Wave D — new features (Opus design + Sonnet impl)
 
-- [ ] **M-K7** diagnosis verbs: `pod_logs`, `pod_describe`, `resource_events`.
+- [x] **M-K7** (v1.41.0) diagnosis verbs: `pod_logs`, `resource_events`.
+  `pod_describe` (the row's third tool) deliberately NOT built — M-B4
+  already inlines `events[]` + status + conditions onto `pod_get`, so a
+  separate describe would be redundant; narrowed from 3 to 2 genuinely-
+  missing verbs. New hand-written (not codegen) `tools/diagnostics/`
+  package. `rancher_pod_logs` reuses M-B4's exact k8s-proxy
+  `ManagementDiscoveryClient` approach (`RancherManagementClient.get_text`,
+  pre-existing on the client protocol — no new client method needed);
+  `rancher_resource_events` generalizes M-B4's pod-scoped events fetch to
+  any `kind`. The field-selector builder + raw-event-to-lean-fields mapping
+  were extracted out of `tools/pods_services/shared.py` into a new
+  `tools/support/k8s_events.py` so M-B4's fetch and this slice's fetch
+  share one implementation instead of two.
 - [ ] **M-B3** `find_*` populated-case enrichment + discoverability (cluster-wide
   sweep in the first line of each description or a named tool).
 - [ ] **M-K10** friendly cluster names (accept display name → resolve to id).

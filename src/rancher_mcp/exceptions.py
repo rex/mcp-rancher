@@ -103,3 +103,28 @@ class RancherRateLimitError(RancherMCPError):
     """
 
     error_code: str = "RATE_LIMITED"
+
+
+class RancherAmbiguousContainerError(RancherMCPError):
+    """Raised when a pod has multiple containers and none was specified.
+
+    ``pod_logs`` (M-K7) needs exactly one container to fetch logs from; a
+    multi-container pod with no ``container`` argument can't guess which one
+    the agent means. Carries the candidate names in ``hint`` so the agent
+    can retry immediately with ``container=<name>`` instead of a second
+    round trip just to discover them (ADR-0002 rule #4 — never make me call
+    twice for the obvious follow-up). Permanent, not retryable: the agent
+    must supply new information, not simply try again.
+    """
+
+    error_code: str = "AMBIGUOUS_CONTAINER"
+
+    def __init__(self, pod_name: str, containers: list[str]) -> None:
+        self.pod_name = pod_name
+        self.containers = containers
+        joined = ", ".join(containers)
+        super().__init__(
+            f"Pod {pod_name!r} has {len(containers)} containers; specify `container`. "
+            f"Available: {joined}"
+        )
+        self.hint = f"Retry with container=<name>. Available containers: {joined}"
