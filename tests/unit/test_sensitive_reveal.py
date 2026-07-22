@@ -21,7 +21,8 @@ from rancher_mcp.models.config_secrets import (
 from rancher_mcp.models.fleet_registration.cluster_registration_tokens import (
     RancherClusterRegistrationTokenDetail,
 )
-from rancher_mcp.tools.config_secrets import rancher_secret_get
+from rancher_mcp.rate_limit import reset_rate_limit_state
+from rancher_mcp.tools.config_secrets import rancher_secret_create, rancher_secret_get
 
 
 def _b64(text: str) -> str:
@@ -138,6 +139,29 @@ async def test_secret_get_reveal_true_returns_decoded_values() -> None:
     dumped = result.model_dump(by_alias=True)
     assert dumped["data"] == {"password": "secret", "api-key": "foobar"}  # pragma: allowlist secret
     assert dumped["dataKeys"] == ["api-key", "password"]
+
+
+async def test_secret_create_never_emits_values_no_reveal_input() -> None:
+    """`secret_create` has no `reveal` parameter at all — it must ALWAYS
+    suppress `data`, matching `secret_get`'s default (never its `reveal=True`
+    path). Regression guard for the M-SEC-era leak M-SEC-2 closes: create
+    reuses get's response-shaping pipeline, and previously nothing overrode
+    `data`, so whatever the payload decoded to rode along unmasked."""
+
+    reset_rate_limit_state()
+    result = await rancher_secret_create(
+        namespace="demo",
+        secret_name="new-secret",  # pragma: allowlist secret
+        string_data={"password": "hunter2"},  # pragma: allowlist secret
+        cluster_id="local",
+        instance="work",
+        settings=build_settings(),
+        client=StubConfigSecretsClient(),
+    )
+
+    dumped = result.model_dump(by_alias=True)
+    assert "data" not in dumped  # suppressed to {}, dropped by the L-0 envelope
+    assert dumped["dataKeys"] == ["password"]
 
 
 async def test_reveal_is_audited_identity_only() -> None:

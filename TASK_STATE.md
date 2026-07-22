@@ -80,10 +80,16 @@ shape. Maintainer ruling: gate the reveal behind an explicit parameter
   descriptor. No `_generated_*.py` hand-edited (`make codegen` regenerated
   `tools/config_secrets/_generated_secrets.py`).
 - Verified: `agenteval --schema-only` still **91.5/100, grade A** (only
-  pre-existing AE-32 findings remain); `make validate` green (900 tests).
+  pre-existing AE-32 findings remain); `make validate` green.
 - The `cloud_credential_get`/certificate-private-key follow-up that used to
   be tracked as "M-SEC-2" is retracked as **M-SEC-3** (still open) since this
   slice now owns the M-SEC-2 id.
+- **Follow-on (v1.45.1, v1.46.0):** this handoff note itself (patch, docs-only
+  — the version gate requires a bump per commit), then a regression test
+  (`test_secret_create_never_emits_values_no_reveal_input`) explicitly
+  asserting `secret_create`'s `data` key is absent outright — the pre-existing
+  create test only checked for absent plaintext strings, which the stub's
+  non-base64 response sentinel made a blind check either way. 901 tests green.
 
 ### 📌 HANDOFF (2026-07-21): Track N (agenteval agent-fitness) CLOSED — v1.43.0
 

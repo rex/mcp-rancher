@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.46.0] — 2026-07-22 — Agent: Claude
+### Added
+- `test_secret_create_never_emits_values_no_reveal_input` in
+  `tests/unit/test_sensitive_reveal.py`: explicit regression guard that
+  `rancher_secret_create` (v1.45.0's M-SEC-2 fix — it has no `reveal`
+  parameter of its own) never emits `data` at all, asserting the key's
+  outright absence rather than the absence of a specific string (the
+  existing create test's string checks were blind to this: the stub's
+  create-response sentinel isn't valid base64, so it never round-tripped
+  the real plaintext either way).
+
 ## [1.45.1] — 2026-07-22 — Agent: Claude
 ### Changed
 - Docs only: `TASK_STATE.md` §"Next Slice" handoff note for M-SEC-2 (v1.45.0),
