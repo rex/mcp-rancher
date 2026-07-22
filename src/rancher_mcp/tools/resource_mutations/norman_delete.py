@@ -104,7 +104,9 @@ async def rancher_norman_resource_delete_tool(
     params_json: str | None = None,
     instance: str | None = None,
 ) -> GenericResourceMutationResult:
-    """Public MCP wrapper for Norman generic delete."""
+    """Delete one Norman resource by schema id and resource id after an explicit
+    confirmation string, and report the deletion result — the untyped,
+    destructive escape hatch for resource types with no curated delete tool."""
 
     return await rancher_norman_resource_delete(
         schema_id=schema_id,

@@ -189,7 +189,9 @@ async def rancher_steve_resource_list_tool(
     params_json: str | None = None,
     instance: str | None = None,
 ) -> GenericResourceList:
-    """Public MCP wrapper for Steve generic list."""
+    """List any Steve Kubernetes-proxy resource collection by raw schema id, cluster,
+    and optional namespace with label or field selectors — the escape hatch for
+    kinds with no curated `rancher_*_list` tool yet."""
 
     return await rancher_steve_resource_list(
         schema_id=schema_id,
@@ -211,7 +213,9 @@ async def rancher_steve_resource_get_tool(
     namespace: str | None = None,
     instance: str | None = None,
 ) -> GenericResourceDetail:
-    """Public MCP wrapper for Steve generic get."""
+    """Fetch one Steve Kubernetes-proxy resource's full untyped payload by schema id,
+    cluster, and resource id — the escape hatch for kinds with no curated
+    `rancher_*_get` tool yet."""
 
     return await rancher_steve_resource_get(
         schema_id=schema_id,

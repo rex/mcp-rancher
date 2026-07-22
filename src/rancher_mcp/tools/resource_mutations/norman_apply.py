@@ -96,7 +96,9 @@ async def rancher_norman_resource_apply_tool(
     params_json: str | None = None,
     instance: str | None = None,
 ) -> GenericResourceMutationResult:
-    """Public MCP wrapper for Norman generic apply."""
+    """Replace one Norman resource's full body via PUT under any schema id and
+    return the updated object — the untyped escape hatch for updates no curated
+    apply tool yet covers."""
 
     return await rancher_norman_resource_apply(
         schema_id=schema_id,

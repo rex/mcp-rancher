@@ -137,9 +137,11 @@ async def rancher_find_stalled_rollouts_tool(
     cluster_id: str = "local",
     instance: str | None = None,
 ) -> StalledRolloutsList:
-    """Find stalled rollouts (deployments/statefulsets not converging).
+    """Scan deployments and statefulsets for replica counts that have not converged,
+    reporting each stalled rollout's desired, ready, and updated counts plus the
+    stuck reason.
 
-    Omit `namespace` to scan the whole cluster; pass it to scope to one.
+    Omit `namespace` to sweep the entire cluster instead of one namespace at a time.
     """
 
     return await rancher_find_stalled_rollouts(

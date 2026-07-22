@@ -7,7 +7,7 @@
   "tools": [
     {
       "name": "rancher_api_plane_list",
-      "description": "Public MCP wrapper for Rancher API plane discovery.",
+      "description": "List the Norman management-API and Steve Kubernetes-proxy planes available\n    on an instance, each with its root path and link count, to orient before\n    choosing norman_* vs steve_* tools.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -174,7 +174,7 @@
     },
     {
       "name": "rancher_capability_domain_list",
-      "description": "Return the catalog's capability domains.",
+      "description": "Report the capability catalog's resource domains — RBAC, storage, networking,\n    logging, and so on — with plane and resource counts per domain, useful for\n    orienting before drilling into one area.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -1139,7 +1139,7 @@
     },
     {
       "name": "rancher_cluster_health_check",
-      "description": "One-call cluster health check with conditions, components, and nodes.",
+      "description": "Diagnose one cluster in a single call: state, condition failures, unhealthy\n    components, and a node-readiness rollup, plus a derived list of concrete issues —\n    prefer this over separately fetching cluster and node details.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -1222,7 +1222,7 @@
     },
     {
       "name": "rancher_cluster_nodes_summary",
-      "description": "Per-cluster node health rollup: ready, not-ready, unschedulable.",
+      "description": "Roll up one cluster's nodes into ready, not-ready, and unschedulable counts\n    and report the tallies — a lighter-weight alternative to a full node listing\n    when only the totals matter.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -1625,7 +1625,7 @@
     },
     {
       "name": "rancher_clusters_health_summary",
-      "description": "Estate-wide cluster health summary with per-cluster health.",
+      "description": "Summarize health across every cluster on an instance in one call — per-cluster\n    state, node readiness, top issues, and a fleet-wide severity breakdown — the\n    fastest way to triage an entire estate.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -2788,7 +2788,7 @@
     },
     {
       "name": "rancher_find_failing_pods",
-      "description": "Find failing pods (CrashLoopBackOff, Pending, Failed, ImagePull errors).\n\n    Omit `namespace` to triage the entire cluster in one call; pass it to\n    scope to a single namespace.",
+      "description": "Scan for pods stuck in CrashLoopBackOff, ImagePullBackOff, Pending, Failed, or\n    Running-but-not-Ready, and report each with its reason, restart count, and\n    owning controller.\n\n    Omit `namespace` to sweep the entire cluster in one call instead of one\n    namespace at a time.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -2809,7 +2809,7 @@
     },
     {
       "name": "rancher_find_pdbs_blocking",
-      "description": "Find PDBs blocking maintenance (currently allowing zero disruptions).\n\n    Omit `namespace` to scan the whole cluster; pass it to scope to one.",
+      "description": "Scan pod disruption budgets that currently allow zero voluntary evictions and\n    report each with its healthy and desired counts plus the blocking reason —\n    explains why a drain or rollout is stuck waiting.\n\n    Omit `namespace` to sweep the entire cluster in one call.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -2830,7 +2830,7 @@
     },
     {
       "name": "rancher_find_services_without_endpoints",
-      "description": "Find services with no backing endpoints -- a fast outage signal.\n\n    Omit `namespace` to scan the whole cluster; pass it to scope to one.",
+      "description": "Scan services that have a selector but no matching endpoint addresses — a\n    fast signal that traffic is arriving nowhere — reporting each service's type\n    and selector.\n\n    Omit `namespace` to sweep the entire cluster in one call.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -2851,7 +2851,7 @@
     },
     {
       "name": "rancher_find_stalled_rollouts",
-      "description": "Find stalled rollouts (deployments/statefulsets not converging).\n\n    Omit `namespace` to scan the whole cluster; pass it to scope to one.",
+      "description": "Scan deployments and statefulsets for replica counts that have not converged,\n    reporting each stalled rollout's desired, ready, and updated counts plus the\n    stuck reason.\n\n    Omit `namespace` to sweep the entire cluster instead of one namespace at a time.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -2872,7 +2872,7 @@
     },
     {
       "name": "rancher_find_unbound_pvcs",
-      "description": "Find unbound PVCs (Pending/Lost) — storage blocking app startup.\n\n    Omit `namespace` to scan the whole cluster; pass it to scope to one.",
+      "description": "Scan persistent volume claims stuck outside the Bound phase and report each\n    with its storage class, requested size, and stall reason — the quickest way\n    to spot storage blocking a pod from starting.\n\n    Omit `namespace` to sweep the entire cluster at once.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -2893,7 +2893,7 @@
     },
     {
       "name": "rancher_find_unready_nodes",
-      "description": "Find unready or unschedulable nodes across clusters.",
+      "description": "Identify nodes that are not Ready or have been marked unschedulable, reporting\n    each with its roles, reason, and how long the condition has held. Omit\n    `cluster_id` to sweep every cluster on the instance at once.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -3602,7 +3602,7 @@
     },
     {
       "name": "rancher_instance_list",
-      "description": "Return the configured Rancher instances.",
+      "description": "List every Rancher instance this deployment knows about, each with its base\n    URL and target version, so an agent can pick a valid `instance` argument before\n    calling any other tool.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -4501,7 +4501,7 @@
     },
     {
       "name": "rancher_namespace_workloads_summary",
-      "description": "One-call namespace workload rollup with pod counts and controller readiness.",
+      "description": "Aggregate one namespace's pod-phase tallies and deployment, daemonset, and\n    statefulset readiness into a single rollup, saving the four separate calls\n    otherwise needed to answer \"is this namespace healthy\".",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -4770,7 +4770,7 @@
     },
     {
       "name": "rancher_node_cordon",
-      "description": "Public MCP wrapper: cordon a Rancher-managed node (mark unschedulable).",
+      "description": "Mark a Rancher-managed node unschedulable so the scheduler stops placing new\n    pods there, without evicting anything already running, and return the action\n    result — reversible with `rancher_node_uncordon`.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -4916,7 +4916,7 @@
     },
     {
       "name": "rancher_node_uncordon",
-      "description": "Public MCP wrapper: uncordon a Rancher-managed node (restore scheduling).",
+      "description": "Restore scheduling on a previously cordoned Rancher-managed node so the\n    scheduler resumes placing new pods there, and return the action result.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -4978,7 +4978,7 @@
     },
     {
       "name": "rancher_norman_resource_action_invoke",
-      "description": "Public MCP wrapper for Norman generic action invocation.",
+      "description": "Invoke a named Norman resource action from that resource's own `actions`\n    links, with an optional JSON body, and return its response — the escape\n    hatch for lifecycle operations no curated tool wraps yet.",
       "read_only": false,
       "destructive": true,
       "idempotent": null,
@@ -5007,7 +5007,7 @@
     },
     {
       "name": "rancher_norman_resource_apply",
-      "description": "Public MCP wrapper for Norman generic apply.",
+      "description": "Replace one Norman resource's full body via PUT under any schema id and\n    return the updated object — the untyped escape hatch for updates no curated\n    apply tool yet covers.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -5036,7 +5036,7 @@
     },
     {
       "name": "rancher_norman_resource_create",
-      "description": "Public MCP wrapper for Norman generic create.",
+      "description": "Create a new Norman resource from a raw JSON payload under any schema id and\n    return the resulting object — the untyped escape hatch for resource types\n    with no curated create tool yet.",
       "read_only": false,
       "destructive": false,
       "idempotent": false,
@@ -5061,7 +5061,7 @@
     },
     {
       "name": "rancher_norman_resource_delete",
-      "description": "Public MCP wrapper for Norman generic delete.",
+      "description": "Delete one Norman resource by schema id and resource id after an explicit\n    confirmation string, and report the deletion result — the untyped,\n    destructive escape hatch for resource types with no curated delete tool.",
       "read_only": false,
       "destructive": true,
       "idempotent": true,
@@ -5094,7 +5094,7 @@
     },
     {
       "name": "rancher_norman_resource_get",
-      "description": "Public MCP wrapper for Norman generic get.",
+      "description": "Fetch one Norman resource's full untyped payload by schema id and resource\n    id — the escape hatch for resource types with no curated `rancher_*_get`\n    tool yet.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -5115,7 +5115,7 @@
     },
     {
       "name": "rancher_norman_resource_link_follow",
-      "description": "Public MCP wrapper for Norman generic link follow.",
+      "description": "Follow a named Norman resource link from that resource's own `links` map\n    and return the linked payload — the escape hatch for related data no\n    curated tool exposes yet.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -5140,7 +5140,7 @@
     },
     {
       "name": "rancher_norman_resource_list",
-      "description": "Public MCP wrapper for Norman generic list.",
+      "description": "List any Norman resource collection by raw schema id with full untyped\n    payloads and server-side filtering — the escape hatch for resource types\n    with no curated `rancher_*_list` tool yet.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -5181,7 +5181,7 @@
     },
     {
       "name": "rancher_norman_resource_patch",
-      "description": "Public MCP wrapper for Norman generic patch.",
+      "description": "Merge a partial JSON payload into one existing Norman resource under any\n    schema id and return the patched object — the untyped escape hatch for a\n    scoped field update with no curated patch tool.",
       "read_only": false,
       "destructive": false,
       "idempotent": false,
@@ -5210,7 +5210,7 @@
     },
     {
       "name": "rancher_norman_schema_get",
-      "description": "Public MCP wrapper for Norman schema detail.",
+      "description": "Fetch one Norman schema's field definitions, required attributes, and\n    supported collection actions by schema id, for constructing a valid create,\n    apply, or patch payload.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -5227,7 +5227,7 @@
     },
     {
       "name": "rancher_norman_schema_list",
-      "description": "Public MCP wrapper for Norman schema inventory.",
+      "description": "List every Norman resource schema Rancher exposes on the management plane,\n    identifying which type ids are valid for `rancher_norman_resource_list` and\n    its siblings.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -6484,7 +6484,7 @@
     },
     {
       "name": "rancher_project_health_summary",
-      "description": "One-call project health overview: state, namespaces, pods, and workload readiness.",
+      "description": "Aggregate one project's namespaces, pod counts, failing-pod tallies, and\n    unhealthy-workload counts into a single rollup, saving the per-namespace calls\n    otherwise needed to answer \"is this project healthy\".",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -7659,7 +7659,7 @@
     },
     {
       "name": "rancher_server_health",
-      "description": "Public MCP wrapper for Rancher server health.",
+      "description": "Check the target instance's `/healthz` endpoint and report whether the Rancher\n    management server is reachable and responding — a first liveness probe before\n    deeper diagnosis.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -7672,7 +7672,7 @@
     },
     {
       "name": "rancher_server_profile_get",
-      "description": "Return static server profile metadata.",
+      "description": "Return static deployment metadata for one Rancher instance: its configured URL,\n    primary target version, and compatibility floor, without making a network call.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -7689,7 +7689,7 @@
     },
     {
       "name": "rancher_server_version",
-      "description": "Public MCP wrapper for Rancher server version.",
+      "description": "Fetch the Rancher server's reported version alongside this MCP server's own\n    build version, so an agent can confirm which API surface and capability set it\n    is talking to.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -8402,7 +8402,7 @@
     },
     {
       "name": "rancher_steve_resource_action_invoke",
-      "description": "Public MCP wrapper for Steve generic action invocation.",
+      "description": "Invoke a named Steve Kubernetes-proxy resource action with an optional JSON\n    body and return its response — the escape hatch for lifecycle operations no\n    curated tool wraps yet.",
       "read_only": false,
       "destructive": true,
       "idempotent": null,
@@ -8439,7 +8439,7 @@
     },
     {
       "name": "rancher_steve_resource_apply",
-      "description": "Public MCP wrapper for Steve generic apply.",
+      "description": "Apply one Steve Kubernetes-proxy resource via Kubernetes server-side apply\n    under any schema id and return the updated object — the untyped escape hatch\n    for updates with no curated apply tool yet.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -8484,7 +8484,7 @@
     },
     {
       "name": "rancher_steve_resource_create",
-      "description": "Public MCP wrapper for Steve generic create.",
+      "description": "Create a new Steve Kubernetes-proxy resource from a raw JSON payload under any\n    schema id and return the resulting object — the untyped escape hatch when no\n    curated create tool exists for that kind.",
       "read_only": false,
       "destructive": false,
       "idempotent": false,
@@ -8517,7 +8517,7 @@
     },
     {
       "name": "rancher_steve_resource_delete",
-      "description": "Public MCP wrapper for Steve generic delete.",
+      "description": "Delete one Steve Kubernetes-proxy resource by schema id and resource id after\n    an explicit confirmation string, and report the deletion result — the untyped,\n    destructive escape hatch for kinds with no curated delete tool.",
       "read_only": false,
       "destructive": true,
       "idempotent": true,
@@ -8558,7 +8558,7 @@
     },
     {
       "name": "rancher_steve_resource_get",
-      "description": "Public MCP wrapper for Steve generic get.",
+      "description": "Fetch one Steve Kubernetes-proxy resource's full untyped payload by schema id,\n    cluster, and resource id — the escape hatch for kinds with no curated\n    `rancher_*_get` tool yet.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -8587,7 +8587,7 @@
     },
     {
       "name": "rancher_steve_resource_link_follow",
-      "description": "Public MCP wrapper for Steve generic link follow.",
+      "description": "Follow a named Steve Kubernetes-proxy resource link and return the linked\n    payload — the escape hatch for related data no curated tool exposes yet.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -8620,7 +8620,7 @@
     },
     {
       "name": "rancher_steve_resource_list",
-      "description": "Public MCP wrapper for Steve generic list.",
+      "description": "List any Steve Kubernetes-proxy resource collection by raw schema id, cluster,\n    and optional namespace with label or field selectors — the escape hatch for\n    kinds with no curated `rancher_*_list` tool yet.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -8665,7 +8665,7 @@
     },
     {
       "name": "rancher_steve_resource_patch",
-      "description": "Public MCP wrapper for Steve generic patch.",
+      "description": "Merge a JSON merge-patch into one existing Steve Kubernetes-proxy resource\n    under any schema id and return the patched object — the untyped escape hatch\n    for a scoped field update with no curated patch tool.",
       "read_only": false,
       "destructive": false,
       "idempotent": false,
@@ -8702,7 +8702,7 @@
     },
     {
       "name": "rancher_steve_resource_watch",
-      "description": "Public MCP wrapper for Steve generic watch.",
+      "description": "Stream change events for a Steve Kubernetes-proxy resource collection up to a\n    bounded event count and return them as one batch — the escape hatch for\n    watching kinds with no curated tool yet.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -8747,7 +8747,7 @@
     },
     {
       "name": "rancher_steve_schema_get",
-      "description": "Public MCP wrapper for Steve schema detail.",
+      "description": "Fetch one Steve schema's field definitions and supported verbs for a target\n    cluster, for constructing a valid create, apply, patch, or watch payload by\n    schema id.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -8768,7 +8768,7 @@
     },
     {
       "name": "rancher_steve_schema_list",
-      "description": "Public MCP wrapper for Steve schema inventory.",
+      "description": "List every Steve Kubernetes-proxy schema available for a target cluster,\n    identifying which type ids are valid for `rancher_steve_resource_list` and\n    its siblings.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,

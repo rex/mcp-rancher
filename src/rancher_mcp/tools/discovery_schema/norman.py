@@ -72,7 +72,9 @@ async def rancher_norman_schema_get(
 
 
 async def rancher_norman_schema_list_tool(instance: str | None = None) -> SchemaList:
-    """Public MCP wrapper for Norman schema inventory."""
+    """List every Norman resource schema Rancher exposes on the management plane,
+    identifying which type ids are valid for `rancher_norman_resource_list` and
+    its siblings."""
 
     return await rancher_norman_schema_list(instance=instance)
 
@@ -81,6 +83,8 @@ async def rancher_norman_schema_get_tool(
     schema_id: str,
     instance: str | None = None,
 ) -> SchemaDetail:
-    """Public MCP wrapper for Norman schema detail."""
+    """Fetch one Norman schema's field definitions, required attributes, and
+    supported collection actions by schema id, for constructing a valid create,
+    apply, or patch payload."""
 
     return await rancher_norman_schema_get(schema_id, instance=instance)

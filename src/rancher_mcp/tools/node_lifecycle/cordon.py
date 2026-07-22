@@ -92,7 +92,9 @@ async def rancher_node_cordon_tool(
     node_id: str,
     instance: str | None = None,
 ) -> GenericResourceActionResult:
-    """Public MCP wrapper: cordon a Rancher-managed node (mark unschedulable)."""
+    """Mark a Rancher-managed node unschedulable so the scheduler stops placing new
+    pods there, without evicting anything already running, and return the action
+    result — reversible with `rancher_node_uncordon`."""
 
     return await rancher_node_cordon(node_id=node_id, instance=instance)
 
@@ -101,6 +103,7 @@ async def rancher_node_uncordon_tool(
     node_id: str,
     instance: str | None = None,
 ) -> GenericResourceActionResult:
-    """Public MCP wrapper: uncordon a Rancher-managed node (restore scheduling)."""
+    """Restore scheduling on a previously cordoned Rancher-managed node so the
+    scheduler resumes placing new pods there, and return the action result."""
 
     return await rancher_node_uncordon(node_id=node_id, instance=instance)

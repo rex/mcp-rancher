@@ -132,7 +132,9 @@ async def rancher_cluster_health_check_tool(
     instance: str | None = None,
     ctx: Context[Any, Any, Any] | None = None,
 ) -> ClusterHealthCheck:
-    """One-call cluster health check with conditions, components, and nodes."""
+    """Diagnose one cluster in a single call: state, condition failures, unhealthy
+    components, and a node-readiness rollup, plus a derived list of concrete issues —
+    prefer this over separately fetching cluster and node details."""
 
     return await rancher_cluster_health_check(
         cluster_id=cluster_id,
@@ -230,7 +232,9 @@ async def rancher_clusters_health_summary_tool(
     instance: str | None = None,
     ctx: Context[Any, Any, Any] | None = None,
 ) -> ClustersHealthSummary:
-    """Estate-wide cluster health summary with per-cluster health."""
+    """Summarize health across every cluster on an instance in one call — per-cluster
+    state, node readiness, top issues, and a fleet-wide severity breakdown — the
+    fastest way to triage an entire estate."""
 
     return await rancher_clusters_health_summary(instance=instance, ctx=ctx)
 
@@ -274,7 +278,9 @@ async def rancher_cluster_nodes_summary_tool(
     cluster_id: str,
     instance: str | None = None,
 ) -> NodeHealthRollup:
-    """Per-cluster node health rollup: ready, not-ready, unschedulable."""
+    """Roll up one cluster's nodes into ready, not-ready, and unschedulable counts
+    and report the tallies — a lighter-weight alternative to a full node listing
+    when only the totals matter."""
 
     return await rancher_cluster_nodes_summary(
         cluster_id=cluster_id,

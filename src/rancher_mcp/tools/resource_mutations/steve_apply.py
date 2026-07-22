@@ -152,7 +152,9 @@ async def rancher_steve_resource_apply_tool(
     params_json: str | None = None,
     instance: str | None = None,
 ) -> GenericResourceMutationResult:
-    """Public MCP wrapper for Steve generic apply."""
+    """Apply one Steve Kubernetes-proxy resource via Kubernetes server-side apply
+    under any schema id and return the updated object — the untyped escape hatch
+    for updates with no curated apply tool yet."""
 
     return await rancher_steve_resource_apply(
         schema_id=schema_id,

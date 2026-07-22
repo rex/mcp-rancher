@@ -191,10 +191,12 @@ async def rancher_find_failing_pods_tool(
     cluster_id: str = "local",
     instance: str | None = None,
 ) -> FailingPodsList:
-    """Find failing pods (CrashLoopBackOff, Pending, Failed, ImagePull errors).
+    """Scan for pods stuck in CrashLoopBackOff, ImagePullBackOff, Pending, Failed, or
+    Running-but-not-Ready, and report each with its reason, restart count, and
+    owning controller.
 
-    Omit `namespace` to triage the entire cluster in one call; pass it to
-    scope to a single namespace.
+    Omit `namespace` to sweep the entire cluster in one call instead of one
+    namespace at a time.
     """
 
     return await rancher_find_failing_pods(

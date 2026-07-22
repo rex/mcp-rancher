@@ -15,7 +15,9 @@ from rancher_mcp.services.instances import build_instance_list, build_server_pro
 
 
 async def rancher_instance_list(settings: AppSettings | None = None) -> InstanceList:
-    """Return the configured Rancher instances."""
+    """List every Rancher instance this deployment knows about, each with its base
+    URL and target version, so an agent can pick a valid `instance` argument before
+    calling any other tool."""
 
     resolved_settings = settings or get_settings()
     catalog = get_capability_catalog(resolved_settings.catalog_path)
@@ -29,7 +31,9 @@ async def rancher_capability_domain_list(
     settings: AppSettings | None = None,
     catalog: CapabilityCatalog | None = None,
 ) -> CapabilityDomainList:
-    """Return the catalog's capability domains."""
+    """Report the capability catalog's resource domains — RBAC, storage, networking,
+    logging, and so on — with plane and resource counts per domain, useful for
+    orienting before drilling into one area."""
 
     resolved_settings = settings or get_settings()
     resolved_catalog = catalog or get_capability_catalog(resolved_settings.catalog_path)
@@ -54,7 +58,8 @@ async def rancher_server_profile_get(
     settings: AppSettings | None = None,
     catalog: CapabilityCatalog | None = None,
 ) -> ServerProfile:
-    """Return static server profile metadata."""
+    """Return static deployment metadata for one Rancher instance: its configured URL,
+    primary target version, and compatibility floor, without making a network call."""
 
     resolved_settings = settings or get_settings()
     resolved_catalog = catalog or get_capability_catalog(resolved_settings.catalog_path)

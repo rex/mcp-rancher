@@ -102,7 +102,8 @@ async def rancher_steve_resource_link_follow_tool(
     namespace: str | None = None,
     instance: str | None = None,
 ) -> GenericResourceLinkResult:
-    """Public MCP wrapper for Steve generic link follow."""
+    """Follow a named Steve Kubernetes-proxy resource link and return the linked
+    payload — the escape hatch for related data no curated tool exposes yet."""
 
     return await rancher_steve_resource_link_follow(
         schema_id=schema_id,

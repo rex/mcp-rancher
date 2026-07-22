@@ -114,7 +114,9 @@ async def rancher_steve_resource_action_invoke_tool(
     payload_json: str | None = None,
     instance: str | None = None,
 ) -> GenericResourceActionResult:
-    """Public MCP wrapper for Steve generic action invocation."""
+    """Invoke a named Steve Kubernetes-proxy resource action with an optional JSON
+    body and return its response — the escape hatch for lifecycle operations no
+    curated tool wraps yet."""
 
     return await rancher_steve_resource_action_invoke(
         schema_id=schema_id,

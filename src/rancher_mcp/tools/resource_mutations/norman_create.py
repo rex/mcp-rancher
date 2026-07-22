@@ -90,7 +90,9 @@ async def rancher_norman_resource_create_tool(
     params_json: str | None = None,
     instance: str | None = None,
 ) -> GenericResourceMutationResult:
-    """Public MCP wrapper for Norman generic create."""
+    """Create a new Norman resource from a raw JSON payload under any schema id and
+    return the resulting object — the untyped escape hatch for resource types
+    with no curated create tool yet."""
 
     return await rancher_norman_resource_create(
         schema_id=schema_id,

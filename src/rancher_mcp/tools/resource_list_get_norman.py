@@ -154,7 +154,9 @@ async def rancher_norman_resource_list_tool(
     params_json: str | None = None,
     instance: str | None = None,
 ) -> GenericResourceList:
-    """Public MCP wrapper for Norman generic list."""
+    """List any Norman resource collection by raw schema id with full untyped
+    payloads and server-side filtering — the escape hatch for resource types
+    with no curated `rancher_*_list` tool yet."""
 
     return await rancher_norman_resource_list(
         schema_id=schema_id,
@@ -173,7 +175,9 @@ async def rancher_norman_resource_get_tool(
     resource_id: str,
     instance: str | None = None,
 ) -> GenericResourceDetail:
-    """Public MCP wrapper for Norman generic get."""
+    """Fetch one Norman resource's full untyped payload by schema id and resource
+    id — the escape hatch for resource types with no curated `rancher_*_get`
+    tool yet."""
 
     return await rancher_norman_resource_get(
         schema_id=schema_id,

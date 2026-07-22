@@ -151,7 +151,9 @@ async def rancher_steve_resource_watch_tool(
     params_json: str | None = None,
     instance: str | None = None,
 ) -> GenericResourceWatchResult:
-    """Public MCP wrapper for Steve generic watch."""
+    """Stream change events for a Steve Kubernetes-proxy resource collection up to a
+    bounded event count and return them as one batch — the escape hatch for
+    watching kinds with no curated tool yet."""
 
     return await rancher_steve_resource_watch(
         schema_id=schema_id,

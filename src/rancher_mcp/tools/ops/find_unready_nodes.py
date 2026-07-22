@@ -96,7 +96,9 @@ async def rancher_find_unready_nodes_tool(
     cluster_id: str | None = None,
     instance: str | None = None,
 ) -> UnreadyNodesList:
-    """Find unready or unschedulable nodes across clusters."""
+    """Identify nodes that are not Ready or have been marked unschedulable, reporting
+    each with its roles, reason, and how long the condition has held. Omit
+    `cluster_id` to sweep every cluster on the instance at once."""
 
     return await rancher_find_unready_nodes(
         cluster_id=cluster_id,

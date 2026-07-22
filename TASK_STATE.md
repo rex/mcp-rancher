@@ -54,6 +54,25 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 
 ## Next Slice
 
+### 📌 HANDOFF (2026-07-21): Track N (agenteval agent-fitness) CLOSED — v1.43.0
+
+Orthogonal to Track K below (untouched, still the open priority). The vendored
+`agenteval` fitness harness (`agenteval/`, gitignored) flagged **AE-20**
+("description enables blind selection") as the dominant schema-level defect.
+Closed in two slices, detail in `docs/track-m-plan.md` Track N:
+- **N-1 (v1.42.0)** — ~250 codegen'd tool descriptions (6 wrapper docstrings in
+  `scripts/codegen/templates/tool_module.py.j2`). AE-20 317 → 40 findings,
+  schema score 37.8 → 81.4 (grade F → B).
+- **N-2 (v1.43.0)** — the 40 remaining hand-written tool docstrings (discovery/
+  server, Norman/Steve schema, `ops/` health-checks + `find_*` finders, generic
+  Norman/Steve resource escape hatches, node cordon/uncordon). AE-20 40 → 0,
+  schema score 81.4 → **91.5 (grade A)**. Verified via
+  `uv run python -m agenteval --schema-only`; `make validate` green;
+  `docs/tool-manifest.json` regenerated; no `_generated_*.py` touched.
+
+Remaining schema-only findings are all pre-existing AE-32 (namespace required
+on some triage tools) — not part of this initiative's scope.
+
 ### 🔴 PRIORITY (2026-07-20): Production usability remediation — Track K IN PROGRESS
 
 Two live production exercises against the 2.9.3 / 12-cluster estate (a

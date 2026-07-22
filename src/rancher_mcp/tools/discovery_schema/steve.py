@@ -93,7 +93,9 @@ async def rancher_steve_schema_list_tool(
     cluster_id: str = "local",
     instance: str | None = None,
 ) -> SchemaList:
-    """Public MCP wrapper for Steve schema inventory."""
+    """List every Steve Kubernetes-proxy schema available for a target cluster,
+    identifying which type ids are valid for `rancher_steve_resource_list` and
+    its siblings."""
 
     return await rancher_steve_schema_list(cluster_id=cluster_id, instance=instance)
 
@@ -103,7 +105,9 @@ async def rancher_steve_schema_get_tool(
     cluster_id: str = "local",
     instance: str | None = None,
 ) -> SchemaDetail:
-    """Public MCP wrapper for Steve schema detail."""
+    """Fetch one Steve schema's field definitions and supported verbs for a target
+    cluster, for constructing a valid create, apply, patch, or watch payload by
+    schema id."""
 
     return await rancher_steve_schema_get(
         schema_id,

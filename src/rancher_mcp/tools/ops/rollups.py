@@ -181,7 +181,9 @@ async def rancher_namespace_workloads_summary_tool(
     cluster_id: str = "local",
     instance: str | None = None,
 ) -> NamespaceWorkloadsSummary:
-    """One-call namespace workload rollup with pod counts and controller readiness."""
+    """Aggregate one namespace's pod-phase tallies and deployment, daemonset, and
+    statefulset readiness into a single rollup, saving the four separate calls
+    otherwise needed to answer "is this namespace healthy"."""
 
     return await rancher_namespace_workloads_summary(
         namespace=namespace,
@@ -341,7 +343,9 @@ async def rancher_project_health_summary_tool(
     instance: str | None = None,
     ctx: Context[Any, Any, Any] | None = None,
 ) -> ProjectHealthSummary:
-    """One-call project health overview: state, namespaces, pods, and workload readiness."""
+    """Aggregate one project's namespaces, pod counts, failing-pod tallies, and
+    unhealthy-workload counts into a single rollup, saving the per-namespace calls
+    otherwise needed to answer "is this project healthy"."""
 
     return await rancher_project_health_summary(
         project_id=project_id,

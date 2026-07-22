@@ -143,7 +143,9 @@ async def rancher_steve_resource_delete_tool(
     params_json: str | None = None,
     instance: str | None = None,
 ) -> GenericResourceMutationResult:
-    """Public MCP wrapper for Steve generic delete."""
+    """Delete one Steve Kubernetes-proxy resource by schema id and resource id after
+    an explicit confirmation string, and report the deletion result — the untyped,
+    destructive escape hatch for kinds with no curated delete tool."""
 
     return await rancher_steve_resource_delete(
         schema_id=schema_id,

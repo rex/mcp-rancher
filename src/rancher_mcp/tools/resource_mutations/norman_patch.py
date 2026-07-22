@@ -106,7 +106,9 @@ async def rancher_norman_resource_patch_tool(
     params_json: str | None = None,
     instance: str | None = None,
 ) -> GenericResourceMutationResult:
-    """Public MCP wrapper for Norman generic patch."""
+    """Merge a partial JSON payload into one existing Norman resource under any
+    schema id and return the patched object — the untyped escape hatch for a
+    scoped field update with no curated patch tool."""
 
     return await rancher_norman_resource_patch(
         schema_id=schema_id,

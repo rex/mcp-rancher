@@ -91,9 +91,11 @@ async def rancher_find_pdbs_blocking_tool(
     cluster_id: str = "local",
     instance: str | None = None,
 ) -> PdbBlockersList:
-    """Find PDBs blocking maintenance (currently allowing zero disruptions).
+    """Scan pod disruption budgets that currently allow zero voluntary evictions and
+    report each with its healthy and desired counts plus the blocking reason —
+    explains why a drain or rollout is stuck waiting.
 
-    Omit `namespace` to scan the whole cluster; pass it to scope to one.
+    Omit `namespace` to sweep the entire cluster in one call.
     """
 
     return await rancher_find_pdbs_blocking(

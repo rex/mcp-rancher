@@ -66,12 +66,16 @@ async def rancher_server_version(
 
 
 async def rancher_server_health_tool(instance: str | None = None) -> ServerHealth:
-    """Public MCP wrapper for Rancher server health."""
+    """Check the target instance's `/healthz` endpoint and report whether the Rancher
+    management server is reachable and responding — a first liveness probe before
+    deeper diagnosis."""
 
     return await rancher_server_health(instance=instance)
 
 
 async def rancher_server_version_tool(instance: str | None = None) -> ServerVersion:
-    """Public MCP wrapper for Rancher server version."""
+    """Fetch the Rancher server's reported version alongside this MCP server's own
+    build version, so an agent can confirm which API surface and capability set it
+    is talking to."""
 
     return await rancher_server_version(instance=instance)

@@ -153,8 +153,9 @@ one-at-a-time (background + yield), never in parallel — version bumps serializ
   were extracted out of `tools/pods_services/shared.py` into a new
   `tools/support/k8s_events.py` so M-B4's fetch and this slice's fetch
   share one implementation instead of two.
-- [ ] **M-B3** `find_*` populated-case enrichment + discoverability (cluster-wide
-  sweep in the first line of each description or a named tool).
+- [ ] **M-B3** `find_*` populated-case enrichment (discoverability half — the
+  cluster-wide sweep now named in each finder's own description — shipped via
+  N-2/v1.43.0 below; the populated-case enrichment half is still open).
 - [ ] **M-K10** friendly cluster names (accept display name → resolve to id).
 - [ ] **M-K11** audit hook (structured audit sink for writes + sensitive reveals).
 - [!] **M-K9** break-glass / node-local mode — SURFACE: gated on ADR-0001
@@ -167,3 +168,15 @@ one-at-a-time (background + yield), never in parallel — version bumps serializ
   genuinely audited (via M-SEC's `apply_sensitive_reveal_audit`), so the claim is true.
 - [!] **M-K12** `instance_list` `primaryTargetVersion` label — SURFACE: needs the
   `catalog/capabilities.yaml primary_target` (2.6.5 vs 2.9.3) decision.
+
+## Track N — agent-fitness (agenteval)
+
+Vendored `agenteval` fitness harness (`agenteval/`, gitignored) grades the
+server's agent-usability against a fixed doctrine (`agenteval/doctrine.py`).
+Schema-only run: `uv run python -m agenteval --schema-only`.
+
+- [x] **N-1** (v1.42.0) ~250 codegen'd tool descriptions (6 wrapper docstrings in
+  `scripts/codegen/templates/tool_module.py.j2`) → AE-20 317 → 40 findings,
+  schema score 37.8 → 81.4 (grade F → B).
+- [x] **N-2** (v1.43.0) 40 hand-written tool descriptions → AE-20 ~0, schema score
+  81.4 → 91.5 (grade B → A).

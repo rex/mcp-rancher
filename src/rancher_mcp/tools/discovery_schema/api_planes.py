@@ -78,6 +78,8 @@ async def rancher_api_plane_list_tool(
     instance: str | None = None,
     cluster_id: str = "local",
 ) -> APIPlaneList:
-    """Public MCP wrapper for Rancher API plane discovery."""
+    """List the Norman management-API and Steve Kubernetes-proxy planes available
+    on an instance, each with its root path and link count, to orient before
+    choosing norman_* vs steve_* tools."""
 
     return await rancher_api_plane_list(instance=instance, cluster_id=cluster_id)

@@ -82,9 +82,11 @@ async def rancher_find_unbound_pvcs_tool(
     cluster_id: str = "local",
     instance: str | None = None,
 ) -> UnboundPvcsList:
-    """Find unbound PVCs (Pending/Lost) — storage blocking app startup.
+    """Scan persistent volume claims stuck outside the Bound phase and report each
+    with its storage class, requested size, and stall reason — the quickest way
+    to spot storage blocking a pod from starting.
 
-    Omit `namespace` to scan the whole cluster; pass it to scope to one.
+    Omit `namespace` to sweep the entire cluster at once.
     """
 
     return await rancher_find_unbound_pvcs(

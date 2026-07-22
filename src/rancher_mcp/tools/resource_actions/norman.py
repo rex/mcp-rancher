@@ -170,7 +170,9 @@ async def rancher_norman_resource_action_invoke_tool(
     payload_json: str | None = None,
     instance: str | None = None,
 ) -> GenericResourceActionResult:
-    """Public MCP wrapper for Norman generic action invocation."""
+    """Invoke a named Norman resource action from that resource's own `actions`
+    links, with an optional JSON body, and return its response — the escape
+    hatch for lifecycle operations no curated tool wraps yet."""
 
     return await rancher_norman_resource_action_invoke(
         schema_id=schema_id,
@@ -187,7 +189,9 @@ async def rancher_norman_resource_link_follow_tool(
     link_name: str,
     instance: str | None = None,
 ) -> GenericResourceLinkResult:
-    """Public MCP wrapper for Norman generic link follow."""
+    """Follow a named Norman resource link from that resource's own `links` map
+    and return the linked payload — the escape hatch for related data no
+    curated tool exposes yet."""
 
     return await rancher_norman_resource_link_follow(
         schema_id=schema_id,

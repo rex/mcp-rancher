@@ -121,7 +121,9 @@ async def rancher_steve_resource_create_tool(
     params_json: str | None = None,
     instance: str | None = None,
 ) -> GenericResourceMutationResult:
-    """Public MCP wrapper for Steve generic create."""
+    """Create a new Steve Kubernetes-proxy resource from a raw JSON payload under any
+    schema id and return the resulting object — the untyped escape hatch when no
+    curated create tool exists for that kind."""
 
     return await rancher_steve_resource_create(
         schema_id=schema_id,

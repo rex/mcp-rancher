@@ -110,9 +110,11 @@ async def rancher_find_services_without_endpoints_tool(
     cluster_id: str = "local",
     instance: str | None = None,
 ) -> ServicesWithoutEndpointsList:
-    """Find services with no backing endpoints -- a fast outage signal.
+    """Scan services that have a selector but no matching endpoint addresses — a
+    fast signal that traffic is arriving nowhere — reporting each service's type
+    and selector.
 
-    Omit `namespace` to scan the whole cluster; pass it to scope to one.
+    Omit `namespace` to sweep the entire cluster in one call.
     """
 
     return await rancher_find_services_without_endpoints(

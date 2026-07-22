@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.43.0] — 2026-07-21 — Agent: Claude
+### Changed
+- **N-2 — 40 hand-written tool descriptions (agent-fitness AE-20).** N-1 fixed the
+  ~250 codegen'd tools; the 40 hand-written tools it couldn't touch — discovery/server
+  (6), Norman/Steve schema discovery (4), the `ops/` health-check and `find_*` finders
+  (11), the generic Norman/Steve resource escape hatches (17), and node
+  cordon/uncordon (2) — all still opened with `"Public MCP wrapper for..."` or
+  otherwise restated their own name, failing AE-20 ("description enables blind
+  selection"). Rewrote every one of the 40 `_tool` wrapper docstrings (the function
+  FastMCP actually registers and grades) to name concrete return content and, for the
+  escape-hatch and finder tools, when to prefer them over curated neighbours — e.g.
+  the `find_*` finders now call out that their `namespace`/`cluster_id` filter is
+  optional and sweeps the whole cluster/instance when omitted, their most powerful
+  and most-missed mode. Measured against the `agenteval` fitness harness (schema-only):
+  **81.4 → 91.5 (grade B → A)**, AE-20 findings **40 → 0**. Remaining findings are all
+  pre-existing AE-32 (namespace-required triage tools), out of this slice's scope.
+  Regenerated `docs/tool-manifest.json`; no `_generated_*.py` files touched.
+
 ## [1.42.0] — 2026-07-21 — Agent: Claude
 ### Changed
 - **N-1 — real tool descriptions (agent-fitness AE-20).** Rewrote the 6 generic wrapper
