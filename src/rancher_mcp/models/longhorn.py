@@ -99,7 +99,7 @@ class RancherLonghornVolumeList(RancherModel):
 
     instance: str
     cluster_id: str
-    namespace: str
+    namespace: str | None
     volume_count: int = Field(
         validation_alias="count", serialization_alias="count"
     )  # M-A1: uniform count key
@@ -144,7 +144,7 @@ class RancherLonghornNodeList(RancherModel):
 
     instance: str
     cluster_id: str
-    namespace: str
+    namespace: str | None
     node_count: int = Field(
         validation_alias="count", serialization_alias="count"
     )  # M-A1: uniform count key
@@ -195,7 +195,7 @@ class RancherLonghornBackupList(RancherModel):
 
     instance: str
     cluster_id: str
-    namespace: str
+    namespace: str | None
     backup_count: int = Field(
         validation_alias="count", serialization_alias="count"
     )  # M-A1: uniform count key
@@ -238,7 +238,7 @@ class RancherLonghornSnapshotList(RancherModel):
 
     instance: str
     cluster_id: str
-    namespace: str
+    namespace: str | None
     snapshot_count: int = Field(
         validation_alias="count", serialization_alias="count"
     )  # M-A1: uniform count key

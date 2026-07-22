@@ -38,7 +38,7 @@ from rancher_mcp.tools.support.values import mapping_value, string_dict
 async def _fetch_horizontal_pod_autoscalers_list(
     instance_name: str,
     cluster_id: str,
-    namespace: str,
+    namespace: str | None,
     target_kind: str | None,
     target_name: str | None,
     limit: int | None,
@@ -88,7 +88,7 @@ async def _fetch_horizontal_pod_autoscalers_list(
 
 
 async def rancher_horizontal_pod_autoscalers_list(
-    namespace: str,
+    namespace: str | None = None,
     cluster_id: str = "local",
     target_kind: str | None = None,
     target_name: str | None = None,
@@ -100,7 +100,7 @@ async def rancher_horizontal_pod_autoscalers_list(
     settings: AppSettings | None = None,
     client: ManagementDiscoveryClient | None = None,
 ) -> RancherHorizontalPodAutoscalerList:
-    """List horizontal_pod_autoscalers in one namespace with typed summaries."""
+    """List horizontal_pod_autoscalers with typed summaries — in one namespace, or cluster-wide when namespace is omitted."""
 
     resolved_settings = settings or get_settings()
     instance_name, instance_config = resolve_instance(resolved_settings, instance)
@@ -526,7 +526,7 @@ async def rancher_horizontal_pod_autoscaler_set_min_max(
 
 
 async def rancher_horizontal_pod_autoscalers_list_tool(
-    namespace: str,
+    namespace: str | None = None,
     cluster_id: str = "local",
     target_kind: str | None = None,
     target_name: str | None = None,
@@ -536,7 +536,7 @@ async def rancher_horizontal_pod_autoscalers_list_tool(
     page_token: str | None = None,
     instance: str | None = None,
 ) -> RancherHorizontalPodAutoscalerList:
-    """List horizontal_pod_autoscalers as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool."""
+    """List horizontal_pod_autoscalers as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool. Omit `namespace` to list across the whole cluster; pass it to scope to one namespace."""
 
     return await rancher_horizontal_pod_autoscalers_list(
         namespace=namespace,

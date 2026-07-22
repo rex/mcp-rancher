@@ -357,7 +357,7 @@
     },
     {
       "name": "rancher_cert_manager_certificates_list",
-      "description": "List cert_manager_certificates as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
+      "description": "List cert_manager_certificates as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool. Omit `namespace` to list across the whole cluster; pass it to scope to one namespace.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -384,7 +384,7 @@
         },
         {
           "name": "namespace",
-          "required": true
+          "required": false
         },
         {
           "name": "page_token",
@@ -643,7 +643,7 @@
     },
     {
       "name": "rancher_cert_manager_issuers_list",
-      "description": "List cert_manager_issuers as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
+      "description": "List cert_manager_issuers as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool. Omit `namespace` to list across the whole cluster; pass it to scope to one namespace.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -670,7 +670,7 @@
         },
         {
           "name": "namespace",
-          "required": true
+          "required": false
         },
         {
           "name": "page_token",
@@ -968,7 +968,7 @@
     },
     {
       "name": "rancher_cluster_events_list",
-      "description": "List Kubernetes events in a namespace. Filter by event_type (Warning/Normal) or reason.",
+      "description": "List Kubernetes events across the whole cluster by default — the\n    fastest way to see \"what just happened here\" after an incident. Pass\n    `namespace` to scope to one namespace instead. Filter by event_type\n    (Warning/Normal) or reason.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -1873,7 +1873,7 @@
     },
     {
       "name": "rancher_config_maps_list",
-      "description": "List config_maps as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
+      "description": "List config_maps as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool. Omit `namespace` to list across the whole cluster; pass it to scope to one namespace.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -1900,7 +1900,7 @@
         },
         {
           "name": "namespace",
-          "required": true
+          "required": false
         },
         {
           "name": "page_token",
@@ -2076,7 +2076,7 @@
     },
     {
       "name": "rancher_cron_jobs_list",
-      "description": "List cron_jobs as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
+      "description": "List cron_jobs as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool. Omit `namespace` to list across the whole cluster; pass it to scope to one namespace.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -2103,7 +2103,7 @@
         },
         {
           "name": "namespace",
-          "required": true
+          "required": false
         },
         {
           "name": "page_token",
@@ -2229,7 +2229,7 @@
     },
     {
       "name": "rancher_daemonsets_list",
-      "description": "List daemonsets as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
+      "description": "List daemonsets as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool. Omit `namespace` to list across the whole cluster; pass it to scope to one namespace.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -2256,7 +2256,7 @@
         },
         {
           "name": "namespace",
-          "required": true
+          "required": false
         },
         {
           "name": "page_token",
@@ -2486,7 +2486,7 @@
     },
     {
       "name": "rancher_deployments_list",
-      "description": "List deployments as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
+      "description": "List deployments as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool. Omit `namespace` to list across the whole cluster; pass it to scope to one namespace.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -2513,7 +2513,7 @@
         },
         {
           "name": "namespace",
-          "required": true
+          "required": false
         },
         {
           "name": "page_token",
@@ -2639,7 +2639,7 @@
     },
     {
       "name": "rancher_endpoint_slices_list",
-      "description": "List endpoint_slices as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
+      "description": "List endpoint_slices as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool. Omit `namespace` to list across the whole cluster; pass it to scope to one namespace.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -2670,7 +2670,7 @@
         },
         {
           "name": "namespace",
-          "required": true
+          "required": false
         },
         {
           "name": "page_token",
@@ -3068,7 +3068,7 @@
     },
     {
       "name": "rancher_flows_list",
-      "description": "List flows as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
+      "description": "List flows as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool. Omit `namespace` to list across the whole cluster; pass it to scope to one namespace.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -3091,7 +3091,7 @@
         },
         {
           "name": "namespace",
-          "required": true
+          "required": false
         },
         {
           "name": "page_token",
@@ -3404,7 +3404,7 @@
     },
     {
       "name": "rancher_horizontal_pod_autoscalers_list",
-      "description": "List horizontal_pod_autoscalers as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
+      "description": "List horizontal_pod_autoscalers as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool. Omit `namespace` to list across the whole cluster; pass it to scope to one namespace.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -3431,7 +3431,7 @@
         },
         {
           "name": "namespace",
-          "required": true
+          "required": false
         },
         {
           "name": "page_token",
@@ -3561,7 +3561,7 @@
     },
     {
       "name": "rancher_ingresses_list",
-      "description": "List ingresses as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
+      "description": "List ingresses as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool. Omit `namespace` to list across the whole cluster; pass it to scope to one namespace.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -3592,7 +3592,7 @@
         },
         {
           "name": "namespace",
-          "required": true
+          "required": false
         },
         {
           "name": "page_token",
@@ -3727,7 +3727,7 @@
     },
     {
       "name": "rancher_jobs_list",
-      "description": "List jobs as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
+      "description": "List jobs as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool. Omit `namespace` to list across the whole cluster; pass it to scope to one namespace.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -3762,7 +3762,7 @@
         },
         {
           "name": "namespace",
-          "required": true
+          "required": false
         },
         {
           "name": "page_token",
@@ -3884,7 +3884,7 @@
     },
     {
       "name": "rancher_limit_ranges_list",
-      "description": "List limit_ranges as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
+      "description": "List limit_ranges as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool. Omit `namespace` to list across the whole cluster; pass it to scope to one namespace.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -3911,7 +3911,7 @@
         },
         {
           "name": "namespace",
-          "required": true
+          "required": false
         },
         {
           "name": "page_token",
@@ -4004,7 +4004,7 @@
     },
     {
       "name": "rancher_longhorn_backups_list",
-      "description": "List longhorn_backups as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
+      "description": "List longhorn_backups as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool. Omit `namespace` to list across the whole cluster; pass it to scope to one namespace.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -4027,7 +4027,7 @@
         },
         {
           "name": "namespace",
-          "required": true
+          "required": false
         },
         {
           "name": "page_token",
@@ -4128,7 +4128,7 @@
     },
     {
       "name": "rancher_longhorn_nodes_list",
-      "description": "List longhorn_nodes as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
+      "description": "List longhorn_nodes as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool. Omit `namespace` to list across the whole cluster; pass it to scope to one namespace.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -4151,7 +4151,7 @@
         },
         {
           "name": "namespace",
-          "required": true
+          "required": false
         },
         {
           "name": "page_token",
@@ -4252,7 +4252,7 @@
     },
     {
       "name": "rancher_longhorn_snapshots_list",
-      "description": "List longhorn_snapshots as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
+      "description": "List longhorn_snapshots as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool. Omit `namespace` to list across the whole cluster; pass it to scope to one namespace.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -4275,7 +4275,7 @@
         },
         {
           "name": "namespace",
-          "required": true
+          "required": false
         },
         {
           "name": "page_token",
@@ -4372,7 +4372,7 @@
     },
     {
       "name": "rancher_longhorn_volumes_list",
-      "description": "List longhorn_volumes as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
+      "description": "List longhorn_volumes as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool. Omit `namespace` to list across the whole cluster; pass it to scope to one namespace.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -4395,7 +4395,7 @@
         },
         {
           "name": "namespace",
-          "required": true
+          "required": false
         },
         {
           "name": "page_token",
@@ -4621,7 +4621,7 @@
     },
     {
       "name": "rancher_network_policies_list",
-      "description": "List network_policies as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
+      "description": "List network_policies as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool. Omit `namespace` to list across the whole cluster; pass it to scope to one namespace.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -4648,7 +4648,7 @@
         },
         {
           "name": "namespace",
-          "required": true
+          "required": false
         },
         {
           "name": "page_token",
@@ -5394,7 +5394,7 @@
     },
     {
       "name": "rancher_outputs_list",
-      "description": "List outputs as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
+      "description": "List outputs as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool. Omit `namespace` to list across the whole cluster; pass it to scope to one namespace.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -5417,7 +5417,7 @@
         },
         {
           "name": "namespace",
-          "required": true
+          "required": false
         },
         {
           "name": "output_type",
@@ -5572,7 +5572,7 @@
     },
     {
       "name": "rancher_persistent_volume_claims_list",
-      "description": "List persistent_volume_claims as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
+      "description": "List persistent_volume_claims as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool. Omit `namespace` to list across the whole cluster; pass it to scope to one namespace.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -5591,7 +5591,7 @@
         },
         {
           "name": "namespace",
-          "required": true
+          "required": false
         },
         {
           "name": "page_token",
@@ -5854,7 +5854,7 @@
     },
     {
       "name": "rancher_pod_disruption_budgets_list",
-      "description": "List pod_disruption_budgets as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
+      "description": "List pod_disruption_budgets as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool. Omit `namespace` to list across the whole cluster; pass it to scope to one namespace.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -5873,7 +5873,7 @@
         },
         {
           "name": "namespace",
-          "required": true
+          "required": false
         },
         {
           "name": "page_token",
@@ -6057,7 +6057,7 @@
     },
     {
       "name": "rancher_pod_monitors_list",
-      "description": "List pod_monitors as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
+      "description": "List pod_monitors as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool. Omit `namespace` to list across the whole cluster; pass it to scope to one namespace.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -6080,7 +6080,7 @@
         },
         {
           "name": "namespace",
-          "required": true
+          "required": false
         },
         {
           "name": "page_token",
@@ -6148,7 +6148,7 @@
     },
     {
       "name": "rancher_pods_list",
-      "description": "List pods as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
+      "description": "List pods as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool. Omit `namespace` to list across the whole cluster; pass it to scope to one namespace.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -6175,7 +6175,7 @@
         },
         {
           "name": "namespace",
-          "required": true
+          "required": false
         },
         {
           "name": "page_token",
@@ -6301,7 +6301,7 @@
     },
     {
       "name": "rancher_policy_reports_list",
-      "description": "List policy_reports as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
+      "description": "List policy_reports as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool. Omit `namespace` to list across the whole cluster; pass it to scope to one namespace.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -6324,7 +6324,7 @@
         },
         {
           "name": "namespace",
-          "required": true
+          "required": false
         },
         {
           "name": "page_token",
@@ -6790,7 +6790,7 @@
     },
     {
       "name": "rancher_prometheus_rules_list",
-      "description": "List prometheus_rules as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
+      "description": "List prometheus_rules as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool. Omit `namespace` to list across the whole cluster; pass it to scope to one namespace.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -6813,7 +6813,7 @@
         },
         {
           "name": "namespace",
-          "required": true
+          "required": false
         },
         {
           "name": "page_token",
@@ -6935,7 +6935,7 @@
     },
     {
       "name": "rancher_replica_sets_list",
-      "description": "List replica_sets as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
+      "description": "List replica_sets as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool. Omit `namespace` to list across the whole cluster; pass it to scope to one namespace.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -6962,7 +6962,7 @@
         },
         {
           "name": "namespace",
-          "required": true
+          "required": false
         },
         {
           "name": "page_token",
@@ -7117,7 +7117,7 @@
     },
     {
       "name": "rancher_resource_quotas_list",
-      "description": "List resource_quotas as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
+      "description": "List resource_quotas as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool. Omit `namespace` to list across the whole cluster; pass it to scope to one namespace.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -7144,7 +7144,7 @@
         },
         {
           "name": "namespace",
-          "required": true
+          "required": false
         },
         {
           "name": "page_token",
@@ -7622,7 +7622,7 @@
     },
     {
       "name": "rancher_secrets_list",
-      "description": "List secrets as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
+      "description": "List secrets as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool. Omit `namespace` to list across the whole cluster; pass it to scope to one namespace.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -7649,7 +7649,7 @@
         },
         {
           "name": "namespace",
-          "required": true
+          "required": false
         },
         {
           "name": "page_token",
@@ -7818,7 +7818,7 @@
     },
     {
       "name": "rancher_service_accounts_list",
-      "description": "List service_accounts as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
+      "description": "List service_accounts as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool. Omit `namespace` to list across the whole cluster; pass it to scope to one namespace.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -7845,7 +7845,7 @@
         },
         {
           "name": "namespace",
-          "required": true
+          "required": false
         },
         {
           "name": "page_token",
@@ -8021,7 +8021,7 @@
     },
     {
       "name": "rancher_service_monitors_list",
-      "description": "List service_monitors as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
+      "description": "List service_monitors as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool. Omit `namespace` to list across the whole cluster; pass it to scope to one namespace.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -8044,7 +8044,7 @@
         },
         {
           "name": "namespace",
-          "required": true
+          "required": false
         },
         {
           "name": "page_token",
@@ -8141,7 +8141,7 @@
     },
     {
       "name": "rancher_services_list",
-      "description": "List services as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
+      "description": "List services as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool. Omit `namespace` to list across the whole cluster; pass it to scope to one namespace.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -8164,7 +8164,7 @@
         },
         {
           "name": "namespace",
-          "required": true
+          "required": false
         },
         {
           "name": "page_token",
@@ -8365,7 +8365,7 @@
     },
     {
       "name": "rancher_statefulsets_list",
-      "description": "List statefulsets as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
+      "description": "List statefulsets as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool. Omit `namespace` to list across the whole cluster; pass it to scope to one namespace.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -8392,7 +8392,7 @@
         },
         {
           "name": "namespace",
-          "required": true
+          "required": false
         },
         {
           "name": "page_token",

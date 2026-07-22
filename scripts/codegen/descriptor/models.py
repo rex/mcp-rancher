@@ -243,6 +243,13 @@ class Descriptor(BaseModel):
                 raise ValueError("transport=steve must not set path_helper")
             if self.namespaced and "{namespace}" not in self.list_path:
                 raise ValueError("namespaced=true requires {namespace} in list_path")
+            if self.namespaced and not self.list_path.endswith("/{namespace}"):
+                raise ValueError(
+                    "transport=steve namespaced=true requires list_path to END with "
+                    "'/{namespace}' — codegen derives the cluster-wide (all-namespaces) "
+                    "list path by stripping exactly that suffix, so `namespace` can be "
+                    "made optional (None = cluster-wide) at the tool boundary"
+                )
             if self.namespaced and "{namespace}" not in self.detail_path:
                 raise ValueError("namespaced=true requires {namespace} in detail_path")
         elif self.transport == "k8s-proxy":

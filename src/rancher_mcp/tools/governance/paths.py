@@ -9,13 +9,16 @@ from __future__ import annotations
 from urllib.parse import quote
 
 
-def _autoscaling_v2_collection_path(cluster_id: str, namespace: str, resource: str) -> str:
-    """Build the namespaced collection path for an autoscaling/v2 resource."""
+def _autoscaling_v2_collection_path(cluster_id: str, namespace: str | None, resource: str) -> str:
+    """Build the collection path for an autoscaling/v2 resource.
 
-    return (
-        f"/k8s/clusters/{quote(cluster_id, safe='')}/apis/autoscaling/v2/"
-        f"namespaces/{quote(namespace, safe='')}/{quote(resource, safe='')}"
-    )
+    All-namespaces (the namespace segment dropped) when ``namespace`` is
+    ``None`` — the cluster-wide triage form."""
+
+    base = f"/k8s/clusters/{quote(cluster_id, safe='')}/apis/autoscaling/v2/"
+    if namespace is not None:
+        base += f"namespaces/{quote(namespace, safe='')}/"
+    return base + quote(resource, safe="")
 
 
 def _autoscaling_v2_resource_path(
@@ -31,13 +34,16 @@ def _autoscaling_v2_resource_path(
     )
 
 
-def _core_v1_collection_path(cluster_id: str, namespace: str, resource: str) -> str:
-    """Build the namespaced collection path for a core/v1 resource (api/v1)."""
+def _core_v1_collection_path(cluster_id: str, namespace: str | None, resource: str) -> str:
+    """Build the collection path for a core/v1 resource (api/v1).
 
-    return (
-        f"/k8s/clusters/{quote(cluster_id, safe='')}/api/v1/"
-        f"namespaces/{quote(namespace, safe='')}/{quote(resource, safe='')}"
-    )
+    All-namespaces (the namespace segment dropped) when ``namespace`` is
+    ``None`` — the cluster-wide triage form."""
+
+    base = f"/k8s/clusters/{quote(cluster_id, safe='')}/api/v1/"
+    if namespace is not None:
+        base += f"namespaces/{quote(namespace, safe='')}/"
+    return base + quote(resource, safe="")
 
 
 def _core_v1_resource_path(

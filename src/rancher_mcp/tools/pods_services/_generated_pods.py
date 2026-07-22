@@ -32,7 +32,7 @@ from rancher_mcp.tools.support.values import mapping_value
 async def _fetch_pods_list(
     instance_name: str,
     cluster_id: str,
-    namespace: str,
+    namespace: str | None,
     phase: str | None,
     limit: int | None,
     label_selector: str | None,
@@ -40,7 +40,7 @@ async def _fetch_pods_list(
     client: SteveMutationClient,
     page_token: str | None = None,
 ) -> RancherPodList:
-    """Fetch and normalize the pods collection for one namespace."""
+    """Fetch and normalize the pods collection for one namespace, or cluster-wide when namespace is omitted."""
 
     query_params = build_steve_list_query_params(
         limit=limit,
@@ -48,7 +48,11 @@ async def _fetch_pods_list(
         label_selector=label_selector,
         field_selector=field_selector,
     )
-    payload = await client.get_json(f"/pods/{namespace}", params=query_params or None)
+    # namespace=None means cluster-wide (all namespaces) — the "/{namespace}"
+    # suffix is dropped rather than defaulted, so a whole-cluster triage
+    # query never silently narrows to one namespace.
+    list_request_path = f"/pods/{namespace}" if namespace is not None else "/pods"
+    payload = await client.get_json(list_request_path, params=query_params or None)
     pods = [pod_summary_from_payload(item) for item in data_items(payload)]
     if phase is not None:
         pods = [pod for pod in pods if pod.phase == phase]
@@ -69,7 +73,7 @@ async def _fetch_pods_list(
 
 
 async def rancher_pods_list(
-    namespace: str,
+    namespace: str | None = None,
     cluster_id: str = "local",
     phase: str | None = None,
     limit: int | None = None,
@@ -80,7 +84,7 @@ async def rancher_pods_list(
     settings: AppSettings | None = None,
     client: SteveMutationClient | None = None,
 ) -> RancherPodList:
-    """List pods in one namespace with typed summaries."""
+    """List pods with typed summaries — in one namespace, or cluster-wide when namespace is omitted."""
 
     resolved_settings = settings or get_settings()
     instance_name, instance_config = resolve_instance(resolved_settings, instance)
@@ -415,7 +419,7 @@ async def rancher_pod_set_annotations(
 
 
 async def rancher_pods_list_tool(
-    namespace: str,
+    namespace: str | None = None,
     cluster_id: str = "local",
     phase: str | None = None,
     limit: int | None = None,
@@ -424,7 +428,7 @@ async def rancher_pods_list_tool(
     page_token: str | None = None,
     instance: str | None = None,
 ) -> RancherPodList:
-    """List pods as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool."""
+    """List pods as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool. Omit `namespace` to list across the whole cluster; pass it to scope to one namespace."""
 
     return await rancher_pods_list(
         namespace=namespace,

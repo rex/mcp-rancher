@@ -70,6 +70,44 @@ async def test_rancher_pod_get_returns_typed_detail(monkeypatch: pytest.MonkeyPa
 
 
 @pytest.mark.asyncio
+async def test_rancher_pods_list_is_cluster_wide_when_namespace_omitted() -> None:
+    """Omitting `namespace` must query the cluster-wide Steve collection path
+    (no namespace segment), and the response's `namespace` must reflect
+    None rather than being forced to a value."""
+
+    class ClusterWidePodClient:
+        """Return pods spanning multiple namespaces from the all-namespaces path."""
+
+        async def get_json(self, path: str, params: object = None) -> dict[str, object]:
+            assert path == "/pods"
+            return {
+                "data": [
+                    {
+                        "id": "cattle-system/agent-abc",
+                        "metadata": {"name": "agent-abc", "namespace": "cattle-system"},
+                        "status": {"phase": "Running"},
+                    },
+                    {
+                        "id": "default/web-1",
+                        "metadata": {"name": "web-1", "namespace": "default"},
+                        "status": {"phase": "Running"},
+                    },
+                ]
+            }
+
+    result = await rancher_pods_list(
+        cluster_id="venue-local",
+        instance="work",
+        settings=build_settings(),
+        client=ClusterWidePodClient(),
+    )
+
+    assert result.namespace is None
+    assert result.pod_count == 2
+    assert {pod.namespace for pod in result.pods} == {"cattle-system", "default"}
+
+
+@pytest.mark.asyncio
 async def test_rancher_pods_list_filters_phase_and_handles_sparse_status() -> None:
     """Curated pods list should filter on computed pod phase without crashing on sparse status."""
 

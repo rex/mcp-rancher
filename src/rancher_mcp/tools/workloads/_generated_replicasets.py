@@ -31,7 +31,7 @@ from rancher_mcp.tools.workloads.shared import (
 async def _fetch_replica_sets_list(
     instance_name: str,
     cluster_id: str,
-    namespace: str,
+    namespace: str | None,
     ready: bool | None,
     limit: int | None,
     label_selector: str | None,
@@ -70,7 +70,7 @@ async def _fetch_replica_sets_list(
 
 
 async def rancher_replica_sets_list(
-    namespace: str,
+    namespace: str | None = None,
     cluster_id: str = "local",
     ready: bool | None = None,
     limit: int | None = None,
@@ -81,7 +81,7 @@ async def rancher_replica_sets_list(
     settings: AppSettings | None = None,
     client: ManagementDiscoveryClient | None = None,
 ) -> RancherReplicaSetList:
-    """List replica_sets in one namespace with typed summaries."""
+    """List replica_sets with typed summaries — in one namespace, or cluster-wide when namespace is omitted."""
 
     resolved_settings = settings or get_settings()
     instance_name, instance_config = resolve_instance(resolved_settings, instance)
@@ -405,7 +405,7 @@ async def rancher_replica_set_set_annotations(
 
 
 async def rancher_replica_sets_list_tool(
-    namespace: str,
+    namespace: str | None = None,
     cluster_id: str = "local",
     ready: bool | None = None,
     limit: int | None = None,
@@ -414,7 +414,7 @@ async def rancher_replica_sets_list_tool(
     page_token: str | None = None,
     instance: str | None = None,
 ) -> RancherReplicaSetList:
-    """List replica_sets as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool."""
+    """List replica_sets as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool. Omit `namespace` to list across the whole cluster; pass it to scope to one namespace."""
 
     return await rancher_replica_sets_list(
         namespace=namespace,

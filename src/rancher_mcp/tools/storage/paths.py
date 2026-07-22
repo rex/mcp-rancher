@@ -38,8 +38,11 @@ def _persistent_volume_resource_path(cluster_id: str, volume_name: str) -> str:
     return _append_identifier(_persistent_volume_collection_path(cluster_id), volume_name)
 
 
-def _persistent_volume_claim_collection_path(cluster_id: str, namespace: str) -> str:
-    """Build the raw Kubernetes proxy collection path for PVCs in one namespace."""
+def _persistent_volume_claim_collection_path(cluster_id: str, namespace: str | None) -> str:
+    """Build the raw Kubernetes proxy collection path for PVCs.
+
+    All-namespaces (the namespace segment dropped) when ``namespace`` is
+    ``None`` — the cluster-wide triage form."""
 
     return _core_collection_path(
         cluster_id=cluster_id,

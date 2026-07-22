@@ -39,7 +39,7 @@ from rancher_mcp.tools.support.values import mapping_value, string_dict
 async def _fetch_prometheus_rules_list(
     instance_name: str,
     cluster_id: str,
-    namespace: str,
+    namespace: str | None,
     limit: int | None,
     label_selector: str | None,
     client: ManagementDiscoveryClient,
@@ -73,7 +73,7 @@ async def _fetch_prometheus_rules_list(
 
 
 async def rancher_prometheus_rules_list(
-    namespace: str,
+    namespace: str | None = None,
     cluster_id: str = "local",
     limit: int | None = None,
     label_selector: str | None = None,
@@ -82,7 +82,7 @@ async def rancher_prometheus_rules_list(
     settings: AppSettings | None = None,
     client: ManagementDiscoveryClient | None = None,
 ) -> RancherPrometheusRuleList:
-    """List prometheus_rules in one namespace with typed summaries."""
+    """List prometheus_rules with typed summaries — in one namespace, or cluster-wide when namespace is omitted."""
 
     resolved_settings = settings or get_settings()
     instance_name, instance_config = resolve_instance(resolved_settings, instance)
@@ -408,14 +408,14 @@ async def rancher_prometheus_rule_set_annotations(
 
 
 async def rancher_prometheus_rules_list_tool(
-    namespace: str,
+    namespace: str | None = None,
     cluster_id: str = "local",
     limit: int | None = None,
     label_selector: str | None = None,
     page_token: str | None = None,
     instance: str | None = None,
 ) -> RancherPrometheusRuleList:
-    """List prometheus_rules as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool."""
+    """List prometheus_rules as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool. Omit `namespace` to list across the whole cluster; pass it to scope to one namespace."""
 
     return await rancher_prometheus_rules_list(
         namespace=namespace,

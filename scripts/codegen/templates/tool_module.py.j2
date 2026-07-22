@@ -90,7 +90,7 @@ async def _fetch_{{ display_name_plural }}_list(
     cluster_id: str,
     {% endif -%}
     {% if namespaced -%}
-    namespace: str,
+    namespace: str | None,
     {% endif -%}
     {%- for filter in list.filters %}
     {{ filter.name }}: {{ filter.type }} | None,
@@ -114,8 +114,22 @@ async def _fetch_{{ display_name_plural }}_list(
         {%- endif %}
         {%- endfor %}
     )
-    {% if transport == 'steve' or transport == 'norman' -%}
+    {% if transport == 'norman' -%}
     payload = await client.get_json(f"{{ list_path }}", params=query_params or None)
+    {%- elif transport == 'steve' -%}
+    {% if namespaced -%}
+    # namespace=None means cluster-wide (all namespaces) — the "/{namespace}"
+    # suffix is dropped rather than defaulted, so a whole-cluster triage
+    # query never silently narrows to one namespace.
+    list_request_path = (
+        f"{{ list_path }}"
+        if namespace is not None
+        else "{{ list_path|replace('/{namespace}', '') }}"
+    )
+    payload = await client.get_json(list_request_path, params=query_params or None)
+    {%- else -%}
+    payload = await client.get_json(f"{{ list_path }}", params=query_params or None)
+    {%- endif %}
     {%- elif transport == 'k8s-proxy' -%}
     payload = await client.get_json(
         {{ path_helper.list_function }}(cluster_id{% if namespaced %}, namespace{% endif %}{% if path_helper.resource_kind %}, "{{ path_helper.resource_kind }}"{% endif %}),
@@ -168,7 +182,7 @@ async def _fetch_{{ display_name_plural }}_list(
 
 async def rancher_{{ display_name_plural }}_list(
     {% if namespaced -%}
-    namespace: str,
+    namespace: str | None = None,
     {% endif -%}
     {% if cluster_id_required -%}
     cluster_id: str = "local",
@@ -186,7 +200,7 @@ async def rancher_{{ display_name_plural }}_list(
     settings: AppSettings | None = None,
     client: {{ client_protocol }} | None = None,
 ) -> {{ list_model_name }}:
-    """List {{ display_name_plural }}{{ ' in one namespace' if namespaced else '' }} with typed summaries."""
+    """List {{ display_name_plural }} with typed summaries{{ ' — in one namespace, or cluster-wide when namespace is omitted' if namespaced else '' }}."""
 
     resolved_settings = settings or get_settings()
     instance_name, instance_config = resolve_instance(resolved_settings, instance)
@@ -893,7 +907,7 @@ async def rancher_{{ display_name_singular }}_{{ patch.verb }}(
 {% if 'list' in operations -%}
 async def rancher_{{ display_name_plural }}_list_tool(
     {% if namespaced -%}
-    namespace: str,
+    namespace: str | None = None,
     {% endif -%}
     {% if cluster_id_required -%}
     cluster_id: str = "local",
@@ -909,7 +923,7 @@ async def rancher_{{ display_name_plural }}_list_tool(
     {% endif -%}
     instance: str | None = None,
 ) -> {{ list_model_name }}:
-    """List {{ display_name_plural }} as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool."""
+    """List {{ display_name_plural }} as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.{{ ' Omit `namespace` to list across the whole cluster; pass it to scope to one namespace.' if namespaced else '' }}"""
 
     return await rancher_{{ display_name_plural }}_list(
         {% if namespaced -%}

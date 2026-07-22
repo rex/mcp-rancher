@@ -82,7 +82,7 @@ class RancherHorizontalPodAutoscalerList(RancherModel):
 
     instance: str
     cluster_id: str
-    namespace: str
+    namespace: str | None
     horizontal_pod_autoscaler_count: int = Field(
         validation_alias="count", serialization_alias="count"
     )  # M-A1: uniform count key
@@ -129,7 +129,7 @@ class RancherResourceQuotaList(RancherModel):
 
     instance: str
     cluster_id: str
-    namespace: str
+    namespace: str | None
     resource_quota_count: int = Field(
         validation_alias="count", serialization_alias="count"
     )  # M-A1: uniform count key
@@ -167,7 +167,7 @@ class RancherLimitRangeList(RancherModel):
 
     instance: str
     cluster_id: str
-    namespace: str
+    namespace: str | None
     limit_range_count: int = Field(
         validation_alias="count", serialization_alias="count"
     )  # M-A1: uniform count key

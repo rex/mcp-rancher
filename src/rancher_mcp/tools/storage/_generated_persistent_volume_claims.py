@@ -37,7 +37,7 @@ from rancher_mcp.tools.support.values import mapping_value, string_dict
 async def _fetch_persistent_volume_claims_list(
     instance_name: str,
     cluster_id: str,
-    namespace: str,
+    namespace: str | None,
     phase: str | None,
     storage_class_name: str | None,
     limit: int | None,
@@ -86,7 +86,7 @@ async def _fetch_persistent_volume_claims_list(
 
 
 async def rancher_persistent_volume_claims_list(
-    namespace: str,
+    namespace: str | None = None,
     cluster_id: str = "local",
     phase: str | None = None,
     storage_class_name: str | None = None,
@@ -96,7 +96,7 @@ async def rancher_persistent_volume_claims_list(
     settings: AppSettings | None = None,
     client: ManagementDiscoveryClient | None = None,
 ) -> RancherPersistentVolumeClaimList:
-    """List persistent_volume_claims in one namespace with typed summaries."""
+    """List persistent_volume_claims with typed summaries — in one namespace, or cluster-wide when namespace is omitted."""
 
     resolved_settings = settings or get_settings()
     instance_name, instance_config = resolve_instance(resolved_settings, instance)
@@ -506,7 +506,7 @@ async def rancher_persistent_volume_claim_set_size(
 
 
 async def rancher_persistent_volume_claims_list_tool(
-    namespace: str,
+    namespace: str | None = None,
     cluster_id: str = "local",
     phase: str | None = None,
     storage_class_name: str | None = None,
@@ -514,7 +514,7 @@ async def rancher_persistent_volume_claims_list_tool(
     page_token: str | None = None,
     instance: str | None = None,
 ) -> RancherPersistentVolumeClaimList:
-    """List persistent_volume_claims as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool."""
+    """List persistent_volume_claims as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool. Omit `namespace` to list across the whole cluster; pass it to scope to one namespace."""
 
     return await rancher_persistent_volume_claims_list(
         namespace=namespace,

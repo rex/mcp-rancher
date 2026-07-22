@@ -32,7 +32,7 @@ from rancher_mcp.tools.support.values import mapping_value, string_dict
 async def _fetch_jobs_list(
     instance_name: str,
     cluster_id: str,
-    namespace: str,
+    namespace: str | None,
     complete: bool | None,
     failed_terminal: bool | None,
     limit: int | None,
@@ -74,7 +74,7 @@ async def _fetch_jobs_list(
 
 
 async def rancher_jobs_list(
-    namespace: str,
+    namespace: str | None = None,
     cluster_id: str = "local",
     complete: bool | None = None,
     failed_terminal: bool | None = None,
@@ -86,7 +86,7 @@ async def rancher_jobs_list(
     settings: AppSettings | None = None,
     client: ManagementDiscoveryClient | None = None,
 ) -> RancherJobList:
-    """List jobs in one namespace with typed summaries."""
+    """List jobs with typed summaries — in one namespace, or cluster-wide when namespace is omitted."""
 
     resolved_settings = settings or get_settings()
     instance_name, instance_config = resolve_instance(resolved_settings, instance)
@@ -402,7 +402,7 @@ async def rancher_job_set_annotations(
 
 
 async def rancher_jobs_list_tool(
-    namespace: str,
+    namespace: str | None = None,
     cluster_id: str = "local",
     complete: bool | None = None,
     failed_terminal: bool | None = None,
@@ -412,7 +412,7 @@ async def rancher_jobs_list_tool(
     page_token: str | None = None,
     instance: str | None = None,
 ) -> RancherJobList:
-    """List jobs as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool."""
+    """List jobs as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool. Omit `namespace` to list across the whole cluster; pass it to scope to one namespace."""
 
     return await rancher_jobs_list(
         namespace=namespace,

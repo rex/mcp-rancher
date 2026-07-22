@@ -31,20 +31,24 @@ from rancher_mcp.tools.support.values import mapping_value
 async def _fetch_services_list(
     instance_name: str,
     cluster_id: str,
-    namespace: str,
+    namespace: str | None,
     limit: int | None,
     label_selector: str | None,
     client: SteveMutationClient,
     page_token: str | None = None,
 ) -> RancherServiceList:
-    """Fetch and normalize the services collection for one namespace."""
+    """Fetch and normalize the services collection for one namespace, or cluster-wide when namespace is omitted."""
 
     query_params = build_steve_list_query_params(
         limit=limit,
         continue_token=page_token,
         label_selector=label_selector,
     )
-    payload = await client.get_json(f"/services/{namespace}", params=query_params or None)
+    # namespace=None means cluster-wide (all namespaces) — the "/{namespace}"
+    # suffix is dropped rather than defaulted, so a whole-cluster triage
+    # query never silently narrows to one namespace.
+    list_request_path = f"/services/{namespace}" if namespace is not None else "/services"
+    payload = await client.get_json(list_request_path, params=query_params or None)
     services = [service_summary_from_payload(item) for item in data_items(payload)]
     return RancherServiceList(
         instance=instance_name,
@@ -63,7 +67,7 @@ async def _fetch_services_list(
 
 
 async def rancher_services_list(
-    namespace: str,
+    namespace: str | None = None,
     cluster_id: str = "local",
     limit: int | None = None,
     label_selector: str | None = None,
@@ -72,7 +76,7 @@ async def rancher_services_list(
     settings: AppSettings | None = None,
     client: SteveMutationClient | None = None,
 ) -> RancherServiceList:
-    """List services in one namespace with typed summaries."""
+    """List services with typed summaries — in one namespace, or cluster-wide when namespace is omitted."""
 
     resolved_settings = settings or get_settings()
     instance_name, instance_config = resolve_instance(resolved_settings, instance)
@@ -478,14 +482,14 @@ async def rancher_service_set_type(
 
 
 async def rancher_services_list_tool(
-    namespace: str,
+    namespace: str | None = None,
     cluster_id: str = "local",
     limit: int | None = None,
     label_selector: str | None = None,
     page_token: str | None = None,
     instance: str | None = None,
 ) -> RancherServiceList:
-    """List services as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool."""
+    """List services as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool. Omit `namespace` to list across the whole cluster; pass it to scope to one namespace."""
 
     return await rancher_services_list(
         namespace=namespace,

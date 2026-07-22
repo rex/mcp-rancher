@@ -87,7 +87,7 @@ class RancherPodDisruptionBudgetList(RancherModel):
 
     instance: str
     cluster_id: str
-    namespace: str
+    namespace: str | None
     budget_count: int = Field(
         validation_alias="count", serialization_alias="count"
     )  # M-A1: uniform count key

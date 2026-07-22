@@ -45,6 +45,12 @@ def _empty_service_ports() -> list["RancherServicePortSummary"]:
     return []
 
 
+def _empty_load_balancer_ingress() -> list["RancherServiceLoadBalancerIngress"]:
+    """Return a typed empty load-balancer-ingress list for Pydantic default factories."""
+
+    return []
+
+
 def _empty_pod_events() -> list["RancherPodEventSummary"]:
     """Return a typed empty pod-event list for Pydantic default factories."""
 
@@ -224,7 +230,7 @@ class RancherPodList(RancherModel):
 
     instance: str
     cluster_id: str
-    namespace: str
+    namespace: str | None
     pod_count: int = Field(
         validation_alias="count", serialization_alias="count"
     )  # M-A1: uniform count key
@@ -268,6 +274,17 @@ class RancherServicePortSummary(RancherModel):
         return value
 
 
+class RancherServiceLoadBalancerIngress(RancherModel):
+    """One assigned external address for a LoadBalancer-type Service
+    (``status.loadBalancer.ingress[]``) — the address traffic actually
+    arrives on. Cloud load balancers typically assign ``ip``; AWS ELB
+    assigns ``hostname`` instead. Absent entirely until the cloud
+    controller finishes provisioning the VIP."""
+
+    ip: str | None = None
+    hostname: str | None = None
+
+
 class RancherServiceSummary(RancherModel):
     """Typed summary for one service."""
 
@@ -300,6 +317,19 @@ class RancherServiceSummary(RancherModel):
         default_factory=_empty_service_ports,
         validation_alias=AliasPath("spec", "ports"),
     )
+    # The LoadBalancer VIP/hostname — for an operator, "did the external
+    # address come back after an outage?" is often the single most
+    # important post-incident question, and previously required a raw
+    # rancher_steve_resource_get fallback to answer. Present only for
+    # LoadBalancer-type services once the cloud controller has assigned an
+    # address; empty otherwise, which the base serializer's empty-value
+    # drop (L-0 / ADR-0002) collapses out of the response entirely rather
+    # than shipping `loadBalancerIngress: []` noise on every ClusterIP/
+    # NodePort service.
+    load_balancer_ingress: list[RancherServiceLoadBalancerIngress] = Field(
+        default_factory=_empty_load_balancer_ingress,
+        validation_alias=AliasPath("status", "loadBalancer", "ingress"),
+    )
 
 
 class RancherServiceDetail(RancherServiceSummary):
@@ -327,7 +357,7 @@ class RancherServiceList(RancherModel):
 
     instance: str
     cluster_id: str
-    namespace: str
+    namespace: str | None
     service_count: int = Field(
         validation_alias="count", serialization_alias="count"
     )  # M-A1: uniform count key

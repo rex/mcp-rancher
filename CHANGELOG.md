@@ -1,5 +1,50 @@
 # Changelog
 
+## [1.49.0] — 2026-07-22 — Agent: Claude
+All three fixes came out of an operator triaging a real post-power-loss outage.
+
+### Fixed
+- **F4 — `rancher_cluster_events_list` silently answered the wrong question.**
+  The schema already allowed omitting `namespace`; the defect was behavioral —
+  `ns = namespace or "default"` always built a *namespaced* path, so an operator
+  asking "what just happened in this cluster" got the `default` namespace's
+  events and no error. It failed precisely when cluster-level events existed,
+  which is exactly when it was needed. Now omitting `namespace` queries
+  cluster-wide, and each event's namespace comes from its own metadata instead
+  of being collapsed to one value.
+
+- **AE-32 — `namespace` was required on 32 triage list tools**, forcing one call
+  per namespace to answer a cluster-wide question. Exactly 32 required it (31
+  catalog-driven + `cluster_events_list`), matching the operator's count; 0 do
+  now, verified against the real registered server rather than source.
+
+  Root cause was in codegen, not the tools: `tool_module.py.j2` emitted a bare
+  `namespace: str` for *every* operation on a `namespaced: true` descriptor —
+  right for get/create/apply/delete/patch, wrong for list. Fixed for list
+  operations only, so single-resource tools still correctly require it.
+
+  Genuinely cluster-scoped resources were left alone (ClusterIssuer,
+  ClusterFlow, ClusterOutput, ClusterPolicyReport, PersistentVolume,
+  StorageClass, PriorityClass, RuntimeClass, and the Norman `/v3` surface) —
+  those are scoped by Kubernetes' and Rancher's own resource models, not by an
+  oversight in ours.
+
+- **F5 — LoadBalancer services never exposed their external IP.** Neither
+  `services_list` nor `service_get` returned `status.loadBalancer.ingress[]`,
+  so the single most important post-outage question — did the VIP come back? —
+  could only be answered by dropping to raw `steve_resource_get`. Both shapes
+  now carry it, handling `ip` (cloud LB) and `hostname` (AWS ELB) forms and
+  multiple entries; the field is omitted entirely, not emitted empty, for
+  non-LoadBalancer services.
+
+### Added
+- `tests/unit/test_list_tools_namespace_optional.py` — asserts fleet-wide that
+  no list tool requires `namespace`, pins the 32-tool set, and keeps a negative
+  control that get/create/apply/delete/patch still *do* require it.
+- Cluster-wide and namespaced request-path tests for events, pods and services;
+  LoadBalancer ingress tests covering ip, hostname, multi-entry, and the
+  absent-for-ClusterIP case.
+
 ## [1.48.0] — 2026-07-22 — Agent: Claude
 ### Fixed
 - **AE-03 — errors were structured JSON wrapped in prose, so nothing could

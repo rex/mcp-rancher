@@ -34,7 +34,8 @@ class ModuleContext:
             fetch_docstring_phrase = f"the Rancher {descriptor.display_name_plural} collection"
         elif descriptor.namespaced:
             fetch_docstring_phrase = (
-                f"the {descriptor.display_name_plural} collection for one namespace"
+                f"the {descriptor.display_name_plural} collection for one namespace, "
+                "or cluster-wide when namespace is omitted"
             )
         else:
             fetch_docstring_phrase = f"the {descriptor.display_name_plural} collection"

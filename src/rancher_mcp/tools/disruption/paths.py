@@ -5,13 +5,16 @@ from __future__ import annotations
 from urllib.parse import quote
 
 
-def _pdb_collection_path(cluster_id: str, namespace: str) -> str:
-    """Build the raw Kubernetes proxy collection path for namespaced PDBs."""
+def _pdb_collection_path(cluster_id: str, namespace: str | None) -> str:
+    """Build the raw Kubernetes proxy collection path for PDBs.
 
-    return (
-        f"/k8s/clusters/{quote(cluster_id, safe='')}/apis/policy/v1/namespaces/"
-        f"{quote(namespace, safe='')}/poddisruptionbudgets"
-    )
+    All-namespaces (the namespace segment dropped) when ``namespace`` is
+    ``None`` — the cluster-wide triage form."""
+
+    base = f"/k8s/clusters/{quote(cluster_id, safe='')}/apis/policy/v1/"
+    if namespace is not None:
+        base += f"namespaces/{quote(namespace, safe='')}/"
+    return base + "poddisruptionbudgets"
 
 
 def _pdb_resource_path(cluster_id: str, namespace: str, budget_name: str) -> str:

@@ -5,13 +5,18 @@ from __future__ import annotations
 from urllib.parse import quote
 
 
-def _cert_manager_namespaced_collection_path(cluster_id: str, namespace: str, resource: str) -> str:
-    """Build the namespaced collection path for a cert-manager.io/v1 resource."""
+def _cert_manager_namespaced_collection_path(
+    cluster_id: str, namespace: str | None, resource: str
+) -> str:
+    """Build the collection path for a cert-manager.io/v1 resource.
 
-    return (
-        f"/k8s/clusters/{quote(cluster_id, safe='')}/apis/cert-manager.io/v1/"
-        f"namespaces/{quote(namespace, safe='')}/{quote(resource, safe='')}"
-    )
+    All-namespaces (the namespace segment dropped) when ``namespace`` is
+    ``None`` — the cluster-wide triage form."""
+
+    base = f"/k8s/clusters/{quote(cluster_id, safe='')}/apis/cert-manager.io/v1/"
+    if namespace is not None:
+        base += f"namespaces/{quote(namespace, safe='')}/"
+    return base + quote(resource, safe="")
 
 
 def _cert_manager_namespaced_resource_path(

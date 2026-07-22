@@ -70,7 +70,7 @@ class RancherPrometheusRuleList(RancherModel):
 
     instance: str
     cluster_id: str
-    namespace: str
+    namespace: str | None
     prometheus_rule_count: int = Field(
         validation_alias="count", serialization_alias="count"
     )  # M-A1: uniform count key
@@ -109,7 +109,7 @@ class RancherServiceMonitorList(RancherModel):
 
     instance: str
     cluster_id: str
-    namespace: str
+    namespace: str | None
     service_monitor_count: int = Field(
         validation_alias="count", serialization_alias="count"
     )  # M-A1: uniform count key
@@ -148,7 +148,7 @@ class RancherPodMonitorList(RancherModel):
 
     instance: str
     cluster_id: str
-    namespace: str
+    namespace: str | None
     pod_monitor_count: int = Field(
         validation_alias="count", serialization_alias="count"
     )  # M-A1: uniform count key
