@@ -206,7 +206,14 @@ async def test_rancher_norman_schema_list_summarizes_schema_inventory() -> None:
     assert result.plane == "norman"
     assert result.schema_count == 1
     assert result.schemas[0].id == "cluster"
-    assert result.schemas[0].field_count == 2
+    assert result.schemas[0].plural_name == "clusters"
+    # AE-10 / ADR-0002: verbs, links, and the field census moved to
+    # schema_get-only — a schema LIST is just id + a short descriptor now.
+    dumped = result.model_dump(by_alias=True)
+    assert "fieldCount" not in dumped["schemas"][0]
+    assert "collectionMethods" not in dumped["schemas"][0]
+    assert "resourceMethods" not in dumped["schemas"][0]
+    assert "linkKeys" not in dumped["schemas"][0]
 
 
 @pytest.mark.asyncio
@@ -241,6 +248,7 @@ async def test_rancher_steve_schema_list_summarizes_schema_inventory() -> None:
     assert result.cluster_id == "venue-local"
     assert result.schema_count == 1
     assert result.schemas[0].id == "pod"
+    assert result.schemas[0].plural_name == "pods"
 
 
 @pytest.mark.asyncio

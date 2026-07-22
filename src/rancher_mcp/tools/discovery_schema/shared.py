@@ -61,24 +61,26 @@ def _schema_payloads(raw_items: object) -> list[Mapping[str, object]]:
     return payloads
 
 
-def _schema_summary_from_payload(payload: Mapping[str, object]) -> SchemaSummary:
-    """Normalize a Norman or Steve schema payload into a compact summary."""
+def _schema_id_and_plural(payload: Mapping[str, object]) -> tuple[str, str | None]:
+    """Pull the two identity fields every schema summary/detail shares."""
 
-    raw_plural_name = payload.get("pluralName")
-    plural_name = raw_plural_name if isinstance(raw_plural_name, str) else None
-    collection_methods = _string_list(payload.get("collectionMethods"))
-    resource_methods = _string_list(payload.get("resourceMethods"))
-    field_count = len(_mapping_keys(payload.get("resourceFields")))
     raw_id = payload.get("id")
     schema_id = raw_id if isinstance(raw_id, str) else ""
-    return SchemaSummary(
-        id=schema_id,
-        plural_name=plural_name,
-        collection_methods=collection_methods,
-        resource_methods=resource_methods,
-        link_keys=_mapping_keys(payload.get("links")),
-        field_count=field_count,
-    )
+    raw_plural_name = payload.get("pluralName")
+    plural_name = raw_plural_name if isinstance(raw_plural_name, str) else None
+    return schema_id, plural_name
+
+
+def _schema_summary_from_payload(payload: Mapping[str, object]) -> SchemaSummary:
+    """Normalize a Norman or Steve schema payload into a compact summary.
+
+    Deliberately just identity (AE-10 / ADR-0002): verbs, links, and the
+    field census are ``schema_get``-only now — see ``SchemaSummary``'s
+    docstring in ``models/discovery.py`` for the full rationale.
+    """
+
+    schema_id, plural_name = _schema_id_and_plural(payload)
+    return SchemaSummary(id=schema_id, plural_name=plural_name)
 
 
 def _schema_detail_from_payload(
@@ -90,16 +92,16 @@ def _schema_detail_from_payload(
 ) -> SchemaDetail:
     """Normalize a Norman or Steve schema payload into detailed output."""
 
-    summary = _schema_summary_from_payload(payload)
+    schema_id, plural_name = _schema_id_and_plural(payload)
     return SchemaDetail(
         instance=instance,
         plane=plane,
         cluster_id=cluster_id,
-        id=summary.id,
-        plural_name=summary.plural_name,
-        collection_methods=summary.collection_methods,
-        resource_methods=summary.resource_methods,
-        link_keys=summary.link_keys,
+        id=schema_id,
+        plural_name=plural_name,
+        collection_methods=_string_list(payload.get("collectionMethods")),
+        resource_methods=_string_list(payload.get("resourceMethods")),
+        link_keys=_mapping_keys(payload.get("links")),
         field_keys=_mapping_keys(payload.get("resourceFields")),
         collection_filter_keys=_mapping_keys(payload.get("collectionFilters")),
     )

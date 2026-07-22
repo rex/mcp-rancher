@@ -120,7 +120,9 @@ namespace because 3 were Completed jobs).
 | **Pod** | name, phase, ready, readyContainers/total, restartCount, nodeName, ownerKind/Name | podIp, qosClass, containers[], volumes |
 | **Controller** | name, desired/ready/available, ready, rolloutComplete, containerImages | strategy, selectors, template |
 | **Storage/PVC/vol** | name, state, robustness, size, replicas, attached-to | diskPaths, conditions |
-| **Secret** | name, type, dataKeyCount | *never the values, at any level* |
+| **Secret** | name, namespace, type, dataKeyCount | dataKeys (names — never values, at any level), via `secret_get` (AE-10) |
+| **Schema** (Norman/Steve) | id, pluralName | collectionMethods/resourceMethods, linkKeys, resourceFields census — via `schema_get` (AE-10) |
+| **Setting** | id, value (L-3a shaped: JSON→keys, cert→marker, long→truncated), customized | default + its shape markers, **only when default diverges from value** (AE-10) |
 
 `requested` cpu/mem and `os/kernel/runtime` are **always** for nodes — K-2
 removed them; they are operational signal, not plumbing. Per-tool ideal
@@ -257,6 +259,62 @@ Track L**. Confirmed by Pierce 2026-07-21 (all four design forks answered):
    (redact-don't-delete) stays narrowed to the browse surfaces per item 7, but
    the retrieve surface's reveal is now itself opt-in rather than
    unconditional — AE-01 governs the retrieve surface too, not just browse.
+
+9. **AE-10 (2026-07-22) — list/get split extended to schemas and secrets;
+   `default` collapses when it mirrors `value`.** An agent-fitness pass
+   measured four LIST tools at 61 KB (`secrets_list`), 57 KB
+   (`norman_schema_list`), 44 KB (`steve_schema_list`), and 23 KB
+   (`settings_list` — the M-SETTINGS cut hadn't gone far enough). Applying
+   rule #1 ("would this field ever change what I do next") at the id/get
+   boundary these tools already have:
+   - **Schema list** (`SchemaSummary`, `models/discovery.py`) shrinks to just
+     `id` + `pluralName`. A schema LIST exists solely to enumerate valid type
+     ids for `resource_list`/`resource_get`/`schema_get`; verbs
+     (`collectionMethods`/`resourceMethods`), `linkKeys`, and the
+     `resourceFields` census are per-item detail only relevant once one type
+     is picked, and `schema_get` already returns them in full. At real scale
+     — Norman/Steve schema endpoints enumerate every internal data-shape
+     struct alongside true top-level resources, routinely several hundred
+     entries — those four repeated fields were nearly the entire response.
+   - **Secret list** (`RancherSecretSummary`, `models/config_secrets.py`)
+     drops `dataKeys` (the key *names*); `dataKeyCount` stays as list-level
+     signal, and `secret_get` (`RancherSecretDetail`) is now the only place
+     `dataKeys` is populated. Values were already withheld at every
+     verbosity level (M-SEC-2) — this is metadata-only trimming, applying
+     the same list/get split the Schema row above uses. (Per-item
+     `labels`/`annotations` were checked and are not, and never were,
+     emitted on this summary — a hypothesis this pass falsifies rather than
+     confirms.)
+   - **Settings list** (`tools/settings_features/shared.py`) stops emitting
+     `default` (and its L-3a shape markers) whenever it is byte-identical to
+     `value` — both settings in the committed 2.6.5 fixture confirm
+     `default == value` for a never-customized setting, consistent with the
+     171-setting live capture CHANGELOG [1.34.0] measured. Shipping both
+     is the same "duplicated spec echo" class of noise this ADR already
+     names (`cluster_get`'s doubled `rancherKubernetesEngineConfig`); it was
+     the largest remaining share of `settings_list`'s bytes post-M-SETTINGS.
+     The comparison runs on the raw (pre-shaping) strings, so `default`
+     resurfaces the instant it diverges from `value` — exactly the "what
+     would reverting look like" signal rule #4 requires for a customized
+     setting. This generalizes the existing
+     "conditional signal" idea (§ above) to sibling-field redundancy: a
+     field that normally duplicates another isn't noise *sometimes*, it's
+     noise *whenever it's actually a duplicate*, regardless of which named
+     field pair is involved.
+
+   None of the three changes touch a `verbose` flag or any codegen
+   template/catalog entry — all three are hand-maintained model/builder-code
+   trims, following the pre-existing list/(get or detail-field) split already
+   established for every other curated resource in this codebase. Measured
+   on a representative synthetic payload (real captured-fixture shapes at
+   realistic entity counts — no live cluster was reachable from the
+   measuring environment): `secrets_list` 51.5 KB → 41.0 KB, `norman_schema_list`
+   36.3 KB → 15.5 KB, `steve_schema_list` 48.0 KB → 17.1 KB, `settings_list`
+   17.9 KB → 13.5 KB. A default pagination cap for `secrets_list` (genuinely
+   unbounded at cluster scale, unlike the other three) was considered and
+   deliberately deferred — it changes what "no `limit` passed" means for
+   every existing caller, which is a product decision distinct from response
+   *shaping* and belongs in its own ADR if pursued.
 
 **`verbose` mechanism:** one boolean to start; `verbose=true` returns the
 post-scrub raw object (K-1 still applies) as a debugging escape hatch, and the

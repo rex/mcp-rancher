@@ -109,7 +109,17 @@ class RancherConfigMapList(RancherModel):
 
 
 class RancherSecretSummary(RancherModel):
-    """Typed summary for one Kubernetes Secret. Values are masked by design."""
+    """Typed summary for one Kubernetes Secret. Values are masked by design.
+
+    ``data_keys`` (the key *names*, e.g. ``["tls.crt", "tls.key"]``) lives on
+    ``RancherSecretDetail`` only (AE-10 / ADR-0002): ``data_key_count`` is
+    enough signal for a LIST scan ("does this secret have the shape I
+    expect"), and the actual names are a per-item follow-up ``secret_get``
+    already answers. At real-world scale — Helm alone stores one Secret per
+    release *revision*, so a normal cluster's cluster-wide secret count runs
+    into the hundreds — repeating each one's key-name array was a meaningful
+    share of why ``secrets_list`` ran to 61 KB for a plain enumeration.
+    """
 
     name: str = Field(
         default="<unknown-secret>",
@@ -121,10 +131,6 @@ class RancherSecretSummary(RancherModel):
     )
     secret_type: str | None = Field(default=None, validation_alias=AliasPath("type"))
     data_key_count: int = 0
-    data_keys: list[str] = Field(default_factory=list)
-    """Data-key *names* only (e.g. ``["tls.crt", "tls.key"]``) — never values.
-    Names are safe and tell a consumer what a Secret contains without exposing
-    anything (L-0b / ADR-0002 rule #5). Populated by the list builder."""
     immutable: bool | None = None
 
 
@@ -145,6 +151,11 @@ class RancherSecretDetail(RancherSecretSummary, RancherClusterScopedDetail):
 
     serializer_reveals_secrets: ClassVar[bool] = True
 
+    data_keys: list[str] = Field(default_factory=list)
+    """Data-key *names* only (e.g. ``["tls.crt", "tls.key"]``) — never values.
+    Names are safe and tell a consumer what a Secret contains without exposing
+    anything (L-0b / ADR-0002 rule #5). Populated by the get/create builder;
+    moved here from the list summary by AE-10 (see that docstring)."""
     annotation_keys: list[str] = Field(default_factory=list)
     data: dict[str, str] = Field(default_factory=dict)
     """Decoded Secret values. Populated on validate; suppressed to ``{}`` by

@@ -97,13 +97,31 @@ def _shape_setting_value(value: str | None, *, field: str = "value") -> dict[str
 
 
 def _setting_summary_from_payload(payload: Mapping[str, object]) -> RancherSettingSummary:
-    """Normalize one Rancher setting payload, shaping oversized ``value`` and
-    ``default`` identically (L-3a / M-SETTINGS) via the shared helper."""
+    """Normalize one Rancher setting payload, shaping an oversized ``value``
+    (L-3a) and dropping ``default`` whenever it is a pure duplicate.
+
+    AE-10 / ADR-0002: Rancher echoes ``default`` (the factory value) back
+    equal to ``value`` for every setting that has never been customized —
+    both entries in the committed 2.6.5 fixture
+    (``tests/fixtures/rancher_2_6_5/norman_collection_settings_filtered.json``)
+    confirm this, and CHANGELOG [1.34.0] documents the same on a live
+    171-setting capture. Shipping both on every LIST entry is the exact
+    "duplicated spec echo" class of noise the ADR already names
+    (``cluster_get``'s doubled ``rancherKubernetesEngineConfig``); it was
+    still the single largest reason ``settings_list`` sat at 23 KB after
+    M-SETTINGS. The moment a setting genuinely diverges from its factory
+    default, ``default`` is exactly the "what would reverting look like"
+    signal ADR-0002 rule #4 requires, so it — and its own L-3a shape
+    markers — resurface untouched.
+    """
 
     summary = RancherSettingSummary.model_validate(payload)
     shaped = _shape_setting_value(summary.value, field="value")
-    shaped.update(_shape_setting_value(summary.default, field="default"))
-    return summary.model_copy(update=shaped) if shaped else summary
+    if summary.default == summary.value:
+        shaped["default"] = None
+    else:
+        shaped.update(_shape_setting_value(summary.default, field="default"))
+    return summary.model_copy(update=shaped)
 
 
 def _feature_summary_from_payload(payload: Mapping[str, object]) -> RancherFeatureSummary:

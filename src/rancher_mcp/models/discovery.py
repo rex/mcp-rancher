@@ -115,14 +115,23 @@ class APIPlaneList(RancherModel):
 
 
 class SchemaSummary(RancherModel):
-    """Compact schema summary for a Norman or Steve type."""
+    """Compact schema summary for a Norman or Steve type.
+
+    A schema LIST exists to answer exactly one question: which type ids are
+    valid for the sibling ``resource_list``/``resource_get`` tools (see each
+    schema-list tool's own docstring). That is ``id`` plus a human-readable
+    ``pluralName`` — nothing else changes which id an agent picks next.
+    Verbs (``collectionMethods``/``resourceMethods``), ``links``, and the
+    resourceFields census moved to ``SchemaDetail`` (``schema_get``) only:
+    at real-world scale (Norman/Steve routinely expose several hundred
+    schema types, most of them internal data-shape structs, not just
+    top-level resources) those four fields, repeated per item, were the
+    entire reason ``norman_schema_list``/``steve_schema_list`` ran to
+    44-57 KB for a plain enumeration (AE-10 / ADR-0002).
+    """
 
     id: str
     plural_name: str | None = None
-    collection_methods: list[str] = Field(default_factory=list)
-    resource_methods: list[str] = Field(default_factory=list)
-    link_keys: list[str] = Field(default_factory=list)
-    field_count: int = 0
 
 
 class SchemaList(RancherModel):

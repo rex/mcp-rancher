@@ -65,16 +65,15 @@ def _config_map_summary_from_payload(
 def _secret_summary_from_payload(payload: Mapping[str, object]) -> RancherSecretSummary:
     """Normalize one Secret payload — values are masked by design.
 
-    Only the key count is exposed; the actual base64-encoded values are
-    never copied into the summary or detail. Use the generic Steve get
-    tool when the unmasked payload is required.
+    Only the key *count* is exposed on the list summary; neither the
+    base64-encoded values nor the key names travel here (AE-10 moved
+    ``data_keys`` to ``RancherSecretDetail`` — call ``rancher_secret_get``
+    for the names, or the generic Steve get tool for the unmasked payload).
     """
 
     summary = RancherSecretSummary.model_validate(payload)
     data = string_dict(mapping_value(payload, "data") or {})
-    return summary.model_copy(
-        update={"data_key_count": len(data), "data_keys": sorted(data)},
-    )
+    return summary.model_copy(update={"data_key_count": len(data)})
 
 
 def _service_account_summary_from_payload(

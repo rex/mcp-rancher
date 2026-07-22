@@ -1,5 +1,41 @@
 # Changelog
 
+## [1.52.0] — 2026-07-22 — Agent: Claude
+### Changed
+- **AE-10 — oversized list responses trimmed**, per the doctrine "collapse healthy
+  returns, expand error returns". Measured on identical representative payloads
+  (`model_dump(mode="json", by_alias=True)` → compact JSON, i.e. the exact bytes
+  FastMCP sends):
+
+  | tool | before | after | removed |
+  |---|---|---|---|
+  | `norman_schema_list` | 36.3 KB | 15.5 KB | verbs, link keys, field census |
+  | `steve_schema_list` | 48.0 KB | 17.1 KB | same four fields |
+  | `settings_list` | 17.9 KB | 13.5 KB | `default` when it duplicates `value` |
+  | `secrets_list` | 51.5 KB | 41.0 KB | per-item `dataKeys` |
+
+  Nothing was deleted, only relocated: the schema verbs/links/field census now
+  live solely on `schema_get`, and secret key names solely on `secret_get`.
+  `dataKeyCount` remains on the list as the signal for deciding which to open.
+  `settings_list` drops `default` only when it genuinely equals `value` — the
+  duplicated-spec-echo noise class the ADR already names.
+
+  Caveat on the numbers: these come from representative payloads built from the
+  repo's captured 2.6.5 fixtures, not from a live cluster (none was reachable
+  from the working session). Ratios are sound; absolute sizes will differ from
+  the live capture that reported `secrets_list` at 61 KB.
+
+### Added
+- `tests/unit/test_ae10_response_size.py` — shape assertions plus a per-tool
+  serialized-byte ceiling, so these cannot silently regrow.
+
+### Changed (docs)
+- `docs/adr/0002-response-shaping-doctrine.md`: schema/secret/setting rows added
+  to the field manifest, plus Decision Outcome item 9 recording the measurements
+  and explicitly **deferring** a default pagination cap for `secrets_list` — the
+  one genuinely unbounded-at-scale tool here. That changes what "no `limit`"
+  means for existing callers, which is a product decision, not response shaping.
+
 ## [1.51.0] — 2026-07-22 — Agent: Claude
 `nextSteps` exists to hand an agent a ready-to-run follow-up call. It was
 handing out calls that were subtly not runnable — the failure an operator
