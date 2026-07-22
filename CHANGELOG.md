@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.42.0] — 2026-07-21 — Agent: Claude
+### Changed
+- **N-1 — real tool descriptions (agent-fitness AE-20).** Rewrote the 6 generic wrapper
+  docstrings in the codegen template (`scripts/codegen/templates/tool_module.py.j2`) that
+  produced `"Public MCP wrapper for curated X list."` for ~250 generated tools — the
+  boilerplate that told a selecting agent nothing the tool name didn't. Each now names
+  what comes back (typed summaries vs full detail, mutation receipt, delete receipt) and
+  when to reach for it. Measured against the `agenteval` fitness harness: the schema-only
+  score jumped **37.8 → 81.4 (grade F → B)**, AE-20 findings 317 → 40 (the 40 remaining are
+  hand-written tools, fixed next). Regenerated all 100 codegen files + the tool manifest.
+- Vendored the `agenteval` fitness harness into the repo as a gitignored local tool
+  (`agenteval/`, pulled from minas-morgul) so the score can be re-measured on every change.
+
 ## [1.41.0] — 2026-07-21 — Agent: Claude
 ### Added
 - **M-K7 — `rancher_pod_logs` + `rancher_resource_events`: the diagnosis

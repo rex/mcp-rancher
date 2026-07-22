@@ -143,7 +143,7 @@ async def rancher_node_drivers_list_tool(
     reverse: bool | None = None,
     instance: str | None = None,
 ) -> RancherNodeDriverList:
-    """Public MCP wrapper for curated node_driver list."""
+    """List node_drivers as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool."""
 
     return await rancher_node_drivers_list(
         limit=limit,
@@ -160,7 +160,7 @@ async def rancher_node_driver_get_tool(
     driver_id: str,
     instance: str | None = None,
 ) -> RancherNodeDriverDetail:
-    """Public MCP wrapper for curated node_driver detail."""
+    """Fetch one node_driver and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect."""
 
     return await rancher_node_driver_get(
         driver_id=driver_id,

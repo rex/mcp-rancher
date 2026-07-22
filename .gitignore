@@ -42,3 +42,4 @@ tfplan.*
 # in .git/info/exclude, but that's per-clone only — this is the durable copy.
 capture/
 capture_manifest.json
+agenteval/

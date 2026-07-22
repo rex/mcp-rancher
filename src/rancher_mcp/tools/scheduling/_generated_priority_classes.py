@@ -401,7 +401,7 @@ async def rancher_priority_classes_list_tool(
     page_token: str | None = None,
     instance: str | None = None,
 ) -> RancherPriorityClassList:
-    """Public MCP wrapper for curated priority_class list."""
+    """List priority_classes as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool."""
 
     return await rancher_priority_classes_list(
         cluster_id=cluster_id,
@@ -419,7 +419,7 @@ async def rancher_priority_class_get_tool(
     cluster_id: str = "local",
     instance: str | None = None,
 ) -> RancherPriorityClassDetail:
-    """Public MCP wrapper for curated priority_class detail."""
+    """Fetch one priority_class and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect."""
 
     return await rancher_priority_class_get(
         priority_class_name=priority_class_name,
@@ -434,7 +434,7 @@ async def rancher_priority_class_delete_tool(
     cluster_id: str = "local",
     instance: str | None = None,
 ) -> RancherCuratedDeleteResult:
-    """Public MCP wrapper for curated priority_class delete."""
+    """Delete one priority_class and return a typed receipt of what was removed. Destructive and irreversible — the caller must first echo the exact confirmation phrase the tool requires."""
 
     return await rancher_priority_class_delete(
         priority_class_name=priority_class_name,
@@ -450,7 +450,7 @@ async def rancher_priority_class_set_labels_tool(
     cluster_id: str = "local",
     instance: str | None = None,
 ) -> RancherMutationReceipt:
-    """Public MCP wrapper for curated priority_class set_labels."""
+    """Modify one priority_class in place (set labels) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write."""
 
     return await rancher_priority_class_set_labels(
         priority_class_name=priority_class_name,
@@ -466,7 +466,7 @@ async def rancher_priority_class_set_annotations_tool(
     cluster_id: str = "local",
     instance: str | None = None,
 ) -> RancherMutationReceipt:
-    """Public MCP wrapper for curated priority_class set_annotations."""
+    """Modify one priority_class in place (set annotations) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write."""
 
     return await rancher_priority_class_set_annotations(
         priority_class_name=priority_class_name,

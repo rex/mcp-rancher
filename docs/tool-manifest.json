@@ -24,7 +24,7 @@
     },
     {
       "name": "rancher_auth_config_get",
-      "description": "Public MCP wrapper for curated auth_config detail.",
+      "description": "Fetch one auth_config and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -41,7 +41,7 @@
     },
     {
       "name": "rancher_auth_configs_list",
-      "description": "Public MCP wrapper for curated auth_config list.",
+      "description": "List auth_configs as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -78,7 +78,7 @@
     },
     {
       "name": "rancher_backup_get",
-      "description": "Public MCP wrapper for curated backup detail.",
+      "description": "Fetch one backup and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -99,7 +99,7 @@
     },
     {
       "name": "rancher_backup_set_annotations",
-      "description": "Public MCP wrapper for curated backup set_annotations.",
+      "description": "Modify one backup in place (set annotations) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -124,7 +124,7 @@
     },
     {
       "name": "rancher_backup_set_labels",
-      "description": "Public MCP wrapper for curated backup set_labels.",
+      "description": "Modify one backup in place (set labels) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -149,7 +149,7 @@
     },
     {
       "name": "rancher_backups_list",
-      "description": "Public MCP wrapper for curated backup list.",
+      "description": "List backups as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -191,7 +191,7 @@
     },
     {
       "name": "rancher_catalog_get",
-      "description": "Public MCP wrapper for curated catalog detail.",
+      "description": "Fetch one catalog and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -208,7 +208,7 @@
     },
     {
       "name": "rancher_catalogs_list",
-      "description": "Public MCP wrapper for curated catalog list.",
+      "description": "List catalogs as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -245,7 +245,7 @@
     },
     {
       "name": "rancher_cert_manager_certificate_delete",
-      "description": "Public MCP wrapper for curated cert_manager_certificate delete.",
+      "description": "Delete one cert_manager_certificate and return a typed receipt of what was removed. Destructive and irreversible — the caller must first echo the exact confirmation phrase the tool requires.",
       "read_only": false,
       "destructive": true,
       "idempotent": true,
@@ -274,7 +274,7 @@
     },
     {
       "name": "rancher_cert_manager_certificate_get",
-      "description": "Public MCP wrapper for curated cert_manager_certificate detail.",
+      "description": "Fetch one cert_manager_certificate and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -299,7 +299,7 @@
     },
     {
       "name": "rancher_cert_manager_certificate_set_annotations",
-      "description": "Public MCP wrapper for curated cert_manager_certificate set_annotations.",
+      "description": "Modify one cert_manager_certificate in place (set annotations) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -328,7 +328,7 @@
     },
     {
       "name": "rancher_cert_manager_certificate_set_labels",
-      "description": "Public MCP wrapper for curated cert_manager_certificate set_labels.",
+      "description": "Modify one cert_manager_certificate in place (set labels) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -357,7 +357,7 @@
     },
     {
       "name": "rancher_cert_manager_certificates_list",
-      "description": "Public MCP wrapper for curated cert_manager_certificate list.",
+      "description": "List cert_manager_certificates as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -398,7 +398,7 @@
     },
     {
       "name": "rancher_cert_manager_cluster_issuer_delete",
-      "description": "Public MCP wrapper for curated cert_manager_cluster_issuer delete.",
+      "description": "Delete one cert_manager_cluster_issuer and return a typed receipt of what was removed. Destructive and irreversible — the caller must first echo the exact confirmation phrase the tool requires.",
       "read_only": false,
       "destructive": true,
       "idempotent": true,
@@ -423,7 +423,7 @@
     },
     {
       "name": "rancher_cert_manager_cluster_issuer_get",
-      "description": "Public MCP wrapper for curated cert_manager_cluster_issuer detail.",
+      "description": "Fetch one cert_manager_cluster_issuer and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -444,7 +444,7 @@
     },
     {
       "name": "rancher_cert_manager_cluster_issuer_set_annotations",
-      "description": "Public MCP wrapper for curated cert_manager_cluster_issuer set_annotations.",
+      "description": "Modify one cert_manager_cluster_issuer in place (set annotations) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -469,7 +469,7 @@
     },
     {
       "name": "rancher_cert_manager_cluster_issuer_set_labels",
-      "description": "Public MCP wrapper for curated cert_manager_cluster_issuer set_labels.",
+      "description": "Modify one cert_manager_cluster_issuer in place (set labels) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -494,7 +494,7 @@
     },
     {
       "name": "rancher_cert_manager_cluster_issuers_list",
-      "description": "Public MCP wrapper for curated cert_manager_cluster_issuer list.",
+      "description": "List cert_manager_cluster_issuers as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -531,7 +531,7 @@
     },
     {
       "name": "rancher_cert_manager_issuer_delete",
-      "description": "Public MCP wrapper for curated cert_manager_issuer delete.",
+      "description": "Delete one cert_manager_issuer and return a typed receipt of what was removed. Destructive and irreversible — the caller must first echo the exact confirmation phrase the tool requires.",
       "read_only": false,
       "destructive": true,
       "idempotent": true,
@@ -560,7 +560,7 @@
     },
     {
       "name": "rancher_cert_manager_issuer_get",
-      "description": "Public MCP wrapper for curated cert_manager_issuer detail.",
+      "description": "Fetch one cert_manager_issuer and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -585,7 +585,7 @@
     },
     {
       "name": "rancher_cert_manager_issuer_set_annotations",
-      "description": "Public MCP wrapper for curated cert_manager_issuer set_annotations.",
+      "description": "Modify one cert_manager_issuer in place (set annotations) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -614,7 +614,7 @@
     },
     {
       "name": "rancher_cert_manager_issuer_set_labels",
-      "description": "Public MCP wrapper for curated cert_manager_issuer set_labels.",
+      "description": "Modify one cert_manager_issuer in place (set labels) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -643,7 +643,7 @@
     },
     {
       "name": "rancher_cert_manager_issuers_list",
-      "description": "Public MCP wrapper for curated cert_manager_issuer list.",
+      "description": "List cert_manager_issuers as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -684,7 +684,7 @@
     },
     {
       "name": "rancher_certificate_get",
-      "description": "Public MCP wrapper for curated certificate detail.",
+      "description": "Fetch one certificate and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -701,7 +701,7 @@
     },
     {
       "name": "rancher_certificates_list",
-      "description": "Public MCP wrapper for curated certificate list.",
+      "description": "List certificates as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -738,7 +738,7 @@
     },
     {
       "name": "rancher_cis_scan_get",
-      "description": "Public MCP wrapper for curated cis_scan detail.",
+      "description": "Fetch one cis_scan and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -755,7 +755,7 @@
     },
     {
       "name": "rancher_cis_scan_profile_get",
-      "description": "Public MCP wrapper for curated cis_scan_profile detail.",
+      "description": "Fetch one cis_scan_profile and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -772,7 +772,7 @@
     },
     {
       "name": "rancher_cis_scan_profiles_list",
-      "description": "Public MCP wrapper for curated cis_scan_profile list.",
+      "description": "List cis_scan_profiles as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -793,7 +793,7 @@
     },
     {
       "name": "rancher_cis_scans_list",
-      "description": "Public MCP wrapper for curated cis_scan list.",
+      "description": "List cis_scans as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -818,7 +818,7 @@
     },
     {
       "name": "rancher_cloud_credential_get",
-      "description": "Public MCP wrapper for curated cloud_credential detail.",
+      "description": "Fetch one cloud_credential and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -835,7 +835,7 @@
     },
     {
       "name": "rancher_cloud_credentials_list",
-      "description": "Public MCP wrapper for curated cloud_credential list.",
+      "description": "List cloud_credentials as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -868,7 +868,7 @@
     },
     {
       "name": "rancher_cluster_alert_rule_get",
-      "description": "Public MCP wrapper for curated cluster_alert_rule detail.",
+      "description": "Fetch one cluster_alert_rule and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -885,7 +885,7 @@
     },
     {
       "name": "rancher_cluster_alert_rules_list",
-      "description": "Public MCP wrapper for curated cluster_alert_rule list.",
+      "description": "List cluster_alert_rules as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -914,7 +914,7 @@
     },
     {
       "name": "rancher_cluster_driver_get",
-      "description": "Public MCP wrapper for curated cluster_driver detail.",
+      "description": "Fetch one cluster_driver and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -931,7 +931,7 @@
     },
     {
       "name": "rancher_cluster_drivers_list",
-      "description": "Public MCP wrapper for curated cluster_driver list.",
+      "description": "List cluster_drivers as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -997,7 +997,7 @@
     },
     {
       "name": "rancher_cluster_flow_delete",
-      "description": "Public MCP wrapper for curated cluster_flow delete.",
+      "description": "Delete one cluster_flow and return a typed receipt of what was removed. Destructive and irreversible — the caller must first echo the exact confirmation phrase the tool requires.",
       "read_only": false,
       "destructive": true,
       "idempotent": true,
@@ -1022,7 +1022,7 @@
     },
     {
       "name": "rancher_cluster_flow_get",
-      "description": "Public MCP wrapper for curated cluster_flow detail.",
+      "description": "Fetch one cluster_flow and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -1043,7 +1043,7 @@
     },
     {
       "name": "rancher_cluster_flow_set_annotations",
-      "description": "Public MCP wrapper for curated cluster_flow set_annotations.",
+      "description": "Modify one cluster_flow in place (set annotations) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -1068,7 +1068,7 @@
     },
     {
       "name": "rancher_cluster_flow_set_labels",
-      "description": "Public MCP wrapper for curated cluster_flow set_labels.",
+      "description": "Modify one cluster_flow in place (set labels) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -1093,7 +1093,7 @@
     },
     {
       "name": "rancher_cluster_flows_list",
-      "description": "Public MCP wrapper for curated cluster_flow list.",
+      "description": "List cluster_flows as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -1122,7 +1122,7 @@
     },
     {
       "name": "rancher_cluster_get",
-      "description": "Public MCP wrapper for curated cluster detail.",
+      "description": "Fetch one cluster and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -1156,7 +1156,7 @@
     },
     {
       "name": "rancher_cluster_logging_get",
-      "description": "Public MCP wrapper for curated cluster_logging detail.",
+      "description": "Fetch one cluster_logging and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -1173,7 +1173,7 @@
     },
     {
       "name": "rancher_cluster_loggings_list",
-      "description": "Public MCP wrapper for curated cluster_logging list.",
+      "description": "List cluster_loggings as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -1239,7 +1239,7 @@
     },
     {
       "name": "rancher_cluster_output_delete",
-      "description": "Public MCP wrapper for curated cluster_output delete.",
+      "description": "Delete one cluster_output and return a typed receipt of what was removed. Destructive and irreversible — the caller must first echo the exact confirmation phrase the tool requires.",
       "read_only": false,
       "destructive": true,
       "idempotent": true,
@@ -1264,7 +1264,7 @@
     },
     {
       "name": "rancher_cluster_output_get",
-      "description": "Public MCP wrapper for curated cluster_output detail.",
+      "description": "Fetch one cluster_output and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -1285,7 +1285,7 @@
     },
     {
       "name": "rancher_cluster_output_set_annotations",
-      "description": "Public MCP wrapper for curated cluster_output set_annotations.",
+      "description": "Modify one cluster_output in place (set annotations) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -1310,7 +1310,7 @@
     },
     {
       "name": "rancher_cluster_output_set_labels",
-      "description": "Public MCP wrapper for curated cluster_output set_labels.",
+      "description": "Modify one cluster_output in place (set labels) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -1335,7 +1335,7 @@
     },
     {
       "name": "rancher_cluster_outputs_list",
-      "description": "Public MCP wrapper for curated cluster_output list.",
+      "description": "List cluster_outputs as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -1368,7 +1368,7 @@
     },
     {
       "name": "rancher_cluster_policy_report_delete",
-      "description": "Public MCP wrapper for curated cluster_policy_report delete.",
+      "description": "Delete one cluster_policy_report and return a typed receipt of what was removed. Destructive and irreversible — the caller must first echo the exact confirmation phrase the tool requires.",
       "read_only": false,
       "destructive": true,
       "idempotent": true,
@@ -1393,7 +1393,7 @@
     },
     {
       "name": "rancher_cluster_policy_report_get",
-      "description": "Public MCP wrapper for curated cluster_policy_report detail.",
+      "description": "Fetch one cluster_policy_report and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -1414,7 +1414,7 @@
     },
     {
       "name": "rancher_cluster_policy_report_set_annotations",
-      "description": "Public MCP wrapper for curated cluster_policy_report set_annotations.",
+      "description": "Modify one cluster_policy_report in place (set annotations) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -1439,7 +1439,7 @@
     },
     {
       "name": "rancher_cluster_policy_report_set_labels",
-      "description": "Public MCP wrapper for curated cluster_policy_report set_labels.",
+      "description": "Modify one cluster_policy_report in place (set labels) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -1464,7 +1464,7 @@
     },
     {
       "name": "rancher_cluster_policy_reports_list",
-      "description": "Public MCP wrapper for curated cluster_policy_report list.",
+      "description": "List cluster_policy_reports as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -1493,7 +1493,7 @@
     },
     {
       "name": "rancher_cluster_registration_token_get",
-      "description": "Public MCP wrapper for curated cluster_registration_token detail.",
+      "description": "Fetch one cluster_registration_token and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -1510,7 +1510,7 @@
     },
     {
       "name": "rancher_cluster_registration_tokens_list",
-      "description": "Public MCP wrapper for curated cluster_registration_token list.",
+      "description": "List cluster_registration_tokens as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -1551,7 +1551,7 @@
     },
     {
       "name": "rancher_cluster_role_template_binding_get",
-      "description": "Public MCP wrapper for curated cluster_role_template_binding detail.",
+      "description": "Fetch one cluster_role_template_binding and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -1568,7 +1568,7 @@
     },
     {
       "name": "rancher_cluster_role_template_bindings_list",
-      "description": "Public MCP wrapper for curated cluster_role_template_binding list.",
+      "description": "List cluster_role_template_bindings as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -1638,7 +1638,7 @@
     },
     {
       "name": "rancher_clusters_list",
-      "description": "Public MCP wrapper for curated cluster list.",
+      "description": "List clusters as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -1671,7 +1671,7 @@
     },
     {
       "name": "rancher_config_map_apply",
-      "description": "Public MCP wrapper for curated config_map apply.",
+      "description": "Apply one config_map to a desired state as a declarative PUT and return its typed detail — creating the object when absent, replacing it when present. This writes to the cluster.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -1716,7 +1716,7 @@
     },
     {
       "name": "rancher_config_map_create",
-      "description": "Public MCP wrapper for curated config_map create.",
+      "description": "Create one config_map from the supplied spec and return the typed detail of the new object, including its server-assigned identity and initial state. This writes to the cluster.",
       "read_only": false,
       "destructive": false,
       "idempotent": false,
@@ -1761,7 +1761,7 @@
     },
     {
       "name": "rancher_config_map_delete",
-      "description": "Public MCP wrapper for curated config_map delete.",
+      "description": "Delete one config_map and return a typed receipt of what was removed. Destructive and irreversible — the caller must first echo the exact confirmation phrase the tool requires.",
       "read_only": false,
       "destructive": true,
       "idempotent": true,
@@ -1790,7 +1790,7 @@
     },
     {
       "name": "rancher_config_map_get",
-      "description": "Public MCP wrapper for curated config_map detail.",
+      "description": "Fetch one config_map and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -1815,7 +1815,7 @@
     },
     {
       "name": "rancher_config_map_set_annotations",
-      "description": "Public MCP wrapper for curated config_map set_annotations.",
+      "description": "Modify one config_map in place (set annotations) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -1844,7 +1844,7 @@
     },
     {
       "name": "rancher_config_map_set_labels",
-      "description": "Public MCP wrapper for curated config_map set_labels.",
+      "description": "Modify one config_map in place (set labels) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -1873,7 +1873,7 @@
     },
     {
       "name": "rancher_config_maps_list",
-      "description": "Public MCP wrapper for curated config_map list.",
+      "description": "List config_maps as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -1910,7 +1910,7 @@
     },
     {
       "name": "rancher_cron_job_delete",
-      "description": "Public MCP wrapper for curated cron_job delete.",
+      "description": "Delete one cron_job and return a typed receipt of what was removed. Destructive and irreversible — the caller must first echo the exact confirmation phrase the tool requires.",
       "read_only": false,
       "destructive": true,
       "idempotent": true,
@@ -1939,7 +1939,7 @@
     },
     {
       "name": "rancher_cron_job_get",
-      "description": "Public MCP wrapper for curated cron_job detail.",
+      "description": "Fetch one cron_job and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -1964,7 +1964,7 @@
     },
     {
       "name": "rancher_cron_job_resume",
-      "description": "Public MCP wrapper for curated cron_job resume.",
+      "description": "Modify one cron_job in place (resume) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -1989,7 +1989,7 @@
     },
     {
       "name": "rancher_cron_job_set_annotations",
-      "description": "Public MCP wrapper for curated cron_job set_annotations.",
+      "description": "Modify one cron_job in place (set annotations) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -2018,7 +2018,7 @@
     },
     {
       "name": "rancher_cron_job_set_labels",
-      "description": "Public MCP wrapper for curated cron_job set_labels.",
+      "description": "Modify one cron_job in place (set labels) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -2047,7 +2047,7 @@
     },
     {
       "name": "rancher_cron_job_suspend",
-      "description": "Public MCP wrapper for curated cron_job suspend.",
+      "description": "Modify one cron_job in place (suspend) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -2076,7 +2076,7 @@
     },
     {
       "name": "rancher_cron_jobs_list",
-      "description": "Public MCP wrapper for curated cron_job list.",
+      "description": "List cron_jobs as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -2117,7 +2117,7 @@
     },
     {
       "name": "rancher_daemonset_delete",
-      "description": "Public MCP wrapper for curated daemonset delete.",
+      "description": "Delete one daemonset and return a typed receipt of what was removed. Destructive and irreversible — the caller must first echo the exact confirmation phrase the tool requires.",
       "read_only": false,
       "destructive": true,
       "idempotent": true,
@@ -2146,7 +2146,7 @@
     },
     {
       "name": "rancher_daemonset_get",
-      "description": "Public MCP wrapper for curated daemonset detail.",
+      "description": "Fetch one daemonset and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -2171,7 +2171,7 @@
     },
     {
       "name": "rancher_daemonset_set_annotations",
-      "description": "Public MCP wrapper for curated daemonset set_annotations.",
+      "description": "Modify one daemonset in place (set annotations) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -2200,7 +2200,7 @@
     },
     {
       "name": "rancher_daemonset_set_labels",
-      "description": "Public MCP wrapper for curated daemonset set_labels.",
+      "description": "Modify one daemonset in place (set labels) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -2229,7 +2229,7 @@
     },
     {
       "name": "rancher_daemonsets_list",
-      "description": "Public MCP wrapper for curated daemonset list.",
+      "description": "List daemonsets as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -2270,7 +2270,7 @@
     },
     {
       "name": "rancher_deployment_delete",
-      "description": "Public MCP wrapper for curated deployment delete.",
+      "description": "Delete one deployment and return a typed receipt of what was removed. Destructive and irreversible — the caller must first echo the exact confirmation phrase the tool requires.",
       "read_only": false,
       "destructive": true,
       "idempotent": true,
@@ -2299,7 +2299,7 @@
     },
     {
       "name": "rancher_deployment_get",
-      "description": "Public MCP wrapper for curated deployment detail.",
+      "description": "Fetch one deployment and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -2324,7 +2324,7 @@
     },
     {
       "name": "rancher_deployment_pause",
-      "description": "Public MCP wrapper for curated deployment pause.",
+      "description": "Modify one deployment in place (pause) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -2349,7 +2349,7 @@
     },
     {
       "name": "rancher_deployment_restart",
-      "description": "Public MCP wrapper for curated deployment restart.",
+      "description": "Modify one deployment in place (restart) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -2374,7 +2374,7 @@
     },
     {
       "name": "rancher_deployment_resume",
-      "description": "Public MCP wrapper for curated deployment resume.",
+      "description": "Modify one deployment in place (resume) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -2399,7 +2399,7 @@
     },
     {
       "name": "rancher_deployment_scale",
-      "description": "Public MCP wrapper for curated deployment scale.",
+      "description": "Modify one deployment in place (scale) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -2428,7 +2428,7 @@
     },
     {
       "name": "rancher_deployment_set_annotations",
-      "description": "Public MCP wrapper for curated deployment set_annotations.",
+      "description": "Modify one deployment in place (set annotations) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -2457,7 +2457,7 @@
     },
     {
       "name": "rancher_deployment_set_labels",
-      "description": "Public MCP wrapper for curated deployment set_labels.",
+      "description": "Modify one deployment in place (set labels) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -2486,7 +2486,7 @@
     },
     {
       "name": "rancher_deployments_list",
-      "description": "Public MCP wrapper for curated deployment list.",
+      "description": "List deployments as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -2527,7 +2527,7 @@
     },
     {
       "name": "rancher_endpoint_slice_delete",
-      "description": "Public MCP wrapper for curated endpoint_slice delete.",
+      "description": "Delete one endpoint_slice and return a typed receipt of what was removed. Destructive and irreversible — the caller must first echo the exact confirmation phrase the tool requires.",
       "read_only": false,
       "destructive": true,
       "idempotent": true,
@@ -2556,7 +2556,7 @@
     },
     {
       "name": "rancher_endpoint_slice_get",
-      "description": "Public MCP wrapper for curated endpoint_slice detail.",
+      "description": "Fetch one endpoint_slice and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -2581,7 +2581,7 @@
     },
     {
       "name": "rancher_endpoint_slice_set_annotations",
-      "description": "Public MCP wrapper for curated endpoint_slice set_annotations.",
+      "description": "Modify one endpoint_slice in place (set annotations) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -2610,7 +2610,7 @@
     },
     {
       "name": "rancher_endpoint_slice_set_labels",
-      "description": "Public MCP wrapper for curated endpoint_slice set_labels.",
+      "description": "Modify one endpoint_slice in place (set labels) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -2639,7 +2639,7 @@
     },
     {
       "name": "rancher_endpoint_slices_list",
-      "description": "Public MCP wrapper for curated endpoint_slice list.",
+      "description": "List endpoint_slices as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -2684,7 +2684,7 @@
     },
     {
       "name": "rancher_etcd_backup_get",
-      "description": "Public MCP wrapper for curated etcd_backup detail.",
+      "description": "Fetch one etcd_backup and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -2701,7 +2701,7 @@
     },
     {
       "name": "rancher_etcd_backups_list",
-      "description": "Public MCP wrapper for curated etcd_backup list.",
+      "description": "List etcd_backups as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -2746,7 +2746,7 @@
     },
     {
       "name": "rancher_feature_get",
-      "description": "Public MCP wrapper for curated feature detail.",
+      "description": "Fetch one feature and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -2763,7 +2763,7 @@
     },
     {
       "name": "rancher_features_list",
-      "description": "Public MCP wrapper for curated feature list.",
+      "description": "List features as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -2910,7 +2910,7 @@
     },
     {
       "name": "rancher_fleet_workspace_get",
-      "description": "Public MCP wrapper for curated fleet_workspace detail.",
+      "description": "Fetch one fleet_workspace and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -2927,7 +2927,7 @@
     },
     {
       "name": "rancher_fleet_workspaces_list",
-      "description": "Public MCP wrapper for curated fleet_workspace list.",
+      "description": "List fleet_workspaces as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -2956,7 +2956,7 @@
     },
     {
       "name": "rancher_flow_delete",
-      "description": "Public MCP wrapper for curated flow delete.",
+      "description": "Delete one flow and return a typed receipt of what was removed. Destructive and irreversible — the caller must first echo the exact confirmation phrase the tool requires.",
       "read_only": false,
       "destructive": true,
       "idempotent": true,
@@ -2985,7 +2985,7 @@
     },
     {
       "name": "rancher_flow_get",
-      "description": "Public MCP wrapper for curated flow detail.",
+      "description": "Fetch one flow and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -3010,7 +3010,7 @@
     },
     {
       "name": "rancher_flow_set_annotations",
-      "description": "Public MCP wrapper for curated flow set_annotations.",
+      "description": "Modify one flow in place (set annotations) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -3039,7 +3039,7 @@
     },
     {
       "name": "rancher_flow_set_labels",
-      "description": "Public MCP wrapper for curated flow set_labels.",
+      "description": "Modify one flow in place (set labels) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -3068,7 +3068,7 @@
     },
     {
       "name": "rancher_flows_list",
-      "description": "Public MCP wrapper for curated flow list.",
+      "description": "List flows as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -3101,7 +3101,7 @@
     },
     {
       "name": "rancher_global_role_binding_get",
-      "description": "Public MCP wrapper for curated global_role_binding detail.",
+      "description": "Fetch one global_role_binding and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -3118,7 +3118,7 @@
     },
     {
       "name": "rancher_global_role_bindings_list",
-      "description": "Public MCP wrapper for curated global_role_binding list.",
+      "description": "List global_role_bindings as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -3159,7 +3159,7 @@
     },
     {
       "name": "rancher_global_role_get",
-      "description": "Public MCP wrapper for curated global_role detail.",
+      "description": "Fetch one global_role and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -3176,7 +3176,7 @@
     },
     {
       "name": "rancher_global_roles_list",
-      "description": "Public MCP wrapper for curated global_role list.",
+      "description": "List global_roles as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -3213,7 +3213,7 @@
     },
     {
       "name": "rancher_group_get",
-      "description": "Public MCP wrapper for curated group detail.",
+      "description": "Fetch one group and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -3230,7 +3230,7 @@
     },
     {
       "name": "rancher_groups_list",
-      "description": "Public MCP wrapper for curated group list.",
+      "description": "List groups as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -3259,7 +3259,7 @@
     },
     {
       "name": "rancher_horizontal_pod_autoscaler_delete",
-      "description": "Public MCP wrapper for curated horizontal_pod_autoscaler delete.",
+      "description": "Delete one horizontal_pod_autoscaler and return a typed receipt of what was removed. Destructive and irreversible — the caller must first echo the exact confirmation phrase the tool requires.",
       "read_only": false,
       "destructive": true,
       "idempotent": true,
@@ -3288,7 +3288,7 @@
     },
     {
       "name": "rancher_horizontal_pod_autoscaler_get",
-      "description": "Public MCP wrapper for curated horizontal_pod_autoscaler detail.",
+      "description": "Fetch one horizontal_pod_autoscaler and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -3313,7 +3313,7 @@
     },
     {
       "name": "rancher_horizontal_pod_autoscaler_set_annotations",
-      "description": "Public MCP wrapper for curated horizontal_pod_autoscaler set_annotations.",
+      "description": "Modify one horizontal_pod_autoscaler in place (set annotations) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -3342,7 +3342,7 @@
     },
     {
       "name": "rancher_horizontal_pod_autoscaler_set_labels",
-      "description": "Public MCP wrapper for curated horizontal_pod_autoscaler set_labels.",
+      "description": "Modify one horizontal_pod_autoscaler in place (set labels) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -3371,7 +3371,7 @@
     },
     {
       "name": "rancher_horizontal_pod_autoscaler_set_min_max",
-      "description": "Public MCP wrapper for curated horizontal_pod_autoscaler set_min_max.",
+      "description": "Modify one horizontal_pod_autoscaler in place (set min max) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -3404,7 +3404,7 @@
     },
     {
       "name": "rancher_horizontal_pod_autoscalers_list",
-      "description": "Public MCP wrapper for curated horizontal_pod_autoscaler list.",
+      "description": "List horizontal_pod_autoscalers as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -3449,7 +3449,7 @@
     },
     {
       "name": "rancher_ingress_delete",
-      "description": "Public MCP wrapper for curated ingress delete.",
+      "description": "Delete one ingress and return a typed receipt of what was removed. Destructive and irreversible — the caller must first echo the exact confirmation phrase the tool requires.",
       "read_only": false,
       "destructive": true,
       "idempotent": true,
@@ -3478,7 +3478,7 @@
     },
     {
       "name": "rancher_ingress_get",
-      "description": "Public MCP wrapper for curated ingress detail.",
+      "description": "Fetch one ingress and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -3503,7 +3503,7 @@
     },
     {
       "name": "rancher_ingress_set_annotations",
-      "description": "Public MCP wrapper for curated ingress set_annotations.",
+      "description": "Modify one ingress in place (set annotations) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -3532,7 +3532,7 @@
     },
     {
       "name": "rancher_ingress_set_labels",
-      "description": "Public MCP wrapper for curated ingress set_labels.",
+      "description": "Modify one ingress in place (set labels) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -3561,7 +3561,7 @@
     },
     {
       "name": "rancher_ingresses_list",
-      "description": "Public MCP wrapper for curated ingress list.",
+      "description": "List ingresses as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -3615,7 +3615,7 @@
     },
     {
       "name": "rancher_job_delete",
-      "description": "Public MCP wrapper for curated job delete.",
+      "description": "Delete one job and return a typed receipt of what was removed. Destructive and irreversible — the caller must first echo the exact confirmation phrase the tool requires.",
       "read_only": false,
       "destructive": true,
       "idempotent": true,
@@ -3644,7 +3644,7 @@
     },
     {
       "name": "rancher_job_get",
-      "description": "Public MCP wrapper for curated job detail.",
+      "description": "Fetch one job and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -3669,7 +3669,7 @@
     },
     {
       "name": "rancher_job_set_annotations",
-      "description": "Public MCP wrapper for curated job set_annotations.",
+      "description": "Modify one job in place (set annotations) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -3698,7 +3698,7 @@
     },
     {
       "name": "rancher_job_set_labels",
-      "description": "Public MCP wrapper for curated job set_labels.",
+      "description": "Modify one job in place (set labels) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -3727,7 +3727,7 @@
     },
     {
       "name": "rancher_jobs_list",
-      "description": "Public MCP wrapper for curated job list.",
+      "description": "List jobs as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -3772,7 +3772,7 @@
     },
     {
       "name": "rancher_limit_range_delete",
-      "description": "Public MCP wrapper for curated limit_range delete.",
+      "description": "Delete one limit_range and return a typed receipt of what was removed. Destructive and irreversible — the caller must first echo the exact confirmation phrase the tool requires.",
       "read_only": false,
       "destructive": true,
       "idempotent": true,
@@ -3801,7 +3801,7 @@
     },
     {
       "name": "rancher_limit_range_get",
-      "description": "Public MCP wrapper for curated limit_range detail.",
+      "description": "Fetch one limit_range and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -3826,7 +3826,7 @@
     },
     {
       "name": "rancher_limit_range_set_annotations",
-      "description": "Public MCP wrapper for curated limit_range set_annotations.",
+      "description": "Modify one limit_range in place (set annotations) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -3855,7 +3855,7 @@
     },
     {
       "name": "rancher_limit_range_set_labels",
-      "description": "Public MCP wrapper for curated limit_range set_labels.",
+      "description": "Modify one limit_range in place (set labels) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -3884,7 +3884,7 @@
     },
     {
       "name": "rancher_limit_ranges_list",
-      "description": "Public MCP wrapper for curated limit_range list.",
+      "description": "List limit_ranges as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -3921,7 +3921,7 @@
     },
     {
       "name": "rancher_longhorn_backup_get",
-      "description": "Public MCP wrapper for curated longhorn_backup detail.",
+      "description": "Fetch one longhorn_backup and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -3946,7 +3946,7 @@
     },
     {
       "name": "rancher_longhorn_backup_set_annotations",
-      "description": "Public MCP wrapper for curated longhorn_backup set_annotations.",
+      "description": "Modify one longhorn_backup in place (set annotations) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -3975,7 +3975,7 @@
     },
     {
       "name": "rancher_longhorn_backup_set_labels",
-      "description": "Public MCP wrapper for curated longhorn_backup set_labels.",
+      "description": "Modify one longhorn_backup in place (set labels) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -4004,7 +4004,7 @@
     },
     {
       "name": "rancher_longhorn_backups_list",
-      "description": "Public MCP wrapper for curated longhorn_backup list.",
+      "description": "List longhorn_backups as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -4045,7 +4045,7 @@
     },
     {
       "name": "rancher_longhorn_node_get",
-      "description": "Public MCP wrapper for curated longhorn_node detail.",
+      "description": "Fetch one longhorn_node and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -4070,7 +4070,7 @@
     },
     {
       "name": "rancher_longhorn_node_set_annotations",
-      "description": "Public MCP wrapper for curated longhorn_node set_annotations.",
+      "description": "Modify one longhorn_node in place (set annotations) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -4099,7 +4099,7 @@
     },
     {
       "name": "rancher_longhorn_node_set_labels",
-      "description": "Public MCP wrapper for curated longhorn_node set_labels.",
+      "description": "Modify one longhorn_node in place (set labels) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -4128,7 +4128,7 @@
     },
     {
       "name": "rancher_longhorn_nodes_list",
-      "description": "Public MCP wrapper for curated longhorn_node list.",
+      "description": "List longhorn_nodes as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -4169,7 +4169,7 @@
     },
     {
       "name": "rancher_longhorn_snapshot_get",
-      "description": "Public MCP wrapper for curated longhorn_snapshot detail.",
+      "description": "Fetch one longhorn_snapshot and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -4194,7 +4194,7 @@
     },
     {
       "name": "rancher_longhorn_snapshot_set_annotations",
-      "description": "Public MCP wrapper for curated longhorn_snapshot set_annotations.",
+      "description": "Modify one longhorn_snapshot in place (set annotations) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -4223,7 +4223,7 @@
     },
     {
       "name": "rancher_longhorn_snapshot_set_labels",
-      "description": "Public MCP wrapper for curated longhorn_snapshot set_labels.",
+      "description": "Modify one longhorn_snapshot in place (set labels) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -4252,7 +4252,7 @@
     },
     {
       "name": "rancher_longhorn_snapshots_list",
-      "description": "Public MCP wrapper for curated longhorn_snapshot list.",
+      "description": "List longhorn_snapshots as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -4289,7 +4289,7 @@
     },
     {
       "name": "rancher_longhorn_volume_get",
-      "description": "Public MCP wrapper for curated longhorn_volume detail.",
+      "description": "Fetch one longhorn_volume and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -4314,7 +4314,7 @@
     },
     {
       "name": "rancher_longhorn_volume_set_annotations",
-      "description": "Public MCP wrapper for curated longhorn_volume set_annotations.",
+      "description": "Modify one longhorn_volume in place (set annotations) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -4343,7 +4343,7 @@
     },
     {
       "name": "rancher_longhorn_volume_set_labels",
-      "description": "Public MCP wrapper for curated longhorn_volume set_labels.",
+      "description": "Modify one longhorn_volume in place (set labels) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -4372,7 +4372,7 @@
     },
     {
       "name": "rancher_longhorn_volumes_list",
-      "description": "Public MCP wrapper for curated longhorn_volume list.",
+      "description": "List longhorn_volumes as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -4430,7 +4430,7 @@
     },
     {
       "name": "rancher_namespace_get",
-      "description": "Public MCP wrapper for curated namespace detail.",
+      "description": "Fetch one namespace and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -4451,7 +4451,7 @@
     },
     {
       "name": "rancher_namespace_set_annotations",
-      "description": "Public MCP wrapper for curated namespace set_annotations.",
+      "description": "Modify one namespace in place (set annotations) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -4476,7 +4476,7 @@
     },
     {
       "name": "rancher_namespace_set_labels",
-      "description": "Public MCP wrapper for curated namespace set_labels.",
+      "description": "Modify one namespace in place (set labels) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -4522,7 +4522,7 @@
     },
     {
       "name": "rancher_namespaced_certificate_get",
-      "description": "Public MCP wrapper for curated namespaced_certificate detail.",
+      "description": "Fetch one namespaced_certificate and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -4539,7 +4539,7 @@
     },
     {
       "name": "rancher_namespaced_certificates_list",
-      "description": "Public MCP wrapper for curated namespaced_certificate list.",
+      "description": "List namespaced_certificates as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -4580,7 +4580,7 @@
     },
     {
       "name": "rancher_namespaces_list",
-      "description": "Public MCP wrapper for curated namespace list.",
+      "description": "List namespaces as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -4621,7 +4621,7 @@
     },
     {
       "name": "rancher_network_policies_list",
-      "description": "Public MCP wrapper for curated network_policy list.",
+      "description": "List network_policies as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -4658,7 +4658,7 @@
     },
     {
       "name": "rancher_network_policy_delete",
-      "description": "Public MCP wrapper for curated network_policy delete.",
+      "description": "Delete one network_policy and return a typed receipt of what was removed. Destructive and irreversible — the caller must first echo the exact confirmation phrase the tool requires.",
       "read_only": false,
       "destructive": true,
       "idempotent": true,
@@ -4687,7 +4687,7 @@
     },
     {
       "name": "rancher_network_policy_get",
-      "description": "Public MCP wrapper for curated network_policy detail.",
+      "description": "Fetch one network_policy and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -4712,7 +4712,7 @@
     },
     {
       "name": "rancher_network_policy_set_annotations",
-      "description": "Public MCP wrapper for curated network_policy set_annotations.",
+      "description": "Modify one network_policy in place (set annotations) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -4741,7 +4741,7 @@
     },
     {
       "name": "rancher_network_policy_set_labels",
-      "description": "Public MCP wrapper for curated network_policy set_labels.",
+      "description": "Modify one network_policy in place (set labels) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -4787,7 +4787,7 @@
     },
     {
       "name": "rancher_node_driver_get",
-      "description": "Public MCP wrapper for curated node_driver detail.",
+      "description": "Fetch one node_driver and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -4804,7 +4804,7 @@
     },
     {
       "name": "rancher_node_drivers_list",
-      "description": "Public MCP wrapper for curated node_driver list.",
+      "description": "List node_drivers as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -4841,7 +4841,7 @@
     },
     {
       "name": "rancher_node_get",
-      "description": "Public MCP wrapper for curated node detail.",
+      "description": "Fetch one node and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -4858,7 +4858,7 @@
     },
     {
       "name": "rancher_node_template_get",
-      "description": "Public MCP wrapper for curated node_template detail.",
+      "description": "Fetch one node_template and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -4875,7 +4875,7 @@
     },
     {
       "name": "rancher_node_templates_list",
-      "description": "Public MCP wrapper for curated node_template list.",
+      "description": "List node_templates as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -4933,7 +4933,7 @@
     },
     {
       "name": "rancher_nodes_list",
-      "description": "Public MCP wrapper for curated node list.",
+      "description": "List nodes as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -5240,7 +5240,7 @@
     },
     {
       "name": "rancher_notifier_get",
-      "description": "Public MCP wrapper for curated notifier detail.",
+      "description": "Fetch one notifier and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -5257,7 +5257,7 @@
     },
     {
       "name": "rancher_notifiers_list",
-      "description": "Public MCP wrapper for curated notifier list.",
+      "description": "List notifiers as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -5282,7 +5282,7 @@
     },
     {
       "name": "rancher_output_delete",
-      "description": "Public MCP wrapper for curated output delete.",
+      "description": "Delete one output and return a typed receipt of what was removed. Destructive and irreversible — the caller must first echo the exact confirmation phrase the tool requires.",
       "read_only": false,
       "destructive": true,
       "idempotent": true,
@@ -5311,7 +5311,7 @@
     },
     {
       "name": "rancher_output_get",
-      "description": "Public MCP wrapper for curated output detail.",
+      "description": "Fetch one output and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -5336,7 +5336,7 @@
     },
     {
       "name": "rancher_output_set_annotations",
-      "description": "Public MCP wrapper for curated output set_annotations.",
+      "description": "Modify one output in place (set annotations) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -5365,7 +5365,7 @@
     },
     {
       "name": "rancher_output_set_labels",
-      "description": "Public MCP wrapper for curated output set_labels.",
+      "description": "Modify one output in place (set labels) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -5394,7 +5394,7 @@
     },
     {
       "name": "rancher_outputs_list",
-      "description": "Public MCP wrapper for curated output list.",
+      "description": "List outputs as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -5431,7 +5431,7 @@
     },
     {
       "name": "rancher_persistent_volume_claim_delete",
-      "description": "Public MCP wrapper for curated persistent_volume_claim delete.",
+      "description": "Delete one persistent_volume_claim and return a typed receipt of what was removed. Destructive and irreversible — the caller must first echo the exact confirmation phrase the tool requires.",
       "read_only": false,
       "destructive": true,
       "idempotent": true,
@@ -5460,7 +5460,7 @@
     },
     {
       "name": "rancher_persistent_volume_claim_get",
-      "description": "Public MCP wrapper for curated persistent_volume_claim detail.",
+      "description": "Fetch one persistent_volume_claim and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -5485,7 +5485,7 @@
     },
     {
       "name": "rancher_persistent_volume_claim_set_annotations",
-      "description": "Public MCP wrapper for curated persistent_volume_claim set_annotations.",
+      "description": "Modify one persistent_volume_claim in place (set annotations) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -5514,7 +5514,7 @@
     },
     {
       "name": "rancher_persistent_volume_claim_set_labels",
-      "description": "Public MCP wrapper for curated persistent_volume_claim set_labels.",
+      "description": "Modify one persistent_volume_claim in place (set labels) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -5543,7 +5543,7 @@
     },
     {
       "name": "rancher_persistent_volume_claim_set_size",
-      "description": "Public MCP wrapper for curated persistent_volume_claim set_size.",
+      "description": "Modify one persistent_volume_claim in place (set size) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -5572,7 +5572,7 @@
     },
     {
       "name": "rancher_persistent_volume_claims_list",
-      "description": "Public MCP wrapper for curated persistent_volume_claim list.",
+      "description": "List persistent_volume_claims as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -5609,7 +5609,7 @@
     },
     {
       "name": "rancher_persistent_volume_get",
-      "description": "Public MCP wrapper for curated persistent_volume detail.",
+      "description": "Fetch one persistent_volume and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -5630,7 +5630,7 @@
     },
     {
       "name": "rancher_persistent_volume_set_annotations",
-      "description": "Public MCP wrapper for curated persistent_volume set_annotations.",
+      "description": "Modify one persistent_volume in place (set annotations) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -5655,7 +5655,7 @@
     },
     {
       "name": "rancher_persistent_volume_set_labels",
-      "description": "Public MCP wrapper for curated persistent_volume set_labels.",
+      "description": "Modify one persistent_volume in place (set labels) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -5680,7 +5680,7 @@
     },
     {
       "name": "rancher_persistent_volumes_list",
-      "description": "Public MCP wrapper for curated persistent_volume list.",
+      "description": "List persistent_volumes as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -5713,7 +5713,7 @@
     },
     {
       "name": "rancher_pod_delete",
-      "description": "Public MCP wrapper for curated pod delete.",
+      "description": "Delete one pod and return a typed receipt of what was removed. Destructive and irreversible — the caller must first echo the exact confirmation phrase the tool requires.",
       "read_only": false,
       "destructive": true,
       "idempotent": true,
@@ -5742,7 +5742,7 @@
     },
     {
       "name": "rancher_pod_disruption_budget_delete",
-      "description": "Public MCP wrapper for curated pod_disruption_budget delete.",
+      "description": "Delete one pod_disruption_budget and return a typed receipt of what was removed. Destructive and irreversible — the caller must first echo the exact confirmation phrase the tool requires.",
       "read_only": false,
       "destructive": true,
       "idempotent": true,
@@ -5771,7 +5771,7 @@
     },
     {
       "name": "rancher_pod_disruption_budget_get",
-      "description": "Public MCP wrapper for curated pod_disruption_budget detail.",
+      "description": "Fetch one pod_disruption_budget and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -5796,7 +5796,7 @@
     },
     {
       "name": "rancher_pod_disruption_budget_set_annotations",
-      "description": "Public MCP wrapper for curated pod_disruption_budget set_annotations.",
+      "description": "Modify one pod_disruption_budget in place (set annotations) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -5825,7 +5825,7 @@
     },
     {
       "name": "rancher_pod_disruption_budget_set_labels",
-      "description": "Public MCP wrapper for curated pod_disruption_budget set_labels.",
+      "description": "Modify one pod_disruption_budget in place (set labels) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -5854,7 +5854,7 @@
     },
     {
       "name": "rancher_pod_disruption_budgets_list",
-      "description": "Public MCP wrapper for curated pod_disruption_budget list.",
+      "description": "List pod_disruption_budgets as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -5883,7 +5883,7 @@
     },
     {
       "name": "rancher_pod_get",
-      "description": "Public MCP wrapper for curated pod detail.",
+      "description": "Fetch one pod and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -5945,7 +5945,7 @@
     },
     {
       "name": "rancher_pod_monitor_delete",
-      "description": "Public MCP wrapper for curated pod_monitor delete.",
+      "description": "Delete one pod_monitor and return a typed receipt of what was removed. Destructive and irreversible — the caller must first echo the exact confirmation phrase the tool requires.",
       "read_only": false,
       "destructive": true,
       "idempotent": true,
@@ -5974,7 +5974,7 @@
     },
     {
       "name": "rancher_pod_monitor_get",
-      "description": "Public MCP wrapper for curated pod_monitor detail.",
+      "description": "Fetch one pod_monitor and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -5999,7 +5999,7 @@
     },
     {
       "name": "rancher_pod_monitor_set_annotations",
-      "description": "Public MCP wrapper for curated pod_monitor set_annotations.",
+      "description": "Modify one pod_monitor in place (set annotations) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -6028,7 +6028,7 @@
     },
     {
       "name": "rancher_pod_monitor_set_labels",
-      "description": "Public MCP wrapper for curated pod_monitor set_labels.",
+      "description": "Modify one pod_monitor in place (set labels) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -6057,7 +6057,7 @@
     },
     {
       "name": "rancher_pod_monitors_list",
-      "description": "Public MCP wrapper for curated pod_monitor list.",
+      "description": "List pod_monitors as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -6090,7 +6090,7 @@
     },
     {
       "name": "rancher_pod_set_annotations",
-      "description": "Public MCP wrapper for curated pod set_annotations.",
+      "description": "Modify one pod in place (set annotations) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -6119,7 +6119,7 @@
     },
     {
       "name": "rancher_pod_set_labels",
-      "description": "Public MCP wrapper for curated pod set_labels.",
+      "description": "Modify one pod in place (set labels) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -6148,7 +6148,7 @@
     },
     {
       "name": "rancher_pods_list",
-      "description": "Public MCP wrapper for curated pod list.",
+      "description": "List pods as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -6189,7 +6189,7 @@
     },
     {
       "name": "rancher_policy_report_delete",
-      "description": "Public MCP wrapper for curated policy_report delete.",
+      "description": "Delete one policy_report and return a typed receipt of what was removed. Destructive and irreversible — the caller must first echo the exact confirmation phrase the tool requires.",
       "read_only": false,
       "destructive": true,
       "idempotent": true,
@@ -6218,7 +6218,7 @@
     },
     {
       "name": "rancher_policy_report_get",
-      "description": "Public MCP wrapper for curated policy_report detail.",
+      "description": "Fetch one policy_report and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -6243,7 +6243,7 @@
     },
     {
       "name": "rancher_policy_report_set_annotations",
-      "description": "Public MCP wrapper for curated policy_report set_annotations.",
+      "description": "Modify one policy_report in place (set annotations) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -6272,7 +6272,7 @@
     },
     {
       "name": "rancher_policy_report_set_labels",
-      "description": "Public MCP wrapper for curated policy_report set_labels.",
+      "description": "Modify one policy_report in place (set labels) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -6301,7 +6301,7 @@
     },
     {
       "name": "rancher_policy_reports_list",
-      "description": "Public MCP wrapper for curated policy_report list.",
+      "description": "List policy_reports as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -6334,7 +6334,7 @@
     },
     {
       "name": "rancher_priority_class_delete",
-      "description": "Public MCP wrapper for curated priority_class delete.",
+      "description": "Delete one priority_class and return a typed receipt of what was removed. Destructive and irreversible — the caller must first echo the exact confirmation phrase the tool requires.",
       "read_only": false,
       "destructive": true,
       "idempotent": true,
@@ -6359,7 +6359,7 @@
     },
     {
       "name": "rancher_priority_class_get",
-      "description": "Public MCP wrapper for curated priority_class detail.",
+      "description": "Fetch one priority_class and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -6380,7 +6380,7 @@
     },
     {
       "name": "rancher_priority_class_set_annotations",
-      "description": "Public MCP wrapper for curated priority_class set_annotations.",
+      "description": "Modify one priority_class in place (set annotations) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -6405,7 +6405,7 @@
     },
     {
       "name": "rancher_priority_class_set_labels",
-      "description": "Public MCP wrapper for curated priority_class set_labels.",
+      "description": "Modify one priority_class in place (set labels) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -6430,7 +6430,7 @@
     },
     {
       "name": "rancher_priority_classes_list",
-      "description": "Public MCP wrapper for curated priority_class list.",
+      "description": "List priority_classes as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -6467,7 +6467,7 @@
     },
     {
       "name": "rancher_project_get",
-      "description": "Public MCP wrapper for curated project detail.",
+      "description": "Fetch one project and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -6501,7 +6501,7 @@
     },
     {
       "name": "rancher_project_logging_get",
-      "description": "Public MCP wrapper for curated project_logging detail.",
+      "description": "Fetch one project_logging and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -6518,7 +6518,7 @@
     },
     {
       "name": "rancher_project_loggings_list",
-      "description": "Public MCP wrapper for curated project_logging list.",
+      "description": "List project_loggings as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -6563,7 +6563,7 @@
     },
     {
       "name": "rancher_project_role_template_binding_get",
-      "description": "Public MCP wrapper for curated project_role_template_binding detail.",
+      "description": "Fetch one project_role_template_binding and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -6580,7 +6580,7 @@
     },
     {
       "name": "rancher_project_role_template_bindings_list",
-      "description": "Public MCP wrapper for curated project_role_template_binding list.",
+      "description": "List project_role_template_bindings as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -6641,7 +6641,7 @@
     },
     {
       "name": "rancher_projects_list",
-      "description": "Public MCP wrapper for curated project list.",
+      "description": "List projects as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -6678,7 +6678,7 @@
     },
     {
       "name": "rancher_prometheus_rule_delete",
-      "description": "Public MCP wrapper for curated prometheus_rule delete.",
+      "description": "Delete one prometheus_rule and return a typed receipt of what was removed. Destructive and irreversible — the caller must first echo the exact confirmation phrase the tool requires.",
       "read_only": false,
       "destructive": true,
       "idempotent": true,
@@ -6707,7 +6707,7 @@
     },
     {
       "name": "rancher_prometheus_rule_get",
-      "description": "Public MCP wrapper for curated prometheus_rule detail.",
+      "description": "Fetch one prometheus_rule and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -6732,7 +6732,7 @@
     },
     {
       "name": "rancher_prometheus_rule_set_annotations",
-      "description": "Public MCP wrapper for curated prometheus_rule set_annotations.",
+      "description": "Modify one prometheus_rule in place (set annotations) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -6761,7 +6761,7 @@
     },
     {
       "name": "rancher_prometheus_rule_set_labels",
-      "description": "Public MCP wrapper for curated prometheus_rule set_labels.",
+      "description": "Modify one prometheus_rule in place (set labels) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -6790,7 +6790,7 @@
     },
     {
       "name": "rancher_prometheus_rules_list",
-      "description": "Public MCP wrapper for curated prometheus_rule list.",
+      "description": "List prometheus_rules as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -6823,7 +6823,7 @@
     },
     {
       "name": "rancher_replica_set_delete",
-      "description": "Public MCP wrapper for curated replica_set delete.",
+      "description": "Delete one replica_set and return a typed receipt of what was removed. Destructive and irreversible — the caller must first echo the exact confirmation phrase the tool requires.",
       "read_only": false,
       "destructive": true,
       "idempotent": true,
@@ -6852,7 +6852,7 @@
     },
     {
       "name": "rancher_replica_set_get",
-      "description": "Public MCP wrapper for curated replica_set detail.",
+      "description": "Fetch one replica_set and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -6877,7 +6877,7 @@
     },
     {
       "name": "rancher_replica_set_set_annotations",
-      "description": "Public MCP wrapper for curated replica_set set_annotations.",
+      "description": "Modify one replica_set in place (set annotations) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -6906,7 +6906,7 @@
     },
     {
       "name": "rancher_replica_set_set_labels",
-      "description": "Public MCP wrapper for curated replica_set set_labels.",
+      "description": "Modify one replica_set in place (set labels) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -6935,7 +6935,7 @@
     },
     {
       "name": "rancher_replica_sets_list",
-      "description": "Public MCP wrapper for curated replica_set list.",
+      "description": "List replica_sets as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -7005,7 +7005,7 @@
     },
     {
       "name": "rancher_resource_quota_delete",
-      "description": "Public MCP wrapper for curated resource_quota delete.",
+      "description": "Delete one resource_quota and return a typed receipt of what was removed. Destructive and irreversible — the caller must first echo the exact confirmation phrase the tool requires.",
       "read_only": false,
       "destructive": true,
       "idempotent": true,
@@ -7034,7 +7034,7 @@
     },
     {
       "name": "rancher_resource_quota_get",
-      "description": "Public MCP wrapper for curated resource_quota detail.",
+      "description": "Fetch one resource_quota and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -7059,7 +7059,7 @@
     },
     {
       "name": "rancher_resource_quota_set_annotations",
-      "description": "Public MCP wrapper for curated resource_quota set_annotations.",
+      "description": "Modify one resource_quota in place (set annotations) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -7088,7 +7088,7 @@
     },
     {
       "name": "rancher_resource_quota_set_labels",
-      "description": "Public MCP wrapper for curated resource_quota set_labels.",
+      "description": "Modify one resource_quota in place (set labels) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -7117,7 +7117,7 @@
     },
     {
       "name": "rancher_resource_quotas_list",
-      "description": "Public MCP wrapper for curated resource_quota list.",
+      "description": "List resource_quotas as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -7154,7 +7154,7 @@
     },
     {
       "name": "rancher_restore_get",
-      "description": "Public MCP wrapper for curated restore detail.",
+      "description": "Fetch one restore and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -7175,7 +7175,7 @@
     },
     {
       "name": "rancher_restore_set_annotations",
-      "description": "Public MCP wrapper for curated restore set_annotations.",
+      "description": "Modify one restore in place (set annotations) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -7200,7 +7200,7 @@
     },
     {
       "name": "rancher_restore_set_labels",
-      "description": "Public MCP wrapper for curated restore set_labels.",
+      "description": "Modify one restore in place (set labels) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -7225,7 +7225,7 @@
     },
     {
       "name": "rancher_restores_list",
-      "description": "Public MCP wrapper for curated restore list.",
+      "description": "List restores as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -7250,7 +7250,7 @@
     },
     {
       "name": "rancher_role_template_get",
-      "description": "Public MCP wrapper for curated role_template detail.",
+      "description": "Fetch one role_template and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -7267,7 +7267,7 @@
     },
     {
       "name": "rancher_role_templates_list",
-      "description": "Public MCP wrapper for curated role_template list.",
+      "description": "List role_templates as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -7328,7 +7328,7 @@
     },
     {
       "name": "rancher_runtime_class_delete",
-      "description": "Public MCP wrapper for curated runtime_class delete.",
+      "description": "Delete one runtime_class and return a typed receipt of what was removed. Destructive and irreversible — the caller must first echo the exact confirmation phrase the tool requires.",
       "read_only": false,
       "destructive": true,
       "idempotent": true,
@@ -7353,7 +7353,7 @@
     },
     {
       "name": "rancher_runtime_class_get",
-      "description": "Public MCP wrapper for curated runtime_class detail.",
+      "description": "Fetch one runtime_class and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -7374,7 +7374,7 @@
     },
     {
       "name": "rancher_runtime_class_set_annotations",
-      "description": "Public MCP wrapper for curated runtime_class set_annotations.",
+      "description": "Modify one runtime_class in place (set annotations) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -7399,7 +7399,7 @@
     },
     {
       "name": "rancher_runtime_class_set_labels",
-      "description": "Public MCP wrapper for curated runtime_class set_labels.",
+      "description": "Modify one runtime_class in place (set labels) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -7424,7 +7424,7 @@
     },
     {
       "name": "rancher_runtime_classes_list",
-      "description": "Public MCP wrapper for curated runtime_class list.",
+      "description": "List runtime_classes as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -7457,7 +7457,7 @@
     },
     {
       "name": "rancher_secret_create",
-      "description": "Public MCP wrapper for curated secret create.",
+      "description": "Create one secret from the supplied spec and return the typed detail of the new object, including its server-assigned identity and initial state. This writes to the cluster.",
       "read_only": false,
       "destructive": false,
       "idempotent": false,
@@ -7506,7 +7506,7 @@
     },
     {
       "name": "rancher_secret_delete",
-      "description": "Public MCP wrapper for curated secret delete.",
+      "description": "Delete one secret and return a typed receipt of what was removed. Destructive and irreversible — the caller must first echo the exact confirmation phrase the tool requires.",
       "read_only": false,
       "destructive": true,
       "idempotent": true,
@@ -7535,7 +7535,7 @@
     },
     {
       "name": "rancher_secret_get",
-      "description": "Public MCP wrapper for curated secret detail.",
+      "description": "Fetch one secret and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -7560,7 +7560,7 @@
     },
     {
       "name": "rancher_secret_set_annotations",
-      "description": "Public MCP wrapper for curated secret set_annotations.",
+      "description": "Modify one secret in place (set annotations) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -7589,7 +7589,7 @@
     },
     {
       "name": "rancher_secret_set_labels",
-      "description": "Public MCP wrapper for curated secret set_labels.",
+      "description": "Modify one secret in place (set labels) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -7618,7 +7618,7 @@
     },
     {
       "name": "rancher_secrets_list",
-      "description": "Public MCP wrapper for curated secret list.",
+      "description": "List secrets as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -7702,7 +7702,7 @@
     },
     {
       "name": "rancher_service_account_delete",
-      "description": "Public MCP wrapper for curated service_account delete.",
+      "description": "Delete one service_account and return a typed receipt of what was removed. Destructive and irreversible — the caller must first echo the exact confirmation phrase the tool requires.",
       "read_only": false,
       "destructive": true,
       "idempotent": true,
@@ -7731,7 +7731,7 @@
     },
     {
       "name": "rancher_service_account_get",
-      "description": "Public MCP wrapper for curated service_account detail.",
+      "description": "Fetch one service_account and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -7756,7 +7756,7 @@
     },
     {
       "name": "rancher_service_account_set_annotations",
-      "description": "Public MCP wrapper for curated service_account set_annotations.",
+      "description": "Modify one service_account in place (set annotations) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -7785,7 +7785,7 @@
     },
     {
       "name": "rancher_service_account_set_labels",
-      "description": "Public MCP wrapper for curated service_account set_labels.",
+      "description": "Modify one service_account in place (set labels) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -7814,7 +7814,7 @@
     },
     {
       "name": "rancher_service_accounts_list",
-      "description": "Public MCP wrapper for curated service_account list.",
+      "description": "List service_accounts as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -7851,7 +7851,7 @@
     },
     {
       "name": "rancher_service_delete",
-      "description": "Public MCP wrapper for curated service delete.",
+      "description": "Delete one service and return a typed receipt of what was removed. Destructive and irreversible — the caller must first echo the exact confirmation phrase the tool requires.",
       "read_only": false,
       "destructive": true,
       "idempotent": true,
@@ -7880,7 +7880,7 @@
     },
     {
       "name": "rancher_service_get",
-      "description": "Public MCP wrapper for curated service detail.",
+      "description": "Fetch one service and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -7905,7 +7905,7 @@
     },
     {
       "name": "rancher_service_monitor_delete",
-      "description": "Public MCP wrapper for curated service_monitor delete.",
+      "description": "Delete one service_monitor and return a typed receipt of what was removed. Destructive and irreversible — the caller must first echo the exact confirmation phrase the tool requires.",
       "read_only": false,
       "destructive": true,
       "idempotent": true,
@@ -7934,7 +7934,7 @@
     },
     {
       "name": "rancher_service_monitor_get",
-      "description": "Public MCP wrapper for curated service_monitor detail.",
+      "description": "Fetch one service_monitor and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -7959,7 +7959,7 @@
     },
     {
       "name": "rancher_service_monitor_set_annotations",
-      "description": "Public MCP wrapper for curated service_monitor set_annotations.",
+      "description": "Modify one service_monitor in place (set annotations) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -7988,7 +7988,7 @@
     },
     {
       "name": "rancher_service_monitor_set_labels",
-      "description": "Public MCP wrapper for curated service_monitor set_labels.",
+      "description": "Modify one service_monitor in place (set labels) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -8017,7 +8017,7 @@
     },
     {
       "name": "rancher_service_monitors_list",
-      "description": "Public MCP wrapper for curated service_monitor list.",
+      "description": "List service_monitors as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -8050,7 +8050,7 @@
     },
     {
       "name": "rancher_service_set_annotations",
-      "description": "Public MCP wrapper for curated service set_annotations.",
+      "description": "Modify one service in place (set annotations) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -8079,7 +8079,7 @@
     },
     {
       "name": "rancher_service_set_labels",
-      "description": "Public MCP wrapper for curated service set_labels.",
+      "description": "Modify one service in place (set labels) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -8108,7 +8108,7 @@
     },
     {
       "name": "rancher_service_set_type",
-      "description": "Public MCP wrapper for curated service set_type.",
+      "description": "Modify one service in place (set type) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -8137,7 +8137,7 @@
     },
     {
       "name": "rancher_services_list",
-      "description": "Public MCP wrapper for curated service list.",
+      "description": "List services as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -8170,7 +8170,7 @@
     },
     {
       "name": "rancher_setting_get",
-      "description": "Public MCP wrapper for curated setting detail.",
+      "description": "Fetch one setting and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -8187,7 +8187,7 @@
     },
     {
       "name": "rancher_settings_list",
-      "description": "Public MCP wrapper for curated setting list.",
+      "description": "List settings as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -8220,7 +8220,7 @@
     },
     {
       "name": "rancher_statefulset_delete",
-      "description": "Public MCP wrapper for curated statefulset delete.",
+      "description": "Delete one statefulset and return a typed receipt of what was removed. Destructive and irreversible — the caller must first echo the exact confirmation phrase the tool requires.",
       "read_only": false,
       "destructive": true,
       "idempotent": true,
@@ -8249,7 +8249,7 @@
     },
     {
       "name": "rancher_statefulset_get",
-      "description": "Public MCP wrapper for curated statefulset detail.",
+      "description": "Fetch one statefulset and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -8274,7 +8274,7 @@
     },
     {
       "name": "rancher_statefulset_scale",
-      "description": "Public MCP wrapper for curated statefulset scale.",
+      "description": "Modify one statefulset in place (scale) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -8303,7 +8303,7 @@
     },
     {
       "name": "rancher_statefulset_set_annotations",
-      "description": "Public MCP wrapper for curated statefulset set_annotations.",
+      "description": "Modify one statefulset in place (set annotations) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -8332,7 +8332,7 @@
     },
     {
       "name": "rancher_statefulset_set_labels",
-      "description": "Public MCP wrapper for curated statefulset set_labels.",
+      "description": "Modify one statefulset in place (set labels) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -8361,7 +8361,7 @@
     },
     {
       "name": "rancher_statefulsets_list",
-      "description": "Public MCP wrapper for curated statefulset list.",
+      "description": "List statefulsets as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -8785,7 +8785,7 @@
     },
     {
       "name": "rancher_storage_class_delete",
-      "description": "Public MCP wrapper for curated storage_class delete.",
+      "description": "Delete one storage_class and return a typed receipt of what was removed. Destructive and irreversible — the caller must first echo the exact confirmation phrase the tool requires.",
       "read_only": false,
       "destructive": true,
       "idempotent": true,
@@ -8810,7 +8810,7 @@
     },
     {
       "name": "rancher_storage_class_get",
-      "description": "Public MCP wrapper for curated storage_class detail.",
+      "description": "Fetch one storage_class and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -8831,7 +8831,7 @@
     },
     {
       "name": "rancher_storage_class_set_annotations",
-      "description": "Public MCP wrapper for curated storage_class set_annotations.",
+      "description": "Modify one storage_class in place (set annotations) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -8856,7 +8856,7 @@
     },
     {
       "name": "rancher_storage_class_set_labels",
-      "description": "Public MCP wrapper for curated storage_class set_labels.",
+      "description": "Modify one storage_class in place (set labels) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write.",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -8881,7 +8881,7 @@
     },
     {
       "name": "rancher_storage_classes_list",
-      "description": "Public MCP wrapper for curated storage_class list.",
+      "description": "List storage_classes as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -8910,7 +8910,7 @@
     },
     {
       "name": "rancher_template_get",
-      "description": "Public MCP wrapper for curated template detail.",
+      "description": "Fetch one template and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -8927,7 +8927,7 @@
     },
     {
       "name": "rancher_template_version_get",
-      "description": "Public MCP wrapper for curated template_version detail.",
+      "description": "Fetch one template_version and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -8944,7 +8944,7 @@
     },
     {
       "name": "rancher_template_versions_list",
-      "description": "Public MCP wrapper for curated template_version list.",
+      "description": "List template_versions as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -8985,7 +8985,7 @@
     },
     {
       "name": "rancher_templates_list",
-      "description": "Public MCP wrapper for curated template list.",
+      "description": "List templates as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -9030,7 +9030,7 @@
     },
     {
       "name": "rancher_user_get",
-      "description": "Public MCP wrapper for curated user detail.",
+      "description": "Fetch one user and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -9047,7 +9047,7 @@
     },
     {
       "name": "rancher_users_list",
-      "description": "Public MCP wrapper for curated user list.",
+      "description": "List users as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,

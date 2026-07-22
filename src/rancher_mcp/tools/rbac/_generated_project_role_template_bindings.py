@@ -191,7 +191,7 @@ async def rancher_project_role_template_bindings_list_tool(
     reverse: bool | None = None,
     instance: str | None = None,
 ) -> RancherProjectRoleTemplateBindingList:
-    """Public MCP wrapper for curated project_role_template_binding list."""
+    """List project_role_template_bindings as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool."""
 
     return await rancher_project_role_template_bindings_list(
         limit=limit,
@@ -214,7 +214,7 @@ async def rancher_project_role_template_binding_get_tool(
     project_role_template_binding_id: str,
     instance: str | None = None,
 ) -> RancherProjectRoleTemplateBindingDetail:
-    """Public MCP wrapper for curated project_role_template_binding detail."""
+    """Fetch one project_role_template_binding and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect."""
 
     return await rancher_project_role_template_binding_get(
         project_role_template_binding_id=project_role_template_binding_id,

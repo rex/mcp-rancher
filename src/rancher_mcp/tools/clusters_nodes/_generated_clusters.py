@@ -150,7 +150,7 @@ async def rancher_clusters_list_tool(
     page_token: str | None = None,
     instance: str | None = None,
 ) -> RancherClusterList:
-    """Public MCP wrapper for curated cluster list."""
+    """List clusters as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool."""
 
     return await rancher_clusters_list(
         limit=limit,
@@ -166,7 +166,7 @@ async def rancher_cluster_get_tool(
     cluster_id: str,
     instance: str | None = None,
 ) -> RancherClusterDetail:
-    """Public MCP wrapper for curated cluster detail."""
+    """Fetch one cluster and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect."""
 
     return await rancher_cluster_get(
         cluster_id=cluster_id,

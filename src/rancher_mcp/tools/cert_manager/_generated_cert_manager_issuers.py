@@ -433,7 +433,7 @@ async def rancher_cert_manager_issuers_list_tool(
     page_token: str | None = None,
     instance: str | None = None,
 ) -> RancherCertManagerIssuerList:
-    """Public MCP wrapper for curated cert_manager_issuer list."""
+    """List cert_manager_issuers as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool."""
 
     return await rancher_cert_manager_issuers_list(
         namespace=namespace,
@@ -453,7 +453,7 @@ async def rancher_cert_manager_issuer_get_tool(
     cluster_id: str = "local",
     instance: str | None = None,
 ) -> RancherCertManagerIssuerDetail:
-    """Public MCP wrapper for curated cert_manager_issuer detail."""
+    """Fetch one cert_manager_issuer and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect."""
 
     return await rancher_cert_manager_issuer_get(
         namespace=namespace,
@@ -470,7 +470,7 @@ async def rancher_cert_manager_issuer_delete_tool(
     cluster_id: str = "local",
     instance: str | None = None,
 ) -> RancherCuratedDeleteResult:
-    """Public MCP wrapper for curated cert_manager_issuer delete."""
+    """Delete one cert_manager_issuer and return a typed receipt of what was removed. Destructive and irreversible — the caller must first echo the exact confirmation phrase the tool requires."""
 
     return await rancher_cert_manager_issuer_delete(
         namespace=namespace,
@@ -488,7 +488,7 @@ async def rancher_cert_manager_issuer_set_labels_tool(
     cluster_id: str = "local",
     instance: str | None = None,
 ) -> RancherMutationReceipt:
-    """Public MCP wrapper for curated cert_manager_issuer set_labels."""
+    """Modify one cert_manager_issuer in place (set labels) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write."""
 
     return await rancher_cert_manager_issuer_set_labels(
         namespace=namespace,
@@ -506,7 +506,7 @@ async def rancher_cert_manager_issuer_set_annotations_tool(
     cluster_id: str = "local",
     instance: str | None = None,
 ) -> RancherMutationReceipt:
-    """Public MCP wrapper for curated cert_manager_issuer set_annotations."""
+    """Modify one cert_manager_issuer in place (set annotations) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write."""
 
     return await rancher_cert_manager_issuer_set_annotations(
         namespace=namespace,

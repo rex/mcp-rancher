@@ -739,7 +739,7 @@ async def rancher_deployments_list_tool(
     page_token: str | None = None,
     instance: str | None = None,
 ) -> RancherDeploymentList:
-    """Public MCP wrapper for curated deployment list."""
+    """List deployments as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool."""
 
     return await rancher_deployments_list(
         namespace=namespace,
@@ -759,7 +759,7 @@ async def rancher_deployment_get_tool(
     cluster_id: str = "local",
     instance: str | None = None,
 ) -> RancherDeploymentDetail:
-    """Public MCP wrapper for curated deployment detail."""
+    """Fetch one deployment and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect."""
 
     return await rancher_deployment_get(
         namespace=namespace,
@@ -776,7 +776,7 @@ async def rancher_deployment_delete_tool(
     cluster_id: str = "local",
     instance: str | None = None,
 ) -> RancherCuratedDeleteResult:
-    """Public MCP wrapper for curated deployment delete."""
+    """Delete one deployment and return a typed receipt of what was removed. Destructive and irreversible — the caller must first echo the exact confirmation phrase the tool requires."""
 
     return await rancher_deployment_delete(
         namespace=namespace,
@@ -794,7 +794,7 @@ async def rancher_deployment_scale_tool(
     cluster_id: str = "local",
     instance: str | None = None,
 ) -> RancherMutationReceipt:
-    """Public MCP wrapper for curated deployment scale."""
+    """Modify one deployment in place (scale) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write."""
 
     return await rancher_deployment_scale(
         namespace=namespace,
@@ -812,7 +812,7 @@ async def rancher_deployment_set_labels_tool(
     cluster_id: str = "local",
     instance: str | None = None,
 ) -> RancherMutationReceipt:
-    """Public MCP wrapper for curated deployment set_labels."""
+    """Modify one deployment in place (set labels) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write."""
 
     return await rancher_deployment_set_labels(
         namespace=namespace,
@@ -830,7 +830,7 @@ async def rancher_deployment_set_annotations_tool(
     cluster_id: str = "local",
     instance: str | None = None,
 ) -> RancherMutationReceipt:
-    """Public MCP wrapper for curated deployment set_annotations."""
+    """Modify one deployment in place (set annotations) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write."""
 
     return await rancher_deployment_set_annotations(
         namespace=namespace,
@@ -847,7 +847,7 @@ async def rancher_deployment_pause_tool(
     cluster_id: str = "local",
     instance: str | None = None,
 ) -> RancherMutationReceipt:
-    """Public MCP wrapper for curated deployment pause."""
+    """Modify one deployment in place (pause) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write."""
 
     return await rancher_deployment_pause(
         namespace=namespace,
@@ -863,7 +863,7 @@ async def rancher_deployment_resume_tool(
     cluster_id: str = "local",
     instance: str | None = None,
 ) -> RancherMutationReceipt:
-    """Public MCP wrapper for curated deployment resume."""
+    """Modify one deployment in place (resume) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write."""
 
     return await rancher_deployment_resume(
         namespace=namespace,
@@ -879,7 +879,7 @@ async def rancher_deployment_restart_tool(
     cluster_id: str = "local",
     instance: str | None = None,
 ) -> RancherMutationReceipt:
-    """Public MCP wrapper for curated deployment restart."""
+    """Modify one deployment in place (restart) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write."""
 
     return await rancher_deployment_restart(
         namespace=namespace,

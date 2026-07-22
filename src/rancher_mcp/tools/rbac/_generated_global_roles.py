@@ -145,7 +145,7 @@ async def rancher_global_roles_list_tool(
     reverse: bool | None = None,
     instance: str | None = None,
 ) -> RancherGlobalRoleList:
-    """Public MCP wrapper for curated global_role list."""
+    """List global_roles as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool."""
 
     return await rancher_global_roles_list(
         limit=limit,
@@ -162,7 +162,7 @@ async def rancher_global_role_get_tool(
     global_role_id: str,
     instance: str | None = None,
 ) -> RancherGlobalRoleDetail:
-    """Public MCP wrapper for curated global_role detail."""
+    """Fetch one global_role and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect."""
 
     return await rancher_global_role_get(
         global_role_id=global_role_id,

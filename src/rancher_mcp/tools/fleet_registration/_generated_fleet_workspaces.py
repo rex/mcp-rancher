@@ -137,7 +137,7 @@ async def rancher_fleet_workspaces_list_tool(
     reverse: bool | None = None,
     instance: str | None = None,
 ) -> RancherFleetWorkspaceList:
-    """Public MCP wrapper for curated fleet_workspace list."""
+    """List fleet_workspaces as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool."""
 
     return await rancher_fleet_workspaces_list(
         limit=limit,
@@ -152,7 +152,7 @@ async def rancher_fleet_workspace_get_tool(
     fleet_workspace_id: str,
     instance: str | None = None,
 ) -> RancherFleetWorkspaceDetail:
-    """Public MCP wrapper for curated fleet_workspace detail."""
+    """Fetch one fleet_workspace and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect."""
 
     return await rancher_fleet_workspace_get(
         fleet_workspace_id=fleet_workspace_id,

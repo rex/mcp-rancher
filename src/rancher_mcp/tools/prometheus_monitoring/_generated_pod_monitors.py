@@ -409,7 +409,7 @@ async def rancher_pod_monitors_list_tool(
     page_token: str | None = None,
     instance: str | None = None,
 ) -> RancherPodMonitorList:
-    """Public MCP wrapper for curated pod_monitor list."""
+    """List pod_monitors as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool."""
 
     return await rancher_pod_monitors_list(
         namespace=namespace,
@@ -427,7 +427,7 @@ async def rancher_pod_monitor_get_tool(
     cluster_id: str = "local",
     instance: str | None = None,
 ) -> RancherPodMonitorDetail:
-    """Public MCP wrapper for curated pod_monitor detail."""
+    """Fetch one pod_monitor and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect."""
 
     return await rancher_pod_monitor_get(
         namespace=namespace,
@@ -444,7 +444,7 @@ async def rancher_pod_monitor_delete_tool(
     cluster_id: str = "local",
     instance: str | None = None,
 ) -> RancherCuratedDeleteResult:
-    """Public MCP wrapper for curated pod_monitor delete."""
+    """Delete one pod_monitor and return a typed receipt of what was removed. Destructive and irreversible — the caller must first echo the exact confirmation phrase the tool requires."""
 
     return await rancher_pod_monitor_delete(
         namespace=namespace,
@@ -462,7 +462,7 @@ async def rancher_pod_monitor_set_labels_tool(
     cluster_id: str = "local",
     instance: str | None = None,
 ) -> RancherMutationReceipt:
-    """Public MCP wrapper for curated pod_monitor set_labels."""
+    """Modify one pod_monitor in place (set labels) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write."""
 
     return await rancher_pod_monitor_set_labels(
         namespace=namespace,
@@ -480,7 +480,7 @@ async def rancher_pod_monitor_set_annotations_tool(
     cluster_id: str = "local",
     instance: str | None = None,
 ) -> RancherMutationReceipt:
-    """Public MCP wrapper for curated pod_monitor set_annotations."""
+    """Modify one pod_monitor in place (set annotations) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write."""
 
     return await rancher_pod_monitor_set_annotations(
         namespace=namespace,

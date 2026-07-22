@@ -165,7 +165,7 @@ async def rancher_project_loggings_list_tool(
     reverse: bool | None = None,
     instance: str | None = None,
 ) -> RancherProjectLoggingList:
-    """Public MCP wrapper for curated project_logging list."""
+    """List project_loggings as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool."""
 
     return await rancher_project_loggings_list(
         limit=limit,
@@ -184,7 +184,7 @@ async def rancher_project_logging_get_tool(
     project_logging_id: str,
     instance: str | None = None,
 ) -> RancherProjectLoggingDetail:
-    """Public MCP wrapper for curated project_logging detail."""
+    """Fetch one project_logging and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect."""
 
     return await rancher_project_logging_get(
         project_logging_id=project_logging_id,

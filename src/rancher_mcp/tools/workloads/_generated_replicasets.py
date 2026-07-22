@@ -414,7 +414,7 @@ async def rancher_replica_sets_list_tool(
     page_token: str | None = None,
     instance: str | None = None,
 ) -> RancherReplicaSetList:
-    """Public MCP wrapper for curated replica_set list."""
+    """List replica_sets as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool."""
 
     return await rancher_replica_sets_list(
         namespace=namespace,
@@ -434,7 +434,7 @@ async def rancher_replica_set_get_tool(
     cluster_id: str = "local",
     instance: str | None = None,
 ) -> RancherReplicaSetDetail:
-    """Public MCP wrapper for curated replica_set detail."""
+    """Fetch one replica_set and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect."""
 
     return await rancher_replica_set_get(
         namespace=namespace,
@@ -451,7 +451,7 @@ async def rancher_replica_set_delete_tool(
     cluster_id: str = "local",
     instance: str | None = None,
 ) -> RancherCuratedDeleteResult:
-    """Public MCP wrapper for curated replica_set delete."""
+    """Delete one replica_set and return a typed receipt of what was removed. Destructive and irreversible — the caller must first echo the exact confirmation phrase the tool requires."""
 
     return await rancher_replica_set_delete(
         namespace=namespace,
@@ -469,7 +469,7 @@ async def rancher_replica_set_set_labels_tool(
     cluster_id: str = "local",
     instance: str | None = None,
 ) -> RancherMutationReceipt:
-    """Public MCP wrapper for curated replica_set set_labels."""
+    """Modify one replica_set in place (set labels) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write."""
 
     return await rancher_replica_set_set_labels(
         namespace=namespace,
@@ -487,7 +487,7 @@ async def rancher_replica_set_set_annotations_tool(
     cluster_id: str = "local",
     instance: str | None = None,
 ) -> RancherMutationReceipt:
-    """Public MCP wrapper for curated replica_set set_annotations."""
+    """Modify one replica_set in place (set annotations) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write."""
 
     return await rancher_replica_set_set_annotations(
         namespace=namespace,

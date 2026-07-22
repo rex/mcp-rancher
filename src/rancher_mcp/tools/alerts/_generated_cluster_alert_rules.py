@@ -128,7 +128,7 @@ async def rancher_cluster_alert_rules_list_tool(
     state: str | None = None,
     instance: str | None = None,
 ) -> RancherAlertRuleList:
-    """Public MCP wrapper for curated cluster_alert_rule list."""
+    """List cluster_alert_rules as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool."""
 
     return await rancher_cluster_alert_rules_list(
         limit=limit,
@@ -143,7 +143,7 @@ async def rancher_cluster_alert_rule_get_tool(
     rule_id: str,
     instance: str | None = None,
 ) -> RancherAlertRuleDetail:
-    """Public MCP wrapper for curated cluster_alert_rule detail."""
+    """Fetch one cluster_alert_rule and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect."""
 
     return await rancher_cluster_alert_rule_get(
         rule_id=rule_id,

@@ -406,7 +406,7 @@ async def rancher_policy_reports_list_tool(
     page_token: str | None = None,
     instance: str | None = None,
 ) -> RancherPolicyReportList:
-    """Public MCP wrapper for curated policy_report list."""
+    """List policy_reports as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool."""
 
     return await rancher_policy_reports_list(
         namespace=namespace,
@@ -424,7 +424,7 @@ async def rancher_policy_report_get_tool(
     cluster_id: str = "local",
     instance: str | None = None,
 ) -> RancherPolicyReportDetail:
-    """Public MCP wrapper for curated policy_report detail."""
+    """Fetch one policy_report and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect."""
 
     return await rancher_policy_report_get(
         namespace=namespace,
@@ -441,7 +441,7 @@ async def rancher_policy_report_delete_tool(
     cluster_id: str = "local",
     instance: str | None = None,
 ) -> RancherCuratedDeleteResult:
-    """Public MCP wrapper for curated policy_report delete."""
+    """Delete one policy_report and return a typed receipt of what was removed. Destructive and irreversible — the caller must first echo the exact confirmation phrase the tool requires."""
 
     return await rancher_policy_report_delete(
         namespace=namespace,
@@ -459,7 +459,7 @@ async def rancher_policy_report_set_labels_tool(
     cluster_id: str = "local",
     instance: str | None = None,
 ) -> RancherMutationReceipt:
-    """Public MCP wrapper for curated policy_report set_labels."""
+    """Modify one policy_report in place (set labels) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write."""
 
     return await rancher_policy_report_set_labels(
         namespace=namespace,
@@ -477,7 +477,7 @@ async def rancher_policy_report_set_annotations_tool(
     cluster_id: str = "local",
     instance: str | None = None,
 ) -> RancherMutationReceipt:
-    """Public MCP wrapper for curated policy_report set_annotations."""
+    """Modify one policy_report in place (set annotations) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write."""
 
     return await rancher_policy_report_set_annotations(
         namespace=namespace,

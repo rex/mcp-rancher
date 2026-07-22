@@ -536,7 +536,7 @@ async def rancher_horizontal_pod_autoscalers_list_tool(
     page_token: str | None = None,
     instance: str | None = None,
 ) -> RancherHorizontalPodAutoscalerList:
-    """Public MCP wrapper for curated horizontal_pod_autoscaler list."""
+    """List horizontal_pod_autoscalers as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool."""
 
     return await rancher_horizontal_pod_autoscalers_list(
         namespace=namespace,
@@ -557,7 +557,7 @@ async def rancher_horizontal_pod_autoscaler_get_tool(
     cluster_id: str = "local",
     instance: str | None = None,
 ) -> RancherHorizontalPodAutoscalerDetail:
-    """Public MCP wrapper for curated horizontal_pod_autoscaler detail."""
+    """Fetch one horizontal_pod_autoscaler and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect."""
 
     return await rancher_horizontal_pod_autoscaler_get(
         namespace=namespace,
@@ -574,7 +574,7 @@ async def rancher_horizontal_pod_autoscaler_delete_tool(
     cluster_id: str = "local",
     instance: str | None = None,
 ) -> RancherCuratedDeleteResult:
-    """Public MCP wrapper for curated horizontal_pod_autoscaler delete."""
+    """Delete one horizontal_pod_autoscaler and return a typed receipt of what was removed. Destructive and irreversible — the caller must first echo the exact confirmation phrase the tool requires."""
 
     return await rancher_horizontal_pod_autoscaler_delete(
         namespace=namespace,
@@ -592,7 +592,7 @@ async def rancher_horizontal_pod_autoscaler_set_labels_tool(
     cluster_id: str = "local",
     instance: str | None = None,
 ) -> RancherMutationReceipt:
-    """Public MCP wrapper for curated horizontal_pod_autoscaler set_labels."""
+    """Modify one horizontal_pod_autoscaler in place (set labels) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write."""
 
     return await rancher_horizontal_pod_autoscaler_set_labels(
         namespace=namespace,
@@ -610,7 +610,7 @@ async def rancher_horizontal_pod_autoscaler_set_annotations_tool(
     cluster_id: str = "local",
     instance: str | None = None,
 ) -> RancherMutationReceipt:
-    """Public MCP wrapper for curated horizontal_pod_autoscaler set_annotations."""
+    """Modify one horizontal_pod_autoscaler in place (set annotations) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write."""
 
     return await rancher_horizontal_pod_autoscaler_set_annotations(
         namespace=namespace,
@@ -629,7 +629,7 @@ async def rancher_horizontal_pod_autoscaler_set_min_max_tool(
     cluster_id: str = "local",
     instance: str | None = None,
 ) -> RancherMutationReceipt:
-    """Public MCP wrapper for curated horizontal_pod_autoscaler set_min_max."""
+    """Modify one horizontal_pod_autoscaler in place (set min max) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write."""
 
     return await rancher_horizontal_pod_autoscaler_set_min_max(
         namespace=namespace,

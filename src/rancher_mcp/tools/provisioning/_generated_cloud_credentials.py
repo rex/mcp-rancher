@@ -150,7 +150,7 @@ async def rancher_cloud_credentials_list_tool(
     reverse: bool | None = None,
     instance: str | None = None,
 ) -> RancherCloudCredentialList:
-    """Public MCP wrapper for curated cloud_credential list."""
+    """List cloud_credentials as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool."""
 
     return await rancher_cloud_credentials_list(
         driver=driver,
@@ -166,7 +166,7 @@ async def rancher_cloud_credential_get_tool(
     credential_id: str,
     instance: str | None = None,
 ) -> RancherCloudCredentialDetail:
-    """Public MCP wrapper for curated cloud_credential detail."""
+    """Fetch one cloud_credential and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect."""
 
     return await rancher_cloud_credential_get(
         credential_id=credential_id,

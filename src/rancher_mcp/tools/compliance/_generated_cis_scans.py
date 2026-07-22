@@ -122,7 +122,7 @@ async def rancher_cis_scans_list_tool(
     state: str | None = None,
     instance: str | None = None,
 ) -> RancherCisScanList:
-    """Public MCP wrapper for curated cis_scan list."""
+    """List cis_scans as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool."""
 
     return await rancher_cis_scans_list(
         limit=limit,
@@ -136,7 +136,7 @@ async def rancher_cis_scan_get_tool(
     scan_id: str,
     instance: str | None = None,
 ) -> RancherCisScanDetail:
-    """Public MCP wrapper for curated cis_scan detail."""
+    """Fetch one cis_scan and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect."""
 
     return await rancher_cis_scan_get(
         scan_id=scan_id,

@@ -131,7 +131,7 @@ async def rancher_settings_list_tool(
     reverse: bool | None = None,
     instance: str | None = None,
 ) -> RancherSettingList:
-    """Public MCP wrapper for curated setting list."""
+    """List settings as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool."""
 
     return await rancher_settings_list(
         limit=limit,
@@ -147,7 +147,7 @@ async def rancher_setting_get_tool(
     setting_id: str,
     instance: str | None = None,
 ) -> RancherSettingDetail:
-    """Public MCP wrapper for curated setting detail."""
+    """Fetch one setting and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect."""
 
     return await rancher_setting_get(
         setting_id=setting_id,

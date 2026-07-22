@@ -141,7 +141,7 @@ async def rancher_auth_configs_list_tool(
     reverse: bool | None = None,
     instance: str | None = None,
 ) -> RancherAuthConfigList:
-    """Public MCP wrapper for curated auth_config list."""
+    """List auth_configs as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool."""
 
     return await rancher_auth_configs_list(
         limit=limit,
@@ -158,7 +158,7 @@ async def rancher_auth_config_get_tool(
     auth_config_id: str,
     instance: str | None = None,
 ) -> RancherAuthConfigDetail:
-    """Public MCP wrapper for curated auth_config detail."""
+    """Fetch one auth_config and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect."""
 
     return await rancher_auth_config_get(
         auth_config_id=auth_config_id,

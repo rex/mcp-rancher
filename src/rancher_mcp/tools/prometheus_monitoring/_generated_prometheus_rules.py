@@ -415,7 +415,7 @@ async def rancher_prometheus_rules_list_tool(
     page_token: str | None = None,
     instance: str | None = None,
 ) -> RancherPrometheusRuleList:
-    """Public MCP wrapper for curated prometheus_rule list."""
+    """List prometheus_rules as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool."""
 
     return await rancher_prometheus_rules_list(
         namespace=namespace,
@@ -433,7 +433,7 @@ async def rancher_prometheus_rule_get_tool(
     cluster_id: str = "local",
     instance: str | None = None,
 ) -> RancherPrometheusRuleDetail:
-    """Public MCP wrapper for curated prometheus_rule detail."""
+    """Fetch one prometheus_rule and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect."""
 
     return await rancher_prometheus_rule_get(
         namespace=namespace,
@@ -450,7 +450,7 @@ async def rancher_prometheus_rule_delete_tool(
     cluster_id: str = "local",
     instance: str | None = None,
 ) -> RancherCuratedDeleteResult:
-    """Public MCP wrapper for curated prometheus_rule delete."""
+    """Delete one prometheus_rule and return a typed receipt of what was removed. Destructive and irreversible — the caller must first echo the exact confirmation phrase the tool requires."""
 
     return await rancher_prometheus_rule_delete(
         namespace=namespace,
@@ -468,7 +468,7 @@ async def rancher_prometheus_rule_set_labels_tool(
     cluster_id: str = "local",
     instance: str | None = None,
 ) -> RancherMutationReceipt:
-    """Public MCP wrapper for curated prometheus_rule set_labels."""
+    """Modify one prometheus_rule in place (set labels) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write."""
 
     return await rancher_prometheus_rule_set_labels(
         namespace=namespace,
@@ -486,7 +486,7 @@ async def rancher_prometheus_rule_set_annotations_tool(
     cluster_id: str = "local",
     instance: str | None = None,
 ) -> RancherMutationReceipt:
-    """Public MCP wrapper for curated prometheus_rule set_annotations."""
+    """Modify one prometheus_rule in place (set annotations) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write."""
 
     return await rancher_prometheus_rule_set_annotations(
         namespace=namespace,

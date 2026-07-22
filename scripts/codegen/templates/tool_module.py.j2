@@ -891,7 +891,7 @@ async def rancher_{{ display_name_plural }}_list_tool(
     {% endif -%}
     instance: str | None = None,
 ) -> {{ list_model_name }}:
-    """Public MCP wrapper for curated {{ display_name_singular }} list."""
+    """List {{ display_name_plural }} as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool."""
 
     return await rancher_{{ display_name_plural }}_list(
         {% if namespaced -%}
@@ -925,7 +925,7 @@ async def rancher_{{ display_name_singular }}_get_tool(
     {% endif -%}
     instance: str | None = None,
 ) -> {{ detail_model_name }}:
-    """Public MCP wrapper for curated {{ display_name_singular }} detail."""
+    """Fetch one {{ display_name_singular }} and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect."""
 
     return await rancher_{{ display_name_singular }}_get(
         {% if namespaced -%}
@@ -960,7 +960,7 @@ async def rancher_{{ display_name_singular }}_create_tool(
     {%- endif %}
     instance: str | None = None,
 ) -> {{ detail_model_name }}:
-    """Public MCP wrapper for curated {{ display_name_singular }} create."""
+    """Create one {{ display_name_singular }} from the supplied spec and return the typed detail of the new object, including its server-assigned identity and initial state. This writes to the cluster."""
 
     return await rancher_{{ display_name_singular }}_create(
         {% if namespaced -%}
@@ -1001,7 +1001,7 @@ async def rancher_{{ display_name_singular }}_apply_tool(
     {%- endif %}
     instance: str | None = None,
 ) -> {{ detail_model_name }}:
-    """Public MCP wrapper for curated {{ display_name_singular }} apply."""
+    """Apply one {{ display_name_singular }} to a desired state as a declarative PUT and return its typed detail — creating the object when absent, replacing it when present. This writes to the cluster."""
 
     return await rancher_{{ display_name_singular }}_apply(
         {% if namespaced -%}
@@ -1034,7 +1034,7 @@ async def rancher_{{ display_name_singular }}_delete_tool(
     {% endif -%}
     instance: str | None = None,
 ) -> RancherCuratedDeleteResult:
-    """Public MCP wrapper for curated {{ display_name_singular }} delete."""
+    """Delete one {{ display_name_singular }} and return a typed receipt of what was removed. Destructive and irreversible — the caller must first echo the exact confirmation phrase the tool requires."""
 
     return await rancher_{{ display_name_singular }}_delete(
         {% if namespaced -%}
@@ -1067,7 +1067,7 @@ async def rancher_{{ display_name_singular }}_{{ patch.verb }}_tool(
     {% endif -%}
     instance: str | None = None,
 ) -> RancherMutationReceipt:
-    """Public MCP wrapper for curated {{ display_name_singular }} {{ patch.verb }}."""
+    """Modify one {{ display_name_singular }} in place ({{ patch.verb|replace('_', ' ') }}) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write."""
 
     return await rancher_{{ display_name_singular }}_{{ patch.verb }}(
         {% if namespaced -%}

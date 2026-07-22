@@ -510,7 +510,7 @@ async def rancher_secrets_list_tool(
     page_token: str | None = None,
     instance: str | None = None,
 ) -> RancherSecretList:
-    """Public MCP wrapper for curated secret list."""
+    """List secrets as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool."""
 
     return await rancher_secrets_list(
         namespace=namespace,
@@ -530,7 +530,7 @@ async def rancher_secret_get_tool(
     cluster_id: str = "local",
     instance: str | None = None,
 ) -> RancherSecretDetail:
-    """Public MCP wrapper for curated secret detail."""
+    """Fetch one secret and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect."""
 
     return await rancher_secret_get(
         namespace=namespace,
@@ -552,7 +552,7 @@ async def rancher_secret_create_tool(
     cluster_id: str = "local",
     instance: str | None = None,
 ) -> RancherSecretDetail:
-    """Public MCP wrapper for curated secret create."""
+    """Create one secret from the supplied spec and return the typed detail of the new object, including its server-assigned identity and initial state. This writes to the cluster."""
 
     return await rancher_secret_create(
         namespace=namespace,
@@ -575,7 +575,7 @@ async def rancher_secret_delete_tool(
     cluster_id: str = "local",
     instance: str | None = None,
 ) -> RancherCuratedDeleteResult:
-    """Public MCP wrapper for curated secret delete."""
+    """Delete one secret and return a typed receipt of what was removed. Destructive and irreversible — the caller must first echo the exact confirmation phrase the tool requires."""
 
     return await rancher_secret_delete(
         namespace=namespace,
@@ -593,7 +593,7 @@ async def rancher_secret_set_labels_tool(
     cluster_id: str = "local",
     instance: str | None = None,
 ) -> RancherMutationReceipt:
-    """Public MCP wrapper for curated secret set_labels."""
+    """Modify one secret in place (set labels) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write."""
 
     return await rancher_secret_set_labels(
         namespace=namespace,
@@ -611,7 +611,7 @@ async def rancher_secret_set_annotations_tool(
     cluster_id: str = "local",
     instance: str | None = None,
 ) -> RancherMutationReceipt:
-    """Public MCP wrapper for curated secret set_annotations."""
+    """Modify one secret in place (set annotations) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write."""
 
     return await rancher_secret_set_annotations(
         namespace=namespace,

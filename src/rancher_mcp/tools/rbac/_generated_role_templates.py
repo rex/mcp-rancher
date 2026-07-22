@@ -184,7 +184,7 @@ async def rancher_role_templates_list_tool(
     reverse: bool | None = None,
     instance: str | None = None,
 ) -> RancherRoleTemplateList:
-    """Public MCP wrapper for curated role_template list."""
+    """List role_templates as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool."""
 
     return await rancher_role_templates_list(
         limit=limit,
@@ -207,7 +207,7 @@ async def rancher_role_template_get_tool(
     role_template_id: str,
     instance: str | None = None,
 ) -> RancherRoleTemplateDetail:
-    """Public MCP wrapper for curated role_template detail."""
+    """Fetch one role_template and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect."""
 
     return await rancher_role_template_get(
         role_template_id=role_template_id,

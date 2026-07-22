@@ -142,7 +142,7 @@ async def rancher_certificates_list_tool(
     reverse: bool | None = None,
     instance: str | None = None,
 ) -> RancherCertificateList:
-    """Public MCP wrapper for curated certificate list."""
+    """List certificates as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool."""
 
     return await rancher_certificates_list(
         limit=limit,
@@ -159,7 +159,7 @@ async def rancher_certificate_get_tool(
     certificate_id: str,
     instance: str | None = None,
 ) -> RancherCertificateDetail:
-    """Public MCP wrapper for curated certificate detail."""
+    """Fetch one certificate and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect."""
 
     return await rancher_certificate_get(
         certificate_id=certificate_id,

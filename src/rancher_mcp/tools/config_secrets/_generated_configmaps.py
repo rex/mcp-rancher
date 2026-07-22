@@ -604,7 +604,7 @@ async def rancher_config_maps_list_tool(
     page_token: str | None = None,
     instance: str | None = None,
 ) -> RancherConfigMapList:
-    """Public MCP wrapper for curated config_map list."""
+    """List config_maps as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool."""
 
     return await rancher_config_maps_list(
         namespace=namespace,
@@ -623,7 +623,7 @@ async def rancher_config_map_get_tool(
     cluster_id: str = "local",
     instance: str | None = None,
 ) -> RancherConfigMapDetail:
-    """Public MCP wrapper for curated config_map detail."""
+    """Fetch one config_map and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect."""
 
     return await rancher_config_map_get(
         namespace=namespace,
@@ -644,7 +644,7 @@ async def rancher_config_map_create_tool(
     cluster_id: str = "local",
     instance: str | None = None,
 ) -> RancherConfigMapDetail:
-    """Public MCP wrapper for curated config_map create."""
+    """Create one config_map from the supplied spec and return the typed detail of the new object, including its server-assigned identity and initial state. This writes to the cluster."""
 
     return await rancher_config_map_create(
         namespace=namespace,
@@ -670,7 +670,7 @@ async def rancher_config_map_apply_tool(
     cluster_id: str = "local",
     instance: str | None = None,
 ) -> RancherConfigMapDetail:
-    """Public MCP wrapper for curated config_map apply."""
+    """Apply one config_map to a desired state as a declarative PUT and return its typed detail — creating the object when absent, replacing it when present. This writes to the cluster."""
 
     return await rancher_config_map_apply(
         namespace=namespace,
@@ -692,7 +692,7 @@ async def rancher_config_map_delete_tool(
     cluster_id: str = "local",
     instance: str | None = None,
 ) -> RancherCuratedDeleteResult:
-    """Public MCP wrapper for curated config_map delete."""
+    """Delete one config_map and return a typed receipt of what was removed. Destructive and irreversible — the caller must first echo the exact confirmation phrase the tool requires."""
 
     return await rancher_config_map_delete(
         namespace=namespace,
@@ -710,7 +710,7 @@ async def rancher_config_map_set_labels_tool(
     cluster_id: str = "local",
     instance: str | None = None,
 ) -> RancherMutationReceipt:
-    """Public MCP wrapper for curated config_map set_labels."""
+    """Modify one config_map in place (set labels) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write."""
 
     return await rancher_config_map_set_labels(
         namespace=namespace,
@@ -728,7 +728,7 @@ async def rancher_config_map_set_annotations_tool(
     cluster_id: str = "local",
     instance: str | None = None,
 ) -> RancherMutationReceipt:
-    """Public MCP wrapper for curated config_map set_annotations."""
+    """Modify one config_map in place (set annotations) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write."""
 
     return await rancher_config_map_set_annotations(
         namespace=namespace,

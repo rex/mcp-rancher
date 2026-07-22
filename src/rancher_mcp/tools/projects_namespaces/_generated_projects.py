@@ -151,7 +151,7 @@ async def rancher_projects_list_tool(
     page_token: str | None = None,
     instance: str | None = None,
 ) -> RancherProjectList:
-    """Public MCP wrapper for curated project list."""
+    """List projects as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool."""
 
     return await rancher_projects_list(
         cluster_id=cluster_id,
@@ -168,7 +168,7 @@ async def rancher_project_get_tool(
     project_id: str,
     instance: str | None = None,
 ) -> RancherProjectDetail:
-    """Public MCP wrapper for curated project detail."""
+    """Fetch one project and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect."""
 
     return await rancher_project_get(
         project_id=project_id,

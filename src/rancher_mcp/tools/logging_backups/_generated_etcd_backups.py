@@ -157,7 +157,7 @@ async def rancher_etcd_backups_list_tool(
     reverse: bool | None = None,
     instance: str | None = None,
 ) -> RancherEtcdBackupList:
-    """Public MCP wrapper for curated etcd_backup list."""
+    """List etcd_backups as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool."""
 
     return await rancher_etcd_backups_list(
         limit=limit,
@@ -176,7 +176,7 @@ async def rancher_etcd_backup_get_tool(
     etcd_backup_id: str,
     instance: str | None = None,
 ) -> RancherEtcdBackupDetail:
-    """Public MCP wrapper for curated etcd_backup detail."""
+    """Fetch one etcd_backup and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect."""
 
     return await rancher_etcd_backup_get(
         etcd_backup_id=etcd_backup_id,

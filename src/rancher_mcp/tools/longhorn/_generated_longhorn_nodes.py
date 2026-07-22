@@ -363,7 +363,7 @@ async def rancher_longhorn_nodes_list_tool(
     page_token: str | None = None,
     instance: str | None = None,
 ) -> RancherLonghornNodeList:
-    """Public MCP wrapper for curated longhorn_node list."""
+    """List longhorn_nodes as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool."""
 
     return await rancher_longhorn_nodes_list(
         namespace=namespace,
@@ -383,7 +383,7 @@ async def rancher_longhorn_node_get_tool(
     cluster_id: str = "local",
     instance: str | None = None,
 ) -> RancherLonghornNodeDetail:
-    """Public MCP wrapper for curated longhorn_node detail."""
+    """Fetch one longhorn_node and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect."""
 
     return await rancher_longhorn_node_get(
         namespace=namespace,
@@ -400,7 +400,7 @@ async def rancher_longhorn_node_set_labels_tool(
     cluster_id: str = "local",
     instance: str | None = None,
 ) -> RancherMutationReceipt:
-    """Public MCP wrapper for curated longhorn_node set_labels."""
+    """Modify one longhorn_node in place (set labels) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write."""
 
     return await rancher_longhorn_node_set_labels(
         namespace=namespace,
@@ -418,7 +418,7 @@ async def rancher_longhorn_node_set_annotations_tool(
     cluster_id: str = "local",
     instance: str | None = None,
 ) -> RancherMutationReceipt:
-    """Public MCP wrapper for curated longhorn_node set_annotations."""
+    """Modify one longhorn_node in place (set annotations) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write."""
 
     return await rancher_longhorn_node_set_annotations(
         namespace=namespace,

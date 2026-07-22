@@ -351,7 +351,7 @@ async def rancher_namespaces_list_tool(
     page_token: str | None = None,
     instance: str | None = None,
 ) -> RancherNamespaceList:
-    """Public MCP wrapper for curated namespace list."""
+    """List namespaces as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool."""
 
     return await rancher_namespaces_list(
         cluster_id=cluster_id,
@@ -370,7 +370,7 @@ async def rancher_namespace_get_tool(
     cluster_id: str = "local",
     instance: str | None = None,
 ) -> RancherNamespaceDetail:
-    """Public MCP wrapper for curated namespace detail."""
+    """Fetch one namespace and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect."""
 
     return await rancher_namespace_get(
         namespace=namespace,
@@ -385,7 +385,7 @@ async def rancher_namespace_set_labels_tool(
     cluster_id: str = "local",
     instance: str | None = None,
 ) -> RancherMutationReceipt:
-    """Public MCP wrapper for curated namespace set_labels."""
+    """Modify one namespace in place (set labels) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write."""
 
     return await rancher_namespace_set_labels(
         namespace=namespace,
@@ -401,7 +401,7 @@ async def rancher_namespace_set_annotations_tool(
     cluster_id: str = "local",
     instance: str | None = None,
 ) -> RancherMutationReceipt:
-    """Public MCP wrapper for curated namespace set_annotations."""
+    """Modify one namespace in place (set annotations) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write."""
 
     return await rancher_namespace_set_annotations(
         namespace=namespace,

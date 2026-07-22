@@ -312,7 +312,7 @@ async def rancher_restores_list_tool(
     page_token: str | None = None,
     instance: str | None = None,
 ) -> RancherRestoreList:
-    """Public MCP wrapper for curated restore list."""
+    """List restores as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool."""
 
     return await rancher_restores_list(
         cluster_id=cluster_id,
@@ -327,7 +327,7 @@ async def rancher_restore_get_tool(
     cluster_id: str = "local",
     instance: str | None = None,
 ) -> RancherRestoreDetail:
-    """Public MCP wrapper for curated restore detail."""
+    """Fetch one restore and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect."""
 
     return await rancher_restore_get(
         restore_name=restore_name,
@@ -342,7 +342,7 @@ async def rancher_restore_set_labels_tool(
     cluster_id: str = "local",
     instance: str | None = None,
 ) -> RancherMutationReceipt:
-    """Public MCP wrapper for curated restore set_labels."""
+    """Modify one restore in place (set labels) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write."""
 
     return await rancher_restore_set_labels(
         restore_name=restore_name,
@@ -358,7 +358,7 @@ async def rancher_restore_set_annotations_tool(
     cluster_id: str = "local",
     instance: str | None = None,
 ) -> RancherMutationReceipt:
-    """Public MCP wrapper for curated restore set_annotations."""
+    """Modify one restore in place (set annotations) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write."""
 
     return await rancher_restore_set_annotations(
         restore_name=restore_name,

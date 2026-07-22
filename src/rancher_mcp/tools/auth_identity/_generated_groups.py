@@ -127,7 +127,7 @@ async def rancher_groups_list_tool(
     reverse: bool | None = None,
     instance: str | None = None,
 ) -> RancherGroupList:
-    """Public MCP wrapper for curated group list."""
+    """List groups as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool."""
 
     return await rancher_groups_list(
         limit=limit,
@@ -142,7 +142,7 @@ async def rancher_group_get_tool(
     group_id: str,
     instance: str | None = None,
 ) -> RancherGroupDetail:
-    """Public MCP wrapper for curated group detail."""
+    """Fetch one group and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect."""
 
     return await rancher_group_get(
         group_id=group_id,

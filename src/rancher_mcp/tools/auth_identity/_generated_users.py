@@ -142,7 +142,7 @@ async def rancher_users_list_tool(
     reverse: bool | None = None,
     instance: str | None = None,
 ) -> RancherUserList:
-    """Public MCP wrapper for curated user list."""
+    """List users as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool."""
 
     return await rancher_users_list(
         limit=limit,
@@ -159,7 +159,7 @@ async def rancher_user_get_tool(
     user_id: str,
     instance: str | None = None,
 ) -> RancherUserDetail:
-    """Public MCP wrapper for curated user detail."""
+    """Fetch one user and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect."""
 
     return await rancher_user_get(
         user_id=user_id,

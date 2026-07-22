@@ -158,7 +158,7 @@ async def rancher_nodes_list_tool(
     page_token: str | None = None,
     instance: str | None = None,
 ) -> RancherNodeList:
-    """Public MCP wrapper for curated node list."""
+    """List nodes as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool."""
 
     return await rancher_nodes_list(
         cluster_id=cluster_id,
@@ -177,7 +177,7 @@ async def rancher_node_get_tool(
     node_id: str,
     instance: str | None = None,
 ) -> RancherNodeDetail:
-    """Public MCP wrapper for curated node detail."""
+    """Fetch one node and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect."""
 
     return await rancher_node_get(
         node_id=node_id,

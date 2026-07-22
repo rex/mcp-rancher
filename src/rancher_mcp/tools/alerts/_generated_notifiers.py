@@ -126,7 +126,7 @@ async def rancher_notifiers_list_tool(
     state: str | None = None,
     instance: str | None = None,
 ) -> RancherNotifierList:
-    """Public MCP wrapper for curated notifier list."""
+    """List notifiers as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool."""
 
     return await rancher_notifiers_list(
         limit=limit,
@@ -140,7 +140,7 @@ async def rancher_notifier_get_tool(
     notifier_id: str,
     instance: str | None = None,
 ) -> RancherNotifierDetail:
-    """Public MCP wrapper for curated notifier detail."""
+    """Fetch one notifier and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect."""
 
     return await rancher_notifier_get(
         notifier_id=notifier_id,

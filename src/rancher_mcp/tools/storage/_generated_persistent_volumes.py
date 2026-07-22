@@ -323,7 +323,7 @@ async def rancher_persistent_volumes_list_tool(
     page_token: str | None = None,
     instance: str | None = None,
 ) -> RancherPersistentVolumeList:
-    """Public MCP wrapper for curated persistent_volume list."""
+    """List persistent_volumes as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool."""
 
     return await rancher_persistent_volumes_list(
         cluster_id=cluster_id,
@@ -340,7 +340,7 @@ async def rancher_persistent_volume_get_tool(
     cluster_id: str = "local",
     instance: str | None = None,
 ) -> RancherPersistentVolumeDetail:
-    """Public MCP wrapper for curated persistent_volume detail."""
+    """Fetch one persistent_volume and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect."""
 
     return await rancher_persistent_volume_get(
         volume_name=volume_name,
@@ -355,7 +355,7 @@ async def rancher_persistent_volume_set_labels_tool(
     cluster_id: str = "local",
     instance: str | None = None,
 ) -> RancherMutationReceipt:
-    """Public MCP wrapper for curated persistent_volume set_labels."""
+    """Modify one persistent_volume in place (set labels) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write."""
 
     return await rancher_persistent_volume_set_labels(
         volume_name=volume_name,
@@ -371,7 +371,7 @@ async def rancher_persistent_volume_set_annotations_tool(
     cluster_id: str = "local",
     instance: str | None = None,
 ) -> RancherMutationReceipt:
-    """Public MCP wrapper for curated persistent_volume set_annotations."""
+    """Modify one persistent_volume in place (set annotations) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write."""
 
     return await rancher_persistent_volume_set_annotations(
         volume_name=volume_name,

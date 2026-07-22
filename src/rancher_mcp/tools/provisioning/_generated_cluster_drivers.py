@@ -143,7 +143,7 @@ async def rancher_cluster_drivers_list_tool(
     reverse: bool | None = None,
     instance: str | None = None,
 ) -> RancherClusterDriverList:
-    """Public MCP wrapper for curated cluster_driver list."""
+    """List cluster_drivers as lightweight typed summaries — identity, state, and a per-item health rollup rather than full specs — so an agent can enumerate what exists before opening any one in detail with the matching get tool."""
 
     return await rancher_cluster_drivers_list(
         limit=limit,
@@ -160,7 +160,7 @@ async def rancher_cluster_driver_get_tool(
     driver_id: str,
     instance: str | None = None,
 ) -> RancherClusterDriverDetail:
-    """Public MCP wrapper for curated cluster_driver detail."""
+    """Fetch one cluster_driver and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect."""
 
     return await rancher_cluster_driver_get(
         driver_id=driver_id,
