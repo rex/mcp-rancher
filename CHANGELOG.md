@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.53.0] — 2026-07-22 — Agent: Claude
+### Fixed
+- **A latent cross-module leak that could make the alias-uniformity gate cry
+  wolf.** `test_no_serialization_alias_split_on_any_output_model` scans
+  `RancherModel.__subclasses__()`, which is process-global — and
+  `test_output_schema_dump_parity` deliberately defines models carrying that
+  exact defect to prove its own detector fires. Verified empirically: once the
+  parity gate's self-tests have run, two defect-carrying scratch models are
+  visible, and the unfiltered scan would have failed on them. The only thing
+  masking it was pytest's alphabetical collection order — a subset run, a
+  different order, or xdist would have tripped it.
+
+  The scan is now scoped to production models by module. A gate that can raise
+  a false alarm is worse than no gate: it teaches people to distrust a failure
+  that will one day be real. Added a non-vacuity assertion too, since the module
+  filter is the one way this gate could instead go quietly blind.
+
 ## [1.52.0] — 2026-07-22 — Agent: Claude
 ### Changed
 - **AE-10 — oversized list responses trimmed**, per the doctrine "collapse healthy

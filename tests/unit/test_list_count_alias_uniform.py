@@ -253,7 +253,19 @@ def test_no_serialization_alias_split_on_any_output_model() -> None:
         return found
 
     offenders: list[str] = []
+    scanned = 0
     for model in _all_subclasses(RancherModel):
+        # Production models only. `__subclasses__()` is process-global, so any
+        # throwaway subclass another test module defines is visible here once
+        # that module has been imported — and `test_output_schema_dump_parity`
+        # deliberately defines models carrying this exact defect to prove its
+        # own detector fires. Alphabetical collection happens to import this
+        # module first today, which merely hides the coupling; running a subset,
+        # a different order, or xdist would false-fail this gate. A gate that
+        # can cry wolf is worse than no gate, so scope it explicitly.
+        if not model.__module__.startswith("rancher_mcp."):
+            continue
+        scanned += 1
         for name, field in model.model_fields.items():
             ser = field.serialization_alias
             if ser is None:
@@ -276,6 +288,9 @@ def test_no_serialization_alias_split_on_any_output_model() -> None:
                 offenders.append(
                     f"{model.__name__}.{name} (serialize={ser!r} vs validate={validate_key!r})"
                 )
+    # Non-vacuity: the module filter above is the one way this gate could go
+    # quietly blind (rename the package, scan nothing, pass forever).
+    assert scanned > 100, f"gate scanned only {scanned} production models — filter is wrong"
     assert not offenders, (
         "output models must not SPLIT serialization_alias from the validation "
         "alias: FastMCP publishes the validation-mode outputSchema and validates "
