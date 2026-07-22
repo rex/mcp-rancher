@@ -105,6 +105,26 @@ def register_all_tools(mcp: FastMCP) -> None:
     apply_structured_errors_to_all_tools(mcp)
 
 
+def stamp_server_version(mcp: FastMCP) -> None:
+    """Advertise *our* version as ``serverInfo.version`` in the MCP handshake.
+
+    ``FastMCP.__init__`` accepts no ``version``, so it builds the low-level
+    ``Server`` with ``version=None`` — and the SDK's fallback for that is
+    ``pkg_version("mcp")``. Every client was therefore being told the *MCP SDK's*
+    version instead of ours, which meant the number never moved when we shipped:
+    an operator restarting the server mid-incident had no way to confirm the
+    restart had picked up a fix. Assigning the underlying ``Server.version`` is
+    the only seam the SDK exposes for this.
+
+    Called by both entrypoints (``__main__.main`` and ``create_mcp_server``);
+    guarded by ``tests/unit/test_server_version.py``.
+    """
+    # Local import: keeps this module's import cost near-zero (see above).
+    from rancher_mcp import __version__
+
+    mcp._mcp_server.version = __version__  # type: ignore[attr-defined]
+
+
 def create_mcp_server() -> FastMCP:
     """Create a fully-configured FastMCP server (tools eager-loaded).
 
@@ -118,5 +138,6 @@ def create_mcp_server() -> FastMCP:
         name=settings.server_name,
         instructions=settings.server_instructions,
     )
+    stamp_server_version(mcp)
     register_all_tools(mcp)
     return mcp

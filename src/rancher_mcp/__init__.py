@@ -1,13 +1,14 @@
 """rancher-mcp package."""
 
-from importlib.metadata import PackageNotFoundError
-from importlib.metadata import version as _package_version
+# The authoritative self-version. `_version.py` is generated from the repo-root
+# VERSION file by scripts/sync_versions.py and gated by pre-commit, so it is
+# exact on every commit AND ships inside the wheel.
+#
+# It deliberately does NOT come from `importlib.metadata.version()`: that reads
+# the installed *dist-info*, which for the editable install every developer and
+# every `make dev` run uses only changes when the package is reinstalled. It
+# silently reported a version several releases stale — an operator mid-incident
+# could not tell whether their restart had actually picked up a fix.
+from rancher_mcp._version import __version__
 
 __all__ = ["__version__"]
-
-try:
-    # The authoritative self-version: whatever is actually installed (what a
-    # `uvx rancher-mcp` user is running). Beats a hardcoded literal that drifts.
-    __version__ = _package_version("rancher-mcp")
-except PackageNotFoundError:  # not installed (e.g. running from a raw checkout)
-    __version__ = "0.0.0+unknown"

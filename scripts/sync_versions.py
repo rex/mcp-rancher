@@ -11,6 +11,8 @@ fields in lockstep with ``VERSION`` on every commit:
   - ``pyproject.toml``      → ``[project].version``
   - ``server.json``         → top-level ``version`` **and** every ``packages[*].version``
   - ``uv.lock``             → the editable ``rancher-mcp`` package entry
+  - ``src/rancher_mcp/_version.py`` → ``__version__`` (what the server reports
+    about itself, in the MCP handshake and in ``rancher_server_profile_get``)
 
 Why continuous sync (not just at release): the tag-triggered publish is the
 ONLY thing that ships a package, so rewriting these files on every commit is
@@ -41,6 +43,7 @@ VERSION_FILE = ROOT / "VERSION"
 PYPROJECT = ROOT / "pyproject.toml"
 SERVER_JSON = ROOT / "server.json"
 UV_LOCK = ROOT / "uv.lock"
+VERSION_MODULE = ROOT / "src" / "rancher_mcp" / "_version.py"
 PACKAGE_NAME = "rancher-mcp"
 
 
@@ -100,6 +103,26 @@ def sync_uv_lock(version: str, *, write: bool) -> str | None:
     return f"uv.lock [{PACKAGE_NAME}].version: {current} -> {version}"
 
 
+def sync_version_module(version: str, *, write: bool) -> str | None:
+    """Sync ``src/rancher_mcp/_version.py``'s ``__version__`` literal.
+
+    This is what the server reports about *itself*. It is a generated module
+    rather than an ``importlib.metadata`` lookup on purpose: that reads the
+    installed dist-info, which goes stale the moment VERSION moves without a
+    reinstall — and an editable install is what every developer runs.
+    """
+
+    text = VERSION_MODULE.read_text(encoding="utf-8")
+    match = re.search(r'(?m)^__version__ = "([^"]*)"', text)
+    current = match.group(1) if match else None
+    if current == version:
+        return None
+    if write and match is not None:
+        text = re.sub(r'(?m)^(__version__ = ")[^"]*(")', rf"\g<1>{version}\g<2>", text, count=1)
+        VERSION_MODULE.write_text(text, encoding="utf-8")
+    return f"_version.py __version__: {current} -> {version}"
+
+
 def collect_drifts(version: str, *, write: bool) -> list[str]:
     """Apply (or, when ``write`` is False, only report) every sync."""
 
@@ -111,6 +134,9 @@ def collect_drifts(version: str, *, write: bool) -> list[str]:
     uv_lock = sync_uv_lock(version, write=write)
     if uv_lock:
         drifts.append(uv_lock)
+    version_module = sync_version_module(version, write=write)
+    if version_module:
+        drifts.append(version_module)
     return drifts
 
 

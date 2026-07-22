@@ -1,5 +1,33 @@
 # Changelog
 
+## [1.47.0] — 2026-07-22 — Agent: Claude
+### Fixed
+- **F1/AE-33 — the server never reported its own version.** Two independent
+  causes, both of which presented to an operator as a version number that
+  looked real and never moved:
+  1. `serverInfo.version` in the MCP handshake was the **MCP SDK's** version,
+     not ours. `FastMCP.__init__` accepts no `version`, so the low-level
+     `Server` was built with `version=None`, and the SDK's fallback for that is
+     `pkg_version("mcp")` — it changed only when we upgraded the SDK. Fixed by
+     `server.stamp_server_version()`, now called by both entrypoints.
+  2. `__version__` was resolved via `importlib.metadata`, i.e. the installed
+     dist-info — which, for the editable install every developer and `make dev`
+     run uses, only changes on reinstall. It reported several releases stale.
+     Fixed by generating `src/rancher_mcp/_version.py` from `VERSION`.
+
+  This is why a field operator triaging a live outage could not tell whether
+  restarting the server had picked up a fix, and had to infer it by firing a
+  known-broken call and watching the behavior.
+
+### Added
+- `scripts/sync_versions.py` now also syncs `src/rancher_mcp/_version.py`, so
+  the self-reported version is exact on every commit and ships correct in the
+  wheel. `--check` (pre-commit + `make validate`) fails closed on drift.
+- `tests/unit/test_server_version.py`: guards both causes above — including an
+  AST check that `__version__` is never re-sourced from installed metadata,
+  which nothing else in the suite would catch (in CI a fresh install makes the
+  stale and correct values agree).
+
 ## [1.46.0] — 2026-07-22 — Agent: Claude
 ### Added
 - `test_secret_create_never_emits_values_no_reveal_input` in

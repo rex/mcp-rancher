@@ -56,6 +56,13 @@ def main() -> None:
         instructions=settings.server_instructions,
     )
 
+    # Advertise our own version in the MCP handshake (see the helper's docstring:
+    # without this the SDK reports *its* version, so ours never moved). Cheap and
+    # import-light, so it happens in Phase A rather than with the tool loading.
+    from rancher_mcp.server import stamp_server_version
+
+    stamp_server_version(mcp)
+
     # ── Phase B: background tool loading ───────────────────────────────────
     _tools_ready = threading.Event()
 
