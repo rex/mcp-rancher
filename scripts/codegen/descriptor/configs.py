@@ -87,6 +87,42 @@ class DetailLocal(BaseModel):
     """Python expression to assign (e.g. `mapping_value(payload, "metadata") or {}`)."""
 
 
+class RevealGatedExtra(BaseModel):
+    """A `model_copy` update field gated by get's real `reveal` argument.
+
+    Used by `GetConfig.reveal_gated_extras` when `GetConfig.reveal_param` is
+    True (M-SEC-2: `secret_get`'s decoded `data` is opt-in, not default).
+    Renders differently depending on which operation is reusing get's
+    response-shaping pipeline:
+
+    - In get's own `_fetch_<x>_get` (which has a genuine `reveal: bool`
+      parameter threaded in): `"<field>": (<revealed_expression>) if reveal
+      else (<hidden_expression>)`.
+    - In create/apply (which reuse `get.extras`/`get.reveal_gated_extras`
+      for their own response shaping but have NO `reveal` input of their
+      own — a create/apply is never a "reveal"): unconditionally
+      `"<field>": <hidden_expression>`.
+
+    This keeps sensitive-value suppression opt-in, additive, and scoped to
+    the one field that needs it, without threading `reveal` into scopes
+    that don't have it (and shouldn't: create/apply always suppress)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    field: str
+    """Update key on the model (e.g. `data`)."""
+
+    revealed_expression: str
+    """Python expression used when `reveal` is True (get only). Typically
+    `detail.<field>` — the value the model already decoded on validate."""
+
+    hidden_expression: str
+    """Python expression used when `reveal` is False (get), and
+    unconditionally on create/apply. Typically an empty-collection literal
+    (e.g. `"{}"`) so the base serializer's empty-value drop (L-0 / ADR-0002)
+    removes it from the dump entirely."""
+
+
 class ListConfig(BaseModel):
     """List operation configuration."""
 
@@ -225,6 +261,23 @@ class GetConfig(BaseModel):
 
     next_steps: list[str] = []
     """Suggested next-step tool names included in the detail response."""
+
+    reveal_param: bool = False
+    """If True, thread a public `reveal: bool = False` argument into the
+    `rancher_<x>_get` / `rancher_<x>_get_tool` signatures, plumbed through
+    as a plain `reveal: bool` parameter on the private `_fetch_<x>_get`
+    helper. Opt-in and additive: False (the default) changes zero
+    currently-generated files (M-SEC-2: gates `secret_get`'s decoded
+    values behind an explicit reveal instead of returning them by
+    default — AE-01, agent context is persisted into transcripts the
+    operator doesn't control). Pairs with `reveal_gated_extras` — on its
+    own this flag only adds the parameter; without a matching entry in
+    `reveal_gated_extras` nothing is actually gated by it."""
+
+    reveal_gated_extras: list[RevealGatedExtra] = []
+    """Fields suppressed to a fixed hidden value unless `reveal_param` is
+    set AND the caller passes `reveal=True`. See `RevealGatedExtra`. Empty
+    by default — zero codegen impact for descriptors that don't set it."""
 
 
 class ArgSpec(BaseModel):

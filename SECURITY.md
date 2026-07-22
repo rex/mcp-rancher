@@ -48,18 +48,26 @@ disclosure.
   redacted wherever they appear — **including inside an untyped `payload`
   blob** that no typed field would otherwise mask. It is enforced once, on the
   base response model, so the guarantee holds for every tool.
-- Kubernetes Secret **values are redacted on the list/summary surface** (key
-  names and counts only). The single-resource `rancher_secret_get` is the
-  deliberate, **audited** reveal — it returns the decoded values (mirroring
-  `kubectl get secret -o yaml`), because a `secret_get` that withholds the value
-  is useless (M-SEC). Certificate private keys remain structurally absent from
-  the certificate tools.
+- Kubernetes Secret **values are withheld by default** — on the list/summary
+  surface *and*, since **M-SEC-2**, on the single-resource `rancher_secret_get`
+  too (key names and counts only, `dataKeys`/`dataKeyCount`). Passing
+  `reveal=true` to `rancher_secret_get` opts into the decoded values (mirroring
+  `kubectl get secret -o yaml`) and emits an **audited** reveal record; the
+  default stays names-only so an agent never puts credential material into a
+  transcript or summary it didn't explicitly ask for — agent context is
+  persisted somewhere the operator doesn't control (AE-01), so the reveal must
+  be opt-in, not the accidental default. `rancher_secret_create` likewise never
+  emits values (it has no `reveal` input). Certificate private keys remain
+  structurally absent from the certificate tools.
 - A cluster registration token is a node-join credential; the list surface
   carries only a redaction marker, so obtaining the real join command is a
-  deliberate, **audited** single-resource
-  `rancher_cluster_registration_token_get`.
-- Both reveals above emit an `operation="reveal"` audit record — resource
-  identity only, never the value (see `audit.apply_sensitive_reveal_audit`). The
+  deliberate, **audited** single-resource `rancher_cluster_registration_token_get`
+  — unconditional, no reveal gate, since the tool's whole purpose is the join
+  command (M-SEC-2 narrows `secret_get` only; this one is unchanged).
+- Every actual reveal above emits an `operation="reveal"` audit record —
+  resource identity only, never the value (see
+  `audit.apply_sensitive_reveal_audit`). A names-only `secret_get` call (the
+  default) is **not** logged as a reveal — it didn't reveal anything. The
   central scrubber still masks credentials **everywhere else**, including inside
   any untyped `payload` and on every list/summary. The generic
   `rancher_steve_resource_get` / `rancher_norman_resource_get` remain the

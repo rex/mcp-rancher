@@ -39,6 +39,7 @@ from .configs import (
     GetConfig,
     ListConfig,
     PathHelper,
+    RevealGatedExtra,
 )
 from .loaders import (
     load_all_descriptors,
@@ -76,6 +77,7 @@ __all__ = [
     "PatchConfig",
     "PathHelper",
     "Plane",
+    "RevealGatedExtra",
     "ToolMeta",
     "ToolsBlock",
     "Transport",

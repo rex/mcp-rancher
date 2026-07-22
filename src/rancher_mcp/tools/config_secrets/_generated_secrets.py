@@ -117,6 +117,7 @@ async def _fetch_secret_get(
     cluster_id: str,
     namespace: str,
     secret_name: str,
+    reveal: bool,
     client: ManagementDiscoveryClient,
 ) -> RancherSecretDetail:
     """Fetch and normalize one secret."""
@@ -136,6 +137,7 @@ async def _fetch_secret_get(
             "immutable": summary.immutable,
             "annotation_keys": sorted(string_dict(metadata_annotations)),
             "data_keys": sorted(string_dict(data_dict)),
+            "data": (detail.data) if reveal else ({}),
             "suggested_next_steps": ["rancher_secrets_list", "rancher_steve_resource_get"],
         }
     )
@@ -145,22 +147,26 @@ async def rancher_secret_get(
     namespace: str,
     secret_name: str,
     cluster_id: str = "local",
+    reveal: bool = False,
     instance: str | None = None,
     settings: AppSettings | None = None,
     client: ManagementDiscoveryClient | None = None,
 ) -> RancherSecretDetail:
-    """Fetch one secret by namespace and name."""
+    """Fetch one secret by namespace and name. Sensitive values are withheld by default (names/counts only); pass reveal=True to include the decoded values — each reveal is audited."""
 
     resolved_settings = settings or get_settings()
     instance_name, instance_config = resolve_instance(resolved_settings, instance)
     if client is not None:
-        return await _fetch_secret_get(instance_name, cluster_id, namespace, secret_name, client)
+        return await _fetch_secret_get(
+            instance_name, cluster_id, namespace, secret_name, reveal, client
+        )
     async with RancherManagementClient(instance_name, instance_config) as managed_client:
         return await _fetch_secret_get(
             instance_name,
             cluster_id,
             namespace,
             secret_name,
+            reveal,
             managed_client,
         )
 
@@ -206,6 +212,7 @@ async def _create_secret(
             "immutable": summary.immutable,
             "annotation_keys": sorted(string_dict(metadata_annotations)),
             "data_keys": sorted(string_dict(data_dict)),
+            "data": {},
             "suggested_next_steps": ["rancher_secret_get", "rancher_steve_resource_get"],
         }
     )
@@ -528,14 +535,16 @@ async def rancher_secret_get_tool(
     namespace: str,
     secret_name: str,
     cluster_id: str = "local",
+    reveal: bool = False,
     instance: str | None = None,
 ) -> RancherSecretDetail:
-    """Fetch one secret and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect."""
+    """Fetch one secret and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect. Sensitive values are withheld by default (only names/counts appear); pass reveal=true to receive the decoded values — each reveal is audited."""
 
     return await rancher_secret_get(
         namespace=namespace,
         secret_name=secret_name,
         cluster_id=cluster_id,
+        reveal=reveal,
         instance=instance,
     )
 

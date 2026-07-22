@@ -1,9 +1,12 @@
 """Typed models for curated Rancher config-and-secrets reads.
 
 The Secret *summary*/list surface masks values by design — key names and
-counts only (L-0b). The single-resource ``secret_get`` DETAIL is the
-deliberate, audited reveal (mirrors ``kubectl get secret -o yaml``): it
-returns the decoded values (M-SEC). See SECURITY.md + ADR-0002.
+counts only (L-0b). The single-resource ``secret_get`` DETAIL can reveal the
+decoded values (mirrors ``kubectl get secret -o yaml``), but since M-SEC-2 the
+reveal is opt-in: the tool's ``reveal`` parameter defaults to ``False``, and
+only an explicit ``reveal=True`` returns ``data`` populated (and is audited).
+AE-01 (agent context is persisted into transcripts the operator doesn't
+control) is why the default must not carry values. See SECURITY.md + ADR-0002.
 """
 
 from __future__ import annotations
@@ -126,22 +129,26 @@ class RancherSecretSummary(RancherModel):
 
 
 class RancherSecretDetail(RancherSecretSummary):
-    """Typed detail for one Kubernetes Secret — RETURNS the decoded values.
+    """Typed detail for one Kubernetes Secret — CAN reveal the decoded values.
 
-    The single-resource ``secret_get`` is the deliberate, audited reveal of a
-    Secret's contents (mirrors ``kubectl get secret -o yaml``); the list surface
-    still exposes key names only. ``data`` carries each key's base64-decoded
-    value (UTF-8 where decodable; the raw base64 form for genuinely binary
-    values). This model sets ``serializer_reveals_secrets`` so the base
-    serializer's credential scrub is skipped for it — and only it. See M-SEC /
-    SECURITY.md. ``data_keys`` (names) is retained as a quick index.
+    Validating this model against a raw Secret payload always decodes ``data``
+    (see ``_decode_data`` below) — but the generated ``secret_get`` tool
+    (``reveal_gated_extras`` in ``catalog/curated_tools/secrets.yml``)
+    overrides the field to ``{}`` unless the caller passes ``reveal=True``
+    (M-SEC-2); ``secret_create`` always overrides it to ``{}`` (create has no
+    ``reveal`` input — it never emits values). ``data_keys`` (names) stays
+    populated either way as a quick index. This model sets
+    ``serializer_reveals_secrets`` so the base serializer's credential scrub
+    is skipped for it — and only it — which matters when a reveal actually
+    happens; an empty ``data`` has nothing to scrub. See SECURITY.md / ADR-0002.
     """
 
     serializer_reveals_secrets: ClassVar[bool] = True
 
     annotation_keys: list[str] = Field(default_factory=list)
     data: dict[str, str] = Field(default_factory=dict)
-    """Decoded Secret values, revealed only on this explicit single-resource get."""
+    """Decoded Secret values. Populated on validate; suppressed to ``{}`` by
+    the generated tool layer unless the caller explicitly revealed (M-SEC-2)."""
 
     @field_validator("data", mode="before")
     @classmethod

@@ -1,4 +1,6 @@
-"""M-SEC: sensitive singular GETs reveal real values; list stays redacted; reveal is audited."""
+"""M-SEC / M-SEC-2: the singular sensitive GETs gate their real-value reveal
+behind an explicit parameter; list always stays redacted; only an actual
+reveal (not a names-only get) is audited."""
 
 from __future__ import annotations
 
@@ -7,8 +9,9 @@ import contextlib
 from typing import Any
 
 import structlog
+from _config_secrets_support import StubConfigSecretsClient, build_settings
 
-from rancher_mcp.audit import _wrap_reveal_audit, apply_sensitive_reveal_audit
+from rancher_mcp.audit import _REVEAL_TOOLS, _wrap_reveal_audit, apply_sensitive_reveal_audit
 from rancher_mcp.models.base import RancherModel
 from rancher_mcp.models.config_secrets import (
     RancherSecretDetail,
@@ -18,6 +21,7 @@ from rancher_mcp.models.config_secrets import (
 from rancher_mcp.models.fleet_registration.cluster_registration_tokens import (
     RancherClusterRegistrationTokenDetail,
 )
+from rancher_mcp.tools.config_secrets import rancher_secret_get
 
 
 def _b64(text: str) -> str:
@@ -25,6 +29,11 @@ def _b64(text: str) -> str:
 
 
 def test_secret_get_reveals_decoded_data() -> None:
+    """The MODEL always decodes `data` on ``model_validate`` — it is the
+    generated tool layer (see the `test_secret_get_default_*` /
+    `test_secret_get_reveal_true_*` tests below) that gates whether a caller
+    ever sees the decoded values by default (M-SEC-2)."""
+
     detail = RancherSecretDetail.model_validate(
         {
             "metadata": {"name": "app", "namespace": "default"},
@@ -81,7 +90,60 @@ def test_decode_secret_data_utf8_and_binary_fallback() -> None:
     assert _decode_secret_data({"k": 123}) == {}  # non-str value skipped
 
 
+# =====================================================================
+# M-SEC-2: the generated `rancher_secret_get` tool gates the reveal behind
+# an explicit `reveal` parameter. `_SECRET_PAYLOAD` (in
+# `_config_secrets_support.py`) base64-decodes to
+# {"password": "secret", "api-key": "foobar"}.  # pragma: allowlist secret
+# =====================================================================
+
+
+async def test_secret_get_default_omits_data_but_keeps_data_keys() -> None:
+    """Default call (`reveal` omitted → False): no `data` values ship, but
+    `dataKeys` (names) is still populated — AE-01-clean by default."""
+
+    result = await rancher_secret_get(
+        namespace="demo",
+        secret_name="demo-secret",  # pragma: allowlist secret
+        cluster_id="local",
+        instance="work",
+        settings=build_settings(),
+        client=StubConfigSecretsClient(),
+    )
+
+    dumped = result.model_dump(by_alias=True)
+    assert "data" not in dumped  # suppressed to {}, dropped by the L-0 envelope
+    assert dumped["dataKeys"] == ["api-key", "password"]
+    # the decoded "api-key" value never appears anywhere in the dump. (Can't
+    # canary the decoded "password" value the same way: it decodes to
+    # "secret", a substring of the legitimate resource name "demo-secret".)
+    assert "foobar" not in str(dumped)
+
+
+async def test_secret_get_reveal_true_returns_decoded_values() -> None:
+    """`reveal=True` returns the decoded values — and `password` (on the
+    scrub denylist) coming through unredacted proves `serializer_reveals_secrets`
+    still skips the scrub for this revealed shape."""
+
+    result = await rancher_secret_get(
+        namespace="demo",
+        secret_name="demo-secret",  # pragma: allowlist secret
+        cluster_id="local",
+        reveal=True,
+        instance="work",
+        settings=build_settings(),
+        client=StubConfigSecretsClient(),
+    )
+
+    dumped = result.model_dump(by_alias=True)
+    assert dumped["data"] == {"password": "secret", "api-key": "foobar"}  # pragma: allowlist secret
+    assert dumped["dataKeys"] == ["api-key", "password"]
+
+
 async def test_reveal_is_audited_identity_only() -> None:
+    """No `gate_kwarg` passed → unconditional audit (the original M-SEC
+    behavior; still exactly how `cluster_registration_token_get` is wired)."""
+
     async def fake_get(**_kwargs: Any) -> str:
         return "the-decoded-secret-value"
 
@@ -113,6 +175,44 @@ async def test_failed_reveal_emits_no_record() -> None:
     with structlog.testing.capture_logs() as logs, contextlib.suppress(RuntimeError):
         await wrapped(secret_name=target)
     assert [e for e in logs if e.get("operation") == "reveal"] == []
+
+
+async def test_secret_get_audit_fires_only_on_reveal_true() -> None:
+    """M-SEC-2: with `gate_kwarg="reveal"` wired (as `secret_get` is in
+    production), a names-only call — `reveal` omitted or explicitly False —
+    must NOT be logged as a credential reveal; only `reveal=True` is."""
+
+    async def fake_get(**_kwargs: Any) -> str:
+        return "the-decoded-secret-value"
+
+    wrapped = _wrap_reveal_audit(
+        fake_get, "rancher_secret_get", "steve", "secret_name", gate_kwarg="reveal"
+    )
+    target = "app"
+
+    with structlog.testing.capture_logs() as logs:
+        await wrapped(secret_name=target, namespace="default", reveal=False)
+        await wrapped(secret_name=target, namespace="default")  # reveal omitted entirely
+    assert [e for e in logs if e.get("operation") == "reveal"] == []
+
+    with structlog.testing.capture_logs() as logs:
+        await wrapped(secret_name=target, namespace="default", reveal=True)
+    reveals = [e for e in logs if e.get("operation") == "reveal"]
+    assert len(reveals) == 1
+    assert reveals[0]["resource_id"] == "app"
+    assert "the-decoded-secret-value" not in str(reveals[0])
+
+
+def test_reveal_tools_registry_gates_secret_get_not_registration_token() -> None:
+    """`secret_get` is gated on its own `reveal` kwarg; `cluster_registration_token_get`
+    keeps its unconditional (gate=None) M-SEC audit — unchanged, out of scope for M-SEC-2."""
+
+    assert _REVEAL_TOOLS["rancher_secret_get"] == ("steve", "secret_name", "reveal")
+    assert _REVEAL_TOOLS["rancher_cluster_registration_token_get"] == (
+        "management",
+        "cluster_registration_token_id",
+        None,
+    )
 
 
 def test_apply_wraps_only_the_reveal_tools() -> None:

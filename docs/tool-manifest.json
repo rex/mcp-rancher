@@ -7535,7 +7535,7 @@
     },
     {
       "name": "rancher_secret_get",
-      "description": "Fetch one secret and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect.",
+      "description": "Fetch one secret and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect. Sensitive values are withheld by default (only names/counts appear); pass reveal=true to receive the decoded values — each reveal is audited.",
       "read_only": true,
       "destructive": false,
       "idempotent": null,
@@ -7551,6 +7551,10 @@
         {
           "name": "namespace",
           "required": true
+        },
+        {
+          "name": "reveal",
+          "required": false
         },
         {
           "name": "secret_name",

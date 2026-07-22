@@ -232,6 +232,32 @@ Track L**. Confirmed by Pierce 2026-07-21 (all four design forks answered):
    tracked follow-up (**M-SEC-2**). This narrows rule #5 (redact-don't-delete) to
    the browse surfaces; the retrieve surface reveals.
 
+8. **`secret_get`'s reveal narrowed to opt-in (M-SEC-2, Pierce 2026-07-22) —
+   amends item 7 for `secret_get` only.** An agent-fitness audit raised
+   criterion AE-01 ("no credential material in responses") against item 7's
+   "GETs return the real value by default": agent context is persisted into
+   transcripts/summaries the operator does not control, so a decoded
+   credential must never land there *by accident*. Ruling: gate the reveal
+   behind an explicit `reveal: bool = False` parameter on `secret_get`.
+   `reveal=false` (the default): `dataKeys` (names) and counts only —
+   `data` is absent from the dump entirely. `reveal=true`: the decoded values
+   (item 7's mechanism, unchanged) plus the `operation="reveal"` audit record.
+   `secret_create` (no `reveal` input) now likewise never emits values — a
+   leak item 7 introduced (create reuses get's response-shaping pipeline) and
+   this closes. `cluster_registration_token_get` is **unchanged and out of
+   scope**: its whole purpose is the join command, so it keeps item 7's
+   unconditional reveal + audit. The mechanism stays item 7's
+   `serializer_reveals_secrets` ClassVar; the new part is a codegen hook
+   (`GetConfig.reveal_param` / `reveal_gated_extras`, descriptor-only, opt-in
+   — zero impact on any descriptor that doesn't set it) that overrides the
+   decoded `data` to `{}` on the `model_copy` update unless revealed.
+   `cloud_credential_get` config + certificate-private-key reveal — parked
+   under the id **M-SEC-2** by item 7 — are retracked as **M-SEC-3**
+   (`docs/track-m-plan.md`) since M-SEC-2 now names this narrowing. Rule #5
+   (redact-don't-delete) stays narrowed to the browse surfaces per item 7, but
+   the retrieve surface's reveal is now itself opt-in rather than
+   unconditional — AE-01 governs the retrieve surface too, not just browse.
+
 **`verbose` mechanism:** one boolean to start; `verbose=true` returns the
 post-scrub raw object (K-1 still applies) as a debugging escape hatch, and the
 generic `steve/norman_resource_get` remains the deliberate full-payload path.

@@ -125,9 +125,27 @@ one-at-a-time (background + yield), never in parallel — version bumps serializ
   scrub for the reveal DETAIL model alone; reg-token get already revealed and is now
   genuinely **audited** (`apply_sensitive_reveal_audit`, identity-only). SECURITY.md +
   ADR-0002 reconciled. Folds in **M-DOC** (reg-token "audited" docstring now true).
-- [ ] **M-SEC-2** (follow-up) `cloud_credential_get` config reveal + certificate
-  private-key reveal — needs driver-specific `*credentialConfig` extraction verified
-  against a real payload (do NOT guess); Rancher keeps the secret access key write-only.
+- [x] **M-SEC-2** (v1.45.0) `secret_get` reveal narrowed to opt-in — maintainer
+  ruling 2026-07-22, supersedes M-SEC's "GETs return the real value by default"
+  for `secret_get` (agent-fitness AE-01: agent context is persisted into
+  transcripts/summaries the operator doesn't control, so a decoded credential
+  must never be the *accidental* default shape). New `reveal: bool = False`
+  param: default → `dataKeys`/counts only, no `data` map in the dump;
+  `reveal=true` → decoded values + the `operation="reveal"` audit (now gated
+  on `kwargs["reveal"] is True`, not unconditional). `secret_create` (no
+  `reveal` input) likewise never emits values now (previously it did — an
+  M-SEC-era leak this closes). `cluster_registration_token_get` unchanged/out
+  of scope — unconditional reveal stays, since the tool's whole purpose is the
+  join command. New codegen hook: `GetConfig.reveal_param` /
+  `reveal_gated_extras` (`RevealGatedExtra`), descriptor-only
+  (`catalog/curated_tools/secrets.yml`) + `make codegen` — no `_generated_*.py`
+  hand-edits, zero impact on any other descriptor. SECURITY.md + ADR-0002 §7
+  (new item 8) reconciled.
+- [ ] **M-SEC-3** (follow-up, renumbered — this slot used to be M-SEC-2's;
+  see that entry's note above) `cloud_credential_get` config reveal +
+  certificate private-key reveal — needs driver-specific `*credentialConfig`
+  extraction verified against a real payload (do NOT guess); Rancher keeps
+  the secret access key write-only.
 - [ ] **M-B5** `verbose` flag (raw post-scrub object escape hatch).
 - [ ] **M-SCHEMA** `steve/norman_schema_list` lean index (id+type; methods/links
   behind detail get). 41.6/33.6 KB → ~small.

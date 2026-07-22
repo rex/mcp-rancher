@@ -255,6 +255,9 @@ async def _fetch_{{ display_name_singular }}_get(
     namespace: str,
     {% endif -%}
     {{ get.arg_name }}: str,
+    {% if get.reveal_param -%}
+    reveal: bool,
+    {% endif -%}
     client: {{ client_protocol }},
 ) -> {{ detail_model_name }}:
     """Fetch and normalize one {{ display_name_singular }}."""
@@ -281,6 +284,9 @@ async def _fetch_{{ display_name_singular }}_get(
             {%- for extra in get.extras %}
             "{{ extra.field }}": {{ extra.expression }},
             {%- endfor %}
+            {%- for extra in get.reveal_gated_extras %}
+            "{{ extra.field }}": ({{ extra.revealed_expression }}) if reveal else ({{ extra.hidden_expression }}),
+            {%- endfor %}
             {%- if get.include_action_keys %}
             "action_keys": sorted(mapping_value(payload, "actions") or {}),
             {%- endif %}
@@ -303,16 +309,19 @@ async def rancher_{{ display_name_singular }}_get(
     {% if cluster_id_required -%}
     cluster_id: str = "local",
     {% endif -%}
+    {% if get.reveal_param -%}
+    reveal: bool = False,
+    {% endif -%}
     instance: str | None = None,
     settings: AppSettings | None = None,
     client: {{ client_protocol }} | None = None,
 ) -> {{ detail_model_name }}:
-    """Fetch one {{ display_name_singular }}{{ ' by namespace and name' if namespaced else ' by name' }}."""
+    """Fetch one {{ display_name_singular }}{{ ' by namespace and name' if namespaced else ' by name' }}.{% if get.reveal_param %} Sensitive values are withheld by default (names/counts only); pass reveal=True to include the decoded values — each reveal is audited.{% endif %}"""
 
     resolved_settings = settings or get_settings()
     instance_name, instance_config = resolve_instance(resolved_settings, instance)
     if client is not None:
-        return await _fetch_{{ display_name_singular }}_get(instance_name, {% if get.needs_instance_config %}instance_config, {% endif %}{% if cluster_id_required %}cluster_id, {% endif %}{% if namespaced %}namespace, {% endif %}{{ get.arg_name }}, client)
+        return await _fetch_{{ display_name_singular }}_get(instance_name, {% if get.needs_instance_config %}instance_config, {% endif %}{% if cluster_id_required %}cluster_id, {% endif %}{% if namespaced %}namespace, {% endif %}{{ get.arg_name }}, {% if get.reveal_param %}reveal, {% endif %}client)
     {% if transport == 'steve' -%}
     async with {{ client_class }}(
         instance_name,
@@ -334,6 +343,9 @@ async def rancher_{{ display_name_singular }}_get(
             namespace,
             {% endif -%}
             {{ get.arg_name }},
+            {% if get.reveal_param -%}
+            reveal,
+            {% endif -%}
             {{ client_var }},
         )
 
@@ -388,6 +400,9 @@ async def _create_{{ display_name_singular }}(
             {%- endfor %}
             {%- for extra in get.extras %}
             "{{ extra.field }}": {{ extra.expression }},
+            {%- endfor %}
+            {%- for extra in get.reveal_gated_extras %}
+            "{{ extra.field }}": {{ extra.hidden_expression }},
             {%- endfor %}
             {%- if get.include_action_keys %}
             "action_keys": sorted(mapping_value(payload, "actions") or {}),
@@ -527,6 +542,9 @@ async def _apply_{{ display_name_singular }}(
             {%- endfor %}
             {%- for extra in get.extras %}
             "{{ extra.field }}": {{ extra.expression }},
+            {%- endfor %}
+            {%- for extra in get.reveal_gated_extras %}
+            "{{ extra.field }}": {{ extra.hidden_expression }},
             {%- endfor %}
             {%- if get.include_action_keys %}
             "action_keys": sorted(mapping_value(payload, "actions") or {}),
@@ -923,9 +941,12 @@ async def rancher_{{ display_name_singular }}_get_tool(
     {% if cluster_id_required -%}
     cluster_id: str = "local",
     {% endif -%}
+    {% if get.reveal_param -%}
+    reveal: bool = False,
+    {% endif -%}
     instance: str | None = None,
 ) -> {{ detail_model_name }}:
-    """Fetch one {{ display_name_singular }} and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect."""
+    """Fetch one {{ display_name_singular }} and return its full typed detail: the conditions, diagnostics, and derived fields the list summary leaves out. Call this once a list has identified which one to inspect.{% if get.reveal_param %} Sensitive values are withheld by default (only names/counts appear); pass reveal=true to receive the decoded values — each reveal is audited.{% endif %}"""
 
     return await rancher_{{ display_name_singular }}_get(
         {% if namespaced -%}
@@ -934,6 +955,9 @@ async def rancher_{{ display_name_singular }}_get_tool(
         {{ get.arg_name }}={{ get.arg_name }},
         {% if cluster_id_required -%}
         cluster_id=cluster_id,
+        {% endif -%}
+        {% if get.reveal_param -%}
+        reveal=reveal,
         {% endif -%}
         instance=instance,
     )

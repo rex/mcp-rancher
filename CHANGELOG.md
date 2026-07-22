@@ -1,5 +1,42 @@
 # Changelog
 
+## [1.45.0] — 2026-07-22 — Agent: Claude
+### Changed
+- **M-SEC-2 — `rancher_secret_get`'s reveal is now opt-in, not the default.**
+  An agent-fitness audit flagged M-SEC's "GETs return the real value by
+  default" as unsafe: agent context is persisted into transcripts/summaries
+  the operator doesn't control (AE-01), so a decoded credential must never
+  land there *by accident*. Maintainer ruling: gate the reveal behind a new
+  `reveal: bool = False` parameter. **`reveal=false` (default):** `dataKeys`
+  (names) and counts only — the `data` map is absent from the dump entirely
+  (suppressed to `{}`, dropped by the L-0 empty-value envelope). **`reveal=true`:**
+  the decoded values (unchanged M-SEC behavior) plus the audit record.
+  `rancher_secret_create` has no `reveal` input and now likewise never emits
+  values (previously it did — an oversight in the original M-SEC slice this
+  closes). `rancher_cluster_registration_token_get` is unchanged and out of
+  scope: its whole purpose is the join command, so it keeps its unconditional
+  reveal + audit.
+- New codegen hook: `GetConfig.reveal_param` (thread a `reveal` param into a
+  `get`) + `GetConfig.reveal_gated_extras` (`RevealGatedExtra`: a field with a
+  `revealed_expression` used in get when `reveal=true`, and a
+  `hidden_expression` used otherwise — and unconditionally in create/apply,
+  which reuse get's response-shaping pipeline but have no `reveal` input of
+  their own). Descriptor-only change in `catalog/curated_tools/secrets.yml` +
+  `make codegen`; zero impact on any other descriptor (opt-in, additive).
+- `audit.apply_sensitive_reveal_audit` / `_wrap_reveal_audit`: `_REVEAL_TOOLS`
+  entries now carry a third element, `gate_kwarg`. `secret_get` sets it to
+  `"reveal"` — the `operation="reveal"` audit record fires only when
+  `kwargs.get("reveal") is True`; a names-only get is not a reveal and is no
+  longer logged as one. `cluster_registration_token_get` keeps `gate_kwarg=None`
+  (unconditional, unchanged).
+- SECURITY.md + `docs/adr/0002-response-shaping-doctrine.md` §7 reconciled to
+  the reveal-is-opt-in policy.
+### Notes
+- The **M-SEC-2** id is reused: the v1.37.0 CHANGELOG entry originally parked
+  `cloud_credential_get` config reveal + certificate-private-key reveal under
+  this id. That work is untouched by this slice and is retracked as
+  **M-SEC-3** in `docs/track-m-plan.md` so it isn't lost.
+
 ## [1.44.0] — 2026-07-21 — Agent: Claude
 ### Fixed
 - **P0: `serialization_alias="count"` (M-A1) broke output validation on every list tool.**
