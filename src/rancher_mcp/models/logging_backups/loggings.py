@@ -72,7 +72,9 @@ class RancherClusterLoggingList(RancherModel):
     """Typed list response for Rancher cluster logging resources."""
 
     instance: str
-    cluster_logging_count: int = Field(serialization_alias="count")  # M-A1: uniform count key
+    cluster_logging_count: int = Field(
+        validation_alias="count", serialization_alias="count"
+    )  # M-A1: uniform count key
     applied_query_params: dict[str, str | int | bool] = Field(default_factory=dict)
     cluster_loggings: list[RancherClusterLoggingSummary] = Field(
         default_factory=_empty_cluster_loggings
@@ -83,7 +85,9 @@ class RancherProjectLoggingList(RancherModel):
     """Typed list response for Rancher project logging resources."""
 
     instance: str
-    project_logging_count: int = Field(serialization_alias="count")  # M-A1: uniform count key
+    project_logging_count: int = Field(
+        validation_alias="count", serialization_alias="count"
+    )  # M-A1: uniform count key
     applied_query_params: dict[str, str | int | bool] = Field(default_factory=dict)
     project_loggings: list[RancherProjectLoggingSummary] = Field(
         default_factory=_empty_project_loggings

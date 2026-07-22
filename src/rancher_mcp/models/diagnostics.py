@@ -27,5 +27,7 @@ class RancherPodLogResult(RancherModel):
     tail_lines: int
     previous: bool
     truncated: bool
-    line_count: int = Field(serialization_alias="count")  # M-A1: uniform count key
+    line_count: int = Field(
+        validation_alias="count", serialization_alias="count"
+    )  # M-A1: uniform count key
     lines: list[str] = Field(default_factory=list)

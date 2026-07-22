@@ -79,7 +79,9 @@ class CapabilityDomainList(RancherModel):
     """Capability domain inventory."""
 
     schema_version: int
-    domain_count: int = Field(serialization_alias="count")  # M-A1: uniform count key
+    domain_count: int = Field(
+        validation_alias="count", serialization_alias="count"
+    )  # M-A1: uniform count key
     domains: list[CapabilityDomainSummary] = []
 
 
@@ -129,7 +131,9 @@ class SchemaList(RancherModel):
     instance: str
     plane: str
     cluster_id: str | None = None
-    schema_count: int = Field(serialization_alias="count")  # M-A1: uniform count key
+    schema_count: int = Field(
+        validation_alias="count", serialization_alias="count"
+    )  # M-A1: uniform count key
     schemas: list[SchemaSummary] = []
 
 

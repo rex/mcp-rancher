@@ -77,7 +77,9 @@ class RancherJobList(RancherModel):
     instance: str
     cluster_id: str
     namespace: str
-    job_count: int = Field(serialization_alias="count")  # M-A1: uniform count key
+    job_count: int = Field(
+        validation_alias="count", serialization_alias="count"
+    )  # M-A1: uniform count key
     next_page_token: str | None = None
     applied_query_params: dict[str, str | int | bool] = Field(default_factory=dict)
     jobs: list[RancherJobSummary] = Field(default_factory=_empty_job_summaries)
@@ -134,7 +136,9 @@ class RancherCronJobList(RancherModel):
     instance: str
     cluster_id: str
     namespace: str
-    cron_job_count: int = Field(serialization_alias="count")  # M-A1: uniform count key
+    cron_job_count: int = Field(
+        validation_alias="count", serialization_alias="count"
+    )  # M-A1: uniform count key
     next_page_token: str | None = None
     applied_query_params: dict[str, str | int | bool] = Field(default_factory=dict)
     cron_jobs: list[RancherCronJobSummary] = Field(

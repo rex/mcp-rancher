@@ -245,7 +245,9 @@ class RancherClusterList(RancherModel):
     """Typed list response for Rancher clusters."""
 
     instance: str
-    cluster_count: int = Field(serialization_alias="count")  # M-A1: uniform count key
+    cluster_count: int = Field(
+        validation_alias="count", serialization_alias="count"
+    )  # M-A1: uniform count key
     next_page_token: str | None = None
     applied_query_params: dict[str, str | int | bool] = Field(default_factory=dict)
     clusters: list[RancherClusterSummary] = Field(default_factory=_empty_cluster_summaries)
@@ -366,7 +368,9 @@ class RancherNodeList(RancherModel):
     """Typed list response for Rancher nodes."""
 
     instance: str
-    node_count: int = Field(serialization_alias="count")  # M-A1: uniform count key
+    node_count: int = Field(
+        validation_alias="count", serialization_alias="count"
+    )  # M-A1: uniform count key
     next_page_token: str | None = None
     applied_query_params: dict[str, str | int | bool] = Field(default_factory=dict)
     nodes: list[RancherNodeSummary] = Field(default_factory=_empty_node_summaries)

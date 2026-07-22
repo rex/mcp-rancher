@@ -1,5 +1,27 @@
 # Changelog
 
+## [1.44.0] — 2026-07-21 — Agent: Claude
+### Fixed
+- **P0: `serialization_alias="count"` (M-A1) broke output validation on every list tool.**
+  FastMCP publishes each tool's `outputSchema` from `model_json_schema()` in **validation**
+  mode and validates the response against it; a bare `serialization_alias` renames only the
+  *dumped* key, so the schema still required `clusterCount` while the body sent `count` —
+  MCP rejected the whole response and `clusters_list` (and ~40 other list tools) returned
+  nothing but `Output validation error: 'clusterCount' is a required property`. An agent
+  literally could not enumerate clusters. Caught by the agenteval live run, not our unit
+  tests (which assert the dump, not the outputSchema round-trip). Fix: the 85 count fields
+  now set **both** `validation_alias="count"` and `serialization_alias="count"` (leaving the
+  general `alias` unset so `__init__` keeps the field name — a bare `alias=` would satisfy the
+  schema but break pyright on all 87 builder call-sites, since pyright doesn't honor
+  `populate_by_name` for the init parameter).
+### Added
+- Regression gate `test_no_serialization_alias_split_on_any_output_model`: fails if any
+  output model sets a `serialization_alias` that differs from its validation alias **on a
+  required field** — the exact split that caused the P0. (Optional-field splits are harmless:
+  the schema doesn't require the key, so the differently-named dumped key is an allowed
+  additional property — verified 18 such legitimate cases, e.g. `internal_ip` reads
+  `ipAddress`, dumps `internalIp`.) Closes the test-gap that let the regression ship.
+
 ## [1.43.0] — 2026-07-21 — Agent: Claude
 ### Changed
 - **N-2 — 40 hand-written tool descriptions (agent-fitness AE-20).** N-1 fixed the

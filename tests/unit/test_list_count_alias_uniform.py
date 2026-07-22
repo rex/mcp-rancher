@@ -2,11 +2,13 @@
 uniform key ``count`` (was ``clusterCount``/``podCount``/``settingCount``/...).
 
 Most of this file is a structural regression guard, not a behavioral one: it
-inspects each model's `pydantic.fields.FieldInfo.serialization_alias` directly
-rather than constructing an instance, so it stays cheap, covers the full
-~78-field sweep, and is immune to unrelated required-field churn elsewhere in
-a model. A negative check proves semantic/multi-count rollups were
-deliberately left alone.
+inspects each model's `pydantic.fields.FieldInfo.alias` directly rather than
+constructing an instance, so it stays cheap, covers the full ~78-field sweep,
+and is immune to unrelated required-field churn elsewhere in a model. A
+negative check proves semantic/multi-count rollups were deliberately left
+alone, and `test_no_serialization_alias_split_on_any_output_model` guards the
+whole surface against the validation/serialization alias split that made the
+FastMCP outputSchema reject every list response (the `clusterCount` P0).
 
 The bottom of the file adds end-to-end call-through (real tool + dumped JSON)
 coverage for the representative sample named in the M-A1 slice: clusters,
@@ -59,7 +61,7 @@ from rancher_mcp.config import AppSettings
 from rancher_mcp.tools.clusters_nodes import rancher_clusters_list, rancher_nodes_list
 
 # (model class, attribute name) for every LIST response model's collection-count
-# field. Attribute names are unchanged by M-A1 — only `serialization_alias` moved.
+# field. Attribute names are unchanged — only the field's `alias` is `count`.
 UNIFORM_COUNT_FIELDS: list[tuple[type[BaseModel], str]] = [
     (m_alerts.RancherNotifierList, "notifier_count"),
     (m_alerts.RancherAlertRuleList, "alert_rule_count"),
@@ -176,9 +178,18 @@ def test_list_collection_count_field_aliases_to_count(
     """
 
     field_info = model_cls.model_fields[field_name]
+    # The field must both DUMP and VALIDATE as `count`: set validation_alias AND
+    # serialization_alias to `count`, leaving the general `alias` unset so
+    # __init__ still takes the field name (`cluster_count`) and the builders
+    # type-check. A BARE `serialization_alias` splits the dump key (`count`) from
+    # the validation-mode outputSchema key (`clusterCount`) FastMCP publishes and
+    # validates against — which rejected every list response (the clusterCount
+    # P0). See test_no_serialization_alias_split_on_any_output_model.
+    assert field_info.validation_alias == "count", (
+        f'{model_cls.__name__}.{field_name} must set validation_alias="count"'
+    )
     assert field_info.serialization_alias == "count", (
-        f"{model_cls.__name__}.{field_name} must set "
-        f'Field(serialization_alias="count") for M-A1 uniformity'
+        f'{model_cls.__name__}.{field_name} must set serialization_alias="count"'
     )
 
 
@@ -199,6 +210,7 @@ def test_semantic_multi_count_field_stays_unaliased(
     """
 
     field_info = model_cls.model_fields[field_name]
+    assert field_info.validation_alias != "count"
     assert field_info.serialization_alias != "count"
 
 
@@ -210,6 +222,66 @@ def test_uniform_count_fields_table_has_no_duplicate_entries() -> None:
         key = (model_cls, field_name)
         assert key not in seen, f"duplicate entry: {model_cls.__name__}.{field_name}"
         seen.add(key)
+
+
+def test_no_serialization_alias_split_on_any_output_model() -> None:
+    """Fleet-wide regression gate for the `clusterCount` output-validation P0.
+
+    FastMCP publishes each tool's ``outputSchema`` from ``model_json_schema()``
+    in **validation** mode and validates the tool result against it. A field
+    whose ``serialization_alias`` differs from its *validation* alias makes the
+    schema require a key the ``by_alias`` dump never emits (schema wants
+    ``clusterCount``; the body sends ``count``) — so MCP rejects the entire
+    response and the tool returns nothing but an ``Output validation error``.
+    Our unit tests assert the *dump*, not this round-trip, so the defect shipped
+    silently on ~40 list tools (including ``clusters_list`` — an agent could not
+    enumerate clusters at all). The fix sets ``validation_alias`` AND
+    ``serialization_alias`` to the same key so the two agree. This gate forbids
+    the SPLIT (a ``serialization_alias`` unequal to the validation key) on every
+    ``RancherModel`` output model — an aligned pair is fine.
+    """
+
+    from pydantic.alias_generators import to_camel
+
+    from rancher_mcp.models.base import RancherModel
+
+    def _all_subclasses(cls: type) -> set[type]:
+        found: set[type] = set()
+        for sub in cls.__subclasses__():
+            found.add(sub)
+            found |= _all_subclasses(sub)
+        return found
+
+    offenders: list[str] = []
+    for model in _all_subclasses(RancherModel):
+        for name, field in model.model_fields.items():
+            ser = field.serialization_alias
+            if ser is None:
+                continue
+            # The key FastMCP's validation-mode outputSchema will require.
+            if isinstance(field.validation_alias, str):
+                validate_key = field.validation_alias
+            elif isinstance(field.alias, str):
+                validate_key = field.alias
+            else:
+                validate_key = to_camel(name)
+            # Only a split on a REQUIRED field breaks output validation: the
+            # schema then demands `validate_key`, which the dump (emitting `ser`)
+            # never provides. On an OPTIONAL field the schema does not require the
+            # key, so the differently-named dumped key is merely an allowed
+            # additional property — a legitimate read-one-name / dump-another
+            # pattern (e.g. `internal_ip` reads `ipAddress`, dumps `internalIp`).
+            # The count fields were the only required split (the clusterCount P0).
+            if ser != validate_key and field.is_required():
+                offenders.append(
+                    f"{model.__name__}.{name} (serialize={ser!r} vs validate={validate_key!r})"
+                )
+    assert not offenders, (
+        "output models must not SPLIT serialization_alias from the validation "
+        "alias: FastMCP publishes the validation-mode outputSchema and validates "
+        "the by-alias dump against it, so a split makes it require a key the body "
+        f"never sends and MCP rejects the whole response. Offenders: {sorted(offenders)}"
+    )
 
 
 def _build_settings() -> AppSettings:

@@ -76,7 +76,7 @@ class RancherClusterRegistrationTokenList(RancherModel):
 
     instance: str
     cluster_registration_token_count: int = Field(
-        serialization_alias="count"
+        validation_alias="count", serialization_alias="count"
     )  # M-A1: uniform count key
     applied_query_params: dict[str, str | int | bool] = Field(default_factory=dict)
     cluster_registration_tokens: list[RancherClusterRegistrationTokenSummary] = Field(

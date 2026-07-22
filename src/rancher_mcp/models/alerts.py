@@ -42,7 +42,9 @@ class RancherNotifierList(RancherModel):
     """Typed list response for Rancher notifiers."""
 
     instance: str
-    notifier_count: int = Field(serialization_alias="count")  # M-A1: uniform count key
+    notifier_count: int = Field(
+        validation_alias="count", serialization_alias="count"
+    )  # M-A1: uniform count key
     applied_query_params: dict[str, str | int | bool] = Field(default_factory=dict)
     notifiers: list[RancherNotifierSummary] = Field(default_factory=_empty_notifiers)
 
@@ -71,6 +73,8 @@ class RancherAlertRuleList(RancherModel):
     """Typed list response for Rancher cluster alert rules."""
 
     instance: str
-    alert_rule_count: int = Field(serialization_alias="count")  # M-A1: uniform count key
+    alert_rule_count: int = Field(
+        validation_alias="count", serialization_alias="count"
+    )  # M-A1: uniform count key
     applied_query_params: dict[str, str | int | bool] = Field(default_factory=dict)
     alert_rules: list[RancherAlertRuleSummary] = Field(default_factory=_empty_alert_rules)

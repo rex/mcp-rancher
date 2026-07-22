@@ -84,7 +84,7 @@ class RancherHorizontalPodAutoscalerList(RancherModel):
     cluster_id: str
     namespace: str
     horizontal_pod_autoscaler_count: int = Field(
-        serialization_alias="count"
+        validation_alias="count", serialization_alias="count"
     )  # M-A1: uniform count key
     next_page_token: str | None = None
     applied_query_params: dict[str, str | int | bool] = Field(default_factory=dict)
@@ -130,7 +130,9 @@ class RancherResourceQuotaList(RancherModel):
     instance: str
     cluster_id: str
     namespace: str
-    resource_quota_count: int = Field(serialization_alias="count")  # M-A1: uniform count key
+    resource_quota_count: int = Field(
+        validation_alias="count", serialization_alias="count"
+    )  # M-A1: uniform count key
     next_page_token: str | None = None
     applied_query_params: dict[str, str | int | bool] = Field(default_factory=dict)
     resource_quotas: list[RancherResourceQuotaSummary] = Field(
@@ -166,7 +168,9 @@ class RancherLimitRangeList(RancherModel):
     instance: str
     cluster_id: str
     namespace: str
-    limit_range_count: int = Field(serialization_alias="count")  # M-A1: uniform count key
+    limit_range_count: int = Field(
+        validation_alias="count", serialization_alias="count"
+    )  # M-A1: uniform count key
     next_page_token: str | None = None
     applied_query_params: dict[str, str | int | bool] = Field(default_factory=dict)
     limit_ranges: list[RancherLimitRangeSummary] = Field(

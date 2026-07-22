@@ -102,7 +102,9 @@ class RancherGlobalRoleBindingList(RancherModel):
     """Typed list response for Rancher global role bindings."""
 
     instance: str
-    global_role_binding_count: int = Field(serialization_alias="count")  # M-A1: uniform count key
+    global_role_binding_count: int = Field(
+        validation_alias="count", serialization_alias="count"
+    )  # M-A1: uniform count key
     applied_query_params: dict[str, str | int | bool] = Field(default_factory=dict)
     global_role_bindings: list[RancherGlobalRoleBindingSummary] = Field(
         default_factory=_empty_global_role_bindings
@@ -114,7 +116,7 @@ class RancherClusterRoleTemplateBindingList(RancherModel):
 
     instance: str
     cluster_role_template_binding_count: int = Field(
-        serialization_alias="count"
+        validation_alias="count", serialization_alias="count"
     )  # M-A1: uniform count key
     applied_query_params: dict[str, str | int | bool] = Field(default_factory=dict)
     cluster_role_template_bindings: list[RancherClusterRoleTemplateBindingSummary] = Field(
@@ -127,7 +129,7 @@ class RancherProjectRoleTemplateBindingList(RancherModel):
 
     instance: str
     project_role_template_binding_count: int = Field(
-        serialization_alias="count"
+        validation_alias="count", serialization_alias="count"
     )  # M-A1: uniform count key
     applied_query_params: dict[str, str | int | bool] = Field(default_factory=dict)
     project_role_template_bindings: list[RancherProjectRoleTemplateBindingSummary] = Field(

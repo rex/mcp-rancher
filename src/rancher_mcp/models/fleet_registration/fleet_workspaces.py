@@ -35,7 +35,9 @@ class RancherFleetWorkspaceList(RancherModel):
     """Typed list response for Rancher Fleet workspaces."""
 
     instance: str
-    fleet_workspace_count: int = Field(serialization_alias="count")  # M-A1: uniform count key
+    fleet_workspace_count: int = Field(
+        validation_alias="count", serialization_alias="count"
+    )  # M-A1: uniform count key
     applied_query_params: dict[str, str | int | bool] = Field(default_factory=dict)
     fleet_workspaces: list[RancherFleetWorkspaceSummary] = Field(
         default_factory=_empty_fleet_workspaces

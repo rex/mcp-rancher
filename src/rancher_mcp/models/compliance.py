@@ -40,7 +40,9 @@ class RancherCisScanProfileList(RancherModel):
     """Typed list response for CIS scan profiles."""
 
     instance: str
-    profile_count: int = Field(serialization_alias="count")  # M-A1: uniform count key
+    profile_count: int = Field(
+        validation_alias="count", serialization_alias="count"
+    )  # M-A1: uniform count key
     applied_query_params: dict[str, str | int | bool] = Field(default_factory=dict)
     profiles: list[RancherCisScanProfileSummary] = Field(default_factory=_empty_profiles)
 
@@ -78,6 +80,8 @@ class RancherCisScanList(RancherModel):
     """Typed list response for CIS scan runs."""
 
     instance: str
-    scan_count: int = Field(serialization_alias="count")  # M-A1: uniform count key
+    scan_count: int = Field(
+        validation_alias="count", serialization_alias="count"
+    )  # M-A1: uniform count key
     applied_query_params: dict[str, str | int | bool] = Field(default_factory=dict)
     scans: list[RancherCisScanSummary] = Field(default_factory=_empty_scans)

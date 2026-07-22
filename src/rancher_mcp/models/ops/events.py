@@ -32,7 +32,9 @@ class RancherEventList(RancherModel):
     instance: str
     cluster_id: str
     namespace: str | None
-    event_count: int = Field(serialization_alias="count")  # M-A1: uniform count key
+    event_count: int = Field(
+        validation_alias="count", serialization_alias="count"
+    )  # M-A1: uniform count key
     events: list[RancherEventSummary] = Field(default_factory=_empty_events)
 
 
@@ -67,5 +69,7 @@ class RancherResourceEventList(RancherModel):
     namespace: str
     kind: str
     name: str
-    event_count: int = Field(serialization_alias="count")  # M-A1: uniform count key
+    event_count: int = Field(
+        validation_alias="count", serialization_alias="count"
+    )  # M-A1: uniform count key
     events: list[RancherResourceEventSummary] = Field(default_factory=_empty_resource_events)

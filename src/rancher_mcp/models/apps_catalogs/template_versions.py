@@ -43,7 +43,9 @@ class RancherTemplateVersionList(RancherModel):
     """Typed list response for Rancher template versions."""
 
     instance: str
-    template_version_count: int = Field(serialization_alias="count")  # M-A1: uniform count key
+    template_version_count: int = Field(
+        validation_alias="count", serialization_alias="count"
+    )  # M-A1: uniform count key
     applied_query_params: dict[str, str | int | bool] = Field(default_factory=dict)
     template_versions: list[RancherTemplateVersionSummary] = Field(
         default_factory=_empty_template_versions

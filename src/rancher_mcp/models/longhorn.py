@@ -100,7 +100,9 @@ class RancherLonghornVolumeList(RancherModel):
     instance: str
     cluster_id: str
     namespace: str
-    volume_count: int = Field(serialization_alias="count")  # M-A1: uniform count key
+    volume_count: int = Field(
+        validation_alias="count", serialization_alias="count"
+    )  # M-A1: uniform count key
     next_page_token: str | None = None
     applied_query_params: dict[str, str | int | bool] = Field(default_factory=dict)
     volumes: list[RancherLonghornVolumeSummary] = Field(
@@ -143,7 +145,9 @@ class RancherLonghornNodeList(RancherModel):
     instance: str
     cluster_id: str
     namespace: str
-    node_count: int = Field(serialization_alias="count")  # M-A1: uniform count key
+    node_count: int = Field(
+        validation_alias="count", serialization_alias="count"
+    )  # M-A1: uniform count key
     next_page_token: str | None = None
     applied_query_params: dict[str, str | int | bool] = Field(default_factory=dict)
     nodes: list[RancherLonghornNodeSummary] = Field(
@@ -192,7 +196,9 @@ class RancherLonghornBackupList(RancherModel):
     instance: str
     cluster_id: str
     namespace: str
-    backup_count: int = Field(serialization_alias="count")  # M-A1: uniform count key
+    backup_count: int = Field(
+        validation_alias="count", serialization_alias="count"
+    )  # M-A1: uniform count key
     next_page_token: str | None = None
     applied_query_params: dict[str, str | int | bool] = Field(default_factory=dict)
     backups: list[RancherLonghornBackupSummary] = Field(
@@ -233,7 +239,9 @@ class RancherLonghornSnapshotList(RancherModel):
     instance: str
     cluster_id: str
     namespace: str
-    snapshot_count: int = Field(serialization_alias="count")  # M-A1: uniform count key
+    snapshot_count: int = Field(
+        validation_alias="count", serialization_alias="count"
+    )  # M-A1: uniform count key
     next_page_token: str | None = None
     applied_query_params: dict[str, str | int | bool] = Field(default_factory=dict)
     snapshots: list[RancherLonghornSnapshotSummary] = Field(

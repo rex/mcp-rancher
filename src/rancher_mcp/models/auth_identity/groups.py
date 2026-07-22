@@ -33,6 +33,8 @@ class RancherGroupList(RancherModel):
     """Typed list response for Rancher groups."""
 
     instance: str
-    group_count: int = Field(serialization_alias="count")  # M-A1: uniform count key
+    group_count: int = Field(
+        validation_alias="count", serialization_alias="count"
+    )  # M-A1: uniform count key
     applied_query_params: dict[str, str | int | bool] = Field(default_factory=dict)
     groups: list[RancherGroupSummary] = Field(default_factory=_empty_groups)

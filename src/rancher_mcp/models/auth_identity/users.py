@@ -54,6 +54,8 @@ class RancherUserList(RancherModel):
     """Typed list response for Rancher users."""
 
     instance: str
-    user_count: int = Field(serialization_alias="count")  # M-A1: uniform count key
+    user_count: int = Field(
+        validation_alias="count", serialization_alias="count"
+    )  # M-A1: uniform count key
     applied_query_params: dict[str, str | int | bool] = Field(default_factory=dict)
     users: list[RancherUserSummary] = Field(default_factory=_empty_users)

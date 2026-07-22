@@ -68,7 +68,9 @@ class RancherLoggingOutputList(RancherModel):
     instance: str
     cluster_id: str
     namespace: str
-    output_count: int = Field(serialization_alias="count")  # M-A1: uniform count key
+    output_count: int = Field(
+        validation_alias="count", serialization_alias="count"
+    )  # M-A1: uniform count key
     next_page_token: str | None = None
     applied_query_params: dict[str, str | int | bool] = Field(default_factory=dict)
     outputs: list[RancherLoggingOutputSummary] = Field(
@@ -102,7 +104,9 @@ class RancherLoggingClusterOutputList(RancherModel):
 
     instance: str
     cluster_id: str
-    cluster_output_count: int = Field(serialization_alias="count")  # M-A1: uniform count key
+    cluster_output_count: int = Field(
+        validation_alias="count", serialization_alias="count"
+    )  # M-A1: uniform count key
     next_page_token: str | None = None
     applied_query_params: dict[str, str | int | bool] = Field(default_factory=dict)
     cluster_outputs: list[RancherLoggingClusterOutputSummary] = Field(
@@ -150,7 +154,9 @@ class RancherLoggingFlowList(RancherModel):
     instance: str
     cluster_id: str
     namespace: str
-    flow_count: int = Field(serialization_alias="count")  # M-A1: uniform count key
+    flow_count: int = Field(
+        validation_alias="count", serialization_alias="count"
+    )  # M-A1: uniform count key
     next_page_token: str | None = None
     applied_query_params: dict[str, str | int | bool] = Field(default_factory=dict)
     flows: list[RancherLoggingFlowSummary] = Field(default_factory=_empty_flow_summaries)
@@ -191,7 +197,9 @@ class RancherLoggingClusterFlowList(RancherModel):
 
     instance: str
     cluster_id: str
-    cluster_flow_count: int = Field(serialization_alias="count")  # M-A1: uniform count key
+    cluster_flow_count: int = Field(
+        validation_alias="count", serialization_alias="count"
+    )  # M-A1: uniform count key
     next_page_token: str | None = None
     applied_query_params: dict[str, str | int | bool] = Field(default_factory=dict)
     cluster_flows: list[RancherLoggingClusterFlowSummary] = Field(

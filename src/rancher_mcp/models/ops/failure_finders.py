@@ -65,7 +65,9 @@ class FailingPodsList(RancherModel):
     instance: str
     cluster_id: str
     namespace: str | None = None
-    failing_count: int = Field(serialization_alias="count")  # L-2d: uniform count key
+    failing_count: int = Field(
+        validation_alias="count", serialization_alias="count"
+    )  # L-2d: uniform count key
     pods: list[FailingPodSummary] = Field(
         default_factory=_empty_failing_pods,
     )
@@ -97,7 +99,9 @@ class UnreadyNodesList(RancherModel):
 
     instance: str
     cluster_id: str | None = None
-    unready_count: int = Field(serialization_alias="count")  # L-2d: uniform count key
+    unready_count: int = Field(
+        validation_alias="count", serialization_alias="count"
+    )  # L-2d: uniform count key
     nodes: list[UnreadyNodeSummary] = Field(
         default_factory=_empty_unready_nodes,
     )
@@ -134,7 +138,9 @@ class StalledRolloutsList(RancherModel):
     instance: str
     cluster_id: str
     namespace: str | None = None
-    stalled_count: int = Field(serialization_alias="count")  # L-2d: uniform count key
+    stalled_count: int = Field(
+        validation_alias="count", serialization_alias="count"
+    )  # L-2d: uniform count key
     rollouts: list[StalledRolloutSummary] = Field(
         default_factory=_empty_stalled_rollouts,
     )
@@ -188,7 +194,9 @@ class UnboundPvcsList(RancherModel):
     instance: str
     cluster_id: str
     namespace: str | None = None
-    unbound_count: int = Field(serialization_alias="count")  # L-2d: uniform count key
+    unbound_count: int = Field(
+        validation_alias="count", serialization_alias="count"
+    )  # L-2d: uniform count key
     pvcs: list[UnboundPvcSummary] = Field(
         default_factory=_empty_unbound_pvcs,
     )
@@ -224,7 +232,9 @@ class PdbBlockersList(RancherModel):
     instance: str
     cluster_id: str
     namespace: str | None = None
-    blocking_count: int = Field(serialization_alias="count")  # L-2d: uniform count key
+    blocking_count: int = Field(
+        validation_alias="count", serialization_alias="count"
+    )  # L-2d: uniform count key
     blockers: list[PdbBlockerSummary] = Field(
         default_factory=_empty_pdb_blockers,
     )

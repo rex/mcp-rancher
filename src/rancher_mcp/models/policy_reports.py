@@ -61,7 +61,9 @@ class RancherPolicyReportList(RancherModel):
     instance: str
     cluster_id: str
     namespace: str
-    policy_report_count: int = Field(serialization_alias="count")  # M-A1: uniform count key
+    policy_report_count: int = Field(
+        validation_alias="count", serialization_alias="count"
+    )  # M-A1: uniform count key
     next_page_token: str | None = None
     applied_query_params: dict[str, str | int | bool] = Field(default_factory=dict)
     policy_reports: list[RancherPolicyReportSummary] = Field(
@@ -85,7 +87,9 @@ class RancherClusterPolicyReportList(RancherModel):
 
     instance: str
     cluster_id: str
-    cluster_policy_report_count: int = Field(serialization_alias="count")  # M-A1: uniform count key
+    cluster_policy_report_count: int = Field(
+        validation_alias="count", serialization_alias="count"
+    )  # M-A1: uniform count key
     next_page_token: str | None = None
     applied_query_params: dict[str, str | int | bool] = Field(default_factory=dict)
     cluster_policy_reports: list[RancherClusterPolicyReportSummary] = Field(
