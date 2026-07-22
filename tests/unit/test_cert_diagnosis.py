@@ -31,6 +31,7 @@ def test_cert_list_item_carries_the_diagnosis_so_no_get_is_needed() -> None:
     assert dumped["ready"] is False
     assert dumped["reason"] == "SecretMismatch"  # the whole reason a _get used to exist for
     assert dumped["since"] == "2026-04-04T12:34:37Z"
+    assert dumped["ageDays"] > 0  # M-B1/B2: derived from `since`, not re-guessed
     assert dumped["daysRemaining"] > 0  # derived expiry countdown
 
 
@@ -46,3 +47,4 @@ def test_healthy_cert_omits_diagnosis_fields() -> None:
     assert dumped["ready"] is True
     assert "reason" not in dumped  # envelope drops the None diagnosis
     assert "since" not in dumped
+    assert "ageDays" not in dumped  # M-B1/B2: nothing to derive without `since`

@@ -61,7 +61,10 @@ async def _find_unready_nodes(
                     roles=roles,
                     unschedulable=is_unschedulable,
                     ready_condition_status=(ready_cond.status if ready_cond else None),
+                    reason=(ready_cond.reason if ready_cond else None),
                     ready_condition_message=(ready_cond.message if ready_cond else None),
+                    since=(ready_cond.since if ready_cond else None),
+                    age_days=(ready_cond.age_days if ready_cond else None),
                 )
             )
 

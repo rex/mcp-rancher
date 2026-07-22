@@ -7,6 +7,7 @@ from rancher_mcp.config import AppSettings, get_settings
 from rancher_mcp.models.ops.failure_finders import PdbBlockersList, PdbBlockerSummary
 from rancher_mcp.services.instances import resolve_instance
 from rancher_mcp.tools.ops.paths import k8s_items, k8s_policy_path
+from rancher_mcp.tools.support.conditions import conditions_from_value, first_false_condition
 from rancher_mcp.tools.support.values import (
     int_value,
     mapping_value,
@@ -36,6 +37,12 @@ async def _find_pdbs_blocking(
         if disruptions_allowed == 0:
             selector = mapping_value(spec, "selector") or {}
             match_labels = selector.get("matchLabels")
+            # PDB status.conditions carries `DisruptionAllowed: False` (with a
+            # reason like "InsufficientPods") on API servers that populate it
+            # (policy/v1) — read defensively so reason/message/since/ageDays
+            # surface when present rather than guessing on older servers
+            # (M-B1/B2; no 2.6.5 regression, this is purely additive).
+            problem = first_false_condition(conditions_from_value(status.get("conditions")))
             blockers.append(
                 PdbBlockerSummary(
                     name=string_value(metadata, "name") or "<unknown>",
@@ -46,6 +53,10 @@ async def _find_pdbs_blocking(
                     desired_healthy=int_value(status, "desiredHealthy"),
                     disruptions_allowed=0,
                     selector_match_labels=string_dict(match_labels),
+                    reason=problem.reason if problem else None,
+                    message=problem.message if problem else None,
+                    since=problem.since if problem else None,
+                    age_days=problem.age_days if problem else None,
                 )
             )
 

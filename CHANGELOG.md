@@ -1,5 +1,59 @@
 # Changelog
 
+## [1.40.0] — 2026-07-21 — Agent: Claude
+### Added
+- **M-B1/B2 — `since`/`ageDays` + `reason`/`message` universal on every
+  condition and finder-found problem item (ADR-0002's #1/#2 field-report
+  findings).** `RancherCondition` (`models/clusters_nodes.py`) gains `since`
+  (alias of `lastTransitionTime`) and a derived `age_days`, both computed at
+  DUMP time (never re-derived per call site) — reusing
+  `tools/support/derive.age_days`, never duplicating it. Because
+  `RancherCondition` already backs conditions on clusters, nodes, pods,
+  namespaces, PDBs, cert-manager CRDs, daemonsets/statefulsets/deployments,
+  and auth users, this one model change makes temporal context universal
+  across all of them with zero call-site changes; `lastTransitionTime` itself
+  is dropped from the dump (`exclude=True`) so `since` isn't shipped twice
+  under two names. `conditions_from_payload`/`conditions_from_value`
+  (`tools/support/conditions.py`) needed no change — they already threaded
+  `reason`/`message`/`lastTransitionTime` through, confirmed by audit — and
+  gain one new shared helper, `first_false_condition`, for finders with no
+  single canonical condition type to key on.
+  **The 6 failure-finders** (`models/ops/failure_finders.py` +
+  `tools/ops/find_*.py`) now carry `reason`/`message`/`since`/`ageDays` on
+  found items where the source K8s object exposes them: failing pods (message
+  from the same container waiting/terminated state as `reason`; since/ageDays
+  from the pod's own `Ready`/`PodScheduled`/... condition, priority-ordered);
+  unready nodes (from the node's own `Ready` condition, alongside the
+  pre-existing `ready_condition_status`/`_message`); stalled rollouts (reuses
+  `deployments_list`'s own `ProgressDeadlineExceeded`-style diagnosis helper,
+  extended from a `(reason, since)` to a `(reason, message, since)` triple and
+  promoted to a public export — one definition of "why is this rollout stuck"
+  for both `deployments_list` and this finder, not two); unbound PVCs and
+  blocking PDBs (read `status.conditions[]` defensively via the new
+  `first_false_condition` helper — real K8s API surface, populated
+  inconsistently, so absence stays absence rather than a guessed value).
+  Services-without-endpoints is unchanged: neither `Service` nor `Endpoints`
+  carries a conditions/timestamp field in the relevant K8s API, so no
+  legitimate signal exists to add there.
+  **Bonus completeness fix** (same doctrine, found during audit): two
+  pre-existing "since without ageDays" surfaces from earlier slices —
+  `RancherDeploymentSummary` (M-A7) and `RancherCertManagerCertificateSummary`
+  (L-2e) — each gain a computed `age_days`/`ageDays` deriving from their
+  existing `since` field (`RancherDeploymentSummary` also gains `message`,
+  completing its reason/message/since/ageDays set to match).
+  `models/clusters_nodes.py`, `models/ops/failure_finders.py`,
+  `models/workloads/deployments.py`, `models/cert_manager.py`,
+  `tools/support/conditions.py`, `tools/workloads/shared.py`,
+  `tools/ops/find_{failing_pods,unready_nodes,stalled_rollouts,
+  unbound_pvcs,pdbs_blocking}.py`. 17 new tests
+  (`tests/unit/test_conditions_support.py` — new,
+  `tests/unit/test_ops_finders_temporal_signal.py` — new, split out of
+  `test_ops_find_tools.py` to stay under the architecture line limit — plus
+  small additive assertions in `test_workloads_deployments_shaping_tools.py`
+  and `test_cert_diagnosis.py`). No 2.6.5 regression: every new read is
+  defensive (absent conditions/fields degrade to `None`, dropped by the
+  envelope, never guessed).
+
 ## [1.39.0] — 2026-07-21 — Agent: Claude
 ### Added
 - **M-HARNESS — `make capture-sweep`: exhaustive read-only tool capture sweep,

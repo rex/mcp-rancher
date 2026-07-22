@@ -80,3 +80,22 @@ def condition_types_true(conditions: list[RancherCondition]) -> list[str]:
     return sorted(
         condition.type for condition in conditions if status_to_bool(condition.status) is True
     )
+
+
+def first_false_condition(conditions: list[RancherCondition]) -> RancherCondition | None:
+    """Return the first condition whose status is explicitly False, else None.
+
+    Shared by finders (M-B1/B2, ``tools/ops/find_unbound_pvcs.py`` /
+    ``find_pdbs_blocking.py``) that have no single canonical condition *type*
+    to key on — unlike a pod's ``Ready`` or a node's ``Ready``, a PVC's
+    problem condition varies by CSI driver and a PDB's is a specific-but-not-
+    guaranteed-present ``DisruptionAllowed``. Returning the first False
+    condition (rather than defaulting to the first condition regardless of
+    status) avoids surfacing a healthy condition's near-always-empty
+    reason/message as if it explained the problem.
+    """
+
+    for condition in conditions:
+        if status_to_bool(condition.status) is False:
+            return condition
+    return None

@@ -328,6 +328,34 @@ bonus write-lifecycle sample (redundant with `make live-lifecycle`, and out
 of scope for a READ-ONLY sweep). Wave E otherwise untouched (M-K12 still
 blocked on the `primary_target` decision).
 
+**M-B1/B2 shipped (v1.40.0)** — the two field-report #1/#2 findings, now
+universal. `RancherCondition` (`models/clusters_nodes.py`) gained computed
+`since`/`age_days` derived from `last_transition_time` at DUMP time (reusing
+`tools/support/derive.age_days`, never duplicated) — because this one model
+already backs conditions on clusters, nodes, pods, namespaces, PDBs,
+cert-manager CRDs, daemonsets/statefulsets/deployments, and auth users, the
+temporal signal went universal with zero call-site changes.
+`conditions_from_payload`/`conditions_from_value` needed no change (audit
+confirmed reason/message/lastTransitionTime were already threaded through);
+gained one new shared helper, `first_false_condition`. The 6 failure-finders
+(`models/ops/failure_finders.py` + `tools/ops/find_*.py`) now carry
+reason/message/since/ageDays on found items where the source K8s object
+exposes them — including reusing (and extending to a 3-tuple)
+`deployments_list`'s own `ProgressDeadlineExceeded`-diagnosis helper for
+stalled rollouts, so there's still one definition of "why is this stuck," not
+two. Services-without-endpoints is unchanged (no conditions/timestamp field
+exists on `Service`/`Endpoints` in the relevant K8s API — no legitimate
+signal to add). Bonus completeness fix found during audit:
+`RancherDeploymentSummary` (M-A7) and `RancherCertManagerCertificateSummary`
+(L-2e) each had a pre-existing `since` with no `ageDays` companion — both now
+have one. 17 new tests, two new files
+(`tests/unit/test_conditions_support.py`,
+`tests/unit/test_ops_finders_temporal_signal.py` — the latter split out of
+`test_ops_find_tools.py` to stay under the architecture line limit). See
+`docs/track-m-plan.md` M-B1/B2 row and `CHANGELOG.md` `[1.40.0]`.
+**Remaining in Wave B:** M-K6 only (destructive `confirm: true`). Waves C-E
+remain Opus-owned and untouched.
+
 ### MAINTENANCE (2026-07-11): isolated current Rancher integration — ✅ live matrix green — v1.6.0
 
 Added an isolated `current` local-lab profile for Rancher `2.14.3` on

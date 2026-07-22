@@ -43,7 +43,9 @@ async def test_rancher_deployments_list_collapses_replicas_token_when_converged(
     deployment = result.deployments[0]
     assert deployment.replicas == "2/2"
     assert deployment.reason is None
+    assert deployment.message is None  # M-B1/B2
     assert deployment.since is None
+    assert deployment.age_days is None  # M-B1/B2: no `since` to derive from
     # Attributes still populate internally — exclude=True is dump-only.
     assert deployment.desired_replicas == 2
     assert deployment.ready_replicas == 2
@@ -53,7 +55,9 @@ async def test_rancher_deployments_list_collapses_replicas_token_when_converged(
     dumped = result.model_dump(by_alias=True)["deployments"][0]
     assert dumped["replicas"] == "2/2"
     assert "reason" not in dumped
+    assert "message" not in dumped
     assert "since" not in dumped
+    assert "ageDays" not in dumped
     assert "desiredReplicas" not in dumped
     assert "readyReplicas" not in dumped
     assert "availableReplicas" not in dumped
@@ -154,13 +158,17 @@ async def test_rancher_deployments_list_surfaces_reason_and_since_when_rollout_s
     deployment = result.deployments[0]
     assert deployment.replicas == "1/3"
     assert deployment.reason == "ProgressDeadlineExceeded"
+    assert deployment.message == "ReplicaSet has timed out progressing."  # M-B1/B2
     assert deployment.since == "2026-07-01T00:00:00Z"
+    assert deployment.age_days is not None and deployment.age_days > 0  # M-B1/B2
     assert deployment.ready is False
 
     dumped = result.model_dump(by_alias=True)["deployments"][0]
     assert dumped["replicas"] == "1/3"
     assert dumped["reason"] == "ProgressDeadlineExceeded"
+    assert dumped["message"] == "ReplicaSet has timed out progressing."
     assert dumped["since"] == "2026-07-01T00:00:00Z"
+    assert dumped["ageDays"] > 0
     assert "desiredReplicas" not in dumped
     assert "readyReplicas" not in dumped
 

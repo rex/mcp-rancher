@@ -46,24 +46,31 @@ _ROLLOUT_FAILURE_CONDITIONS: tuple[tuple[str, bool], ...] = (
 )
 
 
-def _deployment_rollout_reason(
+def _deployment_rollout_diagnosis(
     conditions: list[RancherCondition],
-) -> tuple[str | None, str | None]:
-    """Pick the (reason, since) that best explains a not-converged deployment.
+) -> tuple[str | None, str | None, str | None]:
+    """Pick the (reason, message, since) that best explains a not-converged rollout.
 
     Checked in `_ROLLOUT_FAILURE_CONDITIONS` priority order. Returns
-    ``(None, None)`` when no condition explains the mismatch (e.g. a
+    ``(None, None, None)`` when no condition explains the mismatch (e.g. a
     deliberate `spec.paused`) — the caller only invokes this once replica
     counts are already known not to match, so an all-None result just means
-    "no condition-sourced signal to add", not an error.
+    "no condition-sourced signal to add", not an error. Exported as
+    ``deployment_rollout_diagnosis`` (M-B1/B2) so
+    ``tools/ops/find_stalled_rollouts.py`` reuses the exact same "why is this
+    rollout stuck" pick for both deployments and statefulsets rather than
+    re-deriving it — the condition *types* here (``ReplicaFailure``/
+    ``Progressing``/``Available``) are apps/v1-controller-generic, not
+    Deployment-specific, even though StatefulSet's controller rarely
+    populates them today.
     """
 
     by_type = {condition.type: condition for condition in conditions}
     for condition_type, unhealthy_status in _ROLLOUT_FAILURE_CONDITIONS:
         condition = by_type.get(condition_type)
         if condition is not None and _status_to_bool(condition.status) is unhealthy_status:
-            return condition.reason, condition.last_transition_time
-    return None, None
+            return condition.reason, condition.message, condition.last_transition_time
+    return None, None, None
 
 
 def _deployment_summary_from_payload(payload: Mapping[str, object]) -> RancherDeploymentSummary:
@@ -85,9 +92,10 @@ def _deployment_summary_from_payload(payload: Mapping[str, object]) -> RancherDe
         paused=summary.paused,
     )
     reason: str | None = None
+    message: str | None = None
     since: str | None = None
     if summary.ready_replicas != summary.desired_replicas or rollout_complete is False:
-        reason, since = _deployment_rollout_reason(_conditions_from_status(status))
+        reason, message, since = _deployment_rollout_diagnosis(_conditions_from_status(status))
     return summary.model_copy(
         update={
             "id": _namespaced_id(metadata, "deployment"),
@@ -99,6 +107,7 @@ def _deployment_summary_from_payload(payload: Mapping[str, object]) -> RancherDe
             "rollout_complete": rollout_complete,
             "container_images": images,
             "reason": reason,
+            "message": message,
             "since": since,
         }
     )
@@ -211,6 +220,7 @@ def _namespaced_id(metadata: Mapping[str, object], fallback_kind: str) -> str:
 conditions_from_status = _conditions_from_status
 container_summaries = _container_summaries
 daemonset_summary_from_payload = _daemonset_summary_from_payload
+deployment_rollout_diagnosis = _deployment_rollout_diagnosis
 deployment_summary_from_payload = _deployment_summary_from_payload
 int_value = _int_value
 items = _items

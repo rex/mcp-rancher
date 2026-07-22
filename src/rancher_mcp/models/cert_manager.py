@@ -10,9 +10,10 @@ cert-manager CRDs widely deployed for ACME / Let's Encrypt /
 internal-CA automation on Kubernetes clusters.
 """
 
-from pydantic import AliasPath, Field
+from pydantic import AliasPath, Field, computed_field
 
 from rancher_mcp.models.base import RancherModel
+from rancher_mcp.tools.support.derive import age_days as _compute_age_days
 
 
 def _empty_certificate_summaries() -> list["RancherCertManagerCertificateSummary"]:
@@ -84,6 +85,15 @@ class RancherCertManagerCertificateSummary(RancherModel):
     reason: str | None = None
     message: str | None = None
     since: str | None = None
+
+    @computed_field
+    @property
+    def age_days(self) -> int | None:
+        """Whole days since `since` (M-B1/B2) — a cert that's been failing to
+        renew for five minutes reads differently from five weeks. ``None``
+        (envelope-dropped) whenever `since` is, i.e. once ready."""
+
+        return _compute_age_days(self.since)
 
 
 class RancherCertManagerCertificateDetail(RancherCertManagerCertificateSummary):

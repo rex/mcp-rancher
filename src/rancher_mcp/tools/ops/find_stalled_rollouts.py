@@ -7,7 +7,10 @@ from rancher_mcp.config import AppSettings, get_settings
 from rancher_mcp.models.ops.failure_finders import StalledRolloutsList, StalledRolloutSummary
 from rancher_mcp.services.instances import resolve_instance
 from rancher_mcp.tools.ops.paths import k8s_apps_path, k8s_items
+from rancher_mcp.tools.support.conditions import conditions_from_value
+from rancher_mcp.tools.support.derive import age_days
 from rancher_mcp.tools.support.values import mapping_value, string_value
+from rancher_mcp.tools.workloads.shared import deployment_rollout_diagnosis
 
 
 def _safe_int(value: object) -> int:
@@ -16,6 +19,23 @@ def _safe_int(value: object) -> int:
     if isinstance(value, int) and not isinstance(value, bool):
         return value
     return 0
+
+
+def _rollout_diagnosis(
+    status: dict[str, object],
+) -> tuple[str | None, str | None, str | None, int | None]:
+    """Derive (reason, message, since, ageDays) from a workload's own conditions.
+
+    Reuses ``deployment_rollout_diagnosis`` (M-B1/B2, ``tools/workloads/
+    shared.py``) — the exact same "why is this rollout stuck" pick
+    ``deployments_list`` already surfaces (M-A7) — plus ``derive.age_days``
+    for the day count, so neither the condition-priority logic nor the
+    day-count math is re-derived here.
+    """
+
+    conditions = conditions_from_value(status.get("conditions"))
+    reason, message, since = deployment_rollout_diagnosis(conditions)
+    return reason, message, since, age_days(since)
 
 
 async def _find_stalled_rollouts(
@@ -40,6 +60,7 @@ async def _find_stalled_rollouts(
         unavailable = status.get("unavailableReplicas")
 
         if desired > 0 and (ready < desired or updated < desired):
+            reason, message, since, item_age_days = _rollout_diagnosis(status)
             stalled.append(
                 StalledRolloutSummary(
                     name=string_value(metadata, "name") or "<unknown>",
@@ -51,6 +72,10 @@ async def _find_stalled_rollouts(
                     unavailable_replicas=(
                         _safe_int(unavailable) if unavailable is not None else None
                     ),
+                    reason=reason,
+                    message=message,
+                    since=since,
+                    age_days=item_age_days,
                 )
             )
 
@@ -65,6 +90,7 @@ async def _find_stalled_rollouts(
         updated = _safe_int(status.get("updatedReplicas"))
 
         if desired > 0 and (ready < desired or updated < desired):
+            reason, message, since, item_age_days = _rollout_diagnosis(status)
             stalled.append(
                 StalledRolloutSummary(
                     name=string_value(metadata, "name") or "<unknown>",
@@ -73,6 +99,10 @@ async def _find_stalled_rollouts(
                     desired_replicas=desired,
                     ready_replicas=ready,
                     updated_replicas=updated,
+                    reason=reason,
+                    message=message,
+                    since=since,
+                    age_days=item_age_days,
                 )
             )
 

@@ -7,6 +7,7 @@ from rancher_mcp.config import AppSettings, get_settings
 from rancher_mcp.models.ops.failure_finders import UnboundPvcsList, UnboundPvcSummary
 from rancher_mcp.services.instances import resolve_instance
 from rancher_mcp.tools.ops.paths import k8s_core_path, k8s_items
+from rancher_mcp.tools.support.conditions import conditions_from_value, first_false_condition
 from rancher_mcp.tools.support.values import mapping_value, string_value
 
 
@@ -31,6 +32,11 @@ async def _find_unbound_pvcs(
             continue
         resources = mapping_value(spec, "resources") or {}
         requests = mapping_value(resources, "requests") or {}
+        # PVC status.conditions is real API surface (mainly CSI resize/
+        # provisioning signals) but inconsistently populated — read it
+        # defensively so reason/message/since/ageDays surface *when the
+        # payload has them* rather than guessing a value (M-B1/B2).
+        problem = first_false_condition(conditions_from_value(status.get("conditions")))
         unbound.append(
             UnboundPvcSummary(
                 name=string_value(metadata, "name") or "<unknown>",
@@ -38,6 +44,10 @@ async def _find_unbound_pvcs(
                 phase=phase,
                 storage_class=string_value(spec, "storageClassName"),
                 requested_storage=string_value(requests, "storage"),
+                reason=problem.reason if problem else None,
+                message=problem.message if problem else None,
+                since=problem.since if problem else None,
+                age_days=problem.age_days if problem else None,
             )
         )
 

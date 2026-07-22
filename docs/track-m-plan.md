@@ -94,8 +94,15 @@ one-at-a-time (background + yield), never in parallel — version bumps serializ
   best-effort wrapper — logs and swallows any failure, never blocks the
   patch). `durationMs` times only the `patch_json` call via `time.monotonic()`.
   Tradeoff (one extra GET per mutation) called out in CHANGELOG.
-- [ ] **M-B1/B2** `since`/`ageDays` + `reason`/`message` universal on conditions
-  (`tools/support/conditions.py` + base).
+- [x] **M-B1/B2** (v1.40.0) `since`/`ageDays` + `reason`/`message` universal on conditions
+  (`tools/support/conditions.py` + base). `RancherCondition` (`models/clusters_nodes.py`)
+  gains computed `since`/`age_days` from `last_transition_time` — universal across every
+  condition surface (clusters/nodes/pods/namespaces/PDBs/cert-manager/workloads/users) with
+  zero call-site changes; the 6 failure-finders now carry reason/message/since/ageDays on
+  found items where the source K8s object exposes them (services-without-endpoints excepted
+  — no such field on `Service`/`Endpoints`). Bonus: `RancherDeploymentSummary` +
+  `RancherCertManagerCertificateSummary` (pre-existing `since`-only fields from M-A7/L-2e)
+  each gain `ageDays` too.
 - [x] **M-A11/K-8b** (v1.36.0) capability-unavailable envelope: `error_code:CAPABILITY_ERROR`,
   `reason:not_installed`, `capability`/`resource`/`remediation`, `cluster`,
   `retryable:false` across the 4 app-absent list tools (`cluster_policy_reports_list`,

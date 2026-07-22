@@ -9,6 +9,7 @@ from rancher_mcp.models.workloads.common import (
     empty_conditions,
     empty_container_summaries,
 )
+from rancher_mcp.tools.support.derive import age_days as _compute_age_days
 
 
 def _empty_deployment_summaries() -> list["RancherDeploymentSummary"]:
@@ -67,10 +68,13 @@ class RancherDeploymentSummary(RancherModel):
     # #2/#4): the builder (`tools/workloads/shared.py`) populates these from
     # the deployment's own status conditions only when `ready_replicas !=
     # desired_replicas` or the rollout isn't complete — e.g. `reason:
-    # "ProgressDeadlineExceeded"`. Both stay `None` (envelope-dropped) once
-    # converged, so a healthy deployment reads as one clean line and an agent
-    # never has to `_get` just to learn why a rollout is stuck.
+    # "ProgressDeadlineExceeded"`. All three stay `None` (envelope-dropped)
+    # once converged, so a healthy deployment reads as one clean line and an
+    # agent never has to `_get` just to learn why a rollout is stuck.
+    # `message` (M-B1/B2) rides beside `reason`; `age_days` below derives from
+    # `since` so a five-minute-old stall and a five-day-old one read differently.
     reason: str | None = None
+    message: str | None = None
     since: str | None = None
     strategy_type: str | None = Field(
         default=None,
@@ -97,6 +101,16 @@ class RancherDeploymentSummary(RancherModel):
         if self.ready_replicas is None or self.desired_replicas is None:
             return None
         return f"{self.ready_replicas}/{self.desired_replicas}"
+
+    @computed_field
+    @property
+    def age_days(self) -> int | None:
+        """Whole days since `since` (M-B1/B2) — derived at dump time so a
+        rollout stuck for five minutes doesn't read the same as one stuck for
+        five days. ``None`` (envelope-dropped) whenever `since` is, i.e. once
+        converged."""
+
+        return _compute_age_days(self.since)
 
 
 class RancherDeploymentDetail(RancherDeploymentSummary):

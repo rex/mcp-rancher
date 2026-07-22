@@ -34,12 +34,24 @@ def _empty_pdb_blockers() -> list["PdbBlockerSummary"]:
 
 
 class FailingPodSummary(RancherModel):
-    """One failing pod with context."""
+    """One failing pod with context.
+
+    ``message``/``since``/``age_days`` (M-B1/B2) ride beside ``reason`` so an
+    agent never needs a follow-up ``pod_get`` to learn what a waiting/
+    terminated container said, or whether the failure is five minutes or five
+    days old (ADR-0002 rules #2/#4). Sourced from the same container
+    waiting/terminated state as ``reason`` when available, else the pod's own
+    ``status.conditions`` (``Ready``/``PodScheduled``/…) — see
+    ``tools/ops/find_failing_pods.py``.
+    """
 
     name: str
     namespace: str
     phase: str | None = None
     reason: str | None = None
+    message: str | None = None
+    since: str | None = None
+    age_days: int | None = None
     node_name: str | None = None
     owner_kind: str | None = None
     owner_name: str | None = None
@@ -60,7 +72,13 @@ class FailingPodsList(RancherModel):
 
 
 class UnreadyNodeSummary(RancherModel):
-    """One unready node with context."""
+    """One unready node with context.
+
+    ``reason``/``since``/``age_days`` (M-B1/B2) come from the node's own
+    ``Ready`` condition, alongside the pre-existing ``ready_condition_status``/
+    ``ready_condition_message`` — so a node that flipped NotReady five minutes
+    ago reads differently from one stuck that way for months.
+    """
 
     id: str
     name: str
@@ -68,7 +86,10 @@ class UnreadyNodeSummary(RancherModel):
     roles: list[str] = Field(default_factory=_empty_strings)
     unschedulable: bool | None = None
     ready_condition_status: str | None = None
+    reason: str | None = None
     ready_condition_message: str | None = None
+    since: str | None = None
+    age_days: int | None = None
 
 
 class UnreadyNodesList(RancherModel):
@@ -83,7 +104,16 @@ class UnreadyNodesList(RancherModel):
 
 
 class StalledRolloutSummary(RancherModel):
-    """One stalled deployment or statefulset."""
+    """One stalled deployment or statefulset.
+
+    ``reason``/``message``/``since``/``age_days`` (M-B1/B2) carry the
+    condition-sourced diagnosis (e.g. ``reason: "ProgressDeadlineExceeded"``)
+    so an agent doesn't need a follow-up ``deployment_get`` to learn why a
+    rollout is stuck, or how long it's been stuck (ADR-0002 rules #2/#4).
+    Reuses the same priority-ordered condition pick as ``deployments_list``
+    (``tools/workloads/shared.py``'s rollout-diagnosis helper) — one
+    definition of "why is this rollout stalled", not two.
+    """
 
     name: str
     namespace: str
@@ -92,6 +122,10 @@ class StalledRolloutSummary(RancherModel):
     ready_replicas: int | None = None
     updated_replicas: int | None = None
     unavailable_replicas: int | None = None
+    reason: str | None = None
+    message: str | None = None
+    since: str | None = None
+    age_days: int | None = None
 
 
 class StalledRolloutsList(RancherModel):
@@ -128,13 +162,24 @@ class ServicesWithoutEndpointsList(RancherModel):
 
 
 class UnboundPvcSummary(RancherModel):
-    """One PVC that is not bound."""
+    """One PVC that is not bound.
+
+    ``reason``/``message``/``since``/``age_days`` (M-B1/B2) surface from
+    ``status.conditions`` (e.g. a CSI driver's resize/provisioning condition)
+    *when the payload exposes them* — plain scheduling-stuck PVCs commonly
+    carry no condition at all (that signal lives in Kubernetes Events, out of
+    scope here), so these stay ``None``/dropped rather than a guessed value.
+    """
 
     name: str
     namespace: str
     phase: str | None = None
     storage_class: str | None = None
     requested_storage: str | None = None
+    reason: str | None = None
+    message: str | None = None
+    since: str | None = None
+    age_days: int | None = None
 
 
 class UnboundPvcsList(RancherModel):
@@ -150,7 +195,14 @@ class UnboundPvcsList(RancherModel):
 
 
 class PdbBlockerSummary(RancherModel):
-    """One PDB currently blocking disruption."""
+    """One PDB currently blocking disruption.
+
+    ``reason``/``message``/``since``/``age_days`` (M-B1/B2) come from the
+    PDB's own ``status.conditions`` (typically ``DisruptionAllowed: False``,
+    e.g. ``reason: "InsufficientPods"``) when the cluster's Kubernetes
+    version populates it — absent on older API servers, in which case these
+    stay ``None``/dropped rather than a guessed value.
+    """
 
     name: str
     namespace: str
@@ -160,6 +212,10 @@ class PdbBlockerSummary(RancherModel):
     desired_healthy: int | None = None
     disruptions_allowed: int | None = None
     selector_match_labels: dict[str, str] = Field(default_factory=dict)
+    reason: str | None = None
+    message: str | None = None
+    since: str | None = None
+    age_days: int | None = None
 
 
 class PdbBlockersList(RancherModel):

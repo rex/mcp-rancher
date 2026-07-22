@@ -12,6 +12,7 @@ from pydantic import (
 )
 
 from rancher_mcp.models.base import RancherModel
+from rancher_mcp.tools.support.derive import age_days as _condition_age_days
 from rancher_mcp.units import humanize_memory, percent
 
 
@@ -46,13 +47,50 @@ def _empty_cluster_issues() -> list["ClusterIssue"]:
 
 
 class RancherCondition(RancherModel):
-    """One Rancher or Kubernetes condition."""
+    """One Rancher or Kubernetes condition.
+
+    ``since``/``age_days`` (M-B1/B2, ADR-0002) are derived at DUMP time via
+    computed fields reading ``last_transition_time`` — never stored/duplicated
+    — so every existing call site that builds a ``RancherCondition`` from
+    ``lastTransitionTime`` (chiefly :func:`conditions_from_payload` /
+    :func:`conditions_from_value` in ``tools/support/conditions.py``) gets the
+    temporal signal universally, with zero call-site changes. The raw
+    ``lastTransitionTime`` itself is excluded from the dump so ``since`` isn't
+    shipped twice under two names (ADR-0002: duplicated spec echoes are
+    noise); attribute access to ``last_transition_time`` is unaffected for the
+    handful of callers that read it directly (e.g. ``tools/support/
+    cluster_issues.py``, ``tools/workloads/shared.py``).
+    """
 
     type: str
     status: str | None = None
     reason: str | None = None
     message: str | None = None
-    last_transition_time: str | None = Field(default=None, validation_alias="lastTransitionTime")
+    last_transition_time: str | None = Field(
+        default=None,
+        validation_alias="lastTransitionTime",
+        exclude=True,
+    )
+
+    @computed_field
+    @property
+    def since(self) -> str | None:
+        """Alias of ``lastTransitionTime`` — the always-on temporal anchor
+        (ADR-0002: "temporal context" is signal on every condition, healthy
+        or not, unlike ``reason``/``message`` which stay conditional)."""
+
+        return self.last_transition_time
+
+    @computed_field
+    @property
+    def age_days(self) -> int | None:
+        """Whole days since the last transition — the single highest-value
+        addition in the field spec (ADR-0002): a condition that flipped five
+        years ago and one that flipped five minutes ago must not read the
+        same. Reuses :func:`rancher_mcp.tools.support.derive.age_days` —
+        never re-derived locally."""
+
+        return _condition_age_days(self.last_transition_time)
 
 
 class ClusterIssue(RancherModel):
