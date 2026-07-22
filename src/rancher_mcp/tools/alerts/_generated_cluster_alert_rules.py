@@ -38,6 +38,7 @@ async def _fetch_cluster_alert_rules_list(
     cluster_alert_rules = [alert_rule_summary_from_payload(item) for item in data_items(payload)]
     return RancherAlertRuleList(
         instance=instance_name,
+        cluster_id=cluster_id,
         alert_rule_count=len(cluster_alert_rules),
         applied_query_params=query_params,
         alert_rules=cluster_alert_rules,

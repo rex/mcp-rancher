@@ -133,6 +133,7 @@ async def _fetch_longhorn_snapshot_get(
         update={
             "annotation_keys": sorted(string_dict(metadata_annotations)),
             "payload": dict(payload),
+            "cluster_id": cluster_id,
             "suggested_next_steps": [
                 "rancher_longhorn_snapshots_list",
                 "rancher_longhorn_volumes_list",

@@ -2,7 +2,7 @@
 
 from pydantic import AliasPath, Field, computed_field
 
-from rancher_mcp.models.base import RancherModel
+from rancher_mcp.models.base import RancherClusterScopedDetail, RancherModel
 from rancher_mcp.models.workloads.common import (
     RancherCondition,
     RancherWorkloadContainerSummary,
@@ -113,7 +113,7 @@ class RancherDeploymentSummary(RancherModel):
         return _compute_age_days(self.since)
 
 
-class RancherDeploymentDetail(RancherDeploymentSummary):
+class RancherDeploymentDetail(RancherDeploymentSummary, RancherClusterScopedDetail):
     """Typed detail for one deployment."""
 
     revision: str | None = Field(

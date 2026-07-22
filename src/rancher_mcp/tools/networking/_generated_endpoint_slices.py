@@ -153,6 +153,7 @@ async def _fetch_endpoint_slice_get(
             "ready_endpoint_count": summary.ready_endpoint_count,
             "annotation_keys": sorted(string_dict(metadata_annotations)),
             "payload": dict(payload),
+            "cluster_id": cluster_id,
             "suggested_next_steps": ["rancher_endpoint_slices_list", "rancher_services_list"],
         }
     )

@@ -135,6 +135,7 @@ async def _fetch_daemonset_get(
             "container_images": summary.container_images,
             "annotation_keys": sorted(string_dict(metadata_annotations)),
             "payload": dict(payload),
+            "cluster_id": cluster_id,
             "suggested_next_steps": ["rancher_daemonsets_list", "rancher_pods_list"],
         }
     )

@@ -48,6 +48,7 @@ async def _fetch_etcd_backups_list(
     etcd_backups = [etcd_backup_summary_from_payload(item) for item in data_items(payload)]
     return RancherEtcdBackupList(
         instance=instance_name,
+        cluster_id=cluster_id,
         etcd_backup_count=len(etcd_backups),
         applied_query_params=query_params,
         etcd_backups=etcd_backups,

@@ -157,6 +157,7 @@ async def _fetch_horizontal_pod_autoscaler_get(
             "annotation_keys": sorted(string_dict(metadata_annotations)),
             "metric_types": hpa_metric_types(payload),
             "payload": dict(payload),
+            "cluster_id": cluster_id,
             "suggested_next_steps": [
                 "rancher_horizontal_pod_autoscalers_list",
                 "rancher_deployments_list",

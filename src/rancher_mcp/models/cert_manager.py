@@ -12,7 +12,7 @@ internal-CA automation on Kubernetes clusters.
 
 from pydantic import AliasPath, Field, computed_field
 
-from rancher_mcp.models.base import RancherModel
+from rancher_mcp.models.base import RancherClusterScopedDetail, RancherModel
 from rancher_mcp.tools.support.derive import age_days as _compute_age_days
 
 
@@ -96,7 +96,9 @@ class RancherCertManagerCertificateSummary(RancherModel):
         return _compute_age_days(self.since)
 
 
-class RancherCertManagerCertificateDetail(RancherCertManagerCertificateSummary):
+class RancherCertManagerCertificateDetail(
+    RancherCertManagerCertificateSummary, RancherClusterScopedDetail
+):
     """Typed detail for one cert-manager Certificate."""
 
     condition_types_true: list[str] = Field(default_factory=list)
@@ -148,7 +150,7 @@ class RancherCertManagerIssuerSummary(_IssuerBase):
     )
 
 
-class RancherCertManagerIssuerDetail(RancherCertManagerIssuerSummary):
+class RancherCertManagerIssuerDetail(RancherCertManagerIssuerSummary, RancherClusterScopedDetail):
     """Typed detail for one cert-manager Issuer."""
 
     condition_types_true: list[str] = Field(default_factory=list)
@@ -176,7 +178,9 @@ class RancherCertManagerClusterIssuerSummary(_IssuerBase):
     """Typed summary for one cert-manager ClusterIssuer (cluster-scoped)."""
 
 
-class RancherCertManagerClusterIssuerDetail(RancherCertManagerClusterIssuerSummary):
+class RancherCertManagerClusterIssuerDetail(
+    RancherCertManagerClusterIssuerSummary, RancherClusterScopedDetail
+):
     """Typed detail for one cert-manager ClusterIssuer."""
 
     condition_types_true: list[str] = Field(default_factory=list)

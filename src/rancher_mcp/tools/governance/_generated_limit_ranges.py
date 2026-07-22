@@ -128,6 +128,7 @@ async def _fetch_limit_range_get(
             "types_present": summary.types_present,
             "annotation_keys": sorted(string_dict(metadata_annotations)),
             "payload": dict(payload),
+            "cluster_id": cluster_id,
             "suggested_next_steps": ["rancher_limit_ranges_list", "rancher_resource_quotas_list"],
         }
     )

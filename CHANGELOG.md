@@ -1,5 +1,48 @@
 # Changelog
 
+## [1.51.0] — 2026-07-22 — Agent: Claude
+`nextSteps` exists to hand an agent a ready-to-run follow-up call. It was
+handing out calls that were subtly not runnable — the failure an operator
+described as "worse than omitting args, since it looks pasteable and isn't."
+
+### Fixed
+- **AE-24 — a `nextSteps` entry named a tool that does not exist.**
+  `rancher_workload_readiness` appeared twice in `deployments.yml` and was
+  never registered (`tools/workloads/readiness.py` is a shared helper, not a
+  tool). It was the only dangling name out of 152 referenced. Replaced with
+  real tools serving the same intent: `rancher_find_stalled_rollouts` after a
+  list, `rancher_resource_events` after a get.
+
+- **F3 — suggested calls omitted `cluster_id`, so they silently ran against the
+  wrong cluster.** Because most tools declare `cluster_id: str = "local"`, an
+  under-specified suggestion does not fail — it executes against `local`. On a
+  multi-cluster fleet that is an incident, not an inconvenience. Three distinct
+  root causes, all fixed at the source:
+  1. **41 detail models across 18 files** had no `cluster_id` field at all —
+     they are built from the raw upstream payload, which never carries one (the
+     cluster is implied by the request URL). Fixed with a shared
+     `RancherClusterScopedDetail` mixin plus a codegen-template change that
+     threads the real value in. `service_get` — the reported example — was one.
+  2. **11 list wrappers** where `cluster_id` is an optional *filter* rather than
+     a required scope never kept the filter value they were called with, so
+     they emitted no args at all. `nodes_list` — the "argless" example — was one.
+  3. **Bogus keys**, found while building the gate rather than reported: the old
+     scrape copied scope keys into *every* suggested target uniformly, with no
+     knowledge of whether the target accepts them. Fixing (1) and (2) made that
+     concretely wrong (`nodes_list` would have suggested `node_get` with a
+     `cluster_id` that tool does not take). `next_steps` now computes args
+     per-target against a new `next_step_targets` registry — a deliberately
+     tiny, dependency-free seam, since importing the tool registry from
+     `models/` would cycle back through `tools/`.
+
+### Added
+- `tests/unit/test_next_steps_registry_gate.py` (288 tests) — discovers every
+  shipped `suggested_next_steps` declaration (277 via the same descriptor
+  loader `make codegen` uses, 3 hand-written via AST) and asserts against the
+  real registry that every target exists, every arg key is a real parameter of
+  that target, and scope keys are present whenever the source carries them and
+  the target accepts them.
+
 ## [1.50.0] — 2026-07-22 — Agent: Claude
 ### Added
 - **The regression gate for the class of bug that killed every

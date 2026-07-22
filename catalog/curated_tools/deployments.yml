@@ -38,7 +38,7 @@ list:
   next_steps:
     - rancher_deployment_get
     - rancher_pods_list
-    - rancher_workload_readiness
+    - rancher_find_stalled_rollouts
 
 get:
   arg_name: deployment_name
@@ -62,7 +62,7 @@ get:
   next_steps:
     - rancher_deployments_list
     - rancher_pods_list
-    - rancher_workload_readiness
+    - rancher_resource_events
 
 patches:
   - verb: scale

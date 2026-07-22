@@ -9,7 +9,7 @@ defines two cluster-scoped CRDs in ``resources.cattle.io/v1``:
 
 from pydantic import AliasPath, Field
 
-from rancher_mcp.models.base import RancherModel
+from rancher_mcp.models.base import RancherClusterScopedDetail, RancherModel
 
 
 def _empty_backup_summaries() -> list["RancherBackupSummary"]:
@@ -58,7 +58,7 @@ class RancherBackupSummary(RancherModel):
     summary_state: str | None = None
 
 
-class RancherBackupDetail(RancherBackupSummary):
+class RancherBackupDetail(RancherBackupSummary, RancherClusterScopedDetail):
     """Typed detail for one Rancher Backup Operator Backup."""
 
     storage_location_summary: str | None = None
@@ -106,7 +106,7 @@ class RancherRestoreSummary(RancherModel):
     )
 
 
-class RancherRestoreDetail(RancherRestoreSummary):
+class RancherRestoreDetail(RancherRestoreSummary, RancherClusterScopedDetail):
     """Typed detail for one Rancher Backup Operator Restore."""
 
     storage_location_summary: str | None = None

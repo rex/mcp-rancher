@@ -126,6 +126,7 @@ async def _fetch_service_get(
             "relationship_types": relationship_types(metadata),
             "link_keys": sorted(mapping_value(payload, "links") or {}),
             "payload": dict(payload),
+            "cluster_id": cluster_id,
             "suggested_next_steps": ["rancher_services_list", "rancher_pods_list"],
         }
     )

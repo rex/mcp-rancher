@@ -133,6 +133,7 @@ async def _fetch_service_monitor_get(
             "annotation_keys": sorted(string_dict(metadata_annotations)),
             "endpoint_ports": service_monitor_endpoint_ports(payload),
             "payload": dict(payload),
+            "cluster_id": cluster_id,
             "suggested_next_steps": ["rancher_service_monitors_list", "rancher_services_list"],
         }
     )

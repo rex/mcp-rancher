@@ -119,6 +119,7 @@ async def _fetch_restore_get(
             "condition_types_true": condition_types_true(conditions_from_payload(payload)),
             "storage_location_summary": storage_location_summary(payload),
             "payload": dict(payload),
+            "cluster_id": cluster_id,
             "suggested_next_steps": ["rancher_restores_list", "rancher_backups_list"],
         }
     )

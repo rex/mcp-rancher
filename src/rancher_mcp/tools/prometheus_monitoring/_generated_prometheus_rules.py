@@ -135,6 +135,7 @@ async def _fetch_prometheus_rule_get(
             "group_names": group_names(payload),
             "alert_names": alert_names(payload),
             "payload": dict(payload),
+            "cluster_id": cluster_id,
             "suggested_next_steps": [
                 "rancher_prometheus_rules_list",
                 "rancher_service_monitors_list",

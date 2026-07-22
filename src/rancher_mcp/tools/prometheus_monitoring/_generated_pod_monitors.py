@@ -128,6 +128,7 @@ async def _fetch_pod_monitor_get(
             "annotation_keys": sorted(string_dict(metadata_annotations)),
             "endpoint_ports": pod_monitor_endpoint_ports(payload),
             "payload": dict(payload),
+            "cluster_id": cluster_id,
             "suggested_next_steps": ["rancher_pod_monitors_list", "rancher_pods_list"],
         }
     )

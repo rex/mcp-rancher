@@ -133,6 +133,7 @@ async def _fetch_service_account_get(
             "secret_names": secret_names_from_payload(payload),
             "image_pull_secret_names": image_pull_secret_names_from_payload(payload),
             "payload": dict(payload),
+            "cluster_id": cluster_id,
             "suggested_next_steps": ["rancher_service_accounts_list", "rancher_pods_list"],
         }
     )

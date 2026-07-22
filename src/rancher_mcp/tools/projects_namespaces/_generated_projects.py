@@ -43,6 +43,7 @@ async def _fetch_projects_list(
     projects = [project_summary_from_payload(item) for item in data_items(payload)]
     return RancherProjectList(
         instance=instance_name,
+        cluster_id=cluster_id,
         project_count=len(projects),
         next_page_token=next_page_token_from_payload(payload),
         applied_query_params=query_params,

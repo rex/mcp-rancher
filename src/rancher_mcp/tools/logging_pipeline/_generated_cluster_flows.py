@@ -123,6 +123,7 @@ async def _fetch_cluster_flow_get(
             "filter_count": summary.filter_count,
             "annotation_keys": sorted(string_dict(metadata_annotations)),
             "payload": dict(payload),
+            "cluster_id": cluster_id,
             "suggested_next_steps": ["rancher_cluster_flows_list", "rancher_cluster_outputs_list"],
         }
     )

@@ -47,6 +47,7 @@ async def _fetch_nodes_list(
     nodes = [node_summary_from_payload(item) for item in data_items(payload)]
     return RancherNodeList(
         instance=instance_name,
+        cluster_id=cluster_id,
         node_count=len(nodes),
         next_page_token=next_page_token_from_payload(payload),
         applied_query_params=query_params,

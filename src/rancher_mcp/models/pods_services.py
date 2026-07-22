@@ -11,7 +11,7 @@ from pydantic import (
     model_validator,
 )
 
-from rancher_mcp.models.base import RancherModel
+from rancher_mcp.models.base import RancherClusterScopedDetail, RancherModel
 from rancher_mcp.models.clusters_nodes import RancherCondition
 
 
@@ -172,7 +172,7 @@ class RancherPodEventSummary(RancherModel):
     last_seen: str | None = None
 
 
-class RancherPodDetail(RancherPodSummary):
+class RancherPodDetail(RancherPodSummary, RancherClusterScopedDetail):
     """Typed detail for one pod."""
 
     host_ip: str | None = Field(default=None, validation_alias=AliasPath("status", "hostIP"))
@@ -332,7 +332,7 @@ class RancherServiceSummary(RancherModel):
     )
 
 
-class RancherServiceDetail(RancherServiceSummary):
+class RancherServiceDetail(RancherServiceSummary, RancherClusterScopedDetail):
     """Typed detail for one service."""
 
     session_affinity: str | None = Field(

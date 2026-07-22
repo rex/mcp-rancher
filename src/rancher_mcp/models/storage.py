@@ -2,7 +2,7 @@
 
 from pydantic import AliasChoices, AliasPath, Field
 
-from rancher_mcp.models.base import RancherModel
+from rancher_mcp.models.base import RancherClusterScopedDetail, RancherModel
 
 
 def _empty_storage_class_summaries() -> list["RancherStorageClassSummary"]:
@@ -38,7 +38,7 @@ class RancherStorageClassSummary(RancherModel):
     parameter_keys: list[str] = Field(default_factory=list)
 
 
-class RancherStorageClassDetail(RancherStorageClassSummary):
+class RancherStorageClassDetail(RancherStorageClassSummary, RancherClusterScopedDetail):
     """Typed detail for one storage class."""
 
     mount_options: list[str] = Field(default_factory=list)
@@ -100,7 +100,7 @@ class RancherPersistentVolumeSummary(RancherModel):
     volume_source_type: str | None = None
 
 
-class RancherPersistentVolumeDetail(RancherPersistentVolumeSummary):
+class RancherPersistentVolumeDetail(RancherPersistentVolumeSummary, RancherClusterScopedDetail):
     """Typed detail for one persistent volume."""
 
     finalizers: list[str] = Field(
@@ -173,7 +173,9 @@ class RancherPersistentVolumeClaimSummary(RancherModel):
     )
 
 
-class RancherPersistentVolumeClaimDetail(RancherPersistentVolumeClaimSummary):
+class RancherPersistentVolumeClaimDetail(
+    RancherPersistentVolumeClaimSummary, RancherClusterScopedDetail
+):
     """Typed detail for one persistent volume claim."""
 
     annotation_keys: list[str] = Field(default_factory=list)

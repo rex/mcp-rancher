@@ -40,6 +40,10 @@ class RancherCisScanProfileList(RancherModel):
     """Typed list response for CIS scan profiles."""
 
     instance: str
+    cluster_id: str | None = None
+    """Echoes the `cluster_id` list filter when one was passed (None means
+    "all clusters") — so `next_steps` (models/base.py) can propagate a real
+    scope to cluster-scoped next-step tools instead of silently defaulting."""
     profile_count: int = Field(
         validation_alias="count", serialization_alias="count"
     )  # M-A1: uniform count key
@@ -80,6 +84,10 @@ class RancherCisScanList(RancherModel):
     """Typed list response for CIS scan runs."""
 
     instance: str
+    cluster_id: str | None = None
+    """Echoes the `cluster_id` list filter when one was passed (None means
+    "all clusters") — so `next_steps` (models/base.py) can propagate a real
+    scope to cluster-scoped next-step tools instead of silently defaulting."""
     scan_count: int = Field(
         validation_alias="count", serialization_alias="count"
     )  # M-A1: uniform count key

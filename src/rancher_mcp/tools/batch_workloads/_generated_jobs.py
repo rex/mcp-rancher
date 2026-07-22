@@ -140,6 +140,7 @@ async def _fetch_job_get(
             "annotation_keys": sorted(string_dict(metadata_annotations)),
             "container_images": container_images_from_template(payload),
             "payload": dict(payload),
+            "cluster_id": cluster_id,
             "suggested_next_steps": ["rancher_jobs_list", "rancher_pods_list"],
         }
     )

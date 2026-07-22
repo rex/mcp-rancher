@@ -147,6 +147,7 @@ async def _fetch_cert_manager_cluster_issuer_get(
             "annotation_keys": sorted(string_dict(metadata_annotations)),
             "condition_types_true": condition_types_true_from_payload(payload),
             "payload": dict(payload),
+            "cluster_id": cluster_id,
             "suggested_next_steps": [
                 "rancher_cert_manager_cluster_issuers_list",
                 "rancher_cert_manager_certificates_list",

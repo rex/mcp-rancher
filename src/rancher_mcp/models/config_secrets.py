@@ -17,7 +17,7 @@ from typing import ClassVar, cast
 
 from pydantic import AliasPath, Field, field_validator
 
-from rancher_mcp.models.base import RancherModel
+from rancher_mcp.models.base import RancherClusterScopedDetail, RancherModel
 
 
 def _decode_secret_data(value: object) -> dict[str, str]:
@@ -83,7 +83,7 @@ class RancherConfigMapSummary(RancherModel):
     immutable: bool | None = None
 
 
-class RancherConfigMapDetail(RancherConfigMapSummary):
+class RancherConfigMapDetail(RancherConfigMapSummary, RancherClusterScopedDetail):
     """Typed detail for one Kubernetes ConfigMap."""
 
     data_keys: list[str] = Field(default_factory=list)
@@ -128,7 +128,7 @@ class RancherSecretSummary(RancherModel):
     immutable: bool | None = None
 
 
-class RancherSecretDetail(RancherSecretSummary):
+class RancherSecretDetail(RancherSecretSummary, RancherClusterScopedDetail):
     """Typed detail for one Kubernetes Secret — CAN reveal the decoded values.
 
     Validating this model against a raw Secret payload always decodes ``data``
@@ -191,7 +191,7 @@ class RancherServiceAccountSummary(RancherModel):
     )
 
 
-class RancherServiceAccountDetail(RancherServiceAccountSummary):
+class RancherServiceAccountDetail(RancherServiceAccountSummary, RancherClusterScopedDetail):
     """Typed detail for one Kubernetes ServiceAccount."""
 
     secret_names: list[str] = Field(default_factory=list)

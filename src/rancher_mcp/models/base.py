@@ -15,6 +15,7 @@ from pydantic import (
 from pydantic.alias_generators import to_camel
 
 from rancher_mcp.envelope import shape_envelope
+from rancher_mcp.next_step_targets import accepts_parameter
 from rancher_mcp.redaction import scrub_secrets
 
 
@@ -58,16 +59,35 @@ class RancherModel(BaseModel):
         (``cluster_id``/``namespace`` read from this result). Emitted at the root
         only: nested items never set ``suggested_next_steps``, so their
         ``next_steps`` is empty and the envelope drops it.
+
+        Args are computed PER TARGET, not uniformly: a scope key this model
+        carries is included only when ``next_step_targets`` confirms the
+        target tool actually accepts it (or doesn't yet know — see that
+        module's docstring for why "unknown" keeps the old, unfiltered
+        behavior). Without this, a source that carries ``cluster_id`` would
+        forward it to every suggested tool even ones with no ``cluster_id``
+        parameter at all (e.g. ``rancher_nodes_list``'s optional filter
+        forwarded onto ``rancher_node_get``, which has none) — a bogus key
+        that is the mirror image of the "missing cluster_id" defect this
+        field exists to avoid.
         """
 
         if not self.suggested_next_steps:
             return []
-        args: dict[str, object] = {}
+        scope: dict[str, object] = {}
         for key in ("cluster_id", "namespace"):
             value = getattr(self, key, None)
             if value is not None:
-                args[key] = value
-        return [{"tool": name, "args": dict(args)} for name in self.suggested_next_steps]
+                scope[key] = value
+        entries: list[dict[str, object]] = []
+        for name in self.suggested_next_steps:
+            args = {
+                key: value
+                for key, value in scope.items()
+                if accepts_parameter(name, key) is not False
+            }
+            entries.append({"tool": name, "args": args})
+        return entries
 
     @model_serializer(mode="wrap")
     def _shape_on_dump(self, handler: SerializerFunctionWrapHandler) -> Any:
@@ -98,3 +118,30 @@ class RancherModel(BaseModel):
         # other model keeps the K-1 guarantee.
         scrubbed = mapping if type(self).serializer_reveals_secrets else scrub_secrets(mapping)
         return shape_envelope(scrubbed)
+
+
+class RancherClusterScopedDetail(RancherModel):
+    """Mixin adding ``cluster_id`` to curated single-resource detail models.
+
+    The ``next_steps`` scrape above (``getattr(self, "cluster_id", None)``)
+    can only surface a scope the model actually carries. List models already
+    declare a plain ``cluster_id: str`` constructor kwarg; single-resource
+    *detail* models (``*_get``/``*_create``/``*_apply``) are instead built as
+    ``SomeDetail.model_validate(payload)`` followed by
+    ``.model_copy(update={...})`` — the raw upstream payload never contains a
+    Rancher cluster id (it is inferred from the request URL, never part of
+    the object body), so without this mixin ``cluster_id`` was simply absent
+    from every curated detail model in the codebase. That is the "missing
+    cluster_id in service_get" defect: a suggested follow-up call that looks
+    complete but silently targets the wrong cluster on a multi-cluster fleet.
+
+    Every codegen'd get/create/apply construction site now writes the real
+    ``cluster_id`` into that same ``update`` dict (``scripts/codegen/
+    templates/tool_module.py.j2``), closing the gap uniformly instead of
+    special-casing individual resources. The default is ``None`` — never a
+    placeholder string — so a construction site that is ever missed leaves
+    ``next_steps`` omitting the key entirely (safe) rather than emitting a
+    fake-looking value (unsafe); see the ``next_steps`` docstring above.
+    """
+
+    cluster_id: str | None = None

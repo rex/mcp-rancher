@@ -2,7 +2,7 @@
 
 from pydantic import AliasPath, Field
 
-from rancher_mcp.models.base import RancherModel
+from rancher_mcp.models.base import RancherClusterScopedDetail, RancherModel
 from rancher_mcp.models.workloads.common import (
     RancherCondition,
     RancherWorkloadContainerSummary,
@@ -65,7 +65,7 @@ class RancherDaemonSetSummary(RancherModel):
     container_images: list[str] = Field(default_factory=list)
 
 
-class RancherDaemonSetDetail(RancherDaemonSetSummary):
+class RancherDaemonSetDetail(RancherDaemonSetSummary, RancherClusterScopedDetail):
     """Typed detail for one daemonset."""
 
     generation: int | None = Field(

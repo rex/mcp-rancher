@@ -11,7 +11,7 @@ Kubernetes-native storage primitives (StorageClass, PV, PVC).
 
 from pydantic import AliasPath, Field
 
-from rancher_mcp.models.base import RancherModel
+from rancher_mcp.models.base import RancherClusterScopedDetail, RancherModel
 
 
 def _empty_volume_summaries() -> list["RancherLonghornVolumeSummary"]:
@@ -75,7 +75,7 @@ class RancherLonghornVolumeSummary(_LonghornNamedBase):
     )
 
 
-class RancherLonghornVolumeDetail(RancherLonghornVolumeSummary):
+class RancherLonghornVolumeDetail(RancherLonghornVolumeSummary, RancherClusterScopedDetail):
     """Typed detail for one Longhorn Volume."""
 
     current_image: str | None = Field(
@@ -130,7 +130,7 @@ class RancherLonghornNodeSummary(_LonghornNamedBase):
     disk_count: int | None = None
 
 
-class RancherLonghornNodeDetail(RancherLonghornNodeSummary):
+class RancherLonghornNodeDetail(RancherLonghornNodeSummary, RancherClusterScopedDetail):
     """Typed detail for one Longhorn Node."""
 
     storage_available_total: int | None = None
@@ -174,7 +174,7 @@ class RancherLonghornBackupSummary(_LonghornNamedBase):
     )
 
 
-class RancherLonghornBackupDetail(RancherLonghornBackupSummary):
+class RancherLonghornBackupDetail(RancherLonghornBackupSummary, RancherClusterScopedDetail):
     """Typed detail for one Longhorn Backup."""
 
     backup_created_at: str | None = Field(
@@ -221,7 +221,7 @@ class RancherLonghornSnapshotSummary(_LonghornNamedBase):
     )
 
 
-class RancherLonghornSnapshotDetail(RancherLonghornSnapshotSummary):
+class RancherLonghornSnapshotDetail(RancherLonghornSnapshotSummary, RancherClusterScopedDetail):
     """Typed detail for one Longhorn Snapshot."""
 
     parent: str | None = Field(default=None, validation_alias=AliasPath("status", "parent"))

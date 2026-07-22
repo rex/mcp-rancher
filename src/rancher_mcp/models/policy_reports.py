@@ -8,7 +8,7 @@ emit this format (Kyverno, Kubewarden, Falco).
 
 from pydantic import AliasPath, Field
 
-from rancher_mcp.models.base import RancherModel
+from rancher_mcp.models.base import RancherClusterScopedDetail, RancherModel
 
 
 def _empty_policy_report_summaries() -> list["RancherPolicyReportSummary"]:
@@ -48,7 +48,7 @@ class RancherPolicyReportSummary(_PolicyReportBase):
     )
 
 
-class RancherPolicyReportDetail(RancherPolicyReportSummary):
+class RancherPolicyReportDetail(RancherPolicyReportSummary, RancherClusterScopedDetail):
     """Typed detail for one PolicyReport."""
 
     annotation_keys: list[str] = Field(default_factory=list)
@@ -75,7 +75,9 @@ class RancherClusterPolicyReportSummary(_PolicyReportBase):
     """Typed summary for one ClusterPolicyReport."""
 
 
-class RancherClusterPolicyReportDetail(RancherClusterPolicyReportSummary):
+class RancherClusterPolicyReportDetail(
+    RancherClusterPolicyReportSummary, RancherClusterScopedDetail
+):
     """Typed detail for one ClusterPolicyReport."""
 
     annotation_keys: list[str] = Field(default_factory=list)

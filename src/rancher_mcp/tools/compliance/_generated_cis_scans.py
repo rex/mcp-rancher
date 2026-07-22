@@ -36,6 +36,7 @@ async def _fetch_cis_scans_list(
     cis_scans = [cis_scan_summary_from_payload(item) for item in data_items(payload)]
     return RancherCisScanList(
         instance=instance_name,
+        cluster_id=cluster_id,
         scan_count=len(cis_scans),
         applied_query_params=query_params,
         scans=cis_scans,

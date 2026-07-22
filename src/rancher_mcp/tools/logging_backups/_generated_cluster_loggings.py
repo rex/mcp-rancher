@@ -54,6 +54,7 @@ async def _fetch_cluster_loggings_list(
     cluster_loggings = [cluster_logging_summary_from_payload(item) for item in data_items(payload)]
     return RancherClusterLoggingList(
         instance=instance_name,
+        cluster_id=cluster_id,
         cluster_logging_count=len(cluster_loggings),
         applied_query_params=query_params,
         cluster_loggings=cluster_loggings,

@@ -2,7 +2,7 @@
 
 from pydantic import AliasPath, Field, field_validator
 
-from rancher_mcp.models.base import RancherModel
+from rancher_mcp.models.base import RancherClusterScopedDetail, RancherModel
 from rancher_mcp.models.clusters_nodes import RancherCondition
 
 
@@ -71,7 +71,9 @@ class RancherPodDisruptionBudgetSummary(RancherModel):
         return value
 
 
-class RancherPodDisruptionBudgetDetail(RancherPodDisruptionBudgetSummary):
+class RancherPodDisruptionBudgetDetail(
+    RancherPodDisruptionBudgetSummary, RancherClusterScopedDetail
+):
     """Typed detail for one pod disruption budget."""
 
     annotation_keys: list[str] = Field(default_factory=list)

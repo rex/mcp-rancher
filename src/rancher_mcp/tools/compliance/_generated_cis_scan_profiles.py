@@ -36,6 +36,7 @@ async def _fetch_cis_scan_profiles_list(
     ]
     return RancherCisScanProfileList(
         instance=instance_name,
+        cluster_id=cluster_id,
         profile_count=len(cis_scan_profiles),
         applied_query_params=query_params,
         profiles=cis_scan_profiles,

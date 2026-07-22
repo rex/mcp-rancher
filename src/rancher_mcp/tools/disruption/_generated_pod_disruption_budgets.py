@@ -119,6 +119,7 @@ async def _fetch_pod_disruption_budget_get(
             "disruption_allowed": summary.disruption_allowed,
             "annotation_keys": sorted(string_dict(mapping_value(metadata, "annotations") or {})),
             "payload": dict(payload),
+            "cluster_id": cluster_id,
             "suggested_next_steps": [
                 "rancher_pod_disruption_budgets_list",
                 "rancher_pods_list",

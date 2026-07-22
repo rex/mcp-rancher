@@ -46,6 +46,7 @@ async def _fetch_templates_list(
     templates = [template_summary_from_payload(item) for item in data_items(payload)]
     return RancherTemplateList(
         instance=instance_name,
+        cluster_id=cluster_id,
         template_count=len(templates),
         applied_query_params=query_params,
         templates=templates,

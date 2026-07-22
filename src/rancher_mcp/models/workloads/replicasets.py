@@ -2,7 +2,7 @@
 
 from pydantic import AliasPath, Field
 
-from rancher_mcp.models.base import RancherModel
+from rancher_mcp.models.base import RancherClusterScopedDetail, RancherModel
 
 
 def _empty_replicaset_summaries() -> list["RancherReplicaSetSummary"]:
@@ -51,7 +51,7 @@ class RancherReplicaSetSummary(RancherModel):
     container_images: list[str] = Field(default_factory=list)
 
 
-class RancherReplicaSetDetail(RancherReplicaSetSummary):
+class RancherReplicaSetDetail(RancherReplicaSetSummary, RancherClusterScopedDetail):
     """Typed detail for one replicaset."""
 
     annotation_keys: list[str] = Field(default_factory=list)

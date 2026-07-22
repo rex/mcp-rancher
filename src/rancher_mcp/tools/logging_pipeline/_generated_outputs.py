@@ -131,6 +131,7 @@ async def _fetch_output_get(
             "output_type": summary.output_type,
             "annotation_keys": sorted(string_dict(metadata_annotations)),
             "payload": dict(payload),
+            "cluster_id": cluster_id,
             "suggested_next_steps": ["rancher_outputs_list", "rancher_flows_list"],
         }
     )

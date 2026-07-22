@@ -144,6 +144,7 @@ async def _fetch_pod_get(
             ),
             "link_keys": sorted(mapping_value(payload, "links") or {}),
             "payload": dict(payload),
+            "cluster_id": cluster_id,
             "suggested_next_steps": ["rancher_pods_list", "rancher_services_list"],
         }
     )

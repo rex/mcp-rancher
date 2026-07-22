@@ -149,6 +149,7 @@ async def _fetch_longhorn_node_get(
             "storage_available_total": storage_totals[0],
             "storage_maximum_total": storage_totals[1],
             "payload": dict(payload),
+            "cluster_id": cluster_id,
             "suggested_next_steps": [
                 "rancher_longhorn_nodes_list",
                 "rancher_longhorn_volumes_list",

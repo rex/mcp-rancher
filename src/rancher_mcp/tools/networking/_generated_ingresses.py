@@ -137,6 +137,7 @@ async def _fetch_ingress_get(
             "load_balancer_addresses": summary.load_balancer_addresses,
             "annotation_keys": sorted(string_dict(metadata_annotations)),
             "payload": dict(payload),
+            "cluster_id": cluster_id,
             "suggested_next_steps": ["rancher_ingresses_list", "rancher_services_list"],
         }
     )

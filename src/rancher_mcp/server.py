@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from mcp.server.fastmcp import FastMCP
 
 
@@ -96,6 +98,21 @@ def register_all_tools(mcp: FastMCP) -> None:
     register_scheduling_tools(mcp)
     register_mcp_resources(mcp)
     register_mcp_prompts(mcp)
+    # Every pack is registered now, so the tool manager's schemas are final:
+    # populate the next-steps target registry (models/base.py's `next_steps`
+    # computed field queries this to avoid forwarding a scope key — cluster_id/
+    # namespace — to a suggested tool that doesn't actually accept it).
+    # `Any`-typed local, matching every other `_tool_manager` access in this
+    # codebase (metrics.py, audit.py, tools/support/errors.py,
+    # tools/support/capability_unavailable.py): FastMCP has no public API for
+    # enumerating registered tools, so `_tool_manager` is the established,
+    # deliberate escape hatch, and typing it `Any` at the point of use is what
+    # keeps pyright's `reportPrivateUsage` (strict mode) from flagging it
+    # without loosening `register_all_tools`'s own `mcp: FastMCP` signature.
+    mcp_internals: Any = mcp
+    from rancher_mcp.next_step_targets import populate_from_tools
+
+    populate_from_tools(mcp_internals._tool_manager.list_tools())
     # Order (each apply wraps the previous, so the LAST is outermost at call time):
     # sensitive-reveal audit is INNERMOST (M-SEC) — it wraps the impl and emits an
     # audit record on the raw successful reveal; capability-unavailable translation

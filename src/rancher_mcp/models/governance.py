@@ -8,7 +8,7 @@ debugging scaling and quota problems.
 
 from pydantic import AliasPath, Field
 
-from rancher_mcp.models.base import RancherModel
+from rancher_mcp.models.base import RancherClusterScopedDetail, RancherModel
 
 
 def _empty_hpa_summaries() -> list["RancherHorizontalPodAutoscalerSummary"]:
@@ -69,7 +69,9 @@ class RancherHorizontalPodAutoscalerSummary(RancherModel):
     scaling_active: bool | None = None
 
 
-class RancherHorizontalPodAutoscalerDetail(RancherHorizontalPodAutoscalerSummary):
+class RancherHorizontalPodAutoscalerDetail(
+    RancherHorizontalPodAutoscalerSummary, RancherClusterScopedDetail
+):
     """Typed detail for one HorizontalPodAutoscaler."""
 
     metric_types: list[str] = Field(default_factory=list)
@@ -109,7 +111,7 @@ class RancherResourceQuotaSummary(RancherModel):
     hard_limit_keys: list[str] = Field(default_factory=list)
 
 
-class RancherResourceQuotaDetail(RancherResourceQuotaSummary):
+class RancherResourceQuotaDetail(RancherResourceQuotaSummary, RancherClusterScopedDetail):
     """Typed detail for one ResourceQuota."""
 
     hard: dict[str, object] = Field(
@@ -155,7 +157,7 @@ class RancherLimitRangeSummary(RancherModel):
     types_present: list[str] = Field(default_factory=list)
 
 
-class RancherLimitRangeDetail(RancherLimitRangeSummary):
+class RancherLimitRangeDetail(RancherLimitRangeSummary, RancherClusterScopedDetail):
     """Typed detail for one LimitRange."""
 
     annotation_keys: list[str] = Field(default_factory=list)

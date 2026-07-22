@@ -58,6 +58,7 @@ async def _fetch_cluster_role_template_bindings_list(
     ]
     return RancherClusterRoleTemplateBindingList(
         instance=instance_name,
+        cluster_id=cluster_id,
         cluster_role_template_binding_count=len(cluster_role_template_bindings),
         applied_query_params=query_params,
         cluster_role_template_bindings=cluster_role_template_bindings,

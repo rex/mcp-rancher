@@ -8,7 +8,7 @@ runtime-class to-node binding.
 
 from pydantic import AliasPath, Field
 
-from rancher_mcp.models.base import RancherModel
+from rancher_mcp.models.base import RancherClusterScopedDetail, RancherModel
 
 
 def _empty_priority_class_summaries() -> list["RancherPriorityClassSummary"]:
@@ -42,7 +42,7 @@ class RancherPriorityClassSummary(RancherModel):
     description: str | None = None
 
 
-class RancherPriorityClassDetail(RancherPriorityClassSummary):
+class RancherPriorityClassDetail(RancherPriorityClassSummary, RancherClusterScopedDetail):
     """Typed detail for one PriorityClass."""
 
     annotation_keys: list[str] = Field(default_factory=list)
@@ -76,7 +76,7 @@ class RancherRuntimeClassSummary(RancherModel):
     scheduling_node_selector_keys: list[str] = Field(default_factory=list)
 
 
-class RancherRuntimeClassDetail(RancherRuntimeClassSummary):
+class RancherRuntimeClassDetail(RancherRuntimeClassSummary, RancherClusterScopedDetail):
     """Typed detail for one RuntimeClass."""
 
     annotation_keys: list[str] = Field(default_factory=list)

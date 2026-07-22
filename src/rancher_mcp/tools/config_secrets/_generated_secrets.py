@@ -138,6 +138,7 @@ async def _fetch_secret_get(
             "annotation_keys": sorted(string_dict(metadata_annotations)),
             "data_keys": sorted(string_dict(data_dict)),
             "data": (detail.data) if reveal else ({}),
+            "cluster_id": cluster_id,
             "suggested_next_steps": ["rancher_secrets_list", "rancher_steve_resource_get"],
         }
     )
@@ -213,6 +214,7 @@ async def _create_secret(
             "annotation_keys": sorted(string_dict(metadata_annotations)),
             "data_keys": sorted(string_dict(data_dict)),
             "data": {},
+            "cluster_id": cluster_id,
             "suggested_next_steps": ["rancher_secret_get", "rancher_steve_resource_get"],
         }
     )

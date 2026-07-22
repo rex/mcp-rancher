@@ -75,6 +75,10 @@ class RancherClusterRegistrationTokenList(RancherModel):
     """Typed list response for Rancher cluster registration tokens."""
 
     instance: str
+    cluster_id: str | None = None
+    """Echoes the `cluster_id` list filter when one was passed (None means
+    "all clusters") — so `next_steps` (models/base.py) can propagate a real
+    scope to cluster-scoped next-step tools instead of silently defaulting."""
     cluster_registration_token_count: int = Field(
         validation_alias="count", serialization_alias="count"
     )  # M-A1: uniform count key

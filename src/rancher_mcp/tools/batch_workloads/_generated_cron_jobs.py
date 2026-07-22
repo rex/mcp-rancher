@@ -137,6 +137,7 @@ async def _fetch_cron_job_get(
             "container_images": cron_job_container_images(payload),
             "active_job_names": active_job_names(payload),
             "payload": dict(payload),
+            "cluster_id": cluster_id,
             "suggested_next_steps": ["rancher_cron_jobs_list", "rancher_jobs_list"],
         }
     )

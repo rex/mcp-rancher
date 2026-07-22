@@ -126,6 +126,7 @@ async def _fetch_runtime_class_get(
             "scheduling_node_selector_keys": summary.scheduling_node_selector_keys,
             "annotation_keys": sorted(string_dict(metadata_annotations)),
             "payload": dict(payload),
+            "cluster_id": cluster_id,
             "suggested_next_steps": ["rancher_runtime_classes_list", "rancher_pods_list"],
         }
     )

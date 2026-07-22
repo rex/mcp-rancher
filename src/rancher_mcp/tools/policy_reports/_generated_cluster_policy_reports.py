@@ -125,6 +125,7 @@ async def _fetch_cluster_policy_report_get(
             "top_failing_policies": summary.top_failing_policies,
             "annotation_keys": sorted(string_dict(metadata_annotations)),
             "payload": dict(payload),
+            "cluster_id": cluster_id,
             "suggested_next_steps": [
                 "rancher_cluster_policy_reports_list",
                 "rancher_policy_reports_list",

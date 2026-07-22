@@ -10,7 +10,7 @@ Distinct from Rancher's legacy ``cluster_loggings`` and
 
 from pydantic import AliasPath, Field
 
-from rancher_mcp.models.base import RancherModel
+from rancher_mcp.models.base import RancherClusterScopedDetail, RancherModel
 
 
 def _empty_output_summaries() -> list["RancherLoggingOutputSummary"]:
@@ -55,7 +55,7 @@ class RancherLoggingOutputSummary(RancherModel):
     )
 
 
-class RancherLoggingOutputDetail(RancherLoggingOutputSummary):
+class RancherLoggingOutputDetail(RancherLoggingOutputSummary, RancherClusterScopedDetail):
     """Typed detail for one Banzai logging Output."""
 
     annotation_keys: list[str] = Field(default_factory=list)
@@ -92,7 +92,9 @@ class RancherLoggingClusterOutputSummary(RancherModel):
     )
 
 
-class RancherLoggingClusterOutputDetail(RancherLoggingClusterOutputSummary):
+class RancherLoggingClusterOutputDetail(
+    RancherLoggingClusterOutputSummary, RancherClusterScopedDetail
+):
     """Typed detail for one Banzai logging ClusterOutput."""
 
     annotation_keys: list[str] = Field(default_factory=list)
@@ -141,7 +143,7 @@ class RancherLoggingFlowSummary(RancherModel):
     filter_count: int = 0
 
 
-class RancherLoggingFlowDetail(RancherLoggingFlowSummary):
+class RancherLoggingFlowDetail(RancherLoggingFlowSummary, RancherClusterScopedDetail):
     """Typed detail for one Banzai logging Flow."""
 
     annotation_keys: list[str] = Field(default_factory=list)
@@ -185,7 +187,7 @@ class RancherLoggingClusterFlowSummary(RancherModel):
     filter_count: int = 0
 
 
-class RancherLoggingClusterFlowDetail(RancherLoggingClusterFlowSummary):
+class RancherLoggingClusterFlowDetail(RancherLoggingClusterFlowSummary, RancherClusterScopedDetail):
     """Typed detail for one Banzai logging ClusterFlow."""
 
     annotation_keys: list[str] = Field(default_factory=list)

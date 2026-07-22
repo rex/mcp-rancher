@@ -65,7 +65,7 @@ async def _fetch_deployments_list(
         suggested_next_steps=[
             "rancher_deployment_get",
             "rancher_pods_list",
-            "rancher_workload_readiness",
+            "rancher_find_stalled_rollouts",
         ],
     )
 
@@ -139,10 +139,11 @@ async def _fetch_deployment_get(
             "since": summary.since,
             "annotation_keys": sorted(string_dict(metadata_annotations)),
             "payload": dict(payload),
+            "cluster_id": cluster_id,
             "suggested_next_steps": [
                 "rancher_deployments_list",
                 "rancher_pods_list",
-                "rancher_workload_readiness",
+                "rancher_resource_events",
             ],
         }
     )

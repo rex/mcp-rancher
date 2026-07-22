@@ -145,6 +145,7 @@ async def _fetch_persistent_volume_claim_get(
             "id": summary.id,
             "annotation_keys": sorted(string_dict(mapping_value(metadata, "annotations") or {})),
             "payload": dict(payload),
+            "cluster_id": cluster_id,
             "suggested_next_steps": [
                 "rancher_persistent_volume_claims_list",
                 "rancher_persistent_volumes_list",

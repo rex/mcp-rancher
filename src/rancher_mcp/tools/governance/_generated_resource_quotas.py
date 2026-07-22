@@ -129,6 +129,7 @@ async def _fetch_resource_quota_get(
             "hard_limit_keys": summary.hard_limit_keys,
             "annotation_keys": sorted(string_dict(metadata_annotations)),
             "payload": dict(payload),
+            "cluster_id": cluster_id,
             "suggested_next_steps": ["rancher_resource_quotas_list", "rancher_pods_list"],
         }
     )

@@ -126,6 +126,7 @@ async def _fetch_storage_class_get(
             "mount_options": string_list(payload.get("mountOptions")),
             "annotation_keys": sorted(string_dict(metadata_annotations)),
             "payload": dict(payload),
+            "cluster_id": cluster_id,
             "suggested_next_steps": [
                 "rancher_storage_classes_list",
                 "rancher_persistent_volumes_list",

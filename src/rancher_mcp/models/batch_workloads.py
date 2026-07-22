@@ -7,7 +7,7 @@ DaemonSets, StatefulSets) doesn't cover.
 
 from pydantic import AliasPath, Field
 
-from rancher_mcp.models.base import RancherModel
+from rancher_mcp.models.base import RancherClusterScopedDetail, RancherModel
 
 
 def _empty_job_summaries() -> list["RancherJobSummary"]:
@@ -63,7 +63,7 @@ class RancherJobSummary(RancherModel):
     failed_terminal: bool | None = None
 
 
-class RancherJobDetail(RancherJobSummary):
+class RancherJobDetail(RancherJobSummary, RancherClusterScopedDetail):
     """Typed detail for one Kubernetes Job."""
 
     container_images: list[str] = Field(default_factory=list)
@@ -121,7 +121,7 @@ class RancherCronJobSummary(RancherModel):
     active_job_count: int = 0
 
 
-class RancherCronJobDetail(RancherCronJobSummary):
+class RancherCronJobDetail(RancherCronJobSummary, RancherClusterScopedDetail):
     """Typed detail for one Kubernetes CronJob."""
 
     container_images: list[str] = Field(default_factory=list)

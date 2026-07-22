@@ -13,7 +13,7 @@ legacy Rancher alerting system).
 
 from pydantic import AliasPath, Field
 
-from rancher_mcp.models.base import RancherModel
+from rancher_mcp.models.base import RancherClusterScopedDetail, RancherModel
 
 
 def _empty_prometheus_rule_summaries() -> list["RancherPrometheusRuleSummary"]:
@@ -56,7 +56,7 @@ class RancherPrometheusRuleSummary(_PrometheusOperatorBase):
     recording_count: int = 0
 
 
-class RancherPrometheusRuleDetail(RancherPrometheusRuleSummary):
+class RancherPrometheusRuleDetail(RancherPrometheusRuleSummary, RancherClusterScopedDetail):
     """Typed detail for one PrometheusRule."""
 
     group_names: list[str] = Field(default_factory=list)
@@ -96,7 +96,7 @@ class RancherServiceMonitorSummary(_PrometheusOperatorBase):
     )
 
 
-class RancherServiceMonitorDetail(RancherServiceMonitorSummary):
+class RancherServiceMonitorDetail(RancherServiceMonitorSummary, RancherClusterScopedDetail):
     """Typed detail for one ServiceMonitor."""
 
     endpoint_ports: list[str] = Field(default_factory=list)
@@ -135,7 +135,7 @@ class RancherPodMonitorSummary(_PrometheusOperatorBase):
     )
 
 
-class RancherPodMonitorDetail(RancherPodMonitorSummary):
+class RancherPodMonitorDetail(RancherPodMonitorSummary, RancherClusterScopedDetail):
     """Typed detail for one PodMonitor."""
 
     endpoint_ports: list[str] = Field(default_factory=list)

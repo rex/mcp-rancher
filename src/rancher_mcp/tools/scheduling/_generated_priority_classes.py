@@ -140,6 +140,7 @@ async def _fetch_priority_class_get(
             "description": summary.description,
             "annotation_keys": sorted(string_dict(metadata_annotations)),
             "payload": dict(payload),
+            "cluster_id": cluster_id,
             "suggested_next_steps": ["rancher_priority_classes_list", "rancher_pods_list"],
         }
     )

@@ -2,7 +2,7 @@
 
 from pydantic import AliasPath, Field
 
-from rancher_mcp.models.base import RancherModel
+from rancher_mcp.models.base import RancherClusterScopedDetail, RancherModel
 
 
 def _empty_ingress_summaries() -> list["RancherIngressSummary"]:
@@ -42,7 +42,7 @@ class RancherIngressSummary(RancherModel):
     load_balancer_addresses: list[str] = Field(default_factory=list)
 
 
-class RancherIngressDetail(RancherIngressSummary):
+class RancherIngressDetail(RancherIngressSummary, RancherClusterScopedDetail):
     """Typed detail for one Kubernetes Ingress."""
 
     annotation_keys: list[str] = Field(default_factory=list)
@@ -86,7 +86,7 @@ class RancherNetworkPolicySummary(RancherModel):
     egress_rule_count: int = 0
 
 
-class RancherNetworkPolicyDetail(RancherNetworkPolicySummary):
+class RancherNetworkPolicyDetail(RancherNetworkPolicySummary, RancherClusterScopedDetail):
     """Typed detail for one Kubernetes NetworkPolicy."""
 
     annotation_keys: list[str] = Field(default_factory=list)
@@ -134,7 +134,7 @@ class RancherEndpointSliceSummary(RancherModel):
     ready_endpoint_count: int = 0
 
 
-class RancherEndpointSliceDetail(RancherEndpointSliceSummary):
+class RancherEndpointSliceDetail(RancherEndpointSliceSummary, RancherClusterScopedDetail):
     """Typed detail for one Kubernetes EndpointSlice."""
 
     annotation_keys: list[str] = Field(default_factory=list)

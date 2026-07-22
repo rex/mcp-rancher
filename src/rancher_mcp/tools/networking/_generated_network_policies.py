@@ -131,6 +131,7 @@ async def _fetch_network_policy_get(
             "egress_rule_count": summary.egress_rule_count,
             "annotation_keys": sorted(string_dict(metadata_annotations)),
             "payload": dict(payload),
+            "cluster_id": cluster_id,
             "suggested_next_steps": ["rancher_network_policies_list", "rancher_pods_list"],
         }
     )

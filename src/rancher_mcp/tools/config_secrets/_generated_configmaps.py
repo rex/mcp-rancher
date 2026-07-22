@@ -134,6 +134,7 @@ async def _fetch_config_map_get(
             "data_keys": sorted(string_dict(data_dict)),
             "binary_data_keys": sorted(string_dict(binary_data_dict)),
             "payload": dict(payload),
+            "cluster_id": cluster_id,
             "suggested_next_steps": ["rancher_config_maps_list", "rancher_pods_list"],
         }
     )
@@ -208,6 +209,7 @@ async def _create_config_map(
             "data_keys": sorted(string_dict(data_dict)),
             "binary_data_keys": sorted(string_dict(binary_data_dict)),
             "payload": dict(payload),
+            "cluster_id": cluster_id,
             "suggested_next_steps": ["rancher_config_map_get", "rancher_pods_list"],
         }
     )
@@ -304,6 +306,7 @@ async def _apply_config_map(
             "data_keys": sorted(string_dict(data_dict)),
             "binary_data_keys": sorted(string_dict(binary_data_dict)),
             "payload": dict(payload),
+            "cluster_id": cluster_id,
             "suggested_next_steps": ["rancher_config_map_get", "rancher_pods_list"],
         }
     )

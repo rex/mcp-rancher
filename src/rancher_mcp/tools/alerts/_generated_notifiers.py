@@ -37,6 +37,7 @@ async def _fetch_notifiers_list(
     notifiers = [notifier_summary_from_payload(item) for item in data_items(payload)]
     return RancherNotifierList(
         instance=instance_name,
+        cluster_id=cluster_id,
         notifier_count=len(notifiers),
         applied_query_params=query_params,
         notifiers=notifiers,

@@ -50,6 +50,7 @@ async def _fetch_cluster_registration_tokens_list(
     ]
     return RancherClusterRegistrationTokenList(
         instance=instance_name,
+        cluster_id=cluster_id,
         cluster_registration_token_count=len(cluster_registration_tokens),
         applied_query_params=query_params,
         cluster_registration_tokens=cluster_registration_tokens,
