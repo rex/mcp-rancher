@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/rex-mcp-rancher-badge.png)](https://mseep.ai/app/rex-mcp-rancher)
+
 <!-- mcp-name: io.github.rex/rancher-mcp -->
 
 <p align="center">
