@@ -1,5 +1,29 @@
 # Changelog
 
+## [1.53.1] — 2026-08-22 — Agent: Claude
+### Changed
+- **Offline protocol references**, so design decisions stop resting on recalled
+  or re-fetched material:
+  - `docs/reference/mcp-spec.md` — the **2026-07-28** specification (current,
+    final), with provenance for every source and a corrections section.
+  - `docs/reference/python-mcp-sdk.md` — the Python SDK as it exists now, with
+    every claim about our installed 1.26.0 grounded in the actual installed
+    source rather than docs, and lower-confidence v2 material flagged as such.
+
+  Two findings from that pass are load-bearing for planned work and are
+  recorded here so they are not rediscovered later:
+  - **`2026-07-28` removed the `initialize` handshake.** The spec now splits
+    implementations into *legacy* (`2025-11-25` and earlier, handshake +
+    sessions) and *modern* (per-request `_meta`, stateless, `server/discover`
+    MUST-implement). Our SDK 1.26.0 reports `LATEST_PROTOCOL_VERSION =
+    2025-11-25` and contains none of the modern constructs, so we are a legacy
+    server; the spec's compatibility matrix rates modern-client/legacy-server
+    as a hard failure. `mcp` 2.0.0 (released 2026-07-28) implements the modern
+    revision and renames `FastMCP` → `MCPServer`.
+  - **The Tasks extension is being removed, not stabilized** — deprecated in
+    SDK 1.28.0 after SEP-1686 was pulled from the spec, and absent from 2.0.0.
+    Nothing should be designed around it.
+
 ## [1.53.0] — 2026-07-22 — Agent: Claude
 ### Fixed
 - **A latent cross-module leak that could make the alias-uniformity gate cry
