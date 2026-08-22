@@ -42,14 +42,32 @@ from rancher_mcp.server import register_all_tools
 # Budgets. Lower freely; raise only deliberately, with justification.
 # ---------------------------------------------------------------------------
 
-MAX_TOTAL_BYTES = 800_000
-"""Whole `tools/list` payload. Baseline 2026-08-22: 800,548 B."""
+MAX_TOTAL_BYTES = 555_000
+"""Whole `tools/list` payload — the number that actually matters.
 
-MAX_MEAN_BYTES_PER_TOOL = 2_600
-"""Mean per-tool cost. Baseline 2026-08-22: 2,493 B (~605 tokens)."""
+History: 800,548 B over 321 tools (2026-08-22, first measurement) →
+547,866 B over 206 tools after collapsing the 118 mechanical
+`set_labels`/`set_annotations`/`delete` duplicates into 3 kind-dispatched tools.
+"""
+
+MAX_MEAN_BYTES_PER_TOOL = 2_750
+"""Mean per-tool cost. Baseline 2,493 B over 321 tools → 2,658 B over 206.
+
+READ THIS BEFORE REACTING TO A FAILURE HERE. The mean has a perverse property:
+consolidating away CHEAP duplicates raises it, because the removed tools were
+below the old mean (the 118 collapsed ones averaged ~2,240 B against a fleet
+mean of 2,493 B). A rising mean is therefore ambiguous on its own — it is a
+regression only if `MAX_TOTAL_BYTES` did not fall at the same time.
+
+Interpret the two together:
+    total DOWN, mean UP    → consolidation worked; re-baseline the mean.
+    total FLAT, mean UP    → tool count is shrinking while survivors fatten.
+                             This is the case worth investigating.
+    total UP,   mean UP    → the surface is growing. Justify it.
+"""
 
 MAX_SINGLE_TOOL_BYTES = 7_000
-"""No single tool should dominate. Baseline worst: 6,266 B (cluster_get)."""
+"""No single tool should dominate. Baseline worst: 6,310 B (cluster_get)."""
 
 HOST_INSTRUCTIONS_BUDGET_BYTES = 2_000
 """Claude Code truncates server `instructions` past roughly this."""
@@ -133,9 +151,13 @@ def test_tools_list_payload_stays_within_budget() -> None:
 
 
 def test_mean_cost_per_tool_stays_within_budget() -> None:
-    """Guards the OTHER axis. Total bytes can be held flat by deleting tools
+    """Guards the OTHER axis: total bytes can be held flat by deleting tools
     while each surviving tool quietly gets fatter, which is how a surface rots
-    without tripping a total-size check."""
+    without tripping a total-size check.
+
+    See `MAX_MEAN_BYTES_PER_TOOL` for why a rise here is ambiguous in isolation
+    and must be read alongside the total.
+    """
 
     mcp = _build()
     tools = mcp._tool_manager.list_tools()

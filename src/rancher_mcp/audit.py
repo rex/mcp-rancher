@@ -43,6 +43,13 @@ class AuditEntry(BaseModel):
     instance: str | None = None
     schema_id: str | None = None
     resource_id: str | None = None
+    resource_kind: str | None = None
+    """The resource family acted on (e.g. ``pod``, ``deployment``) — only
+    ever populated for the collapsed generic resource-kind tools
+    (`tools/resource_kinds/`), whose ``resource_kind`` kwarg is the sole
+    signal in the call itself for which of many kinds a single tool name
+    now covers. Absent (``None``) for every per-resource tool, whose own
+    ``tool_name`` already encodes the kind."""
     cluster_id: str | None = None
     namespace: str | None = None
     arg_keys: list[str] = Field(default_factory=list)
@@ -81,7 +88,16 @@ def _build_entry_kwargs(
         "plane": plane,
         "instance": kwargs.get("instance"),
         "schema_id": kwargs.get("schema_id"),
-        "resource_id": kwargs.get("resource_id"),
+        # `name` fallback: the collapsed resource-kind tools (and every
+        # curated per-resource tool before them) identify the target
+        # object via a `name`-shaped kwarg (`name` itself, or historically
+        # `pod_name` / `service_name` / ... — never `resource_id`, which
+        # only the schema_id-driven generic escape-hatch tools use). A
+        # bare `kwargs.get("resource_id")` was always None for every
+        # curated tool; this restores an identifying value for the ones
+        # that use the now-uniform `name` argument (F2).
+        "resource_id": kwargs.get("resource_id") or kwargs.get("name"),
+        "resource_kind": kwargs.get("resource_kind"),
         "cluster_id": kwargs.get("cluster_id"),
         "namespace": kwargs.get("namespace"),
         "arg_keys": sorted(kwargs.keys()),

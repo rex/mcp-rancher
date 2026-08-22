@@ -8,47 +8,29 @@
 from mcp.server.fastmcp import FastMCP
 
 from rancher_mcp.tools.batch_workloads._generated_cron_jobs import (
-    rancher_cron_job_delete,
-    rancher_cron_job_delete_tool,
     rancher_cron_job_get,
     rancher_cron_job_get_tool,
     rancher_cron_job_resume,
     rancher_cron_job_resume_tool,
-    rancher_cron_job_set_annotations,
-    rancher_cron_job_set_annotations_tool,
-    rancher_cron_job_set_labels,
-    rancher_cron_job_set_labels_tool,
     rancher_cron_job_suspend,
     rancher_cron_job_suspend_tool,
     rancher_cron_jobs_list,
     rancher_cron_jobs_list_tool,
 )
 from rancher_mcp.tools.batch_workloads._generated_jobs import (
-    rancher_job_delete,
-    rancher_job_delete_tool,
     rancher_job_get,
     rancher_job_get_tool,
-    rancher_job_set_annotations,
-    rancher_job_set_annotations_tool,
-    rancher_job_set_labels,
-    rancher_job_set_labels_tool,
     rancher_jobs_list,
     rancher_jobs_list_tool,
 )
-from rancher_mcp.tools.support.annotations import DESTRUCTIVE, IDEMPOTENT_WRITE, READ_ONLY
+from rancher_mcp.tools.support.annotations import IDEMPOTENT_WRITE, READ_ONLY
 
 __all__ = [
-    "rancher_cron_job_delete",
     "rancher_cron_job_get",
     "rancher_cron_job_resume",
-    "rancher_cron_job_set_annotations",
-    "rancher_cron_job_set_labels",
     "rancher_cron_job_suspend",
     "rancher_cron_jobs_list",
-    "rancher_job_delete",
     "rancher_job_get",
-    "rancher_job_set_annotations",
-    "rancher_job_set_labels",
     "rancher_jobs_list",
     "register_batch_workloads_tools",
 ]
@@ -59,25 +41,11 @@ def register_batch_workloads_tools(mcp: FastMCP) -> None:
 
     mcp.tool(name="rancher_cron_jobs_list", annotations=READ_ONLY)(rancher_cron_jobs_list_tool)
     mcp.tool(name="rancher_cron_job_get", annotations=READ_ONLY)(rancher_cron_job_get_tool)
-    mcp.tool(name="rancher_cron_job_delete", annotations=DESTRUCTIVE)(rancher_cron_job_delete_tool)
     mcp.tool(name="rancher_cron_job_suspend", annotations=IDEMPOTENT_WRITE)(
         rancher_cron_job_suspend_tool
-    )
-    mcp.tool(name="rancher_cron_job_set_labels", annotations=IDEMPOTENT_WRITE)(
-        rancher_cron_job_set_labels_tool
-    )
-    mcp.tool(name="rancher_cron_job_set_annotations", annotations=IDEMPOTENT_WRITE)(
-        rancher_cron_job_set_annotations_tool
     )
     mcp.tool(name="rancher_cron_job_resume", annotations=IDEMPOTENT_WRITE)(
         rancher_cron_job_resume_tool
     )
     mcp.tool(name="rancher_jobs_list", annotations=READ_ONLY)(rancher_jobs_list_tool)
     mcp.tool(name="rancher_job_get", annotations=READ_ONLY)(rancher_job_get_tool)
-    mcp.tool(name="rancher_job_delete", annotations=DESTRUCTIVE)(rancher_job_delete_tool)
-    mcp.tool(name="rancher_job_set_labels", annotations=IDEMPOTENT_WRITE)(
-        rancher_job_set_labels_tool
-    )
-    mcp.tool(name="rancher_job_set_annotations", annotations=IDEMPOTENT_WRITE)(
-        rancher_job_set_annotations_tool
-    )

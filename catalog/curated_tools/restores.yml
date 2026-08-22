@@ -30,29 +30,7 @@ summary_function: restore_summary_from_payload
 query_builder_function: build_list_query_params
 query_builder_in_shared: true
 
-operations: [list, get, patch]
-
-patches:
-  - verb: set_labels
-    target_path: metadata
-    audit_operation: restore_set_labels
-    args:
-      - name: labels
-        type: dict_str_str
-        required: true
-        description: Replacement metadata.labels map (merge-patch semantics — passing this REPLACES the labels map; pass an empty dict to remove all labels).
-    next_steps:
-      - rancher_restore_get
-  - verb: set_annotations
-    target_path: metadata
-    audit_operation: restore_set_annotations
-    args:
-      - name: annotations
-        type: dict_str_str
-        required: true
-        description: Replacement metadata.annotations map (merge-patch semantics).
-    next_steps:
-      - rancher_restore_get
+operations: [list, get]
 
 list:
   query_params: [limit, continue_token]
@@ -85,6 +63,10 @@ get:
     - rancher_restores_list
     - rancher_backups_list
 
+generic_kind:
+  labels: true
+  annotations: true
+
 tools:
   list:
     name: rancher_restores_list
@@ -94,10 +76,3 @@ tools:
     name: rancher_restore_get
     description: Fetch one Rancher Backup Operator Restore by name. Returns the curated summary plus storage location, condition states, annotation keys, and full payload.
     annotation_set: READ_ONLY
-  patches:
-    - name: rancher_restore_set_labels
-      description: Replace metadata.labels on one Restore (cluster-scoped) via JSON merge-patch. The `labels` arg is a complete replacement map. Returns the curated detail.
-      annotation_set: IDEMPOTENT_WRITE
-    - name: rancher_restore_set_annotations
-      description: Replace metadata.annotations on one Kubernetes Restore via JSON merge-patch. Returns the curated detail.
-      annotation_set: IDEMPOTENT_WRITE

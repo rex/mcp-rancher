@@ -24,7 +24,7 @@ shared_imports:
 summary_function: service_summary_from_payload
 
 # Operations
-operations: [list, get, delete, patch]
+operations: [list, get, patch]
 
 list:
   query_params: [limit, continue_token, label_selector]
@@ -52,34 +52,7 @@ get:
     - rancher_services_list
     - rancher_pods_list
 
-delete:
-  audit_operation: service_delete
-  confirmation_phrase: "delete service {service_name} in namespace {namespace}"
-  next_steps:
-    - rancher_services_list
-
 patches:
-  - verb: set_labels
-    target_path: metadata
-    audit_operation: service_set_labels
-    args:
-      - name: labels
-        type: dict_str_str
-        required: true
-        description: Replacement metadata.labels map (merge-patch semantics — passing this REPLACES the labels map; pass an empty dict to remove all labels).
-    next_steps:
-      - rancher_service_get
-      - rancher_services_list
-  - verb: set_annotations
-    target_path: metadata
-    audit_operation: service_set_annotations
-    args:
-      - name: annotations
-        type: dict_str_str
-        required: true
-        description: Replacement metadata.annotations map (merge-patch semantics — passing this REPLACES the annotations map; pass an empty dict to remove all annotations).
-    next_steps:
-      - rancher_service_get
   - verb: set_type
     target_path: spec
     audit_operation: service_set_type
@@ -91,6 +64,11 @@ patches:
     next_steps:
       - rancher_service_get
 
+generic_kind:
+  labels: true
+  annotations: true
+  delete: true
+
 tools:
   list:
     name: rancher_services_list
@@ -100,17 +78,7 @@ tools:
     name: rancher_service_get
     description: Fetch one service by namespace and name. Returns the curated summary plus relationships, ports, link keys, and full payload.
     annotation_set: READ_ONLY
-  delete:
-    name: rancher_service_delete
-    description: Delete one Kubernetes Service. The `confirmation` arg must equal the exact phrase "delete service NAME in namespace NS" (substituting the actual values). Returns a typed delete result with the rendered confirmation phrase. Subject to write rate limiting and audit logging.
-    annotation_set: DESTRUCTIVE
   patches:
-    - name: rancher_service_set_labels
-      description: Replace metadata.labels on one Kubernetes Service via JSON merge-patch. The `labels` arg is a complete replacement map. Returns the curated detail.
-      annotation_set: IDEMPOTENT_WRITE
-    - name: rancher_service_set_annotations
-      description: Replace metadata.annotations on one Kubernetes Service via JSON merge-patch. The `annotations` arg is a complete replacement map. Returns the curated detail.
-      annotation_set: IDEMPOTENT_WRITE
     - name: rancher_service_set_type
       description: "Set the spec.type on one Kubernetes Service via JSON merge-patch. Body is `{spec: {type: <value>}}`. Returns curated detail."
       annotation_set: IDEMPOTENT_WRITE

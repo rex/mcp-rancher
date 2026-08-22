@@ -1,0 +1,124 @@
+"""Closed resource-kind registry for the collapsed generic mutation tools.
+
+Every entry here comes from a `catalog/curated_tools/*.yml` descriptor that
+sets `generic_kind` — the routing info (namespaced-ness, plane, transport,
+and a path-building callable) the three hand-written dispatch tools
+(`rancher_mcp.tools.resource_kinds.mutations`) need to reach any of these
+resource families through one uniform `(resource_kind, name, cluster_id,
+namespace)` signature instead of a bespoke per-resource tool for each.
+
+`LabelableResourceKind` / `AnnotatableResourceKind` / `DeletableResourceKind`
+are the closed enums FastMCP publishes in each collapsed tool's JSON input
+schema — an invalid kind is rejected before the tool body ever runs, and a
+client can discover the valid set directly from the schema.
+"""
+
+from __future__ import annotations
+
+from collections.abc import Callable
+from dataclasses import dataclass
+from typing import Literal
+
+{% for module, alias in imports -%}
+import {{ module }} as {{ alias }}
+{% endfor %}
+
+{% for e in entries -%}
+def _detail_path_{{ e.descriptor_id }}(cluster_id: str, namespace: str | None, name: str) -> str:
+    """Build the detail path for one {{ e.kind }} (resource_kind={{ e.kind|python_literal }})."""
+
+    {% if e.namespaced -%}
+    if namespace is None:
+        # Unreachable through the public dispatch tools (`tools/resource_kinds/
+        # shared.py::resolve_namespace` refuses a namespaced kind with no
+        # namespace before this is ever called) — this narrows `namespace`
+        # to `str` for type-checking and is a defensive backstop against a
+        # direct call bypassing that guard.
+        raise ValueError("{{ e.kind }} requires namespace")
+    {% endif -%}
+    {% if e.steve_template is not none -%}
+    return f"{{ e.steve_template }}"
+    {%- else -%}
+    return {{ e.path_helper_module_alias }}.{{ e.path_helper_detail_function }}(
+        cluster_id,
+        {%- if e.namespaced %}
+        namespace,
+        {%- endif %}
+        {%- if e.path_helper_resource_kind %}
+        {{ e.path_helper_resource_kind|python_literal }},
+        {%- endif %}
+        name,
+    )
+    {%- endif %}
+
+
+{% endfor -%}
+@dataclass(frozen=True, slots=True)
+class ResourceKindSpec:
+    """Routing info for one resource kind, as seen by the collapsed tools."""
+
+    kind: str
+    namespaced: bool
+    plane: str
+    transport: str
+    get_tool: str
+    """Registered tool name for this kind's own curated get — used to build
+    `RancherMutationReceipt.suggested_next_steps`."""
+    list_tool: str
+    """Registered tool name for this kind's own curated list — same use."""
+    supports_labels: bool
+    supports_annotations: bool
+    supports_delete: bool
+    detail_path: Callable[[str, str | None, str], str]
+    """`(cluster_id, namespace, name) -> resource detail path`. `namespace`
+    is accepted uniformly but only consulted when `namespaced` is True."""
+
+
+RESOURCE_KIND_REGISTRY: dict[str, ResourceKindSpec] = {
+{% for e in entries -%}
+    {{ e.kind|python_literal }}: ResourceKindSpec(
+        kind={{ e.kind|python_literal }},
+        namespaced={{ e.namespaced }},
+        plane={{ e.plane|python_literal }},
+        transport={{ e.transport|python_literal }},
+        get_tool={{ e.get_tool|python_literal }},
+        list_tool={{ e.list_tool|python_literal }},
+        supports_labels={{ e.supports_labels }},
+        supports_annotations={{ e.supports_annotations }},
+        supports_delete={{ e.supports_delete }},
+        detail_path=_detail_path_{{ e.descriptor_id }},
+    ),
+{% endfor -%}
+}
+
+LabelableResourceKind = Literal[
+{% for kind in labelable_kinds -%}
+    {{ kind|python_literal }},
+{% endfor -%}
+]
+AnnotatableResourceKind = Literal[
+{% for kind in annotatable_kinds -%}
+    {{ kind|python_literal }},
+{% endfor -%}
+]
+DeletableResourceKind = Literal[
+{% for kind in deletable_kinds -%}
+    {{ kind|python_literal }},
+{% endfor -%}
+]
+
+LABELABLE_RESOURCE_KINDS: tuple[str, ...] = (
+{% for kind in labelable_kinds -%}
+    {{ kind|python_literal }},
+{% endfor -%}
+)
+ANNOTATABLE_RESOURCE_KINDS: tuple[str, ...] = (
+{% for kind in annotatable_kinds -%}
+    {{ kind|python_literal }},
+{% endfor -%}
+)
+DELETABLE_RESOURCE_KINDS: tuple[str, ...] = (
+{% for kind in deletable_kinds -%}
+    {{ kind|python_literal }},
+{% endfor -%}
+)

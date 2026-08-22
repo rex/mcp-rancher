@@ -1,4 +1,4 @@
-"""Curated Deployment tool tests (delete + pause/resume + restart)."""
+"""Curated Deployment tool tests (pause/resume + restart)."""
 
 from __future__ import annotations
 
@@ -6,108 +6,12 @@ import pytest
 from _workloads_support import build_settings
 from structlog.testing import capture_logs
 
-from rancher_mcp.exceptions import RancherCapabilityError
 from rancher_mcp.rate_limit import reset_rate_limit_state
 from rancher_mcp.tools.workloads import (
-    rancher_deployment_delete,
     rancher_deployment_pause,
     rancher_deployment_restart,
     rancher_deployment_resume,
 )
-
-# =====================================================================
-# rancher_deployment_delete (DESTRUCTIVE substrate on a 2nd resource)
-# =====================================================================
-
-
-class StubDeploymentDeleteClient:
-    """Delete-capable stub for the Deployment delete tests."""
-
-    def __init__(self) -> None:
-        self.last_delete_path: str | None = None
-
-    async def get_json(self, path: str, params: object = None) -> dict[str, object]:
-        raise AssertionError(f"unexpected get on {path!r}")
-
-    async def delete_json(
-        self,
-        path: str,
-        payload: dict[str, object] | None = None,
-        params: object = None,
-    ) -> dict[str, object]:
-        del payload
-        self.last_delete_path = path
-
-        detail = (
-            "/k8s/clusters/venue-local/apis/apps/v1/namespaces/"
-            "cattle-system/deployments/cattle-cluster-agent"
-        )
-        if path == detail:
-            assert params is None
-            return {
-                "kind": "Status",
-                "apiVersion": "v1",
-                "status": "Success",
-                "details": {"name": "cattle-cluster-agent", "kind": "deployments"},
-            }
-        raise AssertionError(f"unexpected delete path {path!r}")
-
-
-@pytest.mark.asyncio
-async def test_rancher_deployment_delete_requires_phrase_with_substituted_values() -> None:
-    """Delete substrate generalizes — same confirmation-phrase guard pattern.
-
-    The phrase template `delete deployment {deployment_name} in
-    namespace {namespace}` renders into the actual values at codegen
-    time; agents must echo the rendered version.
-    """
-
-    reset_rate_limit_state()
-    client = StubDeploymentDeleteClient()
-
-    with pytest.raises(RancherCapabilityError) as excinfo:
-        await rancher_deployment_delete(
-            namespace="cattle-system",
-            deployment_name="cattle-cluster-agent",
-            confirmation="wrong",
-            cluster_id="venue-local",
-            instance="work",
-            settings=build_settings(),
-            client=client,
-        )
-
-    assert "delete deployment cattle-cluster-agent in namespace cattle-system" in str(excinfo.value)
-    assert client.last_delete_path is None
-
-
-@pytest.mark.asyncio
-async def test_rancher_deployment_delete_with_correct_phrase_succeeds() -> None:
-    """Correct phrase routes to delete_json on the deployment detail path."""
-
-    reset_rate_limit_state()
-    client = StubDeploymentDeleteClient()
-
-    result = await rancher_deployment_delete(
-        namespace="cattle-system",
-        deployment_name="cattle-cluster-agent",
-        confirmation="delete deployment cattle-cluster-agent in namespace cattle-system",
-        cluster_id="venue-local",
-        instance="work",
-        settings=build_settings(),
-        client=client,
-    )
-
-    assert client.last_delete_path == (
-        "/k8s/clusters/venue-local/apis/apps/v1/namespaces/"
-        "cattle-system/deployments/cattle-cluster-agent"
-    )
-    assert result.deleted is True
-    assert result.resource_kind == "deployment"
-    assert result.resource_name == "cattle-cluster-agent"
-    assert result.namespace == "cattle-system"
-    assert result.cluster_id == "venue-local"
-    assert result.suggested_next_steps == ["rancher_deployments_list"]
-
 
 # =====================================================================
 # rancher_deployment_pause / rancher_deployment_resume (argless toggles)

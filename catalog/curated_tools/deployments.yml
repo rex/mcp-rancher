@@ -25,7 +25,7 @@ support_value_imports:
   - string_dict
 summary_function: deployment_summary_from_payload
 
-operations: [list, get, patch, delete]
+operations: [list, get, patch]
 
 list:
   query_params: [limit, continue_token, label_selector, field_selector]
@@ -76,27 +76,6 @@ patches:
     next_steps:
       - rancher_deployment_get
       - rancher_pods_list
-  - verb: set_labels
-    target_path: metadata
-    audit_operation: deployment_set_labels
-    args:
-      - name: labels
-        type: dict_str_str
-        required: true
-        description: Replacement metadata.labels map (merge-patch semantics — passing this REPLACES the labels map; pass an empty dict to remove all labels).
-    next_steps:
-      - rancher_deployment_get
-      - rancher_pods_list
-  - verb: set_annotations
-    target_path: metadata
-    audit_operation: deployment_set_annotations
-    args:
-      - name: annotations
-        type: dict_str_str
-        required: true
-        description: Replacement metadata.annotations map (merge-patch semantics).
-    next_steps:
-      - rancher_deployment_get
   - verb: pause
     target_path: spec
     target_value:
@@ -121,11 +100,10 @@ patches:
       - rancher_deployment_get
       - rancher_pods_list
 
-delete:
-  audit_operation: deployment_delete
-  confirmation_phrase: "delete deployment {deployment_name} in namespace {namespace}"
-  next_steps:
-    - rancher_deployments_list
+generic_kind:
+  labels: true
+  annotations: true
+  delete: true
 
 tools:
   list:
@@ -140,12 +118,6 @@ tools:
     - name: rancher_deployment_scale
       description: Scale one Kubernetes Deployment to a target `replicas` count via JSON merge-patch on `spec.replicas`. Returns the curated detail of the patched resource. Subject to write rate limiting and audit logging.
       annotation_set: IDEMPOTENT_WRITE
-    - name: rancher_deployment_set_labels
-      description: Replace metadata.labels on one Kubernetes Deployment via JSON merge-patch. The `labels` arg is a complete replacement map. Returns the curated detail.
-      annotation_set: IDEMPOTENT_WRITE
-    - name: rancher_deployment_set_annotations
-      description: Replace metadata.annotations on one Kubernetes Deployment via JSON merge-patch. Returns the curated detail.
-      annotation_set: IDEMPOTENT_WRITE
     - name: rancher_deployment_pause
       description: Pause a Deployment rollout by setting spec.paused=true via JSON merge-patch. Argless toggle. Returns the curated detail.
       annotation_set: IDEMPOTENT_WRITE
@@ -155,7 +127,3 @@ tools:
     - name: rancher_deployment_restart
       description: Trigger a Deployment rolling restart by patching spec.template.metadata.annotations.kubectl.kubernetes.io/restartedAt to the current UTC time. Same convention as `kubectl rollout restart`. Returns the curated detail.
       annotation_set: IDEMPOTENT_WRITE
-  delete:
-    name: rancher_deployment_delete
-    description: Delete one Kubernetes Deployment. The `confirmation` arg must equal the exact phrase "delete deployment NAME in namespace NS" (substituting the actual values). Returns a typed delete result with the rendered confirmation phrase. Subject to write rate limiting and audit logging.
-    annotation_set: DESTRUCTIVE

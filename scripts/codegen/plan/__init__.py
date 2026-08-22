@@ -32,6 +32,12 @@ from .helpers import (
     qp_type,
     split_model_path,
 )
+from .kinds import (
+    KindEntry,
+    KindRegistryContext,
+    build_kind_entries,
+    build_kind_registry_context,
+)
 from .module import ModuleContext, build_module_context
 from .pack import (
     ImportEntry,
@@ -45,10 +51,14 @@ __all__ = [
     "QP_KWARGS",
     "QP_TYPES",
     "ImportEntry",
+    "KindEntry",
+    "KindRegistryContext",
     "ModuleContext",
     "PackContext",
     "RegistrationEntry",
     "arg_python_type",
+    "build_kind_entries",
+    "build_kind_registry_context",
     "build_module_context",
     "build_pack_contexts",
     "qp_kwarg",

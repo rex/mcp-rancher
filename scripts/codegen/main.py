@@ -18,9 +18,9 @@ from scripts.codegen.descriptor import (
     load_all_descriptors,
     load_all_pack_descriptors,
 )
-from scripts.codegen.emitter import emit_pack, make_environment
+from scripts.codegen.emitter import emit_pack, emit_resource_kind_registry, make_environment
 from scripts.codegen.formatter import format_files
-from scripts.codegen.plan import build_pack_contexts
+from scripts.codegen.plan import build_kind_registry_context, build_pack_contexts
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DESCRIPTORS_DIR = REPO_ROOT / "catalog" / "curated_tools"
@@ -61,6 +61,12 @@ def main() -> int:
     written: list[Path] = []
     for pack_ctx in pack_contexts:
         written.extend(emit_pack(env, pack_ctx, SRC_ROOT))
+
+    # Cross-pack: the resource-kind registry spans every `generic_kind`
+    # descriptor regardless of --pack, so it is always rebuilt from the
+    # FULL descriptor list (not the possibly-filtered `pack_contexts`).
+    kind_ctx = build_kind_registry_context(descriptors)
+    written.append(emit_resource_kind_registry(env, kind_ctx, SRC_ROOT))
 
     format_files(written)
 

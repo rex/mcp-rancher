@@ -8,58 +8,31 @@
 from mcp.server.fastmcp import FastMCP
 
 from rancher_mcp.tools.prometheus_monitoring._generated_pod_monitors import (
-    rancher_pod_monitor_delete,
-    rancher_pod_monitor_delete_tool,
     rancher_pod_monitor_get,
     rancher_pod_monitor_get_tool,
-    rancher_pod_monitor_set_annotations,
-    rancher_pod_monitor_set_annotations_tool,
-    rancher_pod_monitor_set_labels,
-    rancher_pod_monitor_set_labels_tool,
     rancher_pod_monitors_list,
     rancher_pod_monitors_list_tool,
 )
 from rancher_mcp.tools.prometheus_monitoring._generated_prometheus_rules import (
-    rancher_prometheus_rule_delete,
-    rancher_prometheus_rule_delete_tool,
     rancher_prometheus_rule_get,
     rancher_prometheus_rule_get_tool,
-    rancher_prometheus_rule_set_annotations,
-    rancher_prometheus_rule_set_annotations_tool,
-    rancher_prometheus_rule_set_labels,
-    rancher_prometheus_rule_set_labels_tool,
     rancher_prometheus_rules_list,
     rancher_prometheus_rules_list_tool,
 )
 from rancher_mcp.tools.prometheus_monitoring._generated_service_monitors import (
-    rancher_service_monitor_delete,
-    rancher_service_monitor_delete_tool,
     rancher_service_monitor_get,
     rancher_service_monitor_get_tool,
-    rancher_service_monitor_set_annotations,
-    rancher_service_monitor_set_annotations_tool,
-    rancher_service_monitor_set_labels,
-    rancher_service_monitor_set_labels_tool,
     rancher_service_monitors_list,
     rancher_service_monitors_list_tool,
 )
-from rancher_mcp.tools.support.annotations import DESTRUCTIVE, IDEMPOTENT_WRITE, READ_ONLY
+from rancher_mcp.tools.support.annotations import READ_ONLY
 
 __all__ = [
-    "rancher_pod_monitor_delete",
     "rancher_pod_monitor_get",
-    "rancher_pod_monitor_set_annotations",
-    "rancher_pod_monitor_set_labels",
     "rancher_pod_monitors_list",
-    "rancher_prometheus_rule_delete",
     "rancher_prometheus_rule_get",
-    "rancher_prometheus_rule_set_annotations",
-    "rancher_prometheus_rule_set_labels",
     "rancher_prometheus_rules_list",
-    "rancher_service_monitor_delete",
     "rancher_service_monitor_get",
-    "rancher_service_monitor_set_annotations",
-    "rancher_service_monitor_set_labels",
     "rancher_service_monitors_list",
     "register_prometheus_monitoring_tools",
 ]
@@ -72,42 +45,15 @@ def register_prometheus_monitoring_tools(mcp: FastMCP) -> None:
         rancher_pod_monitors_list_tool
     )
     mcp.tool(name="rancher_pod_monitor_get", annotations=READ_ONLY)(rancher_pod_monitor_get_tool)
-    mcp.tool(name="rancher_pod_monitor_delete", annotations=DESTRUCTIVE)(
-        rancher_pod_monitor_delete_tool
-    )
-    mcp.tool(name="rancher_pod_monitor_set_labels", annotations=IDEMPOTENT_WRITE)(
-        rancher_pod_monitor_set_labels_tool
-    )
-    mcp.tool(name="rancher_pod_monitor_set_annotations", annotations=IDEMPOTENT_WRITE)(
-        rancher_pod_monitor_set_annotations_tool
-    )
     mcp.tool(name="rancher_prometheus_rules_list", annotations=READ_ONLY)(
         rancher_prometheus_rules_list_tool
     )
     mcp.tool(name="rancher_prometheus_rule_get", annotations=READ_ONLY)(
         rancher_prometheus_rule_get_tool
     )
-    mcp.tool(name="rancher_prometheus_rule_delete", annotations=DESTRUCTIVE)(
-        rancher_prometheus_rule_delete_tool
-    )
-    mcp.tool(name="rancher_prometheus_rule_set_labels", annotations=IDEMPOTENT_WRITE)(
-        rancher_prometheus_rule_set_labels_tool
-    )
-    mcp.tool(name="rancher_prometheus_rule_set_annotations", annotations=IDEMPOTENT_WRITE)(
-        rancher_prometheus_rule_set_annotations_tool
-    )
     mcp.tool(name="rancher_service_monitors_list", annotations=READ_ONLY)(
         rancher_service_monitors_list_tool
     )
     mcp.tool(name="rancher_service_monitor_get", annotations=READ_ONLY)(
         rancher_service_monitor_get_tool
-    )
-    mcp.tool(name="rancher_service_monitor_delete", annotations=DESTRUCTIVE)(
-        rancher_service_monitor_delete_tool
-    )
-    mcp.tool(name="rancher_service_monitor_set_labels", annotations=IDEMPOTENT_WRITE)(
-        rancher_service_monitor_set_labels_tool
-    )
-    mcp.tool(name="rancher_service_monitor_set_annotations", annotations=IDEMPOTENT_WRITE)(
-        rancher_service_monitor_set_annotations_tool
     )

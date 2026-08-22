@@ -6,21 +6,14 @@
 
 from __future__ import annotations
 
-import time
-
-from rancher_mcp.audit import audit_mutation
 from rancher_mcp.clients.management import ManagementDiscoveryClient, RancherManagementClient
 from rancher_mcp.config import AppSettings, get_settings
-from rancher_mcp.exceptions import RancherCapabilityError
 from rancher_mcp.models.cert_manager import (
     RancherCertManagerCertificateDetail,
     RancherCertManagerCertificateList,
 )
-from rancher_mcp.models.resources import RancherCuratedDeleteResult, RancherMutationReceipt
-from rancher_mcp.rate_limit import rate_limit_writes
 from rancher_mcp.services.instances import resolve_instance
 from rancher_mcp.services.resources.builders_pagination import next_page_token_from_payload
-from rancher_mcp.services.safety import ensure_instance_writable
 from rancher_mcp.tools.cert_manager.paths import (
     cert_manager_namespaced_collection_path,
     cert_manager_namespaced_resource_path,
@@ -31,7 +24,6 @@ from rancher_mcp.tools.cert_manager.shared import (
     condition_types_true_from_payload,
     items,
 )
-from rancher_mcp.tools.support.mutations import fetch_patch_before
 from rancher_mcp.tools.support.values import mapping_value, string_dict
 
 
@@ -187,254 +179,6 @@ async def rancher_cert_manager_certificate_get(
         )
 
 
-async def _delete_cert_manager_certificate(
-    instance_name: str,
-    cluster_id: str,
-    namespace: str,
-    certificate_name: str,
-    confirmation_phrase_used: str,
-    client: ManagementDiscoveryClient,
-) -> RancherCuratedDeleteResult:
-    """Delete one cert_manager_certificate; returns a typed delete result."""
-
-    response_payload = await client.delete_json(
-        cert_manager_namespaced_resource_path(
-            cluster_id, namespace, "certificates", certificate_name
-        ),
-    )
-    return RancherCuratedDeleteResult(
-        instance=instance_name,
-        plane="steve",
-        resource_kind="cert_manager_certificate",
-        resource_name=certificate_name,
-        namespace=namespace,
-        cluster_id=cluster_id,
-        deleted=True,
-        confirmation_phrase_used=confirmation_phrase_used,
-        response_payload=dict(response_payload),
-        suggested_next_steps=["rancher_cert_manager_certificates_list"],
-    )
-
-
-@audit_mutation(operation="cert_manager_certificate_delete", plane="steve")
-@rate_limit_writes
-async def rancher_cert_manager_certificate_delete(
-    namespace: str,
-    certificate_name: str,
-    confirmation: str,
-    cluster_id: str = "local",
-    instance: str | None = None,
-    settings: AppSettings | None = None,
-    client: ManagementDiscoveryClient | None = None,
-) -> RancherCuratedDeleteResult:
-    """Delete one cert_manager_certificate after the agent echoes the required confirmation phrase."""
-
-    expected_phrase = f"delete cert_manager_certificate {certificate_name} in namespace {namespace}"
-    if confirmation != expected_phrase:
-        raise RancherCapabilityError(
-            f"Delete confirmation did not match the required phrase: {expected_phrase!r}"
-        )
-    resolved_settings = settings or get_settings()
-    instance_name, instance_config = resolve_instance(resolved_settings, instance)
-    ensure_instance_writable(instance_name, instance_config)
-    if client is not None:
-        return await _delete_cert_manager_certificate(
-            instance_name,
-            cluster_id,
-            namespace,
-            certificate_name,
-            expected_phrase,
-            client,
-        )
-    async with RancherManagementClient(instance_name, instance_config) as managed_client:
-        return await _delete_cert_manager_certificate(
-            instance_name,
-            cluster_id,
-            namespace,
-            certificate_name,
-            expected_phrase,
-            managed_client,
-        )
-
-
-async def _patch_cert_manager_certificate_set_labels(
-    instance_name: str,
-    cluster_id: str,
-    namespace: str,
-    certificate_name: str,
-    labels: dict[str, str],
-    client: ManagementDiscoveryClient,
-) -> RancherMutationReceipt:
-    """Set_labels one cert_manager_certificate via JSON merge-patch; returns a mutation receipt."""
-
-    patch_subtree: dict[str, object] = {}
-    patch_subtree["labels"] = labels
-    if not patch_subtree:
-        raise RancherCapabilityError(
-            "No patch fields provided; every arg was None. Pass at least one field to update."
-        )
-    request_payload: dict[str, object] = patch_subtree
-    request_payload = {"metadata": request_payload}
-
-    before = await fetch_patch_before(
-        lambda: client.get_json(
-            cert_manager_namespaced_resource_path(
-                cluster_id, namespace, "certificates", certificate_name
-            )
-        ),
-        target_path="metadata",
-        patch_subtree=patch_subtree,
-        kind="cert_manager_certificate",
-        action="set_labels",
-        name=certificate_name,
-    )
-    patch_started_at = time.monotonic()
-    await client.patch_json(
-        cert_manager_namespaced_resource_path(
-            cluster_id, namespace, "certificates", certificate_name
-        ),
-        payload=request_payload,
-    )
-    duration_ms = int((time.monotonic() - patch_started_at) * 1000)
-    return RancherMutationReceipt(
-        instance=instance_name,
-        plane="steve",
-        action="set_labels",
-        kind="cert_manager_certificate",
-        name=certificate_name,
-        cluster_id=cluster_id,
-        namespace=namespace,
-        changed=dict(patch_subtree),
-        before=before,
-        duration_ms=duration_ms,
-    )
-
-
-@audit_mutation(operation="cert_manager_certificate_set_labels", plane="steve")
-@rate_limit_writes
-async def rancher_cert_manager_certificate_set_labels(
-    namespace: str,
-    certificate_name: str,
-    labels: dict[str, str],
-    cluster_id: str = "local",
-    instance: str | None = None,
-    settings: AppSettings | None = None,
-    client: ManagementDiscoveryClient | None = None,
-) -> RancherMutationReceipt:
-    """Set_labels one cert_manager_certificate via JSON merge-patch."""
-
-    resolved_settings = settings or get_settings()
-    instance_name, instance_config = resolve_instance(resolved_settings, instance)
-    ensure_instance_writable(instance_name, instance_config)
-    if client is not None:
-        return await _patch_cert_manager_certificate_set_labels(
-            instance_name,
-            cluster_id,
-            namespace,
-            certificate_name,
-            labels,
-            client,
-        )
-    async with RancherManagementClient(instance_name, instance_config) as managed_client:
-        return await _patch_cert_manager_certificate_set_labels(
-            instance_name,
-            cluster_id,
-            namespace,
-            certificate_name,
-            labels,
-            managed_client,
-        )
-
-
-async def _patch_cert_manager_certificate_set_annotations(
-    instance_name: str,
-    cluster_id: str,
-    namespace: str,
-    certificate_name: str,
-    annotations: dict[str, str],
-    client: ManagementDiscoveryClient,
-) -> RancherMutationReceipt:
-    """Set_annotations one cert_manager_certificate via JSON merge-patch; returns a mutation receipt."""
-
-    patch_subtree: dict[str, object] = {}
-    patch_subtree["annotations"] = annotations
-    if not patch_subtree:
-        raise RancherCapabilityError(
-            "No patch fields provided; every arg was None. Pass at least one field to update."
-        )
-    request_payload: dict[str, object] = patch_subtree
-    request_payload = {"metadata": request_payload}
-
-    before = await fetch_patch_before(
-        lambda: client.get_json(
-            cert_manager_namespaced_resource_path(
-                cluster_id, namespace, "certificates", certificate_name
-            )
-        ),
-        target_path="metadata",
-        patch_subtree=patch_subtree,
-        kind="cert_manager_certificate",
-        action="set_annotations",
-        name=certificate_name,
-    )
-    patch_started_at = time.monotonic()
-    await client.patch_json(
-        cert_manager_namespaced_resource_path(
-            cluster_id, namespace, "certificates", certificate_name
-        ),
-        payload=request_payload,
-    )
-    duration_ms = int((time.monotonic() - patch_started_at) * 1000)
-    return RancherMutationReceipt(
-        instance=instance_name,
-        plane="steve",
-        action="set_annotations",
-        kind="cert_manager_certificate",
-        name=certificate_name,
-        cluster_id=cluster_id,
-        namespace=namespace,
-        changed=dict(patch_subtree),
-        before=before,
-        duration_ms=duration_ms,
-    )
-
-
-@audit_mutation(operation="cert_manager_certificate_set_annotations", plane="steve")
-@rate_limit_writes
-async def rancher_cert_manager_certificate_set_annotations(
-    namespace: str,
-    certificate_name: str,
-    annotations: dict[str, str],
-    cluster_id: str = "local",
-    instance: str | None = None,
-    settings: AppSettings | None = None,
-    client: ManagementDiscoveryClient | None = None,
-) -> RancherMutationReceipt:
-    """Set_annotations one cert_manager_certificate via JSON merge-patch."""
-
-    resolved_settings = settings or get_settings()
-    instance_name, instance_config = resolve_instance(resolved_settings, instance)
-    ensure_instance_writable(instance_name, instance_config)
-    if client is not None:
-        return await _patch_cert_manager_certificate_set_annotations(
-            instance_name,
-            cluster_id,
-            namespace,
-            certificate_name,
-            annotations,
-            client,
-        )
-    async with RancherManagementClient(instance_name, instance_config) as managed_client:
-        return await _patch_cert_manager_certificate_set_annotations(
-            instance_name,
-            cluster_id,
-            namespace,
-            certificate_name,
-            annotations,
-            managed_client,
-        )
-
-
 async def rancher_cert_manager_certificates_list_tool(
     namespace: str | None = None,
     cluster_id: str = "local",
@@ -470,60 +214,6 @@ async def rancher_cert_manager_certificate_get_tool(
     return await rancher_cert_manager_certificate_get(
         namespace=namespace,
         certificate_name=certificate_name,
-        cluster_id=cluster_id,
-        instance=instance,
-    )
-
-
-async def rancher_cert_manager_certificate_delete_tool(
-    namespace: str,
-    certificate_name: str,
-    confirmation: str,
-    cluster_id: str = "local",
-    instance: str | None = None,
-) -> RancherCuratedDeleteResult:
-    """Delete one cert_manager_certificate and return a typed receipt of what was removed. Destructive and irreversible — the caller must first echo the exact confirmation phrase the tool requires."""
-
-    return await rancher_cert_manager_certificate_delete(
-        namespace=namespace,
-        certificate_name=certificate_name,
-        confirmation=confirmation,
-        cluster_id=cluster_id,
-        instance=instance,
-    )
-
-
-async def rancher_cert_manager_certificate_set_labels_tool(
-    namespace: str,
-    certificate_name: str,
-    labels: dict[str, str],
-    cluster_id: str = "local",
-    instance: str | None = None,
-) -> RancherMutationReceipt:
-    """Modify one cert_manager_certificate in place (set labels) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write."""
-
-    return await rancher_cert_manager_certificate_set_labels(
-        namespace=namespace,
-        certificate_name=certificate_name,
-        labels=labels,
-        cluster_id=cluster_id,
-        instance=instance,
-    )
-
-
-async def rancher_cert_manager_certificate_set_annotations_tool(
-    namespace: str,
-    certificate_name: str,
-    annotations: dict[str, str],
-    cluster_id: str = "local",
-    instance: str | None = None,
-) -> RancherMutationReceipt:
-    """Modify one cert_manager_certificate in place (set annotations) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write."""
-
-    return await rancher_cert_manager_certificate_set_annotations(
-        namespace=namespace,
-        certificate_name=certificate_name,
-        annotations=annotations,
         cluster_id=cluster_id,
         instance=instance,
     )

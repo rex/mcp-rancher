@@ -56,6 +56,11 @@ next-step target names lives is the actual construction call sites:
    matched pair, split out purely to stay under the architecture line-limit
    gate) builds a realistic instance of the declared model and reads the
    real, computed ``next_steps`` output directly.
+5. Reads the three collapsed generic resource-kind tools' (F2)
+   dynamically-computed next_steps from the generated kind registry via
+   ``_next_steps_resource_kinds_support.py`` — a second matched-pair module,
+   also split out to stay under the line-limit gate, for the same reason as
+   (4): these declarations aren't literal AST sites (3) can see.
 """
 
 from __future__ import annotations
@@ -374,7 +379,16 @@ def iter_handwritten_next_step_declarations() -> list[NextStepDeclaration]:
 def iter_all_next_step_declarations() -> list[NextStepDeclaration]:
     """Every real, production ``suggested_next_steps`` declaration in the repo."""
 
-    return iter_codegen_next_step_declarations() + iter_handwritten_next_step_declarations()
+    # Deferred import (breaks a cycle: _next_steps_resource_kinds_support
+    # imports NextStepDeclaration from THIS module at its own top level, so
+    # this module cannot import it back at module scope).
+    from _next_steps_resource_kinds_support import iter_resource_kind_next_step_declarations
+
+    return (
+        iter_codegen_next_step_declarations()
+        + iter_handwritten_next_step_declarations()
+        + iter_resource_kind_next_step_declarations()
+    )
 
 
 # Representative-instance construction (``build_representative_instance`` /

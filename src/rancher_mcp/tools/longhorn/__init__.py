@@ -10,61 +10,37 @@ from mcp.server.fastmcp import FastMCP
 from rancher_mcp.tools.longhorn._generated_longhorn_backups import (
     rancher_longhorn_backup_get,
     rancher_longhorn_backup_get_tool,
-    rancher_longhorn_backup_set_annotations,
-    rancher_longhorn_backup_set_annotations_tool,
-    rancher_longhorn_backup_set_labels,
-    rancher_longhorn_backup_set_labels_tool,
     rancher_longhorn_backups_list,
     rancher_longhorn_backups_list_tool,
 )
 from rancher_mcp.tools.longhorn._generated_longhorn_nodes import (
     rancher_longhorn_node_get,
     rancher_longhorn_node_get_tool,
-    rancher_longhorn_node_set_annotations,
-    rancher_longhorn_node_set_annotations_tool,
-    rancher_longhorn_node_set_labels,
-    rancher_longhorn_node_set_labels_tool,
     rancher_longhorn_nodes_list,
     rancher_longhorn_nodes_list_tool,
 )
 from rancher_mcp.tools.longhorn._generated_longhorn_snapshots import (
     rancher_longhorn_snapshot_get,
     rancher_longhorn_snapshot_get_tool,
-    rancher_longhorn_snapshot_set_annotations,
-    rancher_longhorn_snapshot_set_annotations_tool,
-    rancher_longhorn_snapshot_set_labels,
-    rancher_longhorn_snapshot_set_labels_tool,
     rancher_longhorn_snapshots_list,
     rancher_longhorn_snapshots_list_tool,
 )
 from rancher_mcp.tools.longhorn._generated_longhorn_volumes import (
     rancher_longhorn_volume_get,
     rancher_longhorn_volume_get_tool,
-    rancher_longhorn_volume_set_annotations,
-    rancher_longhorn_volume_set_annotations_tool,
-    rancher_longhorn_volume_set_labels,
-    rancher_longhorn_volume_set_labels_tool,
     rancher_longhorn_volumes_list,
     rancher_longhorn_volumes_list_tool,
 )
-from rancher_mcp.tools.support.annotations import IDEMPOTENT_WRITE, READ_ONLY
+from rancher_mcp.tools.support.annotations import READ_ONLY
 
 __all__ = [
     "rancher_longhorn_backup_get",
-    "rancher_longhorn_backup_set_annotations",
-    "rancher_longhorn_backup_set_labels",
     "rancher_longhorn_backups_list",
     "rancher_longhorn_node_get",
-    "rancher_longhorn_node_set_annotations",
-    "rancher_longhorn_node_set_labels",
     "rancher_longhorn_nodes_list",
     "rancher_longhorn_snapshot_get",
-    "rancher_longhorn_snapshot_set_annotations",
-    "rancher_longhorn_snapshot_set_labels",
     "rancher_longhorn_snapshots_list",
     "rancher_longhorn_volume_get",
-    "rancher_longhorn_volume_set_annotations",
-    "rancher_longhorn_volume_set_labels",
     "rancher_longhorn_volumes_list",
     "register_longhorn_tools",
 ]
@@ -79,23 +55,11 @@ def register_longhorn_tools(mcp: FastMCP) -> None:
     mcp.tool(name="rancher_longhorn_backup_get", annotations=READ_ONLY)(
         rancher_longhorn_backup_get_tool
     )
-    mcp.tool(name="rancher_longhorn_backup_set_labels", annotations=IDEMPOTENT_WRITE)(
-        rancher_longhorn_backup_set_labels_tool
-    )
-    mcp.tool(name="rancher_longhorn_backup_set_annotations", annotations=IDEMPOTENT_WRITE)(
-        rancher_longhorn_backup_set_annotations_tool
-    )
     mcp.tool(name="rancher_longhorn_nodes_list", annotations=READ_ONLY)(
         rancher_longhorn_nodes_list_tool
     )
     mcp.tool(name="rancher_longhorn_node_get", annotations=READ_ONLY)(
         rancher_longhorn_node_get_tool
-    )
-    mcp.tool(name="rancher_longhorn_node_set_labels", annotations=IDEMPOTENT_WRITE)(
-        rancher_longhorn_node_set_labels_tool
-    )
-    mcp.tool(name="rancher_longhorn_node_set_annotations", annotations=IDEMPOTENT_WRITE)(
-        rancher_longhorn_node_set_annotations_tool
     )
     mcp.tool(name="rancher_longhorn_snapshots_list", annotations=READ_ONLY)(
         rancher_longhorn_snapshots_list_tool
@@ -103,21 +67,9 @@ def register_longhorn_tools(mcp: FastMCP) -> None:
     mcp.tool(name="rancher_longhorn_snapshot_get", annotations=READ_ONLY)(
         rancher_longhorn_snapshot_get_tool
     )
-    mcp.tool(name="rancher_longhorn_snapshot_set_labels", annotations=IDEMPOTENT_WRITE)(
-        rancher_longhorn_snapshot_set_labels_tool
-    )
-    mcp.tool(name="rancher_longhorn_snapshot_set_annotations", annotations=IDEMPOTENT_WRITE)(
-        rancher_longhorn_snapshot_set_annotations_tool
-    )
     mcp.tool(name="rancher_longhorn_volumes_list", annotations=READ_ONLY)(
         rancher_longhorn_volumes_list_tool
     )
     mcp.tool(name="rancher_longhorn_volume_get", annotations=READ_ONLY)(
         rancher_longhorn_volume_get_tool
-    )
-    mcp.tool(name="rancher_longhorn_volume_set_labels", annotations=IDEMPOTENT_WRITE)(
-        rancher_longhorn_volume_set_labels_tool
-    )
-    mcp.tool(name="rancher_longhorn_volume_set_annotations", annotations=IDEMPOTENT_WRITE)(
-        rancher_longhorn_volume_set_annotations_tool
     )

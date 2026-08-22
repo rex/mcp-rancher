@@ -12,7 +12,7 @@ from rancher_mcp.audit import audit_mutation
 from rancher_mcp.clients.management import ManagementDiscoveryClient, RancherManagementClient
 from rancher_mcp.config import AppSettings, get_settings
 from rancher_mcp.exceptions import RancherCapabilityError
-from rancher_mcp.models.resources import RancherCuratedDeleteResult, RancherMutationReceipt
+from rancher_mcp.models.resources import RancherMutationReceipt
 from rancher_mcp.models.workloads import RancherDeploymentDetail, RancherDeploymentList
 from rancher_mcp.rate_limit import rate_limit_writes
 from rancher_mcp.services.instances import resolve_instance
@@ -175,74 +175,6 @@ async def rancher_deployment_get(
         )
 
 
-async def _delete_deployment(
-    instance_name: str,
-    cluster_id: str,
-    namespace: str,
-    deployment_name: str,
-    confirmation_phrase_used: str,
-    client: ManagementDiscoveryClient,
-) -> RancherCuratedDeleteResult:
-    """Delete one deployment; returns a typed delete result."""
-
-    response_payload = await client.delete_json(
-        workload_resource_path(cluster_id, namespace, "deployments", deployment_name),
-    )
-    return RancherCuratedDeleteResult(
-        instance=instance_name,
-        plane="steve",
-        resource_kind="deployment",
-        resource_name=deployment_name,
-        namespace=namespace,
-        cluster_id=cluster_id,
-        deleted=True,
-        confirmation_phrase_used=confirmation_phrase_used,
-        response_payload=dict(response_payload),
-        suggested_next_steps=["rancher_deployments_list"],
-    )
-
-
-@audit_mutation(operation="deployment_delete", plane="steve")
-@rate_limit_writes
-async def rancher_deployment_delete(
-    namespace: str,
-    deployment_name: str,
-    confirmation: str,
-    cluster_id: str = "local",
-    instance: str | None = None,
-    settings: AppSettings | None = None,
-    client: ManagementDiscoveryClient | None = None,
-) -> RancherCuratedDeleteResult:
-    """Delete one deployment after the agent echoes the required confirmation phrase."""
-
-    expected_phrase = f"delete deployment {deployment_name} in namespace {namespace}"
-    if confirmation != expected_phrase:
-        raise RancherCapabilityError(
-            f"Delete confirmation did not match the required phrase: {expected_phrase!r}"
-        )
-    resolved_settings = settings or get_settings()
-    instance_name, instance_config = resolve_instance(resolved_settings, instance)
-    ensure_instance_writable(instance_name, instance_config)
-    if client is not None:
-        return await _delete_deployment(
-            instance_name,
-            cluster_id,
-            namespace,
-            deployment_name,
-            expected_phrase,
-            client,
-        )
-    async with RancherManagementClient(instance_name, instance_config) as managed_client:
-        return await _delete_deployment(
-            instance_name,
-            cluster_id,
-            namespace,
-            deployment_name,
-            expected_phrase,
-            managed_client,
-        )
-
-
 async def _patch_deployment_scale(
     instance_name: str,
     cluster_id: str,
@@ -324,176 +256,6 @@ async def rancher_deployment_scale(
             namespace,
             deployment_name,
             replicas,
-            managed_client,
-        )
-
-
-async def _patch_deployment_set_labels(
-    instance_name: str,
-    cluster_id: str,
-    namespace: str,
-    deployment_name: str,
-    labels: dict[str, str],
-    client: ManagementDiscoveryClient,
-) -> RancherMutationReceipt:
-    """Set_labels one deployment via JSON merge-patch; returns a mutation receipt."""
-
-    patch_subtree: dict[str, object] = {}
-    patch_subtree["labels"] = labels
-    if not patch_subtree:
-        raise RancherCapabilityError(
-            "No patch fields provided; every arg was None. Pass at least one field to update."
-        )
-    request_payload: dict[str, object] = patch_subtree
-    request_payload = {"metadata": request_payload}
-
-    before = await fetch_patch_before(
-        lambda: client.get_json(
-            workload_resource_path(cluster_id, namespace, "deployments", deployment_name)
-        ),
-        target_path="metadata",
-        patch_subtree=patch_subtree,
-        kind="deployment",
-        action="set_labels",
-        name=deployment_name,
-    )
-    patch_started_at = time.monotonic()
-    await client.patch_json(
-        workload_resource_path(cluster_id, namespace, "deployments", deployment_name),
-        payload=request_payload,
-    )
-    duration_ms = int((time.monotonic() - patch_started_at) * 1000)
-    return RancherMutationReceipt(
-        instance=instance_name,
-        plane="steve",
-        action="set_labels",
-        kind="deployment",
-        name=deployment_name,
-        cluster_id=cluster_id,
-        namespace=namespace,
-        changed=dict(patch_subtree),
-        before=before,
-        duration_ms=duration_ms,
-    )
-
-
-@audit_mutation(operation="deployment_set_labels", plane="steve")
-@rate_limit_writes
-async def rancher_deployment_set_labels(
-    namespace: str,
-    deployment_name: str,
-    labels: dict[str, str],
-    cluster_id: str = "local",
-    instance: str | None = None,
-    settings: AppSettings | None = None,
-    client: ManagementDiscoveryClient | None = None,
-) -> RancherMutationReceipt:
-    """Set_labels one deployment via JSON merge-patch."""
-
-    resolved_settings = settings or get_settings()
-    instance_name, instance_config = resolve_instance(resolved_settings, instance)
-    ensure_instance_writable(instance_name, instance_config)
-    if client is not None:
-        return await _patch_deployment_set_labels(
-            instance_name,
-            cluster_id,
-            namespace,
-            deployment_name,
-            labels,
-            client,
-        )
-    async with RancherManagementClient(instance_name, instance_config) as managed_client:
-        return await _patch_deployment_set_labels(
-            instance_name,
-            cluster_id,
-            namespace,
-            deployment_name,
-            labels,
-            managed_client,
-        )
-
-
-async def _patch_deployment_set_annotations(
-    instance_name: str,
-    cluster_id: str,
-    namespace: str,
-    deployment_name: str,
-    annotations: dict[str, str],
-    client: ManagementDiscoveryClient,
-) -> RancherMutationReceipt:
-    """Set_annotations one deployment via JSON merge-patch; returns a mutation receipt."""
-
-    patch_subtree: dict[str, object] = {}
-    patch_subtree["annotations"] = annotations
-    if not patch_subtree:
-        raise RancherCapabilityError(
-            "No patch fields provided; every arg was None. Pass at least one field to update."
-        )
-    request_payload: dict[str, object] = patch_subtree
-    request_payload = {"metadata": request_payload}
-
-    before = await fetch_patch_before(
-        lambda: client.get_json(
-            workload_resource_path(cluster_id, namespace, "deployments", deployment_name)
-        ),
-        target_path="metadata",
-        patch_subtree=patch_subtree,
-        kind="deployment",
-        action="set_annotations",
-        name=deployment_name,
-    )
-    patch_started_at = time.monotonic()
-    await client.patch_json(
-        workload_resource_path(cluster_id, namespace, "deployments", deployment_name),
-        payload=request_payload,
-    )
-    duration_ms = int((time.monotonic() - patch_started_at) * 1000)
-    return RancherMutationReceipt(
-        instance=instance_name,
-        plane="steve",
-        action="set_annotations",
-        kind="deployment",
-        name=deployment_name,
-        cluster_id=cluster_id,
-        namespace=namespace,
-        changed=dict(patch_subtree),
-        before=before,
-        duration_ms=duration_ms,
-    )
-
-
-@audit_mutation(operation="deployment_set_annotations", plane="steve")
-@rate_limit_writes
-async def rancher_deployment_set_annotations(
-    namespace: str,
-    deployment_name: str,
-    annotations: dict[str, str],
-    cluster_id: str = "local",
-    instance: str | None = None,
-    settings: AppSettings | None = None,
-    client: ManagementDiscoveryClient | None = None,
-) -> RancherMutationReceipt:
-    """Set_annotations one deployment via JSON merge-patch."""
-
-    resolved_settings = settings or get_settings()
-    instance_name, instance_config = resolve_instance(resolved_settings, instance)
-    ensure_instance_writable(instance_name, instance_config)
-    if client is not None:
-        return await _patch_deployment_set_annotations(
-            instance_name,
-            cluster_id,
-            namespace,
-            deployment_name,
-            annotations,
-            client,
-        )
-    async with RancherManagementClient(instance_name, instance_config) as managed_client:
-        return await _patch_deployment_set_annotations(
-            instance_name,
-            cluster_id,
-            namespace,
-            deployment_name,
-            annotations,
             managed_client,
         )
 
@@ -770,24 +532,6 @@ async def rancher_deployment_get_tool(
     )
 
 
-async def rancher_deployment_delete_tool(
-    namespace: str,
-    deployment_name: str,
-    confirmation: str,
-    cluster_id: str = "local",
-    instance: str | None = None,
-) -> RancherCuratedDeleteResult:
-    """Delete one deployment and return a typed receipt of what was removed. Destructive and irreversible — the caller must first echo the exact confirmation phrase the tool requires."""
-
-    return await rancher_deployment_delete(
-        namespace=namespace,
-        deployment_name=deployment_name,
-        confirmation=confirmation,
-        cluster_id=cluster_id,
-        instance=instance,
-    )
-
-
 async def rancher_deployment_scale_tool(
     namespace: str,
     deployment_name: str,
@@ -801,42 +545,6 @@ async def rancher_deployment_scale_tool(
         namespace=namespace,
         deployment_name=deployment_name,
         replicas=replicas,
-        cluster_id=cluster_id,
-        instance=instance,
-    )
-
-
-async def rancher_deployment_set_labels_tool(
-    namespace: str,
-    deployment_name: str,
-    labels: dict[str, str],
-    cluster_id: str = "local",
-    instance: str | None = None,
-) -> RancherMutationReceipt:
-    """Modify one deployment in place (set labels) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write."""
-
-    return await rancher_deployment_set_labels(
-        namespace=namespace,
-        deployment_name=deployment_name,
-        labels=labels,
-        cluster_id=cluster_id,
-        instance=instance,
-    )
-
-
-async def rancher_deployment_set_annotations_tool(
-    namespace: str,
-    deployment_name: str,
-    annotations: dict[str, str],
-    cluster_id: str = "local",
-    instance: str | None = None,
-) -> RancherMutationReceipt:
-    """Modify one deployment in place (set annotations) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write."""
-
-    return await rancher_deployment_set_annotations(
-        namespace=namespace,
-        deployment_name=deployment_name,
-        annotations=annotations,
         cluster_id=cluster_id,
         instance=instance,
     )

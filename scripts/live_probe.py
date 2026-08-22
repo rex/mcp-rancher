@@ -230,19 +230,28 @@ async def cmd_lifecycle(args: argparse.Namespace) -> int:
         "config_map_name": SCRATCH_NAME,
         "instance": args.instance,
     }
+    # F2 collapse: set_labels/set_annotations/delete are no longer
+    # per-resource tools — dispatched through the generic resource_kind
+    # tools instead, which take `name` (not `config_map_name`) plus a
+    # `resource_kind` selector. The confirmation phrase is derived from
+    # `resource_kind`'s value directly, so it reads "config_map" (the
+    # display_name_singular), not the old per-tool "configmap" wording.
+    generic_common = {
+        "resource_kind": "config_map",
+        "cluster_id": args.cluster,
+        "namespace": SCRATCH_NAMESPACE,
+        "name": SCRATCH_NAME,
+        "instance": args.instance,
+    }
+    delete_confirmation = f"delete config_map {SCRATCH_NAME} in namespace {SCRATCH_NAMESPACE}"
 
     print(f"\n=== Phase 0: pre-cleanup ({SCRATCH_NAMESPACE}/{SCRATCH_NAME}) ===")
     existing = await _call(mcp, "rancher_config_map_get", common)
     if existing["ok"]:
         await _call(
             mcp,
-            "rancher_config_map_delete",
-            {
-                **common,
-                "confirmation": (
-                    f"delete configmap {SCRATCH_NAME} in namespace {SCRATCH_NAMESPACE}"
-                ),
-            },
+            "rancher_resource_delete",
+            {**generic_common, "confirmation": delete_confirmation},
         )
         print("  pre-existing — deleted")
     else:
@@ -263,21 +272,24 @@ async def cmd_lifecycle(args: argparse.Namespace) -> int:
         return 1
     print(f"  data_keys={r['data'].get('dataKeys')}")
 
-    print("\n=== Phase 2: set_labels (multi-patch substrate) ===")
+    print("\n=== Phase 2: set_labels (generic resource_kind dispatch) ===")
     r = await _call(
         mcp,
-        "rancher_config_map_set_labels",
-        {**common, "labels": {"app.kubernetes.io/managed-by": "mcp-rancher-smoke", "env": "lab"}},
+        "rancher_resource_set_labels",
+        {
+            **generic_common,
+            "labels": {"app.kubernetes.io/managed-by": "mcp-rancher-smoke", "env": "lab"},
+        },
     )
     print(f"  ok={r['ok']}")
 
     print("\n=== Phase 3: set_annotations ===")
     r = await _call(
         mcp,
-        "rancher_config_map_set_annotations",
-        {**common, "annotations": {"smoke.example.com/timestamp": "smoke"}},
+        "rancher_resource_set_annotations",
+        {**generic_common, "annotations": {"smoke.example.com/timestamp": "smoke"}},
     )
-    print(f"  annotation_keys={r['data'].get('annotationKeys') if r['ok'] else r['error']}")
+    print(f"  ok={r['ok']}" if not r["ok"] else f"  changed={r['data'].get('changed')}")
 
     print("\n=== Phase 4: apply (PUT, full replace) ===")
     r = await _call(
@@ -293,11 +305,8 @@ async def cmd_lifecycle(args: argparse.Namespace) -> int:
     print("\n=== Phase 5: delete (DESTRUCTIVE — confirmation phrase) ===")
     r = await _call(
         mcp,
-        "rancher_config_map_delete",
-        {
-            **common,
-            "confirmation": (f"delete configmap {SCRATCH_NAME} in namespace {SCRATCH_NAMESPACE}"),
-        },
+        "rancher_resource_delete",
+        {**generic_common, "confirmation": delete_confirmation},
     )
     print(f"  deleted={r['data'].get('deleted') if r['ok'] else r['error']}")
 

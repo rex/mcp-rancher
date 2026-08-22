@@ -6,18 +6,11 @@
 
 from __future__ import annotations
 
-import time
-
-from rancher_mcp.audit import audit_mutation
 from rancher_mcp.clients.management import ManagementDiscoveryClient, RancherManagementClient
 from rancher_mcp.config import AppSettings, get_settings
-from rancher_mcp.exceptions import RancherCapabilityError
-from rancher_mcp.models.resources import RancherCuratedDeleteResult, RancherMutationReceipt
 from rancher_mcp.models.scheduling import RancherPriorityClassDetail, RancherPriorityClassList
-from rancher_mcp.rate_limit import rate_limit_writes
 from rancher_mcp.services.instances import resolve_instance
 from rancher_mcp.services.resources.builders_pagination import next_page_token_from_payload
-from rancher_mcp.services.safety import ensure_instance_writable
 from rancher_mcp.tools.scheduling.paths import (
     scheduling_v1_collection_path,
     scheduling_v1_resource_path,
@@ -27,7 +20,6 @@ from rancher_mcp.tools.scheduling.shared import (
     items,
     priority_class_summary_from_payload,
 )
-from rancher_mcp.tools.support.mutations import fetch_patch_before
 from rancher_mcp.tools.support.values import mapping_value, string_dict
 
 
@@ -170,229 +162,6 @@ async def rancher_priority_class_get(
         )
 
 
-async def _delete_priority_class(
-    instance_name: str,
-    cluster_id: str,
-    priority_class_name: str,
-    confirmation_phrase_used: str,
-    client: ManagementDiscoveryClient,
-) -> RancherCuratedDeleteResult:
-    """Delete one priority_class; returns a typed delete result."""
-
-    response_payload = await client.delete_json(
-        scheduling_v1_resource_path(cluster_id, "priorityclasses", priority_class_name),
-    )
-    return RancherCuratedDeleteResult(
-        instance=instance_name,
-        plane="steve",
-        resource_kind="priority_class",
-        resource_name=priority_class_name,
-        cluster_id=cluster_id,
-        deleted=True,
-        confirmation_phrase_used=confirmation_phrase_used,
-        response_payload=dict(response_payload),
-        suggested_next_steps=["rancher_priority_classes_list"],
-    )
-
-
-@audit_mutation(operation="priority_class_delete", plane="steve")
-@rate_limit_writes
-async def rancher_priority_class_delete(
-    priority_class_name: str,
-    confirmation: str,
-    cluster_id: str = "local",
-    instance: str | None = None,
-    settings: AppSettings | None = None,
-    client: ManagementDiscoveryClient | None = None,
-) -> RancherCuratedDeleteResult:
-    """Delete one priority_class after the agent echoes the required confirmation phrase."""
-
-    expected_phrase = f"delete priority_class {priority_class_name}"
-    if confirmation != expected_phrase:
-        raise RancherCapabilityError(
-            f"Delete confirmation did not match the required phrase: {expected_phrase!r}"
-        )
-    resolved_settings = settings or get_settings()
-    instance_name, instance_config = resolve_instance(resolved_settings, instance)
-    ensure_instance_writable(instance_name, instance_config)
-    if client is not None:
-        return await _delete_priority_class(
-            instance_name,
-            cluster_id,
-            priority_class_name,
-            expected_phrase,
-            client,
-        )
-    async with RancherManagementClient(instance_name, instance_config) as managed_client:
-        return await _delete_priority_class(
-            instance_name,
-            cluster_id,
-            priority_class_name,
-            expected_phrase,
-            managed_client,
-        )
-
-
-async def _patch_priority_class_set_labels(
-    instance_name: str,
-    cluster_id: str,
-    priority_class_name: str,
-    labels: dict[str, str],
-    client: ManagementDiscoveryClient,
-) -> RancherMutationReceipt:
-    """Set_labels one priority_class via JSON merge-patch; returns a mutation receipt."""
-
-    patch_subtree: dict[str, object] = {}
-    patch_subtree["labels"] = labels
-    if not patch_subtree:
-        raise RancherCapabilityError(
-            "No patch fields provided; every arg was None. Pass at least one field to update."
-        )
-    request_payload: dict[str, object] = patch_subtree
-    request_payload = {"metadata": request_payload}
-
-    before = await fetch_patch_before(
-        lambda: client.get_json(
-            scheduling_v1_resource_path(cluster_id, "priorityclasses", priority_class_name)
-        ),
-        target_path="metadata",
-        patch_subtree=patch_subtree,
-        kind="priority_class",
-        action="set_labels",
-        name=priority_class_name,
-    )
-    patch_started_at = time.monotonic()
-    await client.patch_json(
-        scheduling_v1_resource_path(cluster_id, "priorityclasses", priority_class_name),
-        payload=request_payload,
-    )
-    duration_ms = int((time.monotonic() - patch_started_at) * 1000)
-    return RancherMutationReceipt(
-        instance=instance_name,
-        plane="steve",
-        action="set_labels",
-        kind="priority_class",
-        name=priority_class_name,
-        cluster_id=cluster_id,
-        changed=dict(patch_subtree),
-        before=before,
-        duration_ms=duration_ms,
-    )
-
-
-@audit_mutation(operation="priority_class_set_labels", plane="steve")
-@rate_limit_writes
-async def rancher_priority_class_set_labels(
-    priority_class_name: str,
-    labels: dict[str, str],
-    cluster_id: str = "local",
-    instance: str | None = None,
-    settings: AppSettings | None = None,
-    client: ManagementDiscoveryClient | None = None,
-) -> RancherMutationReceipt:
-    """Set_labels one priority_class via JSON merge-patch."""
-
-    resolved_settings = settings or get_settings()
-    instance_name, instance_config = resolve_instance(resolved_settings, instance)
-    ensure_instance_writable(instance_name, instance_config)
-    if client is not None:
-        return await _patch_priority_class_set_labels(
-            instance_name,
-            cluster_id,
-            priority_class_name,
-            labels,
-            client,
-        )
-    async with RancherManagementClient(instance_name, instance_config) as managed_client:
-        return await _patch_priority_class_set_labels(
-            instance_name,
-            cluster_id,
-            priority_class_name,
-            labels,
-            managed_client,
-        )
-
-
-async def _patch_priority_class_set_annotations(
-    instance_name: str,
-    cluster_id: str,
-    priority_class_name: str,
-    annotations: dict[str, str],
-    client: ManagementDiscoveryClient,
-) -> RancherMutationReceipt:
-    """Set_annotations one priority_class via JSON merge-patch; returns a mutation receipt."""
-
-    patch_subtree: dict[str, object] = {}
-    patch_subtree["annotations"] = annotations
-    if not patch_subtree:
-        raise RancherCapabilityError(
-            "No patch fields provided; every arg was None. Pass at least one field to update."
-        )
-    request_payload: dict[str, object] = patch_subtree
-    request_payload = {"metadata": request_payload}
-
-    before = await fetch_patch_before(
-        lambda: client.get_json(
-            scheduling_v1_resource_path(cluster_id, "priorityclasses", priority_class_name)
-        ),
-        target_path="metadata",
-        patch_subtree=patch_subtree,
-        kind="priority_class",
-        action="set_annotations",
-        name=priority_class_name,
-    )
-    patch_started_at = time.monotonic()
-    await client.patch_json(
-        scheduling_v1_resource_path(cluster_id, "priorityclasses", priority_class_name),
-        payload=request_payload,
-    )
-    duration_ms = int((time.monotonic() - patch_started_at) * 1000)
-    return RancherMutationReceipt(
-        instance=instance_name,
-        plane="steve",
-        action="set_annotations",
-        kind="priority_class",
-        name=priority_class_name,
-        cluster_id=cluster_id,
-        changed=dict(patch_subtree),
-        before=before,
-        duration_ms=duration_ms,
-    )
-
-
-@audit_mutation(operation="priority_class_set_annotations", plane="steve")
-@rate_limit_writes
-async def rancher_priority_class_set_annotations(
-    priority_class_name: str,
-    annotations: dict[str, str],
-    cluster_id: str = "local",
-    instance: str | None = None,
-    settings: AppSettings | None = None,
-    client: ManagementDiscoveryClient | None = None,
-) -> RancherMutationReceipt:
-    """Set_annotations one priority_class via JSON merge-patch."""
-
-    resolved_settings = settings or get_settings()
-    instance_name, instance_config = resolve_instance(resolved_settings, instance)
-    ensure_instance_writable(instance_name, instance_config)
-    if client is not None:
-        return await _patch_priority_class_set_annotations(
-            instance_name,
-            cluster_id,
-            priority_class_name,
-            annotations,
-            client,
-        )
-    async with RancherManagementClient(instance_name, instance_config) as managed_client:
-        return await _patch_priority_class_set_annotations(
-            instance_name,
-            cluster_id,
-            priority_class_name,
-            annotations,
-            managed_client,
-        )
-
-
 async def rancher_priority_classes_list_tool(
     cluster_id: str = "local",
     global_default: bool | None = None,
@@ -424,54 +193,6 @@ async def rancher_priority_class_get_tool(
 
     return await rancher_priority_class_get(
         priority_class_name=priority_class_name,
-        cluster_id=cluster_id,
-        instance=instance,
-    )
-
-
-async def rancher_priority_class_delete_tool(
-    priority_class_name: str,
-    confirmation: str,
-    cluster_id: str = "local",
-    instance: str | None = None,
-) -> RancherCuratedDeleteResult:
-    """Delete one priority_class and return a typed receipt of what was removed. Destructive and irreversible — the caller must first echo the exact confirmation phrase the tool requires."""
-
-    return await rancher_priority_class_delete(
-        priority_class_name=priority_class_name,
-        confirmation=confirmation,
-        cluster_id=cluster_id,
-        instance=instance,
-    )
-
-
-async def rancher_priority_class_set_labels_tool(
-    priority_class_name: str,
-    labels: dict[str, str],
-    cluster_id: str = "local",
-    instance: str | None = None,
-) -> RancherMutationReceipt:
-    """Modify one priority_class in place (set labels) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write."""
-
-    return await rancher_priority_class_set_labels(
-        priority_class_name=priority_class_name,
-        labels=labels,
-        cluster_id=cluster_id,
-        instance=instance,
-    )
-
-
-async def rancher_priority_class_set_annotations_tool(
-    priority_class_name: str,
-    annotations: dict[str, str],
-    cluster_id: str = "local",
-    instance: str | None = None,
-) -> RancherMutationReceipt:
-    """Modify one priority_class in place (set annotations) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write."""
-
-    return await rancher_priority_class_set_annotations(
-        priority_class_name=priority_class_name,
-        annotations=annotations,
         cluster_id=cluster_id,
         instance=instance,
     )

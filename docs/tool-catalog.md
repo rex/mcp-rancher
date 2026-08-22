@@ -69,13 +69,20 @@ table. The [Status legend](#status-legend) explains the icons.
 
 ## Quick start
 
-- **Tool surface today: 319 registered** (authoritative count:
+- **Tool surface today: 206 registered** (authoritative count:
   [`tool-manifest.json`](tool-manifest.json), generated). See
-  [Tool registry](#tool-registry).
+  [Tool registry](#tool-registry). Down from 321 after the F2 collapse
+  (below): 118 per-resource-family `set_labels`/`set_annotations`/`delete`
+  tools replaced by 3 generic `resource_kind`-dispatched tools
+  (`rancher_resource_set_labels`, `rancher_resource_set_annotations`,
+  `rancher_resource_delete`), backed by a codegen-generated kind registry
+  (`tools/resource_kinds/_generated_kinds.py`). See
+  `PERFECT_RANCHER_MCP_IMPLEMENTATION_PLAN.md` and the "Recently shipped"
+  log below for the mechanics.
 - **Estimated target: ~380 tools** at "perfect" coverage of
-  the 25-domain canonical plan. We're ~83% of the way by tool count; the
-  remaining surface is concentrated in destructive operator workflows
-  (Track E) and subsystem depth (Track F).
+  the 25-domain canonical plan was scoped before the F2 collapse
+  deliberately shrank the mechanical surface in favor of generic dispatch;
+  treat that estimate as historical rather than a live target.
 - **Substrate is feature-complete** for all 5 write verbs
   (create / apply / patch / delete + read pair) — see
   `docs/codegen-curated-tools.md`. Adding the next curated
@@ -127,14 +134,14 @@ descriptor migration commit). That's fine — Slice IDs map
 
 | Bucket | Count |
 |---|---|
-| ✅ Built (registered tools) | **318** |
+| ✅ Built (registered tools) | **206** |
 | 🟡 Planned (gap from plan) | ~62 |
 | 🟠 Partial (documented limitations) | ~10 |
 | 🔴 Blocked (external dep / design) | ~12 |
 | ⚫ Deferred / accessible-elsewhere | see `docs/known-gaps.md` |
 | 🚫 Out-of-scope (workflow / websocket) | ~8 |
-| **Estimated target tool surface** | ~380 |
-| **Coverage** | ~83% (by tool count) |
+| **Estimated target tool surface** | historical; see the F2 note below |
+| **Coverage** | historical; see the F2 note below |
 
 By plane:
 
@@ -142,15 +149,44 @@ By plane:
 - **Steve** (`/v1` + k8s-proxy): 110+ tools
 - **MCP-protocol** (resources, prompts): 4
 - **Generic** (escape hatches): 17 (Norman + Steve resource ops + watch)
+- **Generic resource-kind mutations** (`tools/resource_kinds/`): 3
+  (`rancher_resource_set_labels`, `rancher_resource_set_annotations`,
+  `rancher_resource_delete` — see the F2 note below)
 - **Operational rollups** (`ops` pack): 9 (composition, hand-written by design)
 
 ---
+
+> **⚠️ F2 collapse (2026-08-22): 118 per-resource tools -> 3 generic tools —
+> the per-pack tables below are now STALE for this family and were not
+> individually rewritten.** 42 `*_set_labels` + 42 `*_set_annotations` + 34
+> `*_delete` tools (one per resource family, each with its own "which
+> object" arg name — `pod_name`, `service_name`, `volume_name`, ... — the
+> exact divergence a field operator reported as F2) were replaced by three
+> tools dispatched on a closed `resource_kind` enum with one uniform `name`
+> argument: `rancher_resource_set_labels`, `rancher_resource_set_annotations`,
+> `rancher_resource_delete`. The enum and per-kind routing are generated at
+> `make codegen` time from every `catalog/curated_tools/*.yml` descriptor
+> that sets `generic_kind` (see `scripts/codegen/plan/kinds.py` and
+> `src/rancher_mcp/tools/resource_kinds/_generated_kinds.py`). Any row below
+> naming a removed `rancher_<kind>_set_labels` / `_set_annotations` /
+> `_delete` tool is historical — that tool no longer exists; the resource
+> kind it covered is now reachable through the three generic tools instead.
+> **`docs/tool-manifest.json` is the authoritative live registry** — trust
+> it, not these per-pack counts, for the current surface.
 
 ## Tool registry
 
 Built tools, organized by pack. Each row is one tool. The
 **Source** column points to the descriptor file (codegen) or
 the source module (hand-written).
+
+**Note:** per-pack rows for the 118 collapsed `set_labels` / `set_annotations`
+/ `delete` tools (see the F2 note above) were left in place as a historical
+record of what was built and when, rather than deleted row-by-row across
+every pack section — deleting them would erase real build history for
+close to no reader benefit, since `docs/tool-manifest.json` is already the
+authoritative live source. Each pack's own row for these three tools should
+now be read as "covered generically" rather than "built as a bespoke tool."
 
 ### Discovery and schema (16 tools — Phase 2 + 3)
 
@@ -2145,3 +2181,4 @@ Six multi-patch additions following Batch 4 — adds `set_annotations` alongside
 | 2026-05-05 | D-1-persistent-volume-claim-set-labels (Batch 6) | `c0ac635` | Sonnet, 3.2 min — storage pack's second patched descriptor |
 | 2026-05-05 | D-1-endpoint-slice-set-labels (Batch 6) | `51ee413` | Sonnet, 3.6 min — networking pack's third patched descriptor |
 | 2026-05-05 | D-1-service-set-labels (Batch 6) | `2f5bb91` | Sonnet, 4.8 min — pods_services pack's first patch + **substrate fix** (Steve-transport mutation client wiring in `tool_module.py.j2`); first Steve-transport patch ever |
+| 2026-08-22 | F2 collapse — 118 tools -> 3 generic tools | (pending) | The 42 `*_set_labels` + 42 `*_set_annotations` + 34 `*_delete` tools every batch above spent ~40 sessions building, one resource family at a time, were retired in one slice and replaced by `rancher_resource_set_labels` / `rancher_resource_set_annotations` / `rancher_resource_delete` — three tools dispatched on a closed, codegen-generated `resource_kind` enum (`GenericResourceKindConfig` in `scripts/codegen/descriptor/configs.py`; registry in `tools/resource_kinds/_generated_kinds.py`), each taking one uniform `name` arg instead of the per-family `pod_name`/`service_name`/`volume_name`/... divergence a field operator flagged as F2. `tools/list` payload: 781.8 KB -> see `CHANGELOG.md` for the measured after-figure. Destructive-confirmation guard, audit logging, rate limiting, and the before/after mutation-receipt shape are all preserved — see `tools/resource_kinds/AGENTS.md` and `tests/unit/test_resource_kinds_tools.py`. |

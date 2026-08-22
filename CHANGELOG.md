@@ -1,5 +1,67 @@
 # Changelog
 
+## [1.55.0] — 2026-08-22 — Agent: Claude
+### Changed
+**BREAKING.** 118 per-resource tools are removed and replaced by 3 generics.
+
+### Changed
+- **Collapsed the mechanical tool families: 321 → 206 tools, `tools/list`
+  800,548 → 547,866 bytes (−31.6%, ~63,000 tokens freed).** 42
+  `*_set_labels` + 42 `*_set_annotations` + 34 `*_delete` tools became
+  `rancher_resource_set_labels`, `rancher_resource_set_annotations` and
+  `rancher_resource_delete`, dispatched on a closed `resource_kind` enum (42 /
+  42 / 34 kinds).
+
+  These failed the only test that matters for a curated tool — *does it know
+  something the generic engine doesn't?* All 42 `set_labels` tools shared one
+  identical output schema and 95.2%-identical descriptions, differing solely in
+  the name of their identifier parameter.
+
+  **This also fixes F2**, the field-reported naming inconsistency (`name` vs
+  `service_name` vs `volume_name` vs `resource_id`). That divergence existed
+  *because* each family generated its own argument name; one tool means one
+  uniform `name`.
+
+  The `resource_kind` enum is generated at codegen time from an opt-in
+  `generic_kind` block on each descriptor — not hand-maintained — so a new
+  resource family joins by declaring it, and a bad kind is rejected by the
+  schema with the valid list.
+
+  Fully preserved: the destructive-confirmation guard (still a required
+  argument that must exactly echo the named phrase, checked before any HTTP
+  call), the audit + rate-limit decorator stack, `ensure_instance_writable`,
+  and mutation-receipt shaping. `AuditEntry` gained a `resource_kind` field so
+  the audit trail stays per-kind now that one tool name covers 42 of them —
+  and `resource_id`, previously always `None` for every curated tool, is now
+  populated.
+
+- **`openWorldHint=False` on all 206 tools.** It was unset, and the MCP spec
+  defaults an absent value to `true` — telling every client this is an
+  unpredictable open-world API when it is a closed, well-defined one.
+- **Every tool now has a `title`**, derived mechanically from its name in one
+  post-registration pass rather than ~200 hand-authored strings.
+- Server `instructions` corrected: destructive tools *refuse* without an exact
+  confirmation phrase — they do not describe their effect and there is no
+  dry-run form. The previous wording described a sibling server's behavior, not
+  ours; instructions that misdescribe the server are worse than terse ones.
+
+### Fixed
+- **`PatchConfig.next_steps` was dead code repo-wide** — declared in YAML for
+  every patch verb but never rendered into the template, so
+  `rancher_deployment_scale` and friends always returned `next_steps=[]` while
+  the catalog claimed otherwise. The three new tools populate it correctly;
+  restoring it for the remaining patch verbs is tracked separately.
+
+### Notes
+- One deliberate wording normalization: `config_map`'s delete-confirmation
+  phrase changes from `configmap` to `config_map`, matching every other kind
+  and its own tool names.
+- `docs/tool-catalog.md` summary counts are updated, but ~120 individual
+  historical per-tool rows across its 27 pack sections still describe removed
+  tools. The file states that `docs/tool-manifest.json` is authoritative over
+  it, and the manifest is regenerated and gated; the narrative rows are left
+  for a dedicated pass rather than a rushed mass-edit.
+
 ## [1.54.0] — 2026-08-22 — Agent: Claude
 ### Changed
 - **Three discovery tools published their internal dependency-injection

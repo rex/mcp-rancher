@@ -7,22 +7,14 @@
 
 from mcp.server.fastmcp import FastMCP
 
-from rancher_mcp.tools.support.annotations import DESTRUCTIVE, IDEMPOTENT_WRITE, READ_ONLY
+from rancher_mcp.tools.support.annotations import IDEMPOTENT_WRITE, READ_ONLY
 from rancher_mcp.tools.workloads._generated_daemonsets import (
-    rancher_daemonset_delete,
-    rancher_daemonset_delete_tool,
     rancher_daemonset_get,
     rancher_daemonset_get_tool,
-    rancher_daemonset_set_annotations,
-    rancher_daemonset_set_annotations_tool,
-    rancher_daemonset_set_labels,
-    rancher_daemonset_set_labels_tool,
     rancher_daemonsets_list,
     rancher_daemonsets_list_tool,
 )
 from rancher_mcp.tools.workloads._generated_deployments import (
-    rancher_deployment_delete,
-    rancher_deployment_delete_tool,
     rancher_deployment_get,
     rancher_deployment_get_tool,
     rancher_deployment_pause,
@@ -33,65 +25,37 @@ from rancher_mcp.tools.workloads._generated_deployments import (
     rancher_deployment_resume_tool,
     rancher_deployment_scale,
     rancher_deployment_scale_tool,
-    rancher_deployment_set_annotations,
-    rancher_deployment_set_annotations_tool,
-    rancher_deployment_set_labels,
-    rancher_deployment_set_labels_tool,
     rancher_deployments_list,
     rancher_deployments_list_tool,
 )
 from rancher_mcp.tools.workloads._generated_replicasets import (
-    rancher_replica_set_delete,
-    rancher_replica_set_delete_tool,
     rancher_replica_set_get,
     rancher_replica_set_get_tool,
-    rancher_replica_set_set_annotations,
-    rancher_replica_set_set_annotations_tool,
-    rancher_replica_set_set_labels,
-    rancher_replica_set_set_labels_tool,
     rancher_replica_sets_list,
     rancher_replica_sets_list_tool,
 )
 from rancher_mcp.tools.workloads._generated_statefulsets import (
-    rancher_statefulset_delete,
-    rancher_statefulset_delete_tool,
     rancher_statefulset_get,
     rancher_statefulset_get_tool,
     rancher_statefulset_scale,
     rancher_statefulset_scale_tool,
-    rancher_statefulset_set_annotations,
-    rancher_statefulset_set_annotations_tool,
-    rancher_statefulset_set_labels,
-    rancher_statefulset_set_labels_tool,
     rancher_statefulsets_list,
     rancher_statefulsets_list_tool,
 )
 
 __all__ = [
-    "rancher_daemonset_delete",
     "rancher_daemonset_get",
-    "rancher_daemonset_set_annotations",
-    "rancher_daemonset_set_labels",
     "rancher_daemonsets_list",
-    "rancher_deployment_delete",
     "rancher_deployment_get",
     "rancher_deployment_pause",
     "rancher_deployment_restart",
     "rancher_deployment_resume",
     "rancher_deployment_scale",
-    "rancher_deployment_set_annotations",
-    "rancher_deployment_set_labels",
     "rancher_deployments_list",
-    "rancher_replica_set_delete",
     "rancher_replica_set_get",
-    "rancher_replica_set_set_annotations",
-    "rancher_replica_set_set_labels",
     "rancher_replica_sets_list",
-    "rancher_statefulset_delete",
     "rancher_statefulset_get",
     "rancher_statefulset_scale",
-    "rancher_statefulset_set_annotations",
-    "rancher_statefulset_set_labels",
     "rancher_statefulsets_list",
     "register_workload_tools",
 ]
@@ -102,28 +66,10 @@ def register_workload_tools(mcp: FastMCP) -> None:
 
     mcp.tool(name="rancher_daemonsets_list", annotations=READ_ONLY)(rancher_daemonsets_list_tool)
     mcp.tool(name="rancher_daemonset_get", annotations=READ_ONLY)(rancher_daemonset_get_tool)
-    mcp.tool(name="rancher_daemonset_delete", annotations=DESTRUCTIVE)(
-        rancher_daemonset_delete_tool
-    )
-    mcp.tool(name="rancher_daemonset_set_labels", annotations=IDEMPOTENT_WRITE)(
-        rancher_daemonset_set_labels_tool
-    )
-    mcp.tool(name="rancher_daemonset_set_annotations", annotations=IDEMPOTENT_WRITE)(
-        rancher_daemonset_set_annotations_tool
-    )
     mcp.tool(name="rancher_deployments_list", annotations=READ_ONLY)(rancher_deployments_list_tool)
     mcp.tool(name="rancher_deployment_get", annotations=READ_ONLY)(rancher_deployment_get_tool)
-    mcp.tool(name="rancher_deployment_delete", annotations=DESTRUCTIVE)(
-        rancher_deployment_delete_tool
-    )
     mcp.tool(name="rancher_deployment_scale", annotations=IDEMPOTENT_WRITE)(
         rancher_deployment_scale_tool
-    )
-    mcp.tool(name="rancher_deployment_set_labels", annotations=IDEMPOTENT_WRITE)(
-        rancher_deployment_set_labels_tool
-    )
-    mcp.tool(name="rancher_deployment_set_annotations", annotations=IDEMPOTENT_WRITE)(
-        rancher_deployment_set_annotations_tool
     )
     mcp.tool(name="rancher_deployment_pause", annotations=IDEMPOTENT_WRITE)(
         rancher_deployment_pause_tool
@@ -138,28 +84,10 @@ def register_workload_tools(mcp: FastMCP) -> None:
         rancher_replica_sets_list_tool
     )
     mcp.tool(name="rancher_replica_set_get", annotations=READ_ONLY)(rancher_replica_set_get_tool)
-    mcp.tool(name="rancher_replica_set_delete", annotations=DESTRUCTIVE)(
-        rancher_replica_set_delete_tool
-    )
-    mcp.tool(name="rancher_replica_set_set_labels", annotations=IDEMPOTENT_WRITE)(
-        rancher_replica_set_set_labels_tool
-    )
-    mcp.tool(name="rancher_replica_set_set_annotations", annotations=IDEMPOTENT_WRITE)(
-        rancher_replica_set_set_annotations_tool
-    )
     mcp.tool(name="rancher_statefulsets_list", annotations=READ_ONLY)(
         rancher_statefulsets_list_tool
     )
     mcp.tool(name="rancher_statefulset_get", annotations=READ_ONLY)(rancher_statefulset_get_tool)
-    mcp.tool(name="rancher_statefulset_delete", annotations=DESTRUCTIVE)(
-        rancher_statefulset_delete_tool
-    )
     mcp.tool(name="rancher_statefulset_scale", annotations=IDEMPOTENT_WRITE)(
         rancher_statefulset_scale_tool
-    )
-    mcp.tool(name="rancher_statefulset_set_labels", annotations=IDEMPOTENT_WRITE)(
-        rancher_statefulset_set_labels_tool
-    )
-    mcp.tool(name="rancher_statefulset_set_annotations", annotations=IDEMPOTENT_WRITE)(
-        rancher_statefulset_set_annotations_tool
     )

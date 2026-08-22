@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, model_validator
 
 from .aliases import ArgType, FilterPredicate, FilterType
 
@@ -309,3 +309,44 @@ class ArgSpec(BaseModel):
     description: str = ""
     """Optional descriptive text. Reserved for future MCP input-schema
     surfacing — currently unused by codegen."""
+
+
+class GenericResourceKindConfig(BaseModel):
+    """Opt-in marker: this descriptor's resource family participates in the
+    three collapsed generic mutation tools (``rancher_resource_set_labels``,
+    ``rancher_resource_set_annotations``, ``rancher_resource_delete`` —
+    ``tools/resource_kinds/``) instead of (or in addition to) generating its
+    own per-resource ``set_labels``/``set_annotations``/``delete`` tools.
+
+    At least one of ``labels`` / ``annotations`` / ``delete`` must be True.
+    Codegen collects every descriptor with this block set into ONE generated
+    kind registry (``tools/resource_kinds/_generated_kinds.py``): a closed
+    ``resource_kind`` enum per operation plus, per kind, the routing info
+    (plane/transport/namespaced/path-building) already carried by this
+    descriptor's other fields (``namespaced``, ``transport``, ``path_helper``
+    / ``list_path`` / ``detail_path``, ``tools.get.name``, ``tools.list.name``)
+    — nothing about routing is hand-typed twice.
+
+    ``resource_kind``'s enum VALUE for this descriptor is always
+    ``display_name_singular`` (matches the old per-resource tools'
+    ``RancherCuratedDeleteResult.resource_kind`` convention, and the
+    confirmation-phrase/audit text derived from it at runtime)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    labels: bool = False
+    """Include this kind in ``LabelableResourceKind`` / ``rancher_resource_set_labels``."""
+
+    annotations: bool = False
+    """Include this kind in ``LabelableResourceKind`` / ``rancher_resource_set_annotations``."""
+
+    delete: bool = False
+    """Include this kind in ``DeletableResourceKind`` / ``rancher_resource_delete``."""
+
+    @model_validator(mode="after")
+    def _at_least_one_operation(self) -> GenericResourceKindConfig:
+        if not (self.labels or self.annotations or self.delete):
+            raise ValueError(
+                "generic_kind must set at least one of labels/annotations/delete to True"
+            )
+        return self

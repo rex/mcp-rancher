@@ -6,21 +6,14 @@
 
 from __future__ import annotations
 
-import time
-
-from rancher_mcp.audit import audit_mutation
 from rancher_mcp.clients.management import ManagementDiscoveryClient, RancherManagementClient
 from rancher_mcp.config import AppSettings, get_settings
-from rancher_mcp.exceptions import RancherCapabilityError
 from rancher_mcp.models.policy_reports import (
     RancherClusterPolicyReportDetail,
     RancherClusterPolicyReportList,
 )
-from rancher_mcp.models.resources import RancherCuratedDeleteResult, RancherMutationReceipt
-from rancher_mcp.rate_limit import rate_limit_writes
 from rancher_mcp.services.instances import resolve_instance
 from rancher_mcp.services.resources.builders_pagination import next_page_token_from_payload
-from rancher_mcp.services.safety import ensure_instance_writable
 from rancher_mcp.tools.policy_reports.paths import (
     policy_cluster_collection_path,
     policy_cluster_resource_path,
@@ -30,7 +23,6 @@ from rancher_mcp.tools.policy_reports.shared import (
     cluster_policy_report_summary_from_payload,
     items,
 )
-from rancher_mcp.tools.support.mutations import fetch_patch_before
 from rancher_mcp.tools.support.values import mapping_value, string_dict
 
 
@@ -158,229 +150,6 @@ async def rancher_cluster_policy_report_get(
         )
 
 
-async def _delete_cluster_policy_report(
-    instance_name: str,
-    cluster_id: str,
-    report_name: str,
-    confirmation_phrase_used: str,
-    client: ManagementDiscoveryClient,
-) -> RancherCuratedDeleteResult:
-    """Delete one cluster_policy_report; returns a typed delete result."""
-
-    response_payload = await client.delete_json(
-        policy_cluster_resource_path(cluster_id, "clusterpolicyreports", report_name),
-    )
-    return RancherCuratedDeleteResult(
-        instance=instance_name,
-        plane="steve",
-        resource_kind="cluster_policy_report",
-        resource_name=report_name,
-        cluster_id=cluster_id,
-        deleted=True,
-        confirmation_phrase_used=confirmation_phrase_used,
-        response_payload=dict(response_payload),
-        suggested_next_steps=["rancher_cluster_policy_reports_list"],
-    )
-
-
-@audit_mutation(operation="cluster_policy_report_delete", plane="steve")
-@rate_limit_writes
-async def rancher_cluster_policy_report_delete(
-    report_name: str,
-    confirmation: str,
-    cluster_id: str = "local",
-    instance: str | None = None,
-    settings: AppSettings | None = None,
-    client: ManagementDiscoveryClient | None = None,
-) -> RancherCuratedDeleteResult:
-    """Delete one cluster_policy_report after the agent echoes the required confirmation phrase."""
-
-    expected_phrase = f"delete cluster_policy_report {report_name}"
-    if confirmation != expected_phrase:
-        raise RancherCapabilityError(
-            f"Delete confirmation did not match the required phrase: {expected_phrase!r}"
-        )
-    resolved_settings = settings or get_settings()
-    instance_name, instance_config = resolve_instance(resolved_settings, instance)
-    ensure_instance_writable(instance_name, instance_config)
-    if client is not None:
-        return await _delete_cluster_policy_report(
-            instance_name,
-            cluster_id,
-            report_name,
-            expected_phrase,
-            client,
-        )
-    async with RancherManagementClient(instance_name, instance_config) as managed_client:
-        return await _delete_cluster_policy_report(
-            instance_name,
-            cluster_id,
-            report_name,
-            expected_phrase,
-            managed_client,
-        )
-
-
-async def _patch_cluster_policy_report_set_labels(
-    instance_name: str,
-    cluster_id: str,
-    report_name: str,
-    labels: dict[str, str],
-    client: ManagementDiscoveryClient,
-) -> RancherMutationReceipt:
-    """Set_labels one cluster_policy_report via JSON merge-patch; returns a mutation receipt."""
-
-    patch_subtree: dict[str, object] = {}
-    patch_subtree["labels"] = labels
-    if not patch_subtree:
-        raise RancherCapabilityError(
-            "No patch fields provided; every arg was None. Pass at least one field to update."
-        )
-    request_payload: dict[str, object] = patch_subtree
-    request_payload = {"metadata": request_payload}
-
-    before = await fetch_patch_before(
-        lambda: client.get_json(
-            policy_cluster_resource_path(cluster_id, "clusterpolicyreports", report_name)
-        ),
-        target_path="metadata",
-        patch_subtree=patch_subtree,
-        kind="cluster_policy_report",
-        action="set_labels",
-        name=report_name,
-    )
-    patch_started_at = time.monotonic()
-    await client.patch_json(
-        policy_cluster_resource_path(cluster_id, "clusterpolicyreports", report_name),
-        payload=request_payload,
-    )
-    duration_ms = int((time.monotonic() - patch_started_at) * 1000)
-    return RancherMutationReceipt(
-        instance=instance_name,
-        plane="steve",
-        action="set_labels",
-        kind="cluster_policy_report",
-        name=report_name,
-        cluster_id=cluster_id,
-        changed=dict(patch_subtree),
-        before=before,
-        duration_ms=duration_ms,
-    )
-
-
-@audit_mutation(operation="cluster_policy_report_set_labels", plane="steve")
-@rate_limit_writes
-async def rancher_cluster_policy_report_set_labels(
-    report_name: str,
-    labels: dict[str, str],
-    cluster_id: str = "local",
-    instance: str | None = None,
-    settings: AppSettings | None = None,
-    client: ManagementDiscoveryClient | None = None,
-) -> RancherMutationReceipt:
-    """Set_labels one cluster_policy_report via JSON merge-patch."""
-
-    resolved_settings = settings or get_settings()
-    instance_name, instance_config = resolve_instance(resolved_settings, instance)
-    ensure_instance_writable(instance_name, instance_config)
-    if client is not None:
-        return await _patch_cluster_policy_report_set_labels(
-            instance_name,
-            cluster_id,
-            report_name,
-            labels,
-            client,
-        )
-    async with RancherManagementClient(instance_name, instance_config) as managed_client:
-        return await _patch_cluster_policy_report_set_labels(
-            instance_name,
-            cluster_id,
-            report_name,
-            labels,
-            managed_client,
-        )
-
-
-async def _patch_cluster_policy_report_set_annotations(
-    instance_name: str,
-    cluster_id: str,
-    report_name: str,
-    annotations: dict[str, str],
-    client: ManagementDiscoveryClient,
-) -> RancherMutationReceipt:
-    """Set_annotations one cluster_policy_report via JSON merge-patch; returns a mutation receipt."""
-
-    patch_subtree: dict[str, object] = {}
-    patch_subtree["annotations"] = annotations
-    if not patch_subtree:
-        raise RancherCapabilityError(
-            "No patch fields provided; every arg was None. Pass at least one field to update."
-        )
-    request_payload: dict[str, object] = patch_subtree
-    request_payload = {"metadata": request_payload}
-
-    before = await fetch_patch_before(
-        lambda: client.get_json(
-            policy_cluster_resource_path(cluster_id, "clusterpolicyreports", report_name)
-        ),
-        target_path="metadata",
-        patch_subtree=patch_subtree,
-        kind="cluster_policy_report",
-        action="set_annotations",
-        name=report_name,
-    )
-    patch_started_at = time.monotonic()
-    await client.patch_json(
-        policy_cluster_resource_path(cluster_id, "clusterpolicyreports", report_name),
-        payload=request_payload,
-    )
-    duration_ms = int((time.monotonic() - patch_started_at) * 1000)
-    return RancherMutationReceipt(
-        instance=instance_name,
-        plane="steve",
-        action="set_annotations",
-        kind="cluster_policy_report",
-        name=report_name,
-        cluster_id=cluster_id,
-        changed=dict(patch_subtree),
-        before=before,
-        duration_ms=duration_ms,
-    )
-
-
-@audit_mutation(operation="cluster_policy_report_set_annotations", plane="steve")
-@rate_limit_writes
-async def rancher_cluster_policy_report_set_annotations(
-    report_name: str,
-    annotations: dict[str, str],
-    cluster_id: str = "local",
-    instance: str | None = None,
-    settings: AppSettings | None = None,
-    client: ManagementDiscoveryClient | None = None,
-) -> RancherMutationReceipt:
-    """Set_annotations one cluster_policy_report via JSON merge-patch."""
-
-    resolved_settings = settings or get_settings()
-    instance_name, instance_config = resolve_instance(resolved_settings, instance)
-    ensure_instance_writable(instance_name, instance_config)
-    if client is not None:
-        return await _patch_cluster_policy_report_set_annotations(
-            instance_name,
-            cluster_id,
-            report_name,
-            annotations,
-            client,
-        )
-    async with RancherManagementClient(instance_name, instance_config) as managed_client:
-        return await _patch_cluster_policy_report_set_annotations(
-            instance_name,
-            cluster_id,
-            report_name,
-            annotations,
-            managed_client,
-        )
-
-
 async def rancher_cluster_policy_reports_list_tool(
     cluster_id: str = "local",
     limit: int | None = None,
@@ -408,54 +177,6 @@ async def rancher_cluster_policy_report_get_tool(
 
     return await rancher_cluster_policy_report_get(
         report_name=report_name,
-        cluster_id=cluster_id,
-        instance=instance,
-    )
-
-
-async def rancher_cluster_policy_report_delete_tool(
-    report_name: str,
-    confirmation: str,
-    cluster_id: str = "local",
-    instance: str | None = None,
-) -> RancherCuratedDeleteResult:
-    """Delete one cluster_policy_report and return a typed receipt of what was removed. Destructive and irreversible — the caller must first echo the exact confirmation phrase the tool requires."""
-
-    return await rancher_cluster_policy_report_delete(
-        report_name=report_name,
-        confirmation=confirmation,
-        cluster_id=cluster_id,
-        instance=instance,
-    )
-
-
-async def rancher_cluster_policy_report_set_labels_tool(
-    report_name: str,
-    labels: dict[str, str],
-    cluster_id: str = "local",
-    instance: str | None = None,
-) -> RancherMutationReceipt:
-    """Modify one cluster_policy_report in place (set labels) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write."""
-
-    return await rancher_cluster_policy_report_set_labels(
-        report_name=report_name,
-        labels=labels,
-        cluster_id=cluster_id,
-        instance=instance,
-    )
-
-
-async def rancher_cluster_policy_report_set_annotations_tool(
-    report_name: str,
-    annotations: dict[str, str],
-    cluster_id: str = "local",
-    instance: str | None = None,
-) -> RancherMutationReceipt:
-    """Modify one cluster_policy_report in place (set annotations) via a JSON merge-patch and return a mutation receipt — the before and after of only the changed fields, not the whole object. A targeted write."""
-
-    return await rancher_cluster_policy_report_set_annotations(
-        report_name=report_name,
-        annotations=annotations,
         cluster_id=cluster_id,
         instance=instance,
     )

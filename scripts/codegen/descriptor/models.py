@@ -10,7 +10,7 @@ from __future__ import annotations
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from .aliases import Operation, Plane, Transport
-from .configs import GetConfig, ListConfig, PathHelper
+from .configs import GenericResourceKindConfig, GetConfig, ListConfig, PathHelper
 from .operations import ApplyConfig, CreateConfig, DeleteConfig, PatchConfig, ToolsBlock
 
 
@@ -114,6 +114,14 @@ class Descriptor(BaseModel):
     apply: ApplyConfig | None = None
     delete: DeleteConfig | None = None
     patches: list[PatchConfig] = []
+
+    # --- Generic collapsed-tool participation -----------------------
+
+    generic_kind: GenericResourceKindConfig | None = None
+    """When set, this resource family is dispatched through the collapsed
+    generic mutation tools (``tools/resource_kinds/``) instead of its own
+    per-resource ``set_labels``/``set_annotations``/``delete``. See
+    `GenericResourceKindConfig`."""
 
     # --- MCP tool metadata -----------------------------------------
 
@@ -278,6 +286,39 @@ class Descriptor(BaseModel):
                 "Set cluster_id_required=false (Norman global resources with cluster filter) "
                 "or remove cluster_id from query_params (Steve/k8s-proxy with path arg)."
             )
+        if self.generic_kind is not None:
+            if "get" not in self.operations or self.get is None:
+                raise ValueError(
+                    "generic_kind is set but 'get' is missing — the kind registry "
+                    "reuses get.arg_name/tools.get.name/tools.list.name for routing "
+                    "and next-step derivation. Add 'get' to operations."
+                )
+            if "list" not in self.operations or self.tools.list_ is None:
+                raise ValueError(
+                    "generic_kind is set but 'list' is missing — the collapsed "
+                    "tools' suggested_next_steps needs tools.list.name. Add "
+                    "'list' to operations."
+                )
+            if self.generic_kind.labels and any(p.verb == "set_labels" for p in self.patches):
+                raise ValueError(
+                    "generic_kind.labels=true conflicts with a per-resource "
+                    "patches[verb=set_labels] entry — pick one: the collapsed generic "
+                    "tool or a bespoke per-resource patch, not both."
+                )
+            if self.generic_kind.annotations and any(
+                p.verb == "set_annotations" for p in self.patches
+            ):
+                raise ValueError(
+                    "generic_kind.annotations=true conflicts with a per-resource "
+                    "patches[verb=set_annotations] entry — pick one: the collapsed "
+                    "generic tool or a bespoke per-resource patch, not both."
+                )
+            if self.generic_kind.delete and self.delete is not None:
+                raise ValueError(
+                    "generic_kind.delete=true conflicts with a per-resource 'delete' "
+                    "config — pick one: the collapsed generic tool or a bespoke "
+                    "per-resource delete, not both."
+                )
         return self
 
 

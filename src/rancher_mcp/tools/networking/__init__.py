@@ -8,59 +8,32 @@
 from mcp.server.fastmcp import FastMCP
 
 from rancher_mcp.tools.networking._generated_endpoint_slices import (
-    rancher_endpoint_slice_delete,
-    rancher_endpoint_slice_delete_tool,
     rancher_endpoint_slice_get,
     rancher_endpoint_slice_get_tool,
-    rancher_endpoint_slice_set_annotations,
-    rancher_endpoint_slice_set_annotations_tool,
-    rancher_endpoint_slice_set_labels,
-    rancher_endpoint_slice_set_labels_tool,
     rancher_endpoint_slices_list,
     rancher_endpoint_slices_list_tool,
 )
 from rancher_mcp.tools.networking._generated_ingresses import (
-    rancher_ingress_delete,
-    rancher_ingress_delete_tool,
     rancher_ingress_get,
     rancher_ingress_get_tool,
-    rancher_ingress_set_annotations,
-    rancher_ingress_set_annotations_tool,
-    rancher_ingress_set_labels,
-    rancher_ingress_set_labels_tool,
     rancher_ingresses_list,
     rancher_ingresses_list_tool,
 )
 from rancher_mcp.tools.networking._generated_network_policies import (
     rancher_network_policies_list,
     rancher_network_policies_list_tool,
-    rancher_network_policy_delete,
-    rancher_network_policy_delete_tool,
     rancher_network_policy_get,
     rancher_network_policy_get_tool,
-    rancher_network_policy_set_annotations,
-    rancher_network_policy_set_annotations_tool,
-    rancher_network_policy_set_labels,
-    rancher_network_policy_set_labels_tool,
 )
-from rancher_mcp.tools.support.annotations import DESTRUCTIVE, IDEMPOTENT_WRITE, READ_ONLY
+from rancher_mcp.tools.support.annotations import READ_ONLY
 
 __all__ = [
-    "rancher_endpoint_slice_delete",
     "rancher_endpoint_slice_get",
-    "rancher_endpoint_slice_set_annotations",
-    "rancher_endpoint_slice_set_labels",
     "rancher_endpoint_slices_list",
-    "rancher_ingress_delete",
     "rancher_ingress_get",
-    "rancher_ingress_set_annotations",
-    "rancher_ingress_set_labels",
     "rancher_ingresses_list",
     "rancher_network_policies_list",
-    "rancher_network_policy_delete",
     "rancher_network_policy_get",
-    "rancher_network_policy_set_annotations",
-    "rancher_network_policy_set_labels",
     "register_networking_tools",
 ]
 
@@ -74,36 +47,11 @@ def register_networking_tools(mcp: FastMCP) -> None:
     mcp.tool(name="rancher_endpoint_slice_get", annotations=READ_ONLY)(
         rancher_endpoint_slice_get_tool
     )
-    mcp.tool(name="rancher_endpoint_slice_delete", annotations=DESTRUCTIVE)(
-        rancher_endpoint_slice_delete_tool
-    )
-    mcp.tool(name="rancher_endpoint_slice_set_labels", annotations=IDEMPOTENT_WRITE)(
-        rancher_endpoint_slice_set_labels_tool
-    )
-    mcp.tool(name="rancher_endpoint_slice_set_annotations", annotations=IDEMPOTENT_WRITE)(
-        rancher_endpoint_slice_set_annotations_tool
-    )
     mcp.tool(name="rancher_ingresses_list", annotations=READ_ONLY)(rancher_ingresses_list_tool)
     mcp.tool(name="rancher_ingress_get", annotations=READ_ONLY)(rancher_ingress_get_tool)
-    mcp.tool(name="rancher_ingress_delete", annotations=DESTRUCTIVE)(rancher_ingress_delete_tool)
-    mcp.tool(name="rancher_ingress_set_labels", annotations=IDEMPOTENT_WRITE)(
-        rancher_ingress_set_labels_tool
-    )
-    mcp.tool(name="rancher_ingress_set_annotations", annotations=IDEMPOTENT_WRITE)(
-        rancher_ingress_set_annotations_tool
-    )
     mcp.tool(name="rancher_network_policies_list", annotations=READ_ONLY)(
         rancher_network_policies_list_tool
     )
     mcp.tool(name="rancher_network_policy_get", annotations=READ_ONLY)(
         rancher_network_policy_get_tool
-    )
-    mcp.tool(name="rancher_network_policy_delete", annotations=DESTRUCTIVE)(
-        rancher_network_policy_delete_tool
-    )
-    mcp.tool(name="rancher_network_policy_set_labels", annotations=IDEMPOTENT_WRITE)(
-        rancher_network_policy_set_labels_tool
-    )
-    mcp.tool(name="rancher_network_policy_set_annotations", annotations=IDEMPOTENT_WRITE)(
-        rancher_network_policy_set_annotations_tool
     )

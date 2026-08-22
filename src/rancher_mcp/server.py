@@ -50,6 +50,7 @@ def register_all_tools(mcp: FastMCP) -> None:
     )
     from rancher_mcp.tools.provisioning import register_provisioning_tools
     from rancher_mcp.tools.rbac import register_rbac_tools
+    from rancher_mcp.tools.resource_kinds import register_resource_kind_tools
     from rancher_mcp.tools.resources import register_resource_tools
     from rancher_mcp.tools.scheduling import register_scheduling_tools
     from rancher_mcp.tools.settings_features import register_settings_feature_tools
@@ -70,6 +71,7 @@ def register_all_tools(mcp: FastMCP) -> None:
     register_ops_tools(mcp)
     register_diagnostics_tools(mcp)
     register_resource_tools(mcp)
+    register_resource_kind_tools(mcp)
     register_cluster_node_tools(mcp)
     register_pod_service_tools(mcp)
     register_project_namespace_tools(mcp)
@@ -113,6 +115,11 @@ def register_all_tools(mcp: FastMCP) -> None:
     from rancher_mcp.next_step_targets import populate_from_tools
 
     populate_from_tools(mcp_internals._tool_manager.list_tools())
+    # Human-readable `title` on every tool (a data field, not a wrapping
+    # pass — order relative to the apply_* chain below doesn't matter).
+    from rancher_mcp.tools.support.titles import apply_titles_to_all_tools
+
+    apply_titles_to_all_tools(mcp)
     # Order (each apply wraps the previous, so the LAST is outermost at call time):
     # sensitive-reveal audit is INNERMOST (M-SEC) — it wraps the impl and emits an
     # audit record on the raw successful reveal; capability-unavailable translation

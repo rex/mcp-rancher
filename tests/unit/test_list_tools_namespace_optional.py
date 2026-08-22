@@ -166,28 +166,40 @@ def test_namespace_optional_list_tool_count_matches_the_audit() -> None:
 
 
 def test_non_list_single_resource_tools_still_require_namespace() -> None:
-    """Negative control: GET/CREATE/APPLY/DELETE/PATCH tools for the same
+    """Negative control: GET/CREATE/APPLY/PATCH tools for the same
     namespaced resources must be UNCHANGED — they address one named object
     and namespace stays a required path argument there. This guards against
     the opposite mistake: over-relaxing namespace on operations where
     omitting it is meaningless.
+
+    ``set_labels``/``set_annotations``/``delete`` are deliberately absent
+    from this representative list (see
+    ``test_collapsed_resource_kind_tools_have_namespace_optional_by_design``
+    below): those 118 per-resource tools were collapsed into three
+    ``resource_kind``-dispatched tools (F2) that necessarily span BOTH
+    namespaced and cluster-scoped kinds under one static JSON schema, so
+    ``namespace`` can no longer be schema-``required`` there — the runtime
+    guard replaces it. Every SURVIVING per-resource patch verb (the ones
+    NOT collapsed: scale, suspend, set_type, set_size, ...) still requires
+    namespace exactly as before, which is what this test now checks.
     """
 
     mcp = _build_registered_server()
     # One representative single-resource tool per operation, drawn from the
-    # FIX 2 packs, spanning k8s-proxy (configmaps/deployments) and steve
-    # (services) transports.
+    # FIX 2 packs, spanning k8s-proxy (configmaps/deployments/cron_jobs) and
+    # steve (services) transports. The four patch verbs are ones the F2
+    # collapse deliberately did NOT touch (scale/suspend/set_type/set_size
+    # stay per-resource, unlike set_labels/set_annotations/delete).
     representative_single_resource_tools = [
         "rancher_config_map_get",
         "rancher_config_map_create",
         "rancher_config_map_apply",
-        "rancher_config_map_delete",
-        "rancher_config_map_set_labels",
         "rancher_deployment_get",
-        "rancher_deployment_delete",
+        "rancher_deployment_scale",
+        "rancher_cron_job_suspend",
         "rancher_service_get",
-        "rancher_service_delete",
-        "rancher_service_set_labels",
+        "rancher_service_set_type",
+        "rancher_persistent_volume_claim_set_size",
     ]
     by_name = {tool.name: tool for tool in mcp._tool_manager.list_tools()}
 
@@ -200,3 +212,33 @@ def test_non_list_single_resource_tools_still_require_namespace() -> None:
     assert not not_required, (
         f"these single-resource tools must still REQUIRE namespace: {not_required}"
     )
+
+
+def test_collapsed_resource_kind_tools_have_namespace_optional_by_design() -> None:
+    """F2 collapse: ``rancher_resource_set_labels`` / ``_set_annotations`` /
+    ``_delete`` replace 118 per-resource tools with three tools dispatched
+    by a ``resource_kind`` argument. Whether ``namespace`` is meaningful
+    depends on the VALUE of ``resource_kind`` at call time (e.g. ``pod`` is
+    namespaced, ``storage_class`` is not) — a single static JSON schema
+    cannot make a parameter conditionally required on another parameter's
+    value, so ``namespace`` MUST be schema-optional on all three. The
+    requiredness this test's sibling above still checks for every other
+    single-resource tool is enforced here at RUNTIME instead (see
+    ``tests/unit/test_resource_kinds_tools.py`` for the actual refusal
+    behavior when a namespaced kind is called with no namespace)."""
+
+    mcp = _build_registered_server()
+    by_name = {tool.name: tool for tool in mcp._tool_manager.list_tools()}
+
+    for name in (
+        "rancher_resource_set_labels",
+        "rancher_resource_set_annotations",
+        "rancher_resource_delete",
+    ):
+        tool = by_name[name]
+        properties = tool.parameters.get("properties", {})
+        assert "namespace" in properties, f"{name} must still accept namespace as a parameter"
+        assert "namespace" not in tool.parameters.get("required", []), (
+            f"{name} must NOT statically require namespace — it spans both "
+            f"namespaced and cluster-scoped resource_kind values"
+        )
