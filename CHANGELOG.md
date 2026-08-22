@@ -1,5 +1,59 @@
 # Changelog
 
+## [1.54.0] — 2026-08-22 — Agent: Claude
+### Changed
+- **Three discovery tools published their internal dependency-injection
+  parameters as model-callable arguments.** `rancher_instance_list`,
+  `rancher_capability_domain_list` and `rancher_server_profile_get` were
+  registered against their implementations rather than through a `*_tool`
+  wrapper, so FastMCP derived their input schemas from the DI signature and
+  exposed `settings` / `catalog`. Verified against the running server before
+  the fix:
+  - A caller could pass its own `settings` and have it honoured — the response
+    came back carrying a caller-supplied Rancher URL and `readOnly: false`. The
+    token was never echoed (the redaction layer held) and all three tools are
+    read-only, so this was **not** credential exfiltration or a write path; it
+    was a model-deception vector reachable by prompt injection, since an agent
+    would trust a fabricated instance it had just been handed.
+  - `AppSettings` was inlined into the published schema, advertising
+    `RANCHER_TOKEN`, `RANCHER_URL`, `RANCHER_CA_BUNDLE` and `RANCHER_READ_ONLY`
+    to every client and costing 14.7 KB of context for parameters no caller
+    should ever set. `rancher_instance_list`'s input schema is now empty.
+
+  Found by the new footprint gate below, on its first run. It had survived a
+  full read-surface capture sweep because that sweep inspected responses, and
+  nothing had ever inspected what we were *asking for*.
+
+### Added
+- **`tests/unit/test_context_footprint.py` — a ratchet on what this server costs
+  a client to load.** Measured before any reduction work: **781.8 KB /
+  ~200,137 tokens** across 321 tools — 156% of a 128k context window and 625% of
+  a 32k local model's, meaning such a model could not connect at all.
+  Composition was 64.2% `outputSchema`, 20.9% `inputSchema`, and only 8.3%
+  descriptions — the field that actually drives tool selection was the smallest
+  line item. The gate budgets total payload, mean per-tool cost (so a shrinking
+  tool count can't mask fattening tools), worst single tool, and instructions
+  size, and prints a full byte breakdown on failure.
+
+  Every other gate here guards correctness; this one guards a resource that was
+  never measured and so grew unchecked. Codegen made adding a tool nearly free
+  while tool *count* was treated as a feature, so 321 tools resolved to ~4
+  distinct shapes across 43 resource families. Pruning alone would have regrown.
+- `tests/unit/test_no_plumbing_in_input_schemas.py` — fleet-wide enforcement of
+  the fix above, at three depths: no DI parameter is published, no internal
+  config type is inlined into `$defs`, and no secret setting *name* appears
+  anywhere in any published input schema.
+
+### Changed
+- **Server `instructions` now use 1,833 of the ~2,000 bytes a host will render,
+  up from 128.** This is the only channel for what holds *across* tools, and it
+  was carrying one sentence about version compatibility. It now covers the
+  Norman/Steve two-plane split, the generic escape hatch, where to start triage,
+  that **`cluster_id` defaults to `local` and an omitted value silently targets
+  the wrong cluster**, the write/confirmation/audit model, and the JSON error
+  contract. The footprint gate fails if it is left underfilled as well as if it
+  overflows.
+
 ## [1.53.1] — 2026-08-22 — Agent: Claude
 ### Changed
 - **Offline protocol references**, so design decisions stop resting on recalled

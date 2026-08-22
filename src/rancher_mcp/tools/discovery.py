@@ -4,8 +4,11 @@ from mcp.server.fastmcp import FastMCP
 
 from rancher_mcp.tools.discovery_catalog import (
     rancher_capability_domain_list,
+    rancher_capability_domain_list_tool,
     rancher_instance_list,
+    rancher_instance_list_tool,
     rancher_server_profile_get,
+    rancher_server_profile_get_tool,
 )
 from rancher_mcp.tools.discovery_schema import (
     rancher_api_plane_list,
@@ -45,11 +48,16 @@ __all__ = [
 def register_discovery_tools(mcp: FastMCP) -> None:
     """Register discovery tools with the FastMCP server."""
 
-    mcp.tool(name="rancher_instance_list", annotations=READ_ONLY)(rancher_instance_list)
+    # Register the `*_tool` wrappers, never the implementations: the impls carry
+    # `settings`/`catalog` DI parameters that FastMCP would otherwise publish as
+    # model-callable arguments (see discovery_catalog.py for what that leaked).
+    mcp.tool(name="rancher_instance_list", annotations=READ_ONLY)(rancher_instance_list_tool)
     mcp.tool(name="rancher_capability_domain_list", annotations=READ_ONLY)(
-        rancher_capability_domain_list
+        rancher_capability_domain_list_tool
     )
-    mcp.tool(name="rancher_server_profile_get", annotations=READ_ONLY)(rancher_server_profile_get)
+    mcp.tool(name="rancher_server_profile_get", annotations=READ_ONLY)(
+        rancher_server_profile_get_tool
+    )
     mcp.tool(name="rancher_server_health", annotations=READ_ONLY)(rancher_server_health_tool)
     mcp.tool(name="rancher_server_version", annotations=READ_ONLY)(rancher_server_version_tool)
     mcp.tool(name="rancher_api_plane_list", annotations=READ_ONLY)(rancher_api_plane_list_tool)

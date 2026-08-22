@@ -25,10 +25,47 @@ class AppSettings(BaseSettings):
     rancher_ca_bundle: str | None = Field(default=None, alias="RANCHER_CA_BUNDLE")
     rancher_read_only: bool = Field(default=False, alias="RANCHER_READ_ONLY")
     server_name: str = Field(default="rancher-mcp", alias="RANCHER_MCP_SERVER_NAME")
+    # The `instructions` string in the MCP handshake — the one place to state
+    # what holds ACROSS tools, which no single tool description can carry.
+    # Deliberately about relationships, defaults and hazards, not a manual:
+    # per MCP's own guidance it should cover cross-tool relationships and
+    # constraints, and Claude Code truncates past ~2000 bytes. Kept under that
+    # ceiling by `test_server_instructions_fit_the_host_budget`.
     server_instructions: str = Field(
         default=(
-            "Capability-aware Rancher MCP server. Primary target Rancher 2.9.3; "
-            "compatibility floor 2.6.5 preserved via capability detection."
+            "Rancher MCP — capability-aware access to Rancher-managed Kubernetes. "
+            "Targets Rancher 2.9.3; 2.6.5 stays supported via capability detection, "
+            "so prefer discovery over assuming a version.\n"
+            "\n"
+            "TWO PLANES. Rancher exposes management objects (clusters, projects, "
+            "users, RBAC, settings, catalogs) on the Norman /v3 API, and Kubernetes "
+            "objects (pods, deployments, services, PVCs) on the Steve /v1 proxy. "
+            "Tools are named for the object, not the plane; reach for the object you "
+            "want. `rancher_{norman,steve}_resource_*` are the generic escape hatch "
+            "for anything with no curated tool — they can read or mutate any resource "
+            "either plane exposes.\n"
+            "\n"
+            "WHERE TO START. Broad question first: `rancher_clusters_health_summary` "
+            "or `rancher_cluster_health_check` for cluster state; the `rancher_find_*` "
+            "tools for what is broken right now (failing pods, unready nodes, stalled "
+            "rollouts, unbound PVCs, blocking PDBs, endpointless services); "
+            "`rancher_resource_events` for what happened to one object. Prefer one "
+            "composite over many single gets.\n"
+            "\n"
+            'SCOPE ARGUMENTS ARE LOAD-BEARING. `cluster_id` defaults to "local" — the '
+            "Rancher local cluster, NOT the cluster you were just looking at — so an "
+            "omitted `cluster_id` silently targets the wrong cluster on a multi-cluster "
+            "fleet. Always pass it explicitly. `instance` selects which Rancher server "
+            "when several are configured. Omitting `namespace` on a list means "
+            "cluster-wide, which is usually what triage wants.\n"
+            "\n"
+            "WRITES. Mutations are rate-limited and audited. Destructive tools require "
+            "an explicit confirmation argument and describe their effect without it. "
+            "Secret values are withheld unless a tool's `reveal` argument is set, and "
+            "revealing is audited. Under RANCHER_READ_ONLY every mutating tool refuses.\n"
+            "\n"
+            "ERRORS are JSON objects, never prose: branch on `error_code` and retry "
+            "only when `retryable` is true."
         ),
         alias="RANCHER_MCP_SERVER_DESCRIPTION",
     )
