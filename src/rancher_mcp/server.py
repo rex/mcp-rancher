@@ -120,6 +120,13 @@ def register_all_tools(mcp: FastMCP) -> None:
     from rancher_mcp.tools.support.titles import apply_titles_to_all_tools
 
     apply_titles_to_all_tools(mcp)
+    # Also a data pass, not a wrapper: rewrites the PUBLISHED output schemas
+    # (64% of the tools/list payload) to drop Pydantic scaffolding and to repair
+    # the next-steps contract, which named a field no response carries and
+    # omitted the one every response does. `structuredContent` is unaffected.
+    from rancher_mcp.schema_compaction import apply_compact_output_schemas
+
+    apply_compact_output_schemas(mcp)
     # Order (each apply wraps the previous, so the LAST is outermost at call time):
     # sensitive-reveal audit is INNERMOST (M-SEC) — it wraps the impl and emits an
     # audit record on the raw successful reveal; capability-unavailable translation

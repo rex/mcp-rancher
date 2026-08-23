@@ -42,16 +42,20 @@ from rancher_mcp.server import register_all_tools
 # Budgets. Lower freely; raise only deliberately, with justification.
 # ---------------------------------------------------------------------------
 
-MAX_TOTAL_BYTES = 555_000
+MAX_TOTAL_BYTES = 418_000
 """Whole `tools/list` payload — the number that actually matters.
 
-History: 800,548 B over 321 tools (2026-08-22, first measurement) →
-547,866 B over 206 tools after collapsing the 118 mechanical
-`set_labels`/`set_annotations`/`delete` duplicates into 3 kind-dispatched tools.
+History:
+    800,548 B / 321 tools  — first measurement, 2026-08-22
+    547,866 B / 206 tools  — collapsed the 118 mechanical duplicates
+    410,488 B / 206 tools  — compacted the published schemas
+
+~200,137 → ~102,622 tokens, a 48.7% cut, with no capability removed.
 """
 
-MAX_MEAN_BYTES_PER_TOOL = 2_750
-"""Mean per-tool cost. Baseline 2,493 B over 321 tools → 2,658 B over 206.
+MAX_MEAN_BYTES_PER_TOOL = 2_050
+"""Mean per-tool cost. 2,493 B over 321 tools → 2,658 over 206 → 1,993 after
+schema compaction.
 
 READ THIS BEFORE REACTING TO A FAILURE HERE. The mean has a perverse property:
 consolidating away CHEAP duplicates raises it, because the removed tools were
@@ -66,8 +70,8 @@ Interpret the two together:
     total UP,   mean UP    → the surface is growing. Justify it.
 """
 
-MAX_SINGLE_TOOL_BYTES = 7_000
-"""No single tool should dominate. Baseline worst: 6,310 B (cluster_get)."""
+MAX_SINGLE_TOOL_BYTES = 5_000
+"""No single tool should dominate. Worst: 6,310 B → 4,637 B (cluster_get)."""
 
 HOST_INSTRUCTIONS_BUDGET_BYTES = 2_000
 """Claude Code truncates server `instructions` past roughly this."""

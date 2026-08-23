@@ -1,5 +1,53 @@
 # Changelog
 
+## [1.56.0] — 2026-08-23 — Agent: Claude
+### Changed
+### Fixed
+- **The published `outputSchema` was wrong in both directions.** FastMCP derives
+  it from `model_json_schema()` in *validation* mode, where the backing field
+  `suggested_next_steps` appears and the `next_steps` computed field does not —
+  while the response body is the *serialization* dump, where exactly the reverse
+  is true. So every schema advertised `suggestedNextSteps`, a key **no client
+  can ever receive** (~30 KB across the fleet), and omitted `nextSteps`, which
+  every response actually carries. Both directions are now repaired, and
+  `nextSteps` is declared at the root only — nested items never set it, so
+  claiming otherwise would be inaccurate as well as expensive.
+
+### Changed
+- **Published schemas compacted: 547,866 → 410,488 B (−25%).** Session total is
+  now **800,548 → 410,488 B, ~200,137 → ~102,622 tokens (−48.7%)**, with no
+  capability removed.
+
+  What goes is Pydantic scaffolding, not meaning:
+  - `title` on every field (~76 KB output, ~30 KB input, ~4,700 occurrences) —
+    generated mechanically from the field name, so it restates the key it hangs
+    on. Stripped from both schemas.
+  - `default` on **output** schemas (~29 KB) — a default says what to send when
+    an *input* is omitted; on a response it says nothing. Deliberately **kept**
+    on input schemas, where it is what makes `cluster_id`'s default of `"local"`
+    visible instead of a trap.
+
+  What deliberately stays:
+  - **`description`** — real semantic content. The entire argument for this pass
+    is that scaffolding should be cut so meaning survives; stripping
+    descriptions (another ~52 KB) would invert it.
+  - **Nullability** (`anyOf: [X, {"type": "null"}]`) — collapsing it would save
+    ~10% while publishing a contract claiming a field is non-nullable when it
+    can be null. That is how a strict client rejects a valid response, and this
+    repo has already shipped that failure once.
+
+  `structuredContent` is unaffected — FastMCP builds it from the tool's
+  `fn_metadata`, which this pass does not touch. Only the *published* schema
+  changes, so clients still receive identical response bodies.
+
+### Added
+- `tests/unit/test_schema_compaction.py` — pins what the pass removes and, more
+  importantly, what it must never touch: descriptions, nullability, root-only
+  `nextSteps` placement, input defaults, idempotence, and a fleet-wide backstop
+  that no tool may `require` a key it does not declare.
+- Footprint budgets ratcheted down: total 800,000 → 418,000 B, mean per tool
+  2,600 → 2,050 B, worst single tool 7,000 → 5,000 B.
+
 ## [1.55.0] — 2026-08-22 — Agent: Claude
 ### Changed
 **BREAKING.** 118 per-resource tools are removed and replaced by 3 generics.
