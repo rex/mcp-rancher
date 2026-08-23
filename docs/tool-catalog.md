@@ -105,6 +105,34 @@ table. The [Status legend](#status-legend) explains the icons.
 | 🔴 | **Blocked** — needs external dep, design decision, or refactor before shipping |
 | ⚫ | **Deferred** — explicitly punted, see `docs/known-gaps.md` |
 | 🚫 | **Out of scope** — won't be built (workflow, websocket, etc.) |
+| ♻️ | **Superseded** — the capability exists, reached through a different tool. **Do not rebuild.** See below. |
+
+## ♻️ Superseded in v1.55.0 — do not rebuild these
+
+118 per-resource tools were **deliberately removed** and replaced by three
+kind-dispatched generics:
+
+| Removed (42 + 42 + 34) | Replaced by |
+|---|---|
+| `rancher_<resource>_set_labels` | `rancher_resource_set_labels(resource_kind=…)` |
+| `rancher_<resource>_set_annotations` | `rancher_resource_set_annotations(resource_kind=…)` |
+| `rancher_<resource>_delete` | `rancher_resource_delete(resource_kind=…)` |
+
+**No capability was lost** — `resource_kind` is a closed enum generated from the
+same descriptors, so every resource these covered is still reachable, with the
+destructive-confirmation guard and audit trail intact.
+
+They were removed because they failed the test that governs this catalog: *does
+this tool know something the generic engine doesn't?* All 42 `set_labels` tools
+shared one identical output schema and 95.2%-identical descriptions, differing
+only in the name of their identifier parameter — which is also what produced the
+four inconsistent naming conventions operators complained about.
+
+**This matters for anyone picking up work from this file.** A ♻️ row is not a
+gap. Rebuilding one would re-add ~2.3 KB of context per tool to every client's
+`tools/list` and reintroduce the naming split. If you want a resource covered
+that isn't, add a `generic_kind` block to its descriptor in
+`catalog/curated_tools/` — one line, no new tool.
 
 ## Slice ID convention
 
@@ -299,8 +327,8 @@ now be read as "covered generically" rather than "built as a bespoke tool."
 | ✅ | rancher_deployments_list | k8s-proxy | list | `catalog/curated_tools/deployments.yml` |
 | ✅ | rancher_deployment_get | k8s-proxy | get | `catalog/curated_tools/deployments.yml` |
 | ✅ | rancher_deployment_scale | k8s-proxy | patch | `catalog/curated_tools/deployments.yml` (J-3) |
-| ✅ | rancher_deployment_set_labels | k8s-proxy | patch | `catalog/curated_tools/deployments.yml` (D-1, multi-patch) |
-| ✅ | rancher_deployment_delete | k8s-proxy | delete | `catalog/curated_tools/deployments.yml` (J-3) |
+| ♻️ | rancher_deployment_set_labels | k8s-proxy | patch | `catalog/curated_tools/deployments.yml` (D-1, multi-patch) |
+| ♻️ | rancher_deployment_delete | k8s-proxy | delete | `catalog/curated_tools/deployments.yml` (J-3) |
 | ✅ | rancher_daemonsets_list | k8s-proxy | list | `catalog/curated_tools/daemonsets.yml` |
 | ✅ | rancher_daemonset_get | k8s-proxy | get | `catalog/curated_tools/daemonsets.yml` |
 | ✅ | rancher_statefulsets_list | k8s-proxy | list | `catalog/curated_tools/statefulsets.yml` |
@@ -325,7 +353,7 @@ now be read as "covered generically" rather than "built as a bespoke tool."
 |---|---|---|---|---|
 | ✅ | rancher_pods_list | steve | list | `catalog/curated_tools/pods.yml` |
 | ✅ | rancher_pod_get | steve | get | `catalog/curated_tools/pods.yml` |
-| ✅ | rancher_pod_delete | steve | delete | `catalog/curated_tools/pods.yml` |
+| ♻️ | rancher_pod_delete | steve | delete | `catalog/curated_tools/pods.yml` |
 | ✅ | rancher_services_list | steve | list | `catalog/curated_tools/services.yml` |
 | ✅ | rancher_service_get | steve | get | `catalog/curated_tools/services.yml` |
 | ✅ | rancher_find_failing_pods | both | aggregate | `tools/ops/` |
@@ -338,7 +366,7 @@ now be read as "covered generically" rather than "built as a bespoke tool."
 |---|---|---|---|---|
 | ✅ | rancher_ingresses_list | k8s-proxy | list | `catalog/curated_tools/ingresses.yml` |
 | ✅ | rancher_ingress_get | k8s-proxy | get | `catalog/curated_tools/ingresses.yml` |
-| ✅ | rancher_ingress_set_labels | k8s-proxy | patch | `catalog/curated_tools/ingresses.yml` (D-1) |
+| ♻️ | rancher_ingress_set_labels | k8s-proxy | patch | `catalog/curated_tools/ingresses.yml` (D-1) |
 | ✅ | rancher_network_policies_list | k8s-proxy | list | `catalog/curated_tools/network_policies.yml` |
 | ✅ | rancher_network_policy_get | k8s-proxy | get | `catalog/curated_tools/network_policies.yml` |
 | ✅ | rancher_endpoint_slices_list | k8s-proxy | list | `catalog/curated_tools/endpoint_slices.yml` |
@@ -372,7 +400,7 @@ now be read as "covered generically" rather than "built as a bespoke tool."
 | ✅ | rancher_config_map_get | k8s-proxy | get | `catalog/curated_tools/configmaps.yml` |
 | ✅ | rancher_config_map_create | k8s-proxy | create | `catalog/curated_tools/configmaps.yml` (J-3) |
 | ✅ | rancher_config_map_apply | k8s-proxy | apply | `catalog/curated_tools/configmaps.yml` (J-3) |
-| ✅ | rancher_config_map_delete | k8s-proxy | delete | `catalog/curated_tools/configmaps.yml` (J-3) |
+| ♻️ | rancher_config_map_delete | k8s-proxy | delete | `catalog/curated_tools/configmaps.yml` (J-3) |
 | ✅ | rancher_secrets_list | k8s-proxy | list | `catalog/curated_tools/secrets.yml` |
 | ✅ | rancher_secret_get | k8s-proxy | get | `catalog/curated_tools/secrets.yml` |
 | ✅ | rancher_secret_create | k8s-proxy | create | `catalog/curated_tools/secrets.yml` (J-3) |
@@ -420,7 +448,7 @@ now be read as "covered generically" rather than "built as a bespoke tool."
 | ✅ | rancher_cluster_output_get | k8s-proxy | get | `catalog/curated_tools/cluster_outputs.yml` |
 | ✅ | rancher_flows_list | k8s-proxy | list | `catalog/curated_tools/flows.yml` |
 | ✅ | rancher_flow_get | k8s-proxy | get | `catalog/curated_tools/flows.yml` |
-| ✅ | rancher_flow_set_labels | k8s-proxy | patch | `catalog/curated_tools/flows.yml` (D-1) |
+| ♻️ | rancher_flow_set_labels | k8s-proxy | patch | `catalog/curated_tools/flows.yml` (D-1) |
 | ✅ | rancher_cluster_flows_list | k8s-proxy | list | `catalog/curated_tools/cluster_flows.yml` |
 | ✅ | rancher_cluster_flow_get | k8s-proxy | get | `catalog/curated_tools/cluster_flows.yml` |
 
@@ -444,7 +472,7 @@ Note: optional Banzai chart — tools 404 if chart isn't installed.
 | ✅ | rancher_prometheus_rule_get | k8s-proxy | get | `catalog/curated_tools/prometheus_rules.yml` |
 | ✅ | rancher_service_monitors_list | k8s-proxy | list | `catalog/curated_tools/service_monitors.yml` |
 | ✅ | rancher_service_monitor_get | k8s-proxy | get | `catalog/curated_tools/service_monitors.yml` |
-| ✅ | rancher_service_monitor_set_labels | k8s-proxy | patch | `catalog/curated_tools/service_monitors.yml` (D-1) |
+| ♻️ | rancher_service_monitor_set_labels | k8s-proxy | patch | `catalog/curated_tools/service_monitors.yml` (D-1) |
 | ✅ | rancher_pod_monitors_list | k8s-proxy | list | `catalog/curated_tools/pod_monitors.yml` |
 | ✅ | rancher_pod_monitor_get | k8s-proxy | get | `catalog/curated_tools/pod_monitors.yml` |
 
@@ -478,7 +506,7 @@ Note: optional kube-prometheus-stack chart — tools 404 if chart isn't installe
 |---|---|---|---|---|
 | ✅ | rancher_cert_manager_certificates_list | k8s-proxy | list | `catalog/curated_tools/cert_manager_certificates.yml` |
 | ✅ | rancher_cert_manager_certificate_get | k8s-proxy | get | `catalog/curated_tools/cert_manager_certificates.yml` |
-| ✅ | rancher_cert_manager_certificate_set_labels | k8s-proxy | patch | `catalog/curated_tools/cert_manager_certificates.yml` (D-1) |
+| ♻️ | rancher_cert_manager_certificate_set_labels | k8s-proxy | patch | `catalog/curated_tools/cert_manager_certificates.yml` (D-1) |
 | ✅ | rancher_cert_manager_issuers_list | k8s-proxy | list | `catalog/curated_tools/cert_manager_issuers.yml` |
 | ✅ | rancher_cert_manager_issuer_get | k8s-proxy | get | `catalog/curated_tools/cert_manager_issuers.yml` |
 | ✅ | rancher_cert_manager_cluster_issuers_list | k8s-proxy | list | `catalog/curated_tools/cert_manager_cluster_issuers.yml` |
@@ -490,7 +518,7 @@ Note: optional kube-prometheus-stack chart — tools 404 if chart isn't installe
 |---|---|---|---|---|
 | ✅ | rancher_backups_list | k8s-proxy | list | `catalog/curated_tools/backups.yml` |
 | ✅ | rancher_backup_get | k8s-proxy | get | `catalog/curated_tools/backups.yml` |
-| ✅ | rancher_backup_set_labels | k8s-proxy | patch | `catalog/curated_tools/backups.yml` (D-1) |
+| ♻️ | rancher_backup_set_labels | k8s-proxy | patch | `catalog/curated_tools/backups.yml` (D-1) |
 | ✅ | rancher_restores_list | k8s-proxy | list | `catalog/curated_tools/restores.yml` |
 | ✅ | rancher_restore_get | k8s-proxy | get | `catalog/curated_tools/restores.yml` |
 
@@ -500,7 +528,7 @@ Note: optional kube-prometheus-stack chart — tools 404 if chart isn't installe
 |---|---|---|---|---|
 | ✅ | rancher_longhorn_volumes_list | k8s-proxy | list | `catalog/curated_tools/longhorn_volumes.yml` |
 | ✅ | rancher_longhorn_volume_get | k8s-proxy | get | `catalog/curated_tools/longhorn_volumes.yml` |
-| ✅ | rancher_longhorn_volume_set_labels | k8s-proxy | patch | `catalog/curated_tools/longhorn_volumes.yml` (D-1) |
+| ♻️ | rancher_longhorn_volume_set_labels | k8s-proxy | patch | `catalog/curated_tools/longhorn_volumes.yml` (D-1) |
 | ✅ | rancher_longhorn_nodes_list | k8s-proxy | list | `catalog/curated_tools/longhorn_nodes.yml` |
 | ✅ | rancher_longhorn_node_get | k8s-proxy | get | `catalog/curated_tools/longhorn_nodes.yml` |
 | ✅ | rancher_longhorn_backups_list | k8s-proxy | list | `catalog/curated_tools/longhorn_backups.yml` |
@@ -516,7 +544,7 @@ Note: optional Longhorn chart — tools 404 if chart isn't installed.
 |---|---|---|---|---|
 | ✅ | rancher_horizontal_pod_autoscalers_list | k8s-proxy | list | `catalog/curated_tools/horizontal_pod_autoscalers.yml` |
 | ✅ | rancher_horizontal_pod_autoscaler_get | k8s-proxy | get | `catalog/curated_tools/horizontal_pod_autoscalers.yml` |
-| ✅ | rancher_horizontal_pod_autoscaler_set_labels | k8s-proxy | patch | `catalog/curated_tools/horizontal_pod_autoscalers.yml` (D-1) |
+| ♻️ | rancher_horizontal_pod_autoscaler_set_labels | k8s-proxy | patch | `catalog/curated_tools/horizontal_pod_autoscalers.yml` (D-1) |
 | ✅ | rancher_resource_quotas_list | k8s-proxy | list | `catalog/curated_tools/resource_quotas.yml` |
 | ✅ | rancher_resource_quota_get | k8s-proxy | get | `catalog/curated_tools/resource_quotas.yml` |
 | ✅ | rancher_limit_ranges_list | k8s-proxy | list | `catalog/curated_tools/limit_ranges.yml` |
@@ -528,10 +556,10 @@ Note: optional Longhorn chart — tools 404 if chart isn't installed.
 |---|---|---|---|---|
 | ✅ | rancher_priority_classes_list | k8s-proxy | list | `catalog/curated_tools/priority_classes.yml` |
 | ✅ | rancher_priority_class_get | k8s-proxy | get | `catalog/curated_tools/priority_classes.yml` |
-| ✅ | rancher_priority_class_set_labels | k8s-proxy | patch | `catalog/curated_tools/priority_classes.yml` (D-1) |
+| ♻️ | rancher_priority_class_set_labels | k8s-proxy | patch | `catalog/curated_tools/priority_classes.yml` (D-1) |
 | ✅ | rancher_runtime_classes_list | k8s-proxy | list | `catalog/curated_tools/runtime_classes.yml` |
 | ✅ | rancher_runtime_class_get | k8s-proxy | get | `catalog/curated_tools/runtime_classes.yml` |
-| ✅ | rancher_runtime_class_set_labels | k8s-proxy | patch | `catalog/curated_tools/runtime_classes.yml` (D-1) |
+| ♻️ | rancher_runtime_class_set_labels | k8s-proxy | patch | `catalog/curated_tools/runtime_classes.yml` (D-1) |
 
 ### Diagnostics ops aggregates (5 tools — Phase 4)
 

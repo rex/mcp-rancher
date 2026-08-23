@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.56.1] — 2026-08-23 — Agent: Claude
+### Changed
+- **`docs/tool-catalog.md` listed removed tools as buildable work.** `CLAUDE.md`
+  points agents at this file to pick up slices, so a row reading
+  `rancher_pod_set_labels` was an instruction to build it — which would have
+  re-added the duplication v1.55.0 just removed, plus the naming split that came
+  with it. Added a **♻️ Superseded** status, re-marked the affected rows, and
+  documented the replacement mapping with an explicit "do not rebuild", noting
+  that covering a new resource is a one-line `generic_kind` descriptor block
+  rather than a new tool. No row now claims ✅ Built for a tool that is not in
+  the live registry (verified against `tool-manifest.json`).
+
+  Worth separating: 77 of this file's ~100 references to non-existent tools were
+  already there by design — it doubles as the backlog. Only the 25 from the
+  collapse were genuinely misleading.
+
 ## [1.56.0] — 2026-08-23 — Agent: Claude
 ### Changed
 ### Fixed
