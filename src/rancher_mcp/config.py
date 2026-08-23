@@ -152,6 +152,31 @@ class AppSettings(BaseSettings):
         return self
 
 
+class ToolsetSettings(BaseSettings):
+    """Startup-time tool-surface selection — see ``rancher_mcp.toolsets``.
+
+    Deliberately its OWN ``BaseSettings`` rather than three more fields on
+    ``AppSettings``: ``AppSettings.build_instances`` raises when no Rancher
+    instance is configured, but which TOOLS are on the wire is a process-shape
+    decision independent of which Rancher server(s) are reachable.
+    ``register_all_tools`` must be able to resolve the active toolset even when
+    instance credentials are absent — which is exactly the case for most of
+    this repo's own fleet-wide gates (``test_context_footprint.py``,
+    ``test_no_plumbing_in_input_schemas.py``, the next-steps registry gate, the
+    schema/dump parity gate, …), all of which build the real tool registry via
+    ``register_all_tools`` with no ``RANCHER_URL``/``RANCHER_TOKEN`` set at
+    all. Coupling toolset resolution to ``AppSettings`` would make every one of
+    those raise ``ValidationError`` in CI, where `.github/workflows/validate.yml`
+    sets no instance credentials whatsoever (unlike `release.yml`'s smoke job).
+    """
+
+    toolsets: str = Field(default="all", alias="RANCHER_TOOLSETS")
+    include_tools: str = Field(default="", alias="RANCHER_TOOLS")
+    exclude_tools: str = Field(default="", alias="RANCHER_EXCLUDE_TOOLS")
+
+    model_config = SettingsConfigDict(env_file=".env", case_sensitive=False, extra="ignore")
+
+
 @lru_cache(maxsize=1)
 def get_settings() -> AppSettings:
     """Load settings from environment and cache them."""
@@ -163,6 +188,19 @@ def clear_settings_cache() -> None:
     """Clear cached settings for tests or controlled reloads."""
 
     get_settings.cache_clear()
+
+
+@lru_cache(maxsize=1)
+def get_toolset_settings() -> ToolsetSettings:
+    """Load toolset-selection settings from environment and cache them."""
+
+    return ToolsetSettings()
+
+
+def clear_toolset_settings_cache() -> None:
+    """Clear cached toolset settings for tests or controlled reloads."""
+
+    get_toolset_settings.cache_clear()
 
 
 def validate_startup_settings() -> AppSettings:

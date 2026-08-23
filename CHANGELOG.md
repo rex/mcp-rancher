@@ -1,5 +1,62 @@
 # Changelog
 
+## [1.57.0] — 2026-08-23 — Agent: Claude
+### Changed
+### Added
+- **Toolset profiles — startup-time surface selection, no capability removed.**
+  `RANCHER_TOOLSETS` (default **`all`**), plus `RANCHER_TOOLS` to force-include
+  individual tools and `RANCHER_EXCLUDE_TOOLS` to remove them (exclusion wins).
+
+  **The default stays `all` deliberately.** Claude Code — the primary host —
+  defers every tool schema behind its own search, so a small default would only
+  help hosts we don't prioritize while making the good one worse. Same call the
+  sibling Arda server made.
+
+  **`core` is the opt-in**, for constrained hosts and blast-radius scoping:
+
+  | profile | tools | payload | tokens |
+  |---|---|---|---|
+  | `all` | 206 | 410,488 B | ~102,622 |
+  | `core` | 32 | 80,204 B | ~20,051 |
+
+  32 tools spanning 8 families — the `find_*` checks, health/summary rollups,
+  events + pod logs, list/get pairs for the six resources triage actually starts
+  from, orientation, and the read-only half of the generic escape hatches.
+
+  Profiles map to family `register_*` functions in one place, so adding a tool
+  to an existing family needs zero toolset bookkeeping. Filtering happens before
+  every post-registration pass, so next-steps targets, titles, schema compaction
+  and the wrapper chain only ever see the active surface — and **`nextSteps`
+  now drops a suggestion whose tool isn't in the active profile**, rather than
+  pointing at something the caller cannot invoke.
+
+  A real-but-disabled tool returns `TOOLSET_NOT_ENABLED` naming the tool, the
+  toolset that would enable it, and the variable to set — distinct from the
+  `Unknown tool` a genuinely nonexistent name gets.
+
+### Fixed
+- **A fatal startup failure could kill the server silently.** Two bugs, the
+  second hidden behind the first:
+  1. Tool registration runs on a daemon thread, where an unhandled exception
+     does not crash the process — the thread died, `_tools_ready` was never set,
+     and the server sat accepting a `tools/list` it could never answer until a
+     30-second timeout expired.
+  2. With that fixed, the diagnostic still went through a level-filtered
+     `.error()`. Under `LOG_LEVEL=CRITICAL` the process exited 1 with a
+     **completely empty stderr** — an operator got a bare exit code and no
+     reason at all.
+
+  The report is now written straight to stderr *before* the structured log,
+  because logging may itself be the thing misconfigured, which makes the
+  structured call the least trustworthy way to report a misconfiguration.
+  Guarded by `tests/unit/test_startup_failure_is_loud.py`, which spawns a real
+  subprocess at two log levels — the behavior only exists in the interaction
+  between a daemon thread, the logging config, and process exit.
+- `configure_logging` had no exception-formatting processor, so **every
+  `exc_info=True` call site in the codebase** emitted a literal
+  `"exc_info": true` and discarded the real traceback. Four sites, three of them
+  pre-existing.
+
 ## [1.56.1] — 2026-08-23 — Agent: Claude
 ### Changed
 - **`docs/tool-catalog.md` listed removed tools as buildable work.** `CLAUDE.md`

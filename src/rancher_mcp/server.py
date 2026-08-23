@@ -18,43 +18,8 @@ def register_all_tools(mcp: FastMCP) -> None:
     # Local imports are intentional: keep module-level import cost near-zero.
     from rancher_mcp.audit import apply_sensitive_reveal_audit
     from rancher_mcp.metrics import apply_metrics_to_all_tools
-    from rancher_mcp.tools.alerts import register_alerts_tools
-    from rancher_mcp.tools.apps_catalogs import register_app_catalog_tools
-    from rancher_mcp.tools.auth_identity import register_auth_identity_tools
-    from rancher_mcp.tools.backup_operator import register_backup_operator_tools
-    from rancher_mcp.tools.batch_workloads import register_batch_workloads_tools
-    from rancher_mcp.tools.cert_manager import register_cert_manager_tools
-    from rancher_mcp.tools.certificates import register_certificates_tools
-    from rancher_mcp.tools.clusters_nodes import register_cluster_node_tools
-    from rancher_mcp.tools.compliance import register_compliance_tools
-    from rancher_mcp.tools.config_secrets import register_config_secrets_tools
-    from rancher_mcp.tools.diagnostics import register_diagnostics_tools
-    from rancher_mcp.tools.discovery import register_discovery_tools
-    from rancher_mcp.tools.disruption import register_disruption_tools
-    from rancher_mcp.tools.fleet_registration import register_fleet_registration_tools
-    from rancher_mcp.tools.governance import register_governance_tools
-    from rancher_mcp.tools.logging_backups import register_logging_backup_tools
-    from rancher_mcp.tools.logging_pipeline import register_logging_pipeline_tools
-    from rancher_mcp.tools.longhorn import register_longhorn_tools
     from rancher_mcp.tools.mcp_prompts import register_mcp_prompts
     from rancher_mcp.tools.mcp_resources import register_mcp_resources
-    from rancher_mcp.tools.monitoring import register_monitoring_tools
-    from rancher_mcp.tools.networking import register_networking_tools
-    from rancher_mcp.tools.node_lifecycle import register_node_lifecycle_tools
-    from rancher_mcp.tools.ops import register_ops_tools
-    from rancher_mcp.tools.pods_services import register_pod_service_tools
-    from rancher_mcp.tools.policy_reports import register_policy_reports_tools
-    from rancher_mcp.tools.projects_namespaces import register_project_namespace_tools
-    from rancher_mcp.tools.prometheus_monitoring import (
-        register_prometheus_monitoring_tools,
-    )
-    from rancher_mcp.tools.provisioning import register_provisioning_tools
-    from rancher_mcp.tools.rbac import register_rbac_tools
-    from rancher_mcp.tools.resource_kinds import register_resource_kind_tools
-    from rancher_mcp.tools.resources import register_resource_tools
-    from rancher_mcp.tools.scheduling import register_scheduling_tools
-    from rancher_mcp.tools.settings_features import register_settings_feature_tools
-    from rancher_mcp.tools.storage import register_storage_tools
     from rancher_mcp.tools.support.capability_unavailable import (
         apply_capability_unavailable_translation,
     )
@@ -62,58 +27,44 @@ def register_all_tools(mcp: FastMCP) -> None:
         apply_bare_json_errors,
         apply_structured_errors_to_all_tools,
     )
-    from rancher_mcp.tools.workloads import register_workload_tools
+    from rancher_mcp.tools.support.toolset_gate import apply_toolset_filter
+    from rancher_mcp.toolsets import register_families
 
-    register_discovery_tools(mcp)
-    register_disruption_tools(mcp)
-    register_fleet_registration_tools(mcp)
-    register_logging_backup_tools(mcp)
-    register_ops_tools(mcp)
-    register_diagnostics_tools(mcp)
-    register_resource_tools(mcp)
-    register_resource_kind_tools(mcp)
-    register_cluster_node_tools(mcp)
-    register_pod_service_tools(mcp)
-    register_project_namespace_tools(mcp)
-    register_app_catalog_tools(mcp)
-    register_auth_identity_tools(mcp)
-    register_rbac_tools(mcp)
-    register_settings_feature_tools(mcp)
-    register_storage_tools(mcp)
-    register_monitoring_tools(mcp)
-    register_compliance_tools(mcp)
-    register_alerts_tools(mcp)
-    register_workload_tools(mcp)
-    register_networking_tools(mcp)
-    register_node_lifecycle_tools(mcp)
-    register_config_secrets_tools(mcp)
-    register_provisioning_tools(mcp)
-    register_certificates_tools(mcp)
-    register_backup_operator_tools(mcp)
-    register_logging_pipeline_tools(mcp)
-    register_policy_reports_tools(mcp)
-    register_longhorn_tools(mcp)
-    register_prometheus_monitoring_tools(mcp)
-    register_cert_manager_tools(mcp)
-    register_batch_workloads_tools(mcp)
-    register_governance_tools(mcp)
-    register_scheduling_tools(mcp)
+    # `register_families` calls every family's `register_*_tools(mcp)` — the
+    # toolset profile -> function mapping lives in ONE place, `toolsets.py`
+    # (design requirement, and see that module's docstring for why). Every
+    # tool is registered unconditionally, exactly as before; `apply_toolset_filter`
+    # then resolves RANCHER_TOOLSETS/RANCHER_TOOLS/RANCHER_EXCLUDE_TOOLS and
+    # deregisters whatever the active profile doesn't want — BEFORE any of the
+    # passes below, so all of them (next-steps targets, titles, schema
+    # compaction, the apply_* wrapper chain) only ever see the active surface.
+    registration = register_families(mcp)
+    apply_toolset_filter(mcp, registration)
     register_mcp_resources(mcp)
     register_mcp_prompts(mcp)
-    # Every pack is registered now, so the tool manager's schemas are final:
-    # populate the next-steps target registry (models/base.py's `next_steps`
-    # computed field queries this to avoid forwarding a scope key — cluster_id/
-    # namespace — to a suggested tool that doesn't actually accept it).
+    # Every pack is registered (and the toolset profile applied) now, so the
+    # tool manager's schemas are final: populate the next-steps target
+    # registry (models/base.py's `next_steps` computed field queries this to
+    # avoid forwarding a scope key — cluster_id/namespace — to a suggested
+    # tool that doesn't actually accept it, AND to drop a suggestion whose
+    # tool isn't in the active profile at all).
     # `Any`-typed local, matching every other `_tool_manager` access in this
     # codebase (metrics.py, audit.py, tools/support/errors.py,
-    # tools/support/capability_unavailable.py): FastMCP has no public API for
-    # enumerating registered tools, so `_tool_manager` is the established,
-    # deliberate escape hatch, and typing it `Any` at the point of use is what
-    # keeps pyright's `reportPrivateUsage` (strict mode) from flagging it
-    # without loosening `register_all_tools`'s own `mcp: FastMCP` signature.
+    # tools/support/capability_unavailable.py, toolsets.py): FastMCP has no
+    # public API for enumerating registered tools, so `_tool_manager` is the
+    # established, deliberate escape hatch, and typing it `Any` at the point
+    # of use is what keeps pyright's `reportPrivateUsage` (strict mode) from
+    # flagging it without loosening `register_all_tools`'s own `mcp: FastMCP`
+    # signature.
     mcp_internals: Any = mcp
-    from rancher_mcp.next_step_targets import populate_from_tools
+    from rancher_mcp.next_step_targets import populate_from_tools, reset_tool_parameters
 
+    # Reset first: this function can run more than once per PROCESS (never
+    # per server — every test file that builds its own FastMCP + calls this
+    # again is a second build in the same process), and the registry must
+    # reflect only the registry just built, not a stale union with whatever a
+    # previous, differently-profiled build left behind.
+    reset_tool_parameters()
     populate_from_tools(mcp_internals._tool_manager.list_tools())
     # Human-readable `title` on every tool (a data field, not a wrapping
     # pass — order relative to the apply_* chain below doesn't matter).

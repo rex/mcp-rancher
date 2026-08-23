@@ -29,6 +29,7 @@ from collections.abc import Iterable
 from typing import Any
 
 _accepted_parameters: dict[str, frozenset[str]] = {}
+_populated = False
 
 
 def reset_tool_parameters() -> None:
@@ -36,7 +37,9 @@ def reset_tool_parameters() -> None:
     instance in the same process may call this between builds; production
     never needs to (``register_all_tools`` runs exactly once at startup)."""
 
+    global _populated
     _accepted_parameters.clear()
+    _populated = False
 
 
 def register_tool_parameters(tool_name: str, parameter_names: frozenset[str]) -> None:
@@ -55,8 +58,31 @@ def populate_from_tools(tools: Iterable[Any]) -> None:
     dependency on the MCP SDK or on ``tools/``, not just an informal one.
     """
 
+    global _populated
     for tool in tools:
         register_tool_parameters(tool.name, frozenset(tool.parameters.get("properties", {})))
+    _populated = True
+
+
+def is_active_tool(tool_name: str) -> bool:
+    """Whether *tool_name* is part of the currently active tool registry.
+
+    Same "unknown means don't filter" contract as ``accepts_parameter``:
+    before ``populate_from_tools`` has ever run in this process (e.g. a test
+    that builds a bare model with no FastMCP registry at all), every name is
+    treated as active so ``next_steps`` behaves exactly as it always has.
+    Once populated, a name is active only if it is a real key in the
+    registry — and because ``register_all_tools`` filters (deregisters)
+    disabled tools BEFORE calling ``populate_from_tools`` (see
+    ``rancher_mcp.toolsets.apply_toolset_filter``), that registry mirrors
+    the active RANCHER_TOOLSETS profile exactly. This is what keeps a
+    disabled tool out of every response's ``nextSteps``, not just out of
+    ``tools/list``.
+    """
+
+    if not _populated:
+        return True
+    return tool_name in _accepted_parameters
 
 
 def accepts_parameter(tool_name: str, parameter_name: str) -> bool | None:

@@ -26,6 +26,17 @@ def configure_logging(level_name: str) -> None:
             structlog.processors.TimeStamper(fmt="iso"),
             structlog.stdlib.add_log_level,
             structlog.stdlib.add_logger_name,
+            # Without this, `log.error(..., exc_info=True)` — used at four
+            # call sites across this codebase (__main__.py, tools/support/
+            # errors.py, tools/support/mutations.py, tools/pods_services/
+            # shared.py) — leaves the RAW `exc_info=True` flag in the event
+            # dict for the renderer below to serialize verbatim: a JSON log
+            # line reading literally `"exc_info": true`, with the actual
+            # exception type, message, and traceback silently discarded.
+            # This renders the traceback into a real "exception" field
+            # BEFORE either renderer runs, so every exc_info=True call
+            # actually carries the failure it was logged to explain.
+            structlog.processors.format_exc_info,
             renderer,
         ],
         wrapper_class=structlog.make_filtering_bound_logger(level),

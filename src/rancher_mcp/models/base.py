@@ -15,7 +15,7 @@ from pydantic import (
 from pydantic.alias_generators import to_camel
 
 from rancher_mcp.envelope import shape_envelope
-from rancher_mcp.next_step_targets import accepts_parameter
+from rancher_mcp.next_step_targets import accepts_parameter, is_active_tool
 from rancher_mcp.redaction import scrub_secrets
 
 
@@ -70,6 +70,15 @@ class RancherModel(BaseModel):
         forwarded onto ``rancher_node_get``, which has none) — a bogus key
         that is the mirror image of the "missing cluster_id" defect this
         field exists to avoid.
+
+        A target absent from the ACTIVE toolset profile (``is_active_tool``)
+        is dropped entirely rather than emitted with args — a model's
+        ``suggested_next_steps`` is a static, hand-authored list that has no
+        idea which RANCHER_TOOLSETS profile is running, so a tool from a
+        disabled family would otherwise still show up here even though
+        calling it fails. That is the same "looks pasteable but isn't" defect
+        this field exists to close, just on which TOOLS get suggested rather
+        than which ARGS they get suggested with.
         """
 
         if not self.suggested_next_steps:
@@ -81,6 +90,8 @@ class RancherModel(BaseModel):
                 scope[key] = value
         entries: list[dict[str, object]] = []
         for name in self.suggested_next_steps:
+            if not is_active_tool(name):
+                continue
             args = {
                 key: value
                 for key, value in scope.items()

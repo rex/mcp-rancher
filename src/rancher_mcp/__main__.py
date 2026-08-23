@@ -69,7 +69,46 @@ def main() -> None:
     def _load_tools() -> None:
         from rancher_mcp.server import register_all_tools
 
-        register_all_tools(mcp)
+        try:
+            register_all_tools(mcp)
+        except Exception as exc:
+            # A daemon thread's unhandled exception does NOT crash the
+            # process — Python just prints it via threading.excepthook and
+            # the thread dies, leaving `_tools_ready` unset forever. Left
+            # alone, that means `_lazy_list_tools` below blocks silently for
+            # its full 30 s timeout before failing: a misconfiguration (e.g.
+            # an unknown RANCHER_TOOLSETS profile) would "fail loudly" only
+            # in the sense of a buried stderr traceback, not to the operator
+            # watching the process start. Report it, then exit hard — a
+            # server that cannot register its tools has nothing to serve.
+            import sys
+            import traceback
+
+            # Written straight to stderr, ahead of the structured log, for two
+            # reasons. It must survive any LOG_LEVEL — at CRITICAL an
+            # `.error()` here is filtered and the process died with exit 1 and
+            # a COMPLETELY EMPTY stderr, which is the opposite of failing
+            # loudly. And logging may itself be what is misconfigured, in
+            # which case the structured call is the least trustworthy way to
+            # report that something is misconfigured.
+            print(
+                f"FATAL: rancher-mcp could not register its tools: {exc}",
+                file=sys.stderr,
+                flush=True,
+            )
+            traceback.print_exc(file=sys.stderr)
+
+            import structlog
+
+            structlog.get_logger("rancher_mcp.startup").critical(
+                "tool_registration_failed", exc_info=True
+            )
+            import os
+
+            # os._exit, not sys.exit: SystemExit raised on a non-main thread
+            # only unwinds that thread and would leave the server running,
+            # accepting requests it can never answer.
+            os._exit(1)
         _tools_ready.set()
 
     threading.Thread(target=_load_tools, daemon=True, name="tool-loader").start()

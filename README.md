@@ -74,6 +74,12 @@ logging pipeline · Prometheus monitoring · policy reports · CIS compliance ·
 backup operator · etcd backups · Longhorn · Fleet · provisioning · settings &
 features · alerts & notifiers.
 
+All 206 stay exposed by default — every tool schema is deferred behind
+Claude Code's own search, so a small default would only help other hosts at
+the good host's expense. A constrained host (a small local model, a tight
+context budget) can opt into a smaller surface via `RANCHER_TOOLSETS`; see
+[Toolset profiles](#toolset-profiles) under Configuration.
+
 ## Quick start
 
 ### Requirements
@@ -203,6 +209,41 @@ the same test suite, and read paths have been validated live against both a
 | `RANCHER_MCP_SERVER_NAME` | `rancher-mcp` | Server identity announced to clients |
 | `RANCHER_MCP_SERVER_DESCRIPTION` | built-in | Server description announced to clients |
 | `RANCHER_MCP_WRITE_RATE_LIMIT_PER_MIN` | `60` | Write rate limit (`0` disables) |
+| `RANCHER_TOOLSETS` | `all` | Comma-separated toolset profile(s) exposed at startup — see below |
+| `RANCHER_TOOLS` | — | Comma-separated tool names force-included on top of the selected profile(s) |
+| `RANCHER_EXCLUDE_TOOLS` | — | Comma-separated tool names removed, applied last — always wins over `RANCHER_TOOLS` |
+
+### Toolset profiles
+
+The default is `all`: every tool stays exposed. Claude Code, the primary
+host, defers every tool schema behind its own search, so a small default
+would only help other hosts at the cost of making the good host worse — this
+is a deliberate choice, not an oversight.
+
+`RANCHER_TOOLSETS` opts a constrained host (a small local model, or a context
+budget) into a smaller surface. Values are either a family name — one per
+`src/rancher_mcp/tools/` module (`storage`, `workloads`, `pods_services`,
+`rbac`, …; see `rancher_mcp.toolsets.FAMILY_REGISTRARS` for the full list) —
+or the cross-family `core` profile: a ~32-tool triage/orientation set
+(`rancher_find_*`, the health/summary rollups, core list/get pairs, and the
+generic `rancher_{steve,norman}_resource_{list,get}` escape hatches). `core`
+cuts the `tools/list` payload from 206 tools / ~401 KB to 32 tools / ~78 KB
+(~80% smaller). Profiles compose: `RANCHER_TOOLSETS=core,storage` gives the
+triage set plus everything storage-related.
+
+```env
+RANCHER_TOOLSETS=core                        # small triage surface
+RANCHER_TOOLSETS=core,storage,workloads      # triage + two full families
+RANCHER_TOOLS=rancher_secret_get             # add one extra tool on top
+RANCHER_EXCLUDE_TOOLS=rancher_secret_create  # remove one, wins over the above
+```
+
+An unknown profile name fails loudly at startup rather than silently
+producing an empty or shrunken surface. Calling a real tool that exists but
+isn't in the active profile returns a structured `TOOLSET_NOT_ENABLED` error
+naming the tool, the toolset that would enable it, and the env var to set —
+never a bare "unknown tool", which would make a disabled tool indistinguishable
+from a typo.
 
 ## Project status
 
