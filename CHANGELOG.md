@@ -1,5 +1,43 @@
 # Changelog
 
+## [1.58.0] — 2026-08-25 — Agent: Claude
+### Changed
+- **The published package could not import. Constrained `mcp` to `<2`.**
+
+  `pyproject.toml` declared `mcp[cli]>=1.0` with no upper bound. On 2026-07-28
+  the SDK released **2.0.0**, which implements protocol revision `2026-07-28`
+  and **removed the `fastmcp` module entirely** (`FastMCP` → `MCPServer`;
+  `mcp.server.fastmcp` does not exist). This package imports `FastMCP` in 40
+  source files, so from that day every fresh resolve — `uvx rancher-mcp`,
+  `pip install rancher-mcp`, any CI that skips the lockfile — installed a server
+  that raised `ImportError` before serving a single request. Published
+  `rancher-mcp 1.26.4` carried that metadata for roughly four weeks.
+
+  **Local development never saw it, and could not have**: `uv.lock` pinned
+  1.26.0 the whole time. A lockfile protects this repo, never a downstream
+  install — the breakage lived in the dependency metadata we publish, which no
+  test exercised. `tests/unit/test_dependency_constraints.py` now reads the
+  *declared* constraint rather than the resolved environment, and includes a
+  non-vacuity check that fails once `mcp.server.fastmcp` disappears, so the gate
+  and the bound it guards get removed together with the port that obsoletes them.
+
+  Verified end-to-end the way a user would: built the wheel, installed it into a
+  clean venv with no lockfile, and drove the real stdio protocol — handshake
+  reports `1.57.0`, `tools/list` returns 206 tools.
+
+### Changed
+- **Develop against what users actually resolve.** The fresh-install check
+  surfaced that a downstream install gets **mcp 1.29.1** (top of the 1.x line,
+  within the new bound) while we developed against 1.26.0 — i.e. we were not
+  testing what we ship. `uv.lock` now tracks 1.29.1. Full suite green on it
+  (1,311 tests), `tools/list` byte-identical at 410,488 B, and the
+  `test_bare_json_errors` canary confirms 1.29.1 still emits the
+  `"Error executing tool {name}: "` prefix that `apply_bare_json_errors` strips.
+
+  Versioned **minor**, not patch: per the repo's versioning rule, only
+  galactically trivial changes are patches, and this is a shipped-defect fix plus
+  a dependency upgrade.
+
 ## [1.57.0] — 2026-08-23 — Agent: Claude
 ### Changed
 ### Added
