@@ -1,5 +1,37 @@
 # Changelog
 
+## [1.60.0] — 2026-08-25 — Agent: Claude
+### Changed
+- **`PatchConfig.next_steps` was write-only dead data across the whole server**
+  (T1-PATCH-NEXTSTEPS). `tool_module.py.j2` rendered `suggested_next_steps` for
+  list/get/create/apply/delete — and silently not for **patch**. Every curated
+  patch tool therefore returned `nextSteps=[]` while the catalog declared real
+  follow-ups: `deployment_scale/pause/resume/restart`, `cron_job_suspend/resume`,
+  `hpa_set_min_max`, `service_set_type`, `pvc_set_size`, `statefulset_scale` —
+  10 declarations across 7 catalog files, all inert.
+
+  Fixed by mirroring the DELETE section's rendering in the PATCH section, then
+  `make codegen`. Purely additive: 11 insertions, no other behavior change, since
+  `RancherMutationReceipt` already carried the field and defaulted it to `[]`.
+  No existing test asserted the empty value, so nothing was depending on the gap.
+
+### Added
+- **`tests/unit/test_codegen_renders_declared_next_steps.py`** — the gate for the
+  blind spot that let this survive.
+
+  The existing fleet-wide gate *does* discover patch declarations, but
+  `_next_steps_instance_support.py` builds its probe with
+  `model_copy(update={"suggested_next_steps": …})` — it **injects** the declared
+  targets and then checks they resolve. That validates *"if these were emitted,
+  would they be valid"*, never *"are they emitted at all"*, so a declaration the
+  template dropped looked identical to one it rendered.
+
+  The new gate asserts the other half at the only place the difference is
+  visible — the generated source — plus a catalog-independent backstop that no
+  generated `RancherMutationReceipt(...)` may omit the field, which catches a
+  future operation type added with the same oversight. Verified by reverting the
+  template and regenerating: 11 failures, then 12 passes with the fix restored.
+
 ## [1.59.0] — 2026-08-25 — Agent: Claude
 ### Changed
 - **The test suite depended on the developer's machine, and CI had been red for

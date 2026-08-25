@@ -229,6 +229,7 @@ async def _patch_persistent_volume_claim_set_size(
         changed=dict(patch_subtree),
         before=before,
         duration_ms=duration_ms,
+        suggested_next_steps=["rancher_persistent_volume_claim_get"],
     )
 
 

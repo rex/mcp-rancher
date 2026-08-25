@@ -221,6 +221,7 @@ async def _patch_deployment_scale(
         changed=dict(patch_subtree),
         before=before,
         duration_ms=duration_ms,
+        suggested_next_steps=["rancher_deployment_get", "rancher_pods_list"],
     )
 
 
@@ -300,6 +301,7 @@ async def _patch_deployment_pause(
         changed=dict(patch_subtree),
         before=before,
         duration_ms=duration_ms,
+        suggested_next_steps=["rancher_deployment_get", "rancher_deployment_resume"],
     )
 
 
@@ -376,6 +378,7 @@ async def _patch_deployment_resume(
         changed=dict(patch_subtree),
         before=before,
         duration_ms=duration_ms,
+        suggested_next_steps=["rancher_deployment_get", "rancher_pods_list"],
     )
 
 
@@ -456,6 +459,7 @@ async def _patch_deployment_restart(
         changed=dict(patch_subtree),
         before=before,
         duration_ms=duration_ms,
+        suggested_next_steps=["rancher_deployment_get", "rancher_pods_list"],
     )
 
 

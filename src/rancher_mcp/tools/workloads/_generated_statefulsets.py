@@ -213,6 +213,7 @@ async def _patch_statefulset_scale(
         changed=dict(patch_subtree),
         before=before,
         duration_ms=duration_ms,
+        suggested_next_steps=["rancher_statefulset_get", "rancher_pods_list"],
     )
 
 

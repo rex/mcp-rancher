@@ -201,6 +201,7 @@ async def _patch_service_set_type(
         changed=dict(patch_subtree),
         before=before,
         duration_ms=duration_ms,
+        suggested_next_steps=["rancher_service_get"],
     )
 
 

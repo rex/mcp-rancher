@@ -242,6 +242,7 @@ async def _patch_horizontal_pod_autoscaler_set_min_max(
         changed=dict(patch_subtree),
         before=before,
         duration_ms=duration_ms,
+        suggested_next_steps=["rancher_horizontal_pod_autoscaler_get"],
     )
 
 

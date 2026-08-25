@@ -843,6 +843,7 @@ async def _patch_{{ display_name_singular }}_{{ patch.verb }}(
         changed=dict(patch_subtree),
         before=before,
         duration_ms=duration_ms,
+        suggested_next_steps=[{% for step in patch.next_steps %}"{{ step }}"{% if not loop.last %}, {% endif %}{% endfor %}],
     )
 
 

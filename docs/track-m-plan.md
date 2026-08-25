@@ -208,7 +208,7 @@ the plumbing-leak fix + footprint ratchet (v1.54.0), the 118→3 tool collapse
 
 ### Leftovers from Track 1 — open
 
-- [ ] **T1-PATCH-NEXTSTEPS** `PatchConfig.next_steps` is **dead code repo-wide**.
+- [x] **T1-PATCH-NEXTSTEPS** (v1.60.0 — fixed; see CHANGELOG) `PatchConfig.next_steps` is **dead code repo-wide**.
   10 patch blocks across 7 catalog files (`deployments`, `cron_jobs`,
   `statefulsets`, `services`, `horizontal_pod_autoscalers`,
   `persistent_volume_claims`) declare `next_steps:`, but

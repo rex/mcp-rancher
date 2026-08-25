@@ -215,6 +215,7 @@ async def _patch_cron_job_suspend(
         changed=dict(patch_subtree),
         before=before,
         duration_ms=duration_ms,
+        suggested_next_steps=["rancher_cron_job_get", "rancher_jobs_list"],
     )
 
 
@@ -294,6 +295,7 @@ async def _patch_cron_job_resume(
         changed=dict(patch_subtree),
         before=before,
         duration_ms=duration_ms,
+        suggested_next_steps=["rancher_cron_job_get", "rancher_jobs_list"],
     )
 
 
