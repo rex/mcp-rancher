@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.58.1] — 2026-08-25 — Agent: Claude
+### Changed
+- **`docs/track-m-plan.md`**: added a Track 1 section (closed at v1.57.0) with
+  its six open leftovers as addressable slices — `T1-PATCH-NEXTSTEPS` (the
+  `PatchConfig.next_steps` dead code, with the 10 affected patch verbs named),
+  `T1-AE32-LAST`, `T1-SECRETS-PAGE`, `T1-LIVE-EVAL`, `T1-CODEGEN-E501`,
+  `T1-TASKSTATE` — plus the Track 2 slice list.
+- **`TASK_STATE.md`**: the handoff was badly stale — still describing 318 tools
+  and Track E, predating Tracks M/N and all of Track 1. Refreshed the repo
+  snapshot (206 tools, the footprint budget, the load-bearing `mcp<2` bound) and
+  replaced the lead handoff with Track 1's close and Track 2's state, including
+  the dual-era finding that makes the port safe and a pointer to the SDK's own
+  `docs/migration.md` over the docs site.
+
 ## [1.58.0] — 2026-08-25 — Agent: Claude
 ### Changed
 - **The published package could not import. Constrained `mcp` to `<2`.**

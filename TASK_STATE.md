@@ -32,7 +32,13 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 - Operational roadmap (track-level work breakdown): `ROADMAP.md`
 - Primary target: Rancher `2.9.3` (production)
 - Compat floor: Rancher `2.6.5` (devlab; never regress)
-- Public tool surface: 316 tools
+- Public tool surface: **206 tools** (was 321 — v1.55.0 collapsed 118 mechanical
+  `set_labels`/`set_annotations`/`delete` duplicates into 3 kind-dispatched
+  generics; no capability removed). `docs/tool-manifest.json` is authoritative.
+- `tools/list` footprint: **410,488 B / ~102,622 tokens**; `RANCHER_TOOLSETS=core`
+  → 32 tools / ~20,051. Budgeted by `tests/unit/test_context_footprint.py`.
+- MCP SDK: `mcp[cli]>=1.26,<2`, locked at 1.29.1. **The upper bound is
+  load-bearing** — 2.0.0 removed the `fastmcp` module (see Track 2).
 - Completion gate: `make check-if-the-agent-can-consider-this-task-completed`
 - Active quality gates:
   `make check-architecture`
@@ -53,6 +59,46 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 - **User-visible changes** → `CHANGELOG.md`
 
 ## Next Slice
+
+### 📌 HANDOFF (2026-08-25): Track 1 CLOSED — Track 2 (MCP 2.0.0) IN PROGRESS
+
+**Track 1 — context footprint — closed at v1.57.0.** `tools/list` went
+800,548 → 410,488 B (~200,137 → ~102,622 tokens) with **no capability removed**.
+At the start it was 625% of a 32k local model's entire context window, so such a
+model could not connect at all. Shipped: input-schema plumbing-leak fix + the
+footprint ratchet (v1.54.0), the 118→3 tool collapse (v1.55.0), schema
+compaction (v1.56.0), toolset profiles (v1.57.0). agenteval schema score
+**99.6/A**, one finding left. Full detail in `CHANGELOG.md` and the
+`mcp-exposure-architecture` memory.
+
+**Track 2 — MCP 2.0.0 / modern protocol — in progress.** Full plan:
+`~/.claude/plans/wobbly-seeking-scott.md`. Slice list: `docs/track-m-plan.md`
+(Track 2 section).
+
+The governing finding, source-verified: **mcp 2.0.0's dual-era support is
+automatic and cannot be disabled** — `docs/run/legacy-clients.md`: *"There is no
+`legacy=` option, no version allowlist, no way to reject or disable an era…
+Both eras are always on."* Requests route by `MCP-Protocol-Version` header
+before our code runs. So the port does **not** risk Claude Code, which
+demonstrably speaks legacy today. That removed the main reason to wait.
+
+- **T2-0 done (v1.58.0).** `mcp[cli]>=1.0` had no upper bound; mcp 2.0.0
+  (2026-07-28) removed the `fastmcp` module, so **every published install
+  since then failed at import** — for ~4 weeks. Local dev never saw it and
+  could not have: `uv.lock` pinned 1.26.0, and the defect lived in the metadata
+  we *publish*. `tests/unit/test_dependency_constraints.py` now gates the
+  declared constraint. Lock aligned to 1.29.1 — what a downstream install
+  actually resolves — so we test what we ship.
+- **Next: T2-1** (leftovers captured — done in `docs/track-m-plan.md`), then
+  **T2-2** the SDK seam, then **T2-3** the port.
+
+**Read before touching the port:** the SDK's own `docs/migration.md` (2,884
+lines of before/after) at `modelcontextprotocol/python-sdk@main`. It is far more
+complete than the rendered docs site. Note that `docs/reference/python-mcp-sdk.md`
+in this repo has **known-wrong v2 claims** in §10 (flagged low-confidence when
+written; since superseded) — correct it during T2-3.
+
+---
 
 ### 📌 HANDOFF (2026-07-22): M-SEC-2 (secret reveal gated opt-in) CLOSED — v1.45.0
 

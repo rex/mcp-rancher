@@ -198,3 +198,77 @@ Schema-only run: `uv run python -m agenteval --schema-only`.
   schema score 37.8 → 81.4 (grade F → B).
 - [x] **N-2** (v1.43.0) 40 hand-written tool descriptions → AE-20 ~0, schema score
   81.4 → 91.5 (grade B → A).
+
+## Track 1 — context footprint (v1.54.0 → v1.57.0, closed)
+
+`tools/list` 800,548 → 410,488 B; ~200,137 → ~102,622 tokens; `core` profile
+~20,051. See `CHANGELOG.md` and the `mcp-exposure-architecture` memory. Shipped:
+the plumbing-leak fix + footprint ratchet (v1.54.0), the 118→3 tool collapse
+(v1.55.0), schema compaction (v1.56.0), toolset profiles (v1.57.0).
+
+### Leftovers from Track 1 — open
+
+- [ ] **T1-PATCH-NEXTSTEPS** `PatchConfig.next_steps` is **dead code repo-wide**.
+  10 patch blocks across 7 catalog files (`deployments`, `cron_jobs`,
+  `statefulsets`, `services`, `horizontal_pod_autoscalers`,
+  `persistent_volume_claims`) declare `next_steps:`, but
+  `scripts/codegen/templates/tool_module.py.j2` renders it for
+  list/get/create/apply/delete and **never for patches** — the generated
+  `_patch_deployment_scale` builds `RancherMutationReceipt(...)` with no
+  `suggested_next_steps`, so it defaults to `[]` and the envelope drops it.
+  Affects `deployment_scale/pause/resume/restart`, `cron_job_suspend/resume`,
+  `hpa_set_min_max`, `pvc_set_size`, `service_set_type`, `statefulset_scale`.
+  The 3 collapsed `resource_*` tools DO populate it. Verified 2026-08-24.
+  Fix in the template + `make codegen`; the fleet-wide next-steps gate
+  (`tests/unit/test_next_steps_registry_gate.py`) should then cover them.
+- [ ] **T1-AE32-LAST** `rancher_namespace_workloads_summary` is the only tool
+  still requiring `namespace` — the single remaining agenteval finding
+  (schema score 99.6/A). Arguably a false positive (namespace is the tool's
+  SUBJECT, not a filter), but making it optional yields a cluster-wide
+  workloads rollup we do not otherwise have. Worth 0.3 eval points, more
+  operationally. Needs a naming decision if it becomes cluster-capable.
+- [ ] **T1-SECRETS-PAGE** `secrets_list` is still ~41 KB — the one genuinely
+  unbounded-at-scale list of the four AE-10 targets. A default pagination cap
+  was **deliberately deferred to its own ADR**: it changes what "no `limit`"
+  means for existing callers, which is a product decision, not response shaping.
+- [ ] **T1-LIVE-EVAL** run agenteval **live** from minas-morgul. Every score
+  since v1.42.0 (52.2, taken while `clusters_list` was broken) is schema-only;
+  the live number is unmeasured across ~15 releases of fixes. Needs prod VPN;
+  the local `lab` entry points at the dead 8443 lab.
+- [ ] **T1-CODEGEN-E501** `make check-codegen` prints ~300 lines of false `E501`
+  noise: `scripts/codegen/check.py:34-36` copies `SRC_ROOT` into a temp dir but
+  not `pyproject.toml`, so ruff falls back to its 88-char default instead of the
+  repo's 100. Cosmetic — the check's pass/fail is a content diff, not ruff's
+  exit code — but it buries real output.
+- [ ] **T1-TASKSTATE** `TASK_STATE.md` is stale (still describes 318 tools and
+  Track E; predates Tracks M/N and all of Track 1). CLAUDE.md §11 requires it
+  at session end.
+
+## Track 2 — MCP 2.0.0 / modern protocol (in progress)
+
+Full plan: `~/.claude/plans/wobbly-seeking-scott.md`. Key finding: **mcp 2.0.0's
+dual-era support is automatic and cannot be disabled** (`docs/run/legacy-clients.md`:
+*"There is no `legacy=` option… Both eras are always on"*), so the port does not
+risk Claude Code, which speaks legacy today.
+
+- [x] **T2-0** (v1.58.0) constrain `mcp[cli]` to `<2` — mcp 2.0.0 removed the
+  `fastmcp` module, and the unbounded `>=1.0` meant every published install
+  since 2026-07-28 failed at import. Gate on the *declared* constraint; lock
+  aligned to 1.29.1 (what a downstream install actually resolves).
+- [ ] **T2-1** capture leftovers (this section) + refresh `TASK_STATE.md`.
+- [ ] **T2-2** SDK seam — one module owning every `_tool_manager`/`_lowlevel_server`
+  touch, so the port is "rewrite one module + mechanical import swap". Also fix
+  the three fake-`_tool_manager` tests (`test_metrics.py:112-125`,
+  `test_capability_unavailable.py:213-233`, `test_sensitive_reveal.py:246-263`)
+  that hard-code the SDK's internal shape and would keep passing while
+  production breaks.
+- [ ] **T2-3** the port. `stamp_server_version()` is deleted (`MCPServer` takes
+  `version=`); `__main__.py`'s two-phase startup needs redesign (lowlevel
+  decorators are gone, and modern connections have no `initialize` deadline to
+  beat); the `call_tool` monkeypatches can retire in favour of returning
+  `CallToolResult(is_error=True, …)` and `Extension.intercept_tool_call`;
+  `httpx` → `httpx2`. **Silent break to watch:** `model_dump()` emits snake_case
+  on MCP types in v2 — `test_context_footprint.py:106` and `test_toolset_gate.py`
+  call it on `ToolAnnotations` and need `by_alias=True`.
+- [ ] **T2-4** modern-only wins: caching hints (`CacheHint`, spec MUST),
+  `server/discover` (automatic), server `title`/`description`.
