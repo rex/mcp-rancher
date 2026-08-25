@@ -1,5 +1,36 @@
 # Changelog
 
+## [1.59.0] — 2026-08-25 — Agent: Claude
+### Changed
+- **The test suite depended on the developer's machine, and CI had been red for
+  six consecutive commits (v1.54.0 → v1.58.0) because of it.**
+
+  Two tests resolved real `AppSettings`, which requires `RANCHER_URL`/
+  `RANCHER_TOKEN` and reads `.env` from the working directory. A developer has a
+  populated `.env`; CI does not. `make validate` reported green locally the whole
+  time while every CI run failed — and nothing in the suite could detect the
+  difference, because the thing that differed *was the environment the suite ran
+  in*. The v1.58.0 release pipeline is what finally surfaced it, by running the
+  same gate in a clean environment.
+
+  This is the same shape as the dependency defect fixed in v1.58.0: **a local
+  environment masking a failure that only appears in a clean one.** Both were
+  invisible to every check we had, for the same reason.
+
+  `tests/conftest.py::hermetic_settings` now disables `env_file` and injects
+  dummy credentials for the whole session, so local and CI agree by
+  construction. That also closes a second, quieter problem: tests were silently
+  reading a developer's **real** credentials — this repo has already leaked a
+  production token into a log through that door once.
+
+  `tests/unit/test_hermetic_settings.py` guards it by asserting the *dummy*
+  values specifically, so removing the fixture fails **locally**, where someone
+  will see it — rather than only in CI, which is exactly the asymmetry that let
+  six red builds go unnoticed.
+
+  Verified by running the full suite from a directory with no `.env` and no
+  credentials in the environment: 1,311 passed.
+
 ## [1.58.1] — 2026-08-25 — Agent: Claude
 ### Changed
 - **`docs/track-m-plan.md`**: added a Track 1 section (closed at v1.57.0) with

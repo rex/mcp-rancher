@@ -8,4 +8,4 @@ somebody happened to reinstall the package.
 
 from __future__ import annotations
 
-__version__ = "1.58.1"
+__version__ = "1.59.0"
