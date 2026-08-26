@@ -31,8 +31,10 @@ from __future__ import annotations
 
 from _output_schema_dump_parity_support import build_registered_server
 
+from rancher_mcp.sdk_registry import registered_tools
+
 _SERVER = build_registered_server()
-_TOOLS = _SERVER._tool_manager.list_tools()
+_TOOLS = registered_tools(_SERVER)
 
 
 def test_registry_has_a_healthy_number_of_tools() -> None:

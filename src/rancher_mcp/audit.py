@@ -26,6 +26,7 @@ import structlog
 from pydantic import BaseModel, ConfigDict, Field
 
 from rancher_mcp.exceptions import RancherAPIError, RancherMCPError
+from rancher_mcp.sdk_registry import registered_tools
 
 AuditOutcome = Literal["success", "error"]
 """Whether the audited call returned normally or raised RancherMCPError."""
@@ -227,7 +228,7 @@ def apply_sensitive_reveal_audit(mcp: Any) -> None:
     construction.
     """
 
-    for tool in mcp._tool_manager._tools.values():
+    for tool in registered_tools(mcp):
         info = _REVEAL_TOOLS.get(tool.name)
         if info is not None:
             plane, id_kwarg, gate_kwarg = info

@@ -21,6 +21,7 @@ from mcp.server.fastmcp.exceptions import ToolError
 
 from rancher_mcp.config import clear_toolset_settings_cache
 from rancher_mcp.next_step_targets import reset_tool_parameters
+from rancher_mcp.sdk_registry import registered_tools
 from rancher_mcp.server import register_all_tools
 from rancher_mcp.toolsets import CORE_TOOLS, register_families
 
@@ -157,7 +158,7 @@ def _wire_shape(tool: object) -> dict[str, object]:
 
 
 def _tools_list_payload_bytes(mcp: FastMCP) -> int:
-    tools = mcp._tool_manager.list_tools()  # type: ignore[attr-defined]
+    tools = registered_tools(mcp)
     blobs = [_wire_shape(t) for t in tools]
     return len(json.dumps({"tools": blobs}, separators=(",", ":")))
 

@@ -46,6 +46,8 @@ from __future__ import annotations
 
 from typing import Any, cast
 
+from rancher_mcp.sdk_registry import registered_tools
+
 # Pydantic serialization scaffolding with no meaning on an output contract.
 _NOISE_KEYWORDS = ("title", "default")
 
@@ -158,7 +160,7 @@ def apply_compact_output_schemas(mcp: Any) -> None:
     irrelevant. Call once at construction time, never per request.
     """
 
-    for tool in mcp._tool_manager._tools.values():
+    for tool in registered_tools(mcp):
         if tool.output_schema:
             tool.output_schema = compact_output_schema(tool.output_schema)
         if tool.parameters:

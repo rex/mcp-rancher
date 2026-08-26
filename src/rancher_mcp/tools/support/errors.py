@@ -12,6 +12,7 @@ import structlog
 from mcp.server.fastmcp.exceptions import ToolError
 
 from rancher_mcp.exceptions import RancherAPIError, RancherMCPError
+from rancher_mcp.sdk_registry import DispatchFn, registered_tools, wrap_dispatch
 
 _logger = structlog.get_logger("rancher_mcp.tools.errors")
 
@@ -187,25 +188,24 @@ def apply_bare_json_errors(mcp: Any) -> None:
     so the guarantee is total: **every** failure this server emits parses.
     """
 
-    manager = mcp._tool_manager
-    original_call_tool = manager.call_tool
+    def wrap(original_call_tool: DispatchFn) -> DispatchFn:
+        async def call_tool(name: str, *args: Any, **kwargs: Any) -> Any:
+            try:
+                return await original_call_tool(name, *args, **kwargs)
+            except ToolError as exc:
+                raise ToolError(_as_bare_envelope(str(exc), name)) from exc.__cause__ or exc
 
-    @functools.wraps(original_call_tool)
-    async def call_tool(name: str, *args: Any, **kwargs: Any) -> Any:
-        try:
-            return await original_call_tool(name, *args, **kwargs)
-        except ToolError as exc:
-            raise ToolError(_as_bare_envelope(str(exc), name)) from exc.__cause__ or exc
+        return call_tool
 
-    manager.call_tool = call_tool
+    wrap_dispatch(mcp, wrap)
 
 
 def apply_structured_errors_to_all_tools(mcp: Any) -> None:
     """Patch every registered tool's fn to return structured errors on failure.
 
     Called once after all tools are registered in create_mcp_server().
-    Uses FastMCP's internal _tool_manager._tools dict — call only at server
-    construction time, never at request time.
+    Enumerates the registry through ``rancher_mcp.sdk_registry`` — call only
+    at server construction time, never at request time.
     """
-    for tool in mcp._tool_manager._tools.values():
+    for tool in registered_tools(mcp):
         tool.fn = wrap_with_structured_errors(tool.fn)

@@ -6,9 +6,8 @@ by the dedicated ``rancher_mcp.metrics`` logger.
 
 from __future__ import annotations
 
-from typing import Any
-
 import pytest
+from _sdk_registry_support import placeholder_tool, registry_with
 from structlog.testing import capture_logs
 
 from rancher_mcp.exceptions import RancherAPIError, RancherCapabilityError
@@ -18,6 +17,7 @@ from rancher_mcp.metrics import (
     emit_metric,
     track_metric,
 )
+from rancher_mcp.sdk_registry import registered_tools
 
 
 def test_emit_metric_writes_to_metrics_logger() -> None:
@@ -109,25 +109,12 @@ async def test_track_metric_passes_through_non_rancher_exceptions() -> None:
 def test_apply_metrics_to_all_tools_wraps_each_tool_fn() -> None:
     """The bulk-apply helper should wrap every registered tool's fn."""
 
-    class _FakeTool:
-        def __init__(self, fn: Any) -> None:
-            self.fn = fn
-
-    async def real_fn() -> str:
-        return "ok"
-
-    class _FakeManager:
-        def __init__(self) -> None:
-            self._tools = {"a": _FakeTool(real_fn), "b": _FakeTool(real_fn)}
-
-    class _FakeMcp:
-        def __init__(self) -> None:
-            self._tool_manager = _FakeManager()
-
-    mcp = _FakeMcp()
+    mcp = registry_with("rancher_pods_list", "rancher_nodes_list")
     apply_metrics_to_all_tools(mcp)
 
-    # Each tool.fn should now be a wrapped version (not real_fn itself).
-    for tool in mcp._tool_manager._tools.values():
-        assert tool.fn is not real_fn
-        assert tool.fn.__wrapped__ is real_fn  # functools.wraps preserves this
+    # Each tool.fn should now be a wrapped version (not the original itself).
+    tools = registered_tools(mcp)
+    assert len(tools) == 2
+    for tool in tools:
+        assert tool.fn is not placeholder_tool
+        assert tool.fn.__wrapped__ is placeholder_tool  # functools.wraps preserves this

@@ -17,6 +17,7 @@ from rancher_mcp.schema_compaction import (
     compact_input_schema,
     compact_output_schema,
 )
+from rancher_mcp.sdk_registry import registered_tools
 from rancher_mcp.server import register_all_tools
 
 
@@ -155,7 +156,7 @@ def test_every_registered_tool_survives_compaction_with_a_coherent_schema() -> N
     apply_compact_output_schemas(mcp)
 
     offenders: list[str] = []
-    for tool in mcp._tool_manager.list_tools():
+    for tool in registered_tools(mcp):
         for schema, label in ((tool.output_schema, "output"), (tool.parameters, "input")):
             if not schema:
                 continue

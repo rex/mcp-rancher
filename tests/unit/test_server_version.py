@@ -25,6 +25,7 @@ from pathlib import Path
 from mcp.server.fastmcp import FastMCP
 
 import rancher_mcp
+from rancher_mcp.sdk_registry import advertised_server_version
 from rancher_mcp.server import stamp_server_version
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -71,14 +72,18 @@ def test_handshake_advertises_our_version_not_the_sdk_version() -> None:
 
     mcp = FastMCP(name="test-server")
 
+    # Read through `rancher_mcp.sdk_registry` — the one module allowed to touch
+    # the SDK's internals — and via `create_initialization_options()` rather
+    # than the attribute, so this asserts the value a CLIENT would be told
+    # rather than merely that an assignment happened.
+    #
     # Precondition: FastMCP alone does NOT carry our version. If a future SDK
     # gains a `version=` constructor arg this assert flips and we should plumb
     # it properly instead of assigning the attribute.
-    unstamped = mcp._mcp_server.create_initialization_options().server_version  # type: ignore[attr-defined]
-    assert unstamped != rancher_mcp.__version__
+    assert advertised_server_version(mcp) != rancher_mcp.__version__
 
     stamp_server_version(mcp)
-    stamped = mcp._mcp_server.create_initialization_options().server_version  # type: ignore[attr-defined]
+    stamped = advertised_server_version(mcp)
     assert stamped == rancher_mcp.__version__
     assert stamped == _version_file()
 

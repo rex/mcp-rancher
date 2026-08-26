@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 from mcp.server.fastmcp import FastMCP
 
 
@@ -48,16 +46,12 @@ def register_all_tools(mcp: FastMCP) -> None:
     # avoid forwarding a scope key — cluster_id/namespace — to a suggested
     # tool that doesn't actually accept it, AND to drop a suggestion whose
     # tool isn't in the active profile at all).
-    # `Any`-typed local, matching every other `_tool_manager` access in this
-    # codebase (metrics.py, audit.py, tools/support/errors.py,
-    # tools/support/capability_unavailable.py, toolsets.py): FastMCP has no
-    # public API for enumerating registered tools, so `_tool_manager` is the
-    # established, deliberate escape hatch, and typing it `Any` at the point
-    # of use is what keeps pyright's `reportPrivateUsage` (strict mode) from
-    # flagging it without loosening `register_all_tools`'s own `mcp: FastMCP`
-    # signature.
-    mcp_internals: Any = mcp
+    # FastMCP publishes no API for enumerating what is registered, so every
+    # pass here goes through `rancher_mcp.sdk_registry` — the one module that
+    # is allowed to reach into the SDK's internals, and the one place a future
+    # SDK upgrade has to touch (gated by test_sdk_seam_is_exclusive.py).
     from rancher_mcp.next_step_targets import populate_from_tools, reset_tool_parameters
+    from rancher_mcp.sdk_registry import registered_tools
 
     # Reset first: this function can run more than once per PROCESS (never
     # per server — every test file that builds its own FastMCP + calls this
@@ -65,7 +59,7 @@ def register_all_tools(mcp: FastMCP) -> None:
     # reflect only the registry just built, not a stale union with whatever a
     # previous, differently-profiled build left behind.
     reset_tool_parameters()
-    populate_from_tools(mcp_internals._tool_manager.list_tools())
+    populate_from_tools(registered_tools(mcp))
     # Human-readable `title` on every tool (a data field, not a wrapping
     # pass — order relative to the apply_* chain below doesn't matter).
     from rancher_mcp.tools.support.titles import apply_titles_to_all_tools
@@ -97,21 +91,19 @@ def register_all_tools(mcp: FastMCP) -> None:
 def stamp_server_version(mcp: FastMCP) -> None:
     """Advertise *our* version as ``serverInfo.version`` in the MCP handshake.
 
-    ``FastMCP.__init__`` accepts no ``version``, so it builds the low-level
-    ``Server`` with ``version=None`` — and the SDK's fallback for that is
-    ``pkg_version("mcp")``. Every client was therefore being told the *MCP SDK's*
-    version instead of ours, which meant the number never moved when we shipped:
-    an operator restarting the server mid-incident had no way to confirm the
-    restart had picked up a fix. Assigning the underlying ``Server.version`` is
-    the only seam the SDK exposes for this.
+    Without this the SDK reports *its own* version, so ours never moved when
+    we shipped: an operator restarting the server mid-incident had no way to
+    confirm the restart had picked up a fix. The mechanism lives in
+    ``rancher_mcp.sdk_registry.stamp_server_version``; this wrapper exists so
+    both entrypoints (``__main__.main`` and ``create_mcp_server``) can stamp
+    the version without either of them having to know what our version is.
 
-    Called by both entrypoints (``__main__.main`` and ``create_mcp_server``);
-    guarded by ``tests/unit/test_server_version.py``.
+    Guarded by ``tests/unit/test_server_version.py``.
     """
-    # Local import: keeps this module's import cost near-zero (see above).
-    from rancher_mcp import __version__
+    # Local imports: keep this module's import cost near-zero (see above).
+    from rancher_mcp import __version__, sdk_registry
 
-    mcp._mcp_server.version = __version__  # type: ignore[attr-defined]
+    sdk_registry.stamp_server_version(mcp, __version__)
 
 
 def create_mcp_server() -> FastMCP:

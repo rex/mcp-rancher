@@ -10,6 +10,7 @@ from typing import Any
 
 import structlog
 from _config_secrets_support import StubConfigSecretsClient, build_settings
+from _sdk_registry_support import placeholder_tool, registry_with
 
 from rancher_mcp.audit import _REVEAL_TOOLS, _wrap_reveal_audit, apply_sensitive_reveal_audit
 from rancher_mcp.models.base import RancherModel
@@ -22,6 +23,7 @@ from rancher_mcp.models.fleet_registration.cluster_registration_tokens import (
     RancherClusterRegistrationTokenDetail,
 )
 from rancher_mcp.rate_limit import reset_rate_limit_state
+from rancher_mcp.sdk_registry import registered_tools
 from rancher_mcp.tools.config_secrets import rancher_secret_create, rancher_secret_get
 
 
@@ -240,35 +242,14 @@ def test_reveal_tools_registry_gates_secret_get_not_registration_token() -> None
 
 
 def test_apply_wraps_only_the_reveal_tools() -> None:
-    async def _noop(**_kwargs: Any) -> None:
-        return None
-
-    class _Tool:
-        def __init__(self, name: str) -> None:
-            self.name = name
-            self.fn = _noop
-
-    class _Mgr:
-        def __init__(self) -> None:
-            self._tools = {
-                "rancher_secret_get": _Tool("rancher_secret_get"),
-                "rancher_cluster_registration_token_get": _Tool(
-                    "rancher_cluster_registration_token_get"
-                ),
-                "rancher_clusters_list": _Tool("rancher_clusters_list"),
-            }
-
-    class _Mcp:
-        def __init__(self) -> None:
-            self._tool_manager = _Mgr()
-
-    mcp = _Mcp()
-    untouched = mcp._tool_manager._tools["rancher_clusters_list"].fn
-    secret_before = mcp._tool_manager._tools["rancher_secret_get"].fn
-    apply_sensitive_reveal_audit(mcp)
-    assert mcp._tool_manager._tools["rancher_clusters_list"].fn is untouched
-    assert mcp._tool_manager._tools["rancher_secret_get"].fn is not secret_before
-    assert (
-        mcp._tool_manager._tools["rancher_cluster_registration_token_get"].fn.__wrapped__  # type: ignore[attr-defined]
-        is not None
+    mcp = registry_with(
+        "rancher_secret_get",
+        "rancher_cluster_registration_token_get",
+        "rancher_clusters_list",
     )
+    apply_sensitive_reveal_audit(mcp)
+
+    by_name = {tool.name: tool for tool in registered_tools(mcp)}
+    assert by_name["rancher_clusters_list"].fn is placeholder_tool
+    assert by_name["rancher_secret_get"].fn is not placeholder_tool
+    assert by_name["rancher_cluster_registration_token_get"].fn.__wrapped__ is placeholder_tool

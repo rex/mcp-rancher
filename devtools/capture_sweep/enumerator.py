@@ -19,6 +19,7 @@ from typing import Any
 
 from devtools.capture_sweep.constants import INJECTED_PARAMS
 from devtools.capture_sweep.models import ToolPlan
+from rancher_mcp.sdk_registry import registered_tools
 
 
 def load_read_only_tool_names(repo_root: Path) -> frozenset[str]:
@@ -65,10 +66,10 @@ def resolve_impl_fn(wrapper: Callable[..., Any], tool_name: str) -> Callable[...
 def build_capture_plan(mcp: Any, read_only_tools: frozenset[str]) -> list[ToolPlan]:
     """Introspect every registered tool's real IMPL signature into a capture plan."""
 
-    # Reaches into FastMCP's internal tool registry — no public API lists
-    # "every registered tool + its raw callable" (rancher_mcp.metrics and
-    # rancher_mcp.tools.support.errors do the same for the same reason).
-    tools: dict[str, Any] = mcp._tool_manager._tools
+    # Enumerated through `rancher_mcp.sdk_registry`, the one module allowed
+    # to reach into the SDK's internals: FastMCP publishes no API listing
+    # "every registered tool + its raw callable".
+    tools = {tool.name: tool for tool in registered_tools(mcp)}
     plans: list[ToolPlan] = []
     for name in sorted(tools):
         impl_fn = resolve_impl_fn(tools[name].fn, name)

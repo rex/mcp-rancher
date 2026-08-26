@@ -256,12 +256,13 @@ risk Claude Code, which speaks legacy today.
   since 2026-07-28 failed at import. Gate on the *declared* constraint; lock
   aligned to 1.29.1 (what a downstream install actually resolves).
 - [x] **T2-1** (v1.58.1) leftovers captured (this section) + `TASK_STATE.md` refreshed.
-- [ ] **T2-2** SDK seam — one module owning every `_tool_manager`/`_lowlevel_server`
-  touch, so the port is "rewrite one module + mechanical import swap". Also fix
-  the three fake-`_tool_manager` tests (`test_metrics.py:112-125`,
-  `test_capability_unavailable.py:213-233`, `test_sensitive_reveal.py:246-263`)
-  that hard-code the SDK's internal shape and would keep passing while
-  production breaks.
+- [x] **T2-2** (v1.61.0) SDK seam — `src/rancher_mcp/sdk_registry.py` owns every
+  private reach-in (11 production sites + 19 in tests), so the port is "rewrite
+  one module + mechanical import swap". `test_sdk_seam_is_exclusive.py` fails if
+  anything under `src/`/`tests/`/`devtools/`/`scripts/` names an SDK private
+  again — verified by planting a violation. The three fake-`_tool_manager` tests
+  now build a real `FastMCP` (`tests/unit/_sdk_registry_support.py`), as do the
+  sixteen others that walked `_tool_manager.list_tools()`.
 - [ ] **T2-3** the port. `stamp_server_version()` is deleted (`MCPServer` takes
   `version=`); `__main__.py`'s two-phase startup needs redesign (lowlevel
   decorators are gone, and modern connections have no `initialize` deadline to

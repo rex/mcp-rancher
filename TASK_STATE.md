@@ -92,22 +92,38 @@ demonstrably speaks legacy today. That removed the main reason to wait.
 - **T2-1 done (v1.58.1).** Leftovers are slices in `docs/track-m-plan.md`
   (`T1-*` / `T2-*`); this handoff refreshed.
 
-**⏭️ NEXT, PICK UP HERE: T2-2 — the SDK seam. Nothing of the port is written
-yet.** Verified state at v1.60.0: `src/rancher_mcp/sdk_registry.py` does **not**
-exist; **42 `src/` files + 9 `tests/` files still import `FastMCP`**; **24
-private reach-ins** (`_tool_manager` / `_mcp_server`) remain in `src/`. We are
-pinned `mcp[cli]>=1.26,<2`, locked 1.29.1.
+- **T2-2 done (v1.61.0).** `src/rancher_mcp/sdk_registry.py` is the seam: every
+  private reach-in — 11 in production, 19 more across the tests — goes through
+  it, so **nothing in the repo outside that file knows how the SDK's registry is
+  shaped**. It imports no SDK (parameters are `Any`; that shape is exactly what
+  is being quarantined), which also retired the two-step pyright coercion and 10
+  uninformative `mcp: Any` signatures. `test_sdk_seam_is_exclusive.py` enforces
+  it and was verified by planting a violation; the three fake-`_tool_manager`
+  tests now build a real `FastMCP`.
 
-T2-2 scope: one module owning every private reach-in, with the 8
-post-registration passes routed through it — enumerate tools, rewrap `tool.fn`,
-write published `title`/`output_schema`/`parameters`, wrap dispatch, plus the
-two low-level reach-ins (`server.py` version stamp, `__main__.py` `list_tools`
-override). Worth doing even if the port never happens: it retires 10 `mcp: Any`
-signatures that carry no type information. **Also in T2-2:** the three tests
-with fake `_tool_manager` objects (`test_metrics.py:112-125`,
-`test_capability_unavailable.py:213-233`, `test_sensitive_reveal.py:246-263`)
-hard-code the SDK's internal shape and would keep passing while production
-breaks — point them at the seam.
+**⏭️ NEXT, PICK UP HERE: T2-3 — the port itself. None of it is written yet.**
+Verified state at v1.61.0 (counted in-tree, not remembered): still pinned
+`mcp[cli]>=1.26,<2`, locked 1.29.1; **50 `src/` + 19 `tests/` + 3 `devtools/`
+files import `FastMCP`**. Of the `src/` ones, **32 are pack `__init__.py` files
+generated from `scripts/codegen/templates/pack_init.py.j2`** — edit the
+TEMPLATE, or `make codegen` reverts the migration. Behavior is deliberately
+unchanged by T2-2.
+
+T2-3 shape, in order: rewrite `sdk_registry.py` against `MCPServer` (the only
+module that has to change semantically); mechanical import swap everywhere else
+(all the renames fail loudly, so they are safe in bulk); delete
+`stamp_server_version()` (`MCPServer.__init__` takes `version=`, so
+`test_server_version.py`'s precondition assert flips — retarget the mechanism,
+keep the handshake assertion); redesign `__main__.py`'s two-phase startup
+(lowlevel decorators became `on_*` params; the guide blesses subclassing
+`MCPServer` and overriding `list_tools()` — and re-examine whether the daemon
+thread is needed at all, since it exists to beat an `initialize` deadline that
+modern connections do not have); retire the `call_tool` interpositions in favour
+of returning `CallToolResult(is_error=True, …)` and `Extension.intercept_tool_call`;
+decide `httpx` vs `httpx2`. **Silent break to watch:** `model_dump()` emits
+snake_case on MCP types in v2 — `test_context_footprint.py` and
+`test_toolset_gate.py` call it on `ToolAnnotations` and need `by_alias=True`, or
+the footprint gate silently mis-measures.
 
 **Two Track-1 leftovers also landed since:** v1.59.0 (hermetic tests — CI had
 been red for six commits behind a local `.env`) and v1.60.0

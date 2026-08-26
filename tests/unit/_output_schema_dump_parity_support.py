@@ -44,6 +44,8 @@ from typing import Any
 from mcp.server.fastmcp import FastMCP
 from pydantic import BaseModel
 
+from rancher_mcp.sdk_registry import registered_tools
+
 # A concrete, non-empty filler for every JSON-schema leaf type. Never `None`
 # and never empty: `envelope.shape_envelope` (every `RancherModel`'s dump runs
 # through it) drops any key whose value is empty, so an under-populated
@@ -80,8 +82,8 @@ def build_registered_server() -> FastMCP:
 def iter_tool_outputs(mcp: FastMCP) -> list[ToolOutput]:
     """Every registered tool that publishes a structured ``outputSchema``.
 
-    Reads FastMCP's own internal tool registry (``_tool_manager``) rather
-    than a hand-maintained list, so a newly registered tool is covered
+    Reads the live tool registry (through ``rancher_mcp.sdk_registry``)
+    rather than a hand-maintained list, so a newly registered tool is covered
     automatically. The ``apply_*`` post-processing passes in
     ``register_all_tools`` only ever rewrap ``Tool.fn`` — never
     ``Tool.fn_metadata`` — so ``fn_metadata.output_model`` is always the
@@ -89,7 +91,7 @@ def iter_tool_outputs(mcp: FastMCP) -> list[ToolOutput]:
     """
 
     outputs: list[ToolOutput] = []
-    for tool in mcp._tool_manager.list_tools():
+    for tool in registered_tools(mcp):
         model = tool.fn_metadata.output_model
         if model is not None and tool.output_schema is not None:
             outputs.append(ToolOutput(tool_name=tool.name, model=model))

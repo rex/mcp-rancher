@@ -27,6 +27,7 @@ import structlog
 from pydantic import BaseModel, ConfigDict
 
 from rancher_mcp.exceptions import RancherMCPError
+from rancher_mcp.sdk_registry import registered_tools
 
 MetricOutcome = Literal["success", "error"]
 """Whether the tool call returned normally or raised RancherMCPError."""
@@ -101,5 +102,5 @@ def apply_metrics_to_all_tools(mcp: Any) -> None:
     ``RancherMCPError`` before it becomes a ``ToolError``.
     """
 
-    for tool in mcp._tool_manager._tools.values():
+    for tool in registered_tools(mcp):
         tool.fn = track_metric(tool.fn)

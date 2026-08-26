@@ -20,6 +20,7 @@ from __future__ import annotations
 
 from mcp.server.fastmcp import FastMCP
 
+from rancher_mcp.sdk_registry import registered_tools
 from rancher_mcp.server import register_all_tools
 
 
@@ -109,7 +110,7 @@ def test_no_registered_list_tool_requires_namespace() -> None:
 
     mcp = _build_registered_server()
     offenders: list[str] = []
-    for tool in mcp._tool_manager.list_tools():
+    for tool in registered_tools(mcp):
         if not tool.name.endswith("_list"):
             continue
         required = tool.parameters.get("required", [])
@@ -131,7 +132,7 @@ def test_expected_list_tools_have_namespace_optional() -> None:
     entirely rather than correctly made optional."""
 
     mcp = _build_registered_server()
-    by_name = {tool.name: tool for tool in mcp._tool_manager.list_tools()}
+    by_name = {tool.name: tool for tool in registered_tools(mcp)}
 
     missing_tools: list[str] = []
     missing_param: list[str] = []
@@ -201,7 +202,7 @@ def test_non_list_single_resource_tools_still_require_namespace() -> None:
         "rancher_service_set_type",
         "rancher_persistent_volume_claim_set_size",
     ]
-    by_name = {tool.name: tool for tool in mcp._tool_manager.list_tools()}
+    by_name = {tool.name: tool for tool in registered_tools(mcp)}
 
     not_required: list[str] = []
     for name in representative_single_resource_tools:
@@ -228,7 +229,7 @@ def test_collapsed_resource_kind_tools_have_namespace_optional_by_design() -> No
     behavior when a namespaced kind is called with no namespace)."""
 
     mcp = _build_registered_server()
-    by_name = {tool.name: tool for tool in mcp._tool_manager.list_tools()}
+    by_name = {tool.name: tool for tool in registered_tools(mcp)}
 
     for name in (
         "rancher_resource_set_labels",

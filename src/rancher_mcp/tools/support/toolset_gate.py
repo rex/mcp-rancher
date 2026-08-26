@@ -19,7 +19,6 @@ Two things happen here, in order:
 
 from __future__ import annotations
 
-import functools
 import json
 from collections.abc import Mapping
 from typing import Any
@@ -29,6 +28,7 @@ from mcp.server.fastmcp import FastMCP
 from mcp.server.fastmcp.exceptions import ToolError
 
 from rancher_mcp.config import get_toolset_settings
+from rancher_mcp.sdk_registry import DispatchFn, is_registered, wrap_dispatch
 from rancher_mcp.toolsets import FamilyRegistration, ResolvedToolset, resolve_active_tools
 
 _logger = structlog.get_logger("rancher_mcp.toolsets")
@@ -78,37 +78,32 @@ def _install_dispatch_gate(
     """Make calling a real-but-inactive tool fail with a clear, actionable
     error instead of FastMCP's generic "Unknown tool".
 
-    Patches ``ToolManager.call_tool`` (the same "patch at construction time,
-    never at request time" seam ``apply_bare_json_errors`` uses) and is
-    installed BEFORE that pass in ``register_all_tools``, so the JSON envelope
-    built here — already shaped like every other error envelope this server
-    emits — passes through it unchanged rather than being treated as
-    unstructured prose.
+    Interposes on dispatch (the same "patch at construction time, never at
+    request time" seam ``apply_bare_json_errors`` uses) and is installed
+    BEFORE that pass in ``register_all_tools``, so the JSON envelope built
+    here — already shaped like every other error envelope this server emits —
+    passes through it unchanged rather than being treated as unstructured
+    prose.
     """
 
-    # Two-step `Any` coercion, not `manager: Any = mcp._tool_manager` directly
-    # — see the matching comment in `rancher_mcp.toolsets.register_families`
-    # for why the one-step form still trips pyright strict's
-    # `reportPrivateUsage`.
-    mcp_any: Any = mcp
-    manager = mcp_any._tool_manager
-    original_call_tool = manager.call_tool
-
-    @functools.wraps(original_call_tool)
-    async def call_tool(name: str, *args: Any, **kwargs: Any) -> Any:
-        # `family_of` covers every tool this BUILD can produce; manager._tools
-        # is the live, currently-ACTIVE set. A name that is in the former but
-        # not the latter is a real, disabled tool — anything else (active, or
-        # never registered at all) is left to the original dispatch.
-        if name in family_of and name not in manager._tools:
-            raise ToolError(
-                _disabled_tool_envelope(
-                    name, family_of=family_of, excluded=excluded, toolsets_raw=toolsets_raw
+    def wrap(original_call_tool: DispatchFn) -> DispatchFn:
+        async def call_tool(name: str, *args: Any, **kwargs: Any) -> Any:
+            # `family_of` covers every tool this BUILD can produce;
+            # `is_registered` reports the live, currently-ACTIVE set. A name in
+            # the former but not the latter is a real, disabled tool — anything
+            # else (active, or never registered at all) is left to the original
+            # dispatch.
+            if name in family_of and not is_registered(mcp, name):
+                raise ToolError(
+                    _disabled_tool_envelope(
+                        name, family_of=family_of, excluded=excluded, toolsets_raw=toolsets_raw
+                    )
                 )
-            )
-        return await original_call_tool(name, *args, **kwargs)
+            return await original_call_tool(name, *args, **kwargs)
 
-    manager.call_tool = call_tool
+        return call_tool
+
+    wrap_dispatch(mcp, wrap)
 
 
 def apply_toolset_filter(mcp: FastMCP, registration: FamilyRegistration) -> ResolvedToolset:

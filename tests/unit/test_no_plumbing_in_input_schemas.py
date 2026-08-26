@@ -32,6 +32,7 @@ import json
 
 from mcp.server.fastmcp import FastMCP
 
+from rancher_mcp.sdk_registry import registered_tools
 from rancher_mcp.server import register_all_tools
 
 # Constructor-injected collaborators. None of these is ever a caller's business:
@@ -51,7 +52,7 @@ def _registry() -> FastMCP:
 
 def test_no_tool_exposes_internal_plumbing() -> None:
     offenders: list[str] = []
-    for tool in _registry()._tool_manager.list_tools():
+    for tool in registered_tools(_registry()):
         leaked = PLUMBING_PARAMETERS & set(tool.parameters.get("properties", {}))
         if leaked:
             offenders.append(f"{tool.name} exposes {sorted(leaked)}")
@@ -69,7 +70,7 @@ def test_no_tool_schema_embeds_internal_config_types() -> None:
     environment-variable names reached every client."""
 
     offenders: list[str] = []
-    for tool in _registry()._tool_manager.list_tools():
+    for tool in registered_tools(_registry()):
         embedded = INTERNAL_TYPES & set(tool.parameters.get("$defs", {}))
         if embedded:
             offenders.append(f"{tool.name} inlines {sorted(embedded)}")
@@ -87,7 +88,7 @@ def test_secret_bearing_setting_names_are_absent_from_every_schema() -> None:
 
     forbidden = ("RANCHER_TOKEN", "RANCHER_CA_BUNDLE", "RANCHER_READ_ONLY")
     offenders: list[str] = []
-    for tool in _registry()._tool_manager.list_tools():
+    for tool in registered_tools(_registry()):
         serialized = json.dumps(tool.parameters)
         hits = [needle for needle in forbidden if needle in serialized]
         if hits:

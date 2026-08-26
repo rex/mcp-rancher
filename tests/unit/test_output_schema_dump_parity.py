@@ -72,6 +72,7 @@ from _output_schema_dump_parity_support import (
 from pydantic import Field, computed_field
 
 from rancher_mcp.models.base import RancherModel
+from rancher_mcp.sdk_registry import registered_tools
 
 # Built once at import time (no I/O, ~0.6s): every parametrize id below needs
 # the real tool list at collection time, and pytest.mark.parametrize can only
@@ -90,7 +91,7 @@ def test_registry_produced_a_healthy_number_of_tool_outputs() -> None:
     instead of trusting an empty list.
     """
 
-    all_tools = _SERVER._tool_manager.list_tools()
+    all_tools = registered_tools(_SERVER)
     assert len(all_tools) > 100, (
         f"only {len(all_tools)} tools registered by register_all_tools() — "
         "expected 300+; registration may be broken"

@@ -14,6 +14,7 @@ import json
 from typing import Any
 
 import pytest
+from _sdk_registry_support import placeholder_tool, registry_with
 
 from rancher_mcp.config import AppSettings
 from rancher_mcp.exceptions import (
@@ -22,6 +23,7 @@ from rancher_mcp.exceptions import (
     RancherManagementPlaneUnreachableError,
     RancherNotFoundError,
 )
+from rancher_mcp.sdk_registry import registered_tools
 from rancher_mcp.tools.alerts import rancher_cluster_alert_rules_list, rancher_notifiers_list
 from rancher_mcp.tools.compliance import rancher_cis_scans_list
 from rancher_mcp.tools.policy_reports import rancher_cluster_policy_reports_list
@@ -210,36 +212,18 @@ async def test_tunnel_unavailable_passes_through_unmistranslated() -> None:
 def test_apply_capability_unavailable_translation_wraps_only_mapped_tools() -> None:
     """The bulk-apply helper wraps exactly the mapped tools, nothing else."""
 
-    class _FakeTool:
-        def __init__(self, name: str, fn: Any) -> None:
-            self.name = name
-            self.fn = fn
-
-    async def real_fn(**kwargs: Any) -> str:
-        return "ok"
-
-    class _FakeManager:
-        def __init__(self) -> None:
-            self._tools = {
-                "rancher_cis_scans_list": _FakeTool("rancher_cis_scans_list", real_fn),
-                # Stands in for any core/2.6.5-safe resource tool whose 404
-                # genuinely means "this one doesn't exist" — must never be
-                # touched by the capability-unavailable translation.
-                "rancher_pod_get": _FakeTool("rancher_pod_get", real_fn),
-            }
-
-    class _FakeMcp:
-        def __init__(self) -> None:
-            self._tool_manager = _FakeManager()
-
-    mcp = _FakeMcp()
+    # `rancher_pod_get` stands in for any core/2.6.5-safe resource tool whose
+    # 404 genuinely means "this one doesn't exist" — it must never be touched
+    # by the capability-unavailable translation.
+    mcp = registry_with("rancher_cis_scans_list", "rancher_pod_get")
     apply_capability_unavailable_translation(mcp)
 
-    mapped = mcp._tool_manager._tools["rancher_cis_scans_list"]
-    unmapped = mcp._tool_manager._tools["rancher_pod_get"]
-    assert mapped.fn is not real_fn
-    assert mapped.fn.__wrapped__ is real_fn  # functools.wraps preserves this
-    assert unmapped.fn is real_fn  # untouched — not in the capability map
+    by_name = {tool.name: tool for tool in registered_tools(mcp)}
+    mapped = by_name["rancher_cis_scans_list"]
+    unmapped = by_name["rancher_pod_get"]
+    assert mapped.fn is not placeholder_tool
+    assert mapped.fn.__wrapped__ is placeholder_tool  # functools.wraps preserves this
+    assert unmapped.fn is placeholder_tool  # untouched — not in the capability map
 
 
 def test_capability_unavailable_map_covers_exactly_the_four_tools() -> None:

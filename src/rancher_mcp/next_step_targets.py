@@ -50,7 +50,7 @@ def register_tool_parameters(tool_name: str, parameter_names: frozenset[str]) ->
 
 def populate_from_tools(tools: Iterable[Any]) -> None:
     """Populate the registry from FastMCP's own registered ``Tool`` objects
-    (``mcp._tool_manager.list_tools()``).
+    (``rancher_mcp.sdk_registry.registered_tools``).
 
     Called once by ``rancher_mcp.server.register_all_tools`` after every
     pack is registered — deliberately typed ``Any`` per item rather than

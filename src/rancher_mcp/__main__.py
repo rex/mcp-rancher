@@ -114,8 +114,10 @@ def main() -> None:
     threading.Thread(target=_load_tools, daemon=True, name="tool-loader").start()
 
     # ── Patch list_tools to wait for Phase B ───────────────────────────────
-    # The low-level server stores the handler in request_handlers[ListToolsRequest].
-    # Calling mcp._mcp_server.list_tools()(fn) overwrites it with our wrapper.
+    # The low-level server stores its handler in request_handlers[ListToolsRequest];
+    # the seam re-registers ours over the top of the one FastMCP installed.
+    from rancher_mcp.sdk_registry import install_list_tools_handler
+
     _original_list_tools = mcp.list_tools
 
     async def _lazy_list_tools() -> list[Any]:
@@ -126,7 +128,7 @@ def main() -> None:
         )
         return await _original_list_tools()  # type: ignore[return-value]
 
-    mcp._mcp_server.list_tools()(_lazy_list_tools)  # type: ignore[attr-defined]
+    install_list_tools_handler(mcp, _lazy_list_tools)
 
     mcp.run()
 

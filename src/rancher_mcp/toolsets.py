@@ -41,11 +41,12 @@ from __future__ import annotations
 
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
-from typing import Any, Final
+from typing import Final
 
 from mcp.server.fastmcp import FastMCP
 
 from rancher_mcp.exceptions import ConfigurationError
+from rancher_mcp.sdk_registry import registered_tool_names
 from rancher_mcp.tools.alerts import register_alerts_tools
 from rancher_mcp.tools.apps_catalogs import register_app_catalog_tools
 from rancher_mcp.tools.auth_identity import register_auth_identity_tools
@@ -232,24 +233,15 @@ def register_families(mcp: FastMCP) -> FamilyRegistration:
     profiles that end up disabling most of it.
     """
 
-    # Two-step `Any` coercion (not `manager: Any = mcp._tool_manager` directly):
-    # pyright evaluates the RHS using `mcp`'s DECLARED type (`FastMCP`) before
-    # the annotation applies, so a one-step assignment still trips strict
-    # mode's `reportPrivateUsage` on `_tool_manager`. Coercing `mcp` itself to
-    # `Any` first — matching `server.py`'s own `mcp_internals: Any = mcp` — is
-    # the established pattern across this codebase (metrics.py, audit.py,
-    # tools/support/errors.py, .../titles.py, .../capability_unavailable.py).
-    mcp_any: Any = mcp
-    manager = mcp_any._tool_manager
     family_tools: dict[str, frozenset[str]] = {}
     family_of: dict[str, str] = {}
     all_tools: set[str] = set()
 
     for family, registrar in FAMILY_REGISTRARS.items():
-        before = {tool.name for tool in manager.list_tools()}
+        before = registered_tool_names(mcp)
         registrar(mcp)
-        after = {tool.name for tool in manager.list_tools()}
-        added = frozenset(after - before)
+        after = registered_tool_names(mcp)
+        added = after - before
         family_tools[family] = added
         for name in added:
             family_of[name] = family

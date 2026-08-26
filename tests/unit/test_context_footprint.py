@@ -36,6 +36,7 @@ import json
 from mcp.server.fastmcp import FastMCP
 
 from rancher_mcp.config import get_settings
+from rancher_mcp.sdk_registry import registered_tools
 from rancher_mcp.server import register_all_tools
 
 # ---------------------------------------------------------------------------
@@ -139,7 +140,7 @@ def _report(blobs: dict[str, dict[str, object]], total: int) -> str:
 
 def test_tools_list_payload_stays_within_budget() -> None:
     mcp = _build()
-    tools = mcp._tool_manager.list_tools()
+    tools = registered_tools(mcp)
     blobs = {t.name: _wire_shape(t) for t in tools}
     total = _compact({"tools": list(blobs.values())})
 
@@ -164,7 +165,7 @@ def test_mean_cost_per_tool_stays_within_budget() -> None:
     """
 
     mcp = _build()
-    tools = mcp._tool_manager.list_tools()
+    tools = registered_tools(mcp)
     mean = sum(_compact(_wire_shape(t)) for t in tools) // len(tools)
 
     assert mean <= MAX_MEAN_BYTES_PER_TOOL, (
@@ -178,7 +179,7 @@ def test_no_single_tool_dominates() -> None:
     mcp = _build()
     offenders = [
         (t.name, size)
-        for t in mcp._tool_manager.list_tools()
+        for t in registered_tools(mcp)
         if (size := _compact(_wire_shape(t))) > MAX_SINGLE_TOOL_BYTES
     ]
     assert not offenders, (

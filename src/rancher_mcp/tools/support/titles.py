@@ -27,6 +27,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from rancher_mcp.sdk_registry import registered_tools
+
 # Tokens that read better upper-cased than title-cased. Small and
 # opportunistic — covers the initialisms actually present in this
 # server's tool names; not an exhaustive gazetteer.
@@ -65,12 +67,12 @@ def apply_titles_to_all_tools(mcp: Any) -> None:
     Call once at server construction time, after every pack's
     `register_*_tools` has run (mirrors `apply_metrics_to_all_tools` /
     `apply_structured_errors_to_all_tools` — a blanket post-registration
-    pass over `mcp._tool_manager`, rather than threading a `title=` kwarg
+    pass over the registered tools, rather than threading a `title=` kwarg
     through ~300 individual `mcp.tool(...)` call sites across codegen and
     every hand-written pack). `FastMCP.list_tools()` reads `Tool.title`
     fresh at request time, so mutating it here after the fact is enough.
     """
 
-    for tool in mcp._tool_manager._tools.values():
+    for tool in registered_tools(mcp):
         if tool.title is None:
             tool.title = derive_title_from_tool_name(tool.name)

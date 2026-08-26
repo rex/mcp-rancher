@@ -60,10 +60,12 @@ from _output_schema_dump_parity_support import build_registered_server
 from mcp.server.fastmcp.tools.base import Tool
 from pydantic import BaseModel
 
+from rancher_mcp.sdk_registry import registered_tools
+
 # Built once at import time: every parametrize id below needs the real
 # tool registry and declaration set at collection time.
 _SERVER = build_registered_server()
-_REGISTRY: dict[str, Tool] = {tool.name: tool for tool in _SERVER._tool_manager.list_tools()}
+_REGISTRY: dict[str, Tool] = {tool.name: tool for tool in registered_tools(_SERVER)}
 _DECLARATIONS = iter_all_next_step_declarations()
 
 

@@ -6,13 +6,12 @@ discoveries feed the next wave's arg combinations) until a fixpoint, and
 writes one JSON file per call to the capture directory.
 """
 
-# This module intentionally reaches into two private/internal symbols:
-# ``rancher_mcp.tools.support.errors._error_envelope`` (so a captured error
+# This module intentionally reaches into one private symbol:
+# ``rancher_mcp.tools.support.errors._error_envelope``, so a captured error
 # record matches the exact envelope shape a real MCP client would see for
-# the same failure) and FastMCP's ``_tool_manager._tools`` registry (no
-# public API lists "every registered tool + its raw callable" — see
-# ``enumerator.resolve_impl_fn``). reportPrivateUsage is disabled for
-# these intentional, documented reaches only.
+# the same failure. reportPrivateUsage is disabled for that intentional,
+# documented reach only — the SDK's own internals are reached exclusively
+# through ``rancher_mcp.sdk_registry``.
 # pyright: reportPrivateUsage=false
 
 from __future__ import annotations
@@ -41,6 +40,7 @@ from devtools.devlab.models import LabConfig
 from devtools.devlab.profiles import LabProfile
 from rancher_mcp.config import AppSettings
 from rancher_mcp.logging import configure_logging
+from rancher_mcp.sdk_registry import registered_tools
 from rancher_mcp.server import register_all_tools
 from rancher_mcp.tools.support.errors import _error_envelope
 
@@ -92,7 +92,7 @@ def _safe_error_envelope(exc: Exception) -> dict[str, Any]:
 def _resolve_impl_fns(mcp: Any, plans: list[ToolPlan]) -> dict[str, Callable[..., Any]]:
     """Resolve every planned tool's real IMPL fn once, up front."""
 
-    tools: dict[str, Any] = mcp._tool_manager._tools
+    tools = {tool.name: tool for tool in registered_tools(mcp)}
     return {plan.tool: resolve_impl_fn(tools[plan.tool].fn, plan.tool) for plan in plans}
 
 

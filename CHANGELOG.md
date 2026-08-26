@@ -1,5 +1,76 @@
 # Changelog
 
+## [1.61.0] — 2026-08-26 — Agent: Claude
+### Added
+- **`src/rancher_mcp/sdk_registry.py` — the SDK seam** (T2-2). FastMCP publishes
+  no API for what a fleet-wide post-registration pass needs, so this server
+  reaches through `mcp._tool_manager._tools` and `mcp._mcp_server` — names with
+  no compatibility promise, one of which mcp 2.0.0 renames outright. Those
+  reaches lived at **11 production call sites plus 19 more across the tests**,
+  each carrying its own copy of the same `Any`-coercion dance and its own
+  comment re-explaining the same escape hatch. Every one is now routed through a
+  single module, so the SDK upgrade is a rewrite of **one file** plus a
+  mechanical import swap. The seam deliberately imports no SDK: its parameters
+  are `Any` because the shape of those private attributes is exactly the
+  knowledge being quarantined — which also retires the two-step coercion the old
+  call sites needed to keep pyright strict quiet, and 10 bare `mcp: Any`
+  signatures that carried no type information. What it hands back is public
+  (`Tool.name` / `.title` / `.fn` / `.fn_metadata` / `.parameters` /
+  `.output_schema`), declared as a `RegisteredTool` Protocol, so each pass's own
+  logic stays where it belongs.
+- **`tests/unit/test_sdk_seam_is_exclusive.py`** — the gate that makes the
+  consolidation hold. A new pass that reached in directly would work perfectly
+  today and stay invisible until the port, which is when it costs most; this
+  scans `src/`, `tests/`, `devtools/` and `scripts/` and fails on any SDK
+  private named outside the seam. Two vacuity guards ride along, because a
+  search that passes by finding *nothing* is the shape most prone to silently
+  checking nothing: one asserts the scan still reaches >400 files, the other
+  that the seam still matches a pattern at all. Verified by planting a violation
+  and watching it fail with the exact file:line.
+- **`tests/unit/test_sdk_registry.py`** — 14 contract tests for the seam against
+  a **real** `FastMCP`, including two properties nothing covered before: that
+  `is_registered` reads through rather than snapshotting (the toolset gate calls
+  it per request, and a stale answer would report a *removed* tool as present),
+  and that `install_list_tools_handler` genuinely displaces the handler FastMCP
+  installed — a silent no-op there would leave `tools/list` racing the
+  background loader and answering with a partial surface.
+
+### Changed
+- **The three fake-`_tool_manager` tests now use a real `FastMCP`**
+  (`tests/unit/_sdk_registry_support.py`). They hand-built a fake manager
+  holding a fake registry dict of fake tool objects — writing the SDK's internal
+  shape down a second time, in the tests, so the fake would keep satisfying the
+  pass under test no matter what the real SDK did. They were guaranteed to stay
+  green through exactly the upgrade they most needed to catch: **passing while
+  production broke** — the same "the gate tested a proxy for the thing" failure
+  mode that produced the unbounded `mcp>=1.0`, six red CI builds, and the dead
+  patch `next_steps`. Sixteen further test files that walked
+  `_tool_manager.list_tools()` were routed through the seam too, so **nothing in
+  the repo outside `sdk_registry.py` now knows how the SDK's registry is
+  shaped**.
+- `stamp_server_version` keeps its signature and its two callers; only the
+  mechanism moved. `advertised_server_version` is its read-side pair and goes
+  through `create_initialization_options()`, so `test_server_version.py` asserts
+  the value a **client** is told rather than that an assignment happened.
+
+### Verified
+- `make validate` green — **1,343 tests** (+17), 90.10% coverage, pyright strict
+  clean across `src/ devtools/ scripts/`.
+- End-to-end over the real wire (`python -m rancher_mcp`, stdio), which is the
+  only place the two-phase startup and both dispatch interpositions actually
+  take effect and which no unit test reaches: `initialize` in **351 ms**,
+  `serverInfo.version` = **1.61.0** (ours, not the SDK's), **206 tools** all
+  titled, **410,478 B** payload (~102,619 tokens — unchanged), **0** plumbing
+  leaks, `nextSteps` present on all 206 output schemas, and an unknown-tool
+  error that parses as JSON. With `RANCHER_TOOLSETS=core`: **32 tools /
+  ~20,048 tokens**, the disabled tool gone from `tools/list`, and calling it
+  still returns the `TOOLSET_NOT_ENABLED` envelope rather than a generic
+  "Unknown tool".
+
+### Not done
+- **T2-3 (the port to mcp 2.0.0) has not started.** This slice deliberately
+  changes no behavior and stays on `mcp[cli]>=1.26,<2`.
+
 ## [1.60.1] — 2026-08-25 — Agent: Claude
 ### Changed
 - Compaction-prep bookkeeping. `docs/track-m-plan.md` had **T2-1 still unticked

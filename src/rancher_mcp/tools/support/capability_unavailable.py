@@ -30,6 +30,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from rancher_mcp.exceptions import RancherCapabilityError, RancherNotFoundError
+from rancher_mcp.sdk_registry import registered_tools
 
 
 @dataclass(frozen=True)
@@ -124,7 +125,7 @@ def apply_capability_unavailable_translation(mcp: Any) -> None:
     ``RancherNotFoundError``. Tools whose name isn't in the map are untouched.
     """
 
-    for tool in mcp._tool_manager._tools.values():
+    for tool in registered_tools(mcp):
         spec = CAPABILITY_UNAVAILABLE_TOOLS.get(tool.name)
         if spec is not None:
             tool.fn = wrap_capability_unavailable(tool.fn, spec)

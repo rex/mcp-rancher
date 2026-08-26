@@ -18,6 +18,7 @@ from mcp.server.fastmcp import FastMCP
 from rancher_mcp.config import clear_toolset_settings_cache
 from rancher_mcp.exceptions import ConfigurationError
 from rancher_mcp.next_step_targets import reset_tool_parameters
+from rancher_mcp.sdk_registry import registered_tools
 from rancher_mcp.server import register_all_tools
 from rancher_mcp.toolsets import (
     CORE_TOOLS,
@@ -77,7 +78,7 @@ def _build_profile(
 
 
 def _active_names(mcp: FastMCP) -> set[str]:
-    return {tool.name for tool in mcp._tool_manager.list_tools()}  # type: ignore[attr-defined]
+    return {tool.name for tool in registered_tools(mcp)}
 
 
 # ---------------------------------------------------------------------------
