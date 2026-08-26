@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.60.1] — 2026-08-25 — Agent: Claude
+### Changed
+- Compaction-prep bookkeeping. `docs/track-m-plan.md` had **T2-1 still unticked
+  though it shipped in v1.58.1** — a tracker that misreports is worse than none,
+  since the next session reads it to decide what to do. `TASK_STATE.md`'s handoff
+  now states the Track 2 position explicitly: **the port has not started**
+  (verified in-tree — no `sdk_registry.py`, 42 `src/` + 9 `tests/` files still
+  import `FastMCP`, 24 private reach-ins remain), and names T2-2 as the pickup
+  point with its scope. Also records the failure mode that recurred three times
+  this session — **the gate tested a proxy for the thing rather than the
+  thing** — since it is the most transferable lesson here.
+
 ## [1.60.0] — 2026-08-25 — Agent: Claude
 ### Changed
 - **`PatchConfig.next_steps` was write-only dead data across the whole server**

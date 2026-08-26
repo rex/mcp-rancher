@@ -255,7 +255,7 @@ risk Claude Code, which speaks legacy today.
   `fastmcp` module, and the unbounded `>=1.0` meant every published install
   since 2026-07-28 failed at import. Gate on the *declared* constraint; lock
   aligned to 1.29.1 (what a downstream install actually resolves).
-- [ ] **T2-1** capture leftovers (this section) + refresh `TASK_STATE.md`.
+- [x] **T2-1** (v1.58.1) leftovers captured (this section) + `TASK_STATE.md` refreshed.
 - [ ] **T2-2** SDK seam — one module owning every `_tool_manager`/`_lowlevel_server`
   touch, so the port is "rewrite one module + mechanical import swap". Also fix
   the three fake-`_tool_manager` tests (`test_metrics.py:112-125`,

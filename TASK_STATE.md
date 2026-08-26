@@ -89,8 +89,37 @@ demonstrably speaks legacy today. That removed the main reason to wait.
   we *publish*. `tests/unit/test_dependency_constraints.py` now gates the
   declared constraint. Lock aligned to 1.29.1 — what a downstream install
   actually resolves — so we test what we ship.
-- **Next: T2-1** (leftovers captured — done in `docs/track-m-plan.md`), then
-  **T2-2** the SDK seam, then **T2-3** the port.
+- **T2-1 done (v1.58.1).** Leftovers are slices in `docs/track-m-plan.md`
+  (`T1-*` / `T2-*`); this handoff refreshed.
+
+**⏭️ NEXT, PICK UP HERE: T2-2 — the SDK seam. Nothing of the port is written
+yet.** Verified state at v1.60.0: `src/rancher_mcp/sdk_registry.py` does **not**
+exist; **42 `src/` files + 9 `tests/` files still import `FastMCP`**; **24
+private reach-ins** (`_tool_manager` / `_mcp_server`) remain in `src/`. We are
+pinned `mcp[cli]>=1.26,<2`, locked 1.29.1.
+
+T2-2 scope: one module owning every private reach-in, with the 8
+post-registration passes routed through it — enumerate tools, rewrap `tool.fn`,
+write published `title`/`output_schema`/`parameters`, wrap dispatch, plus the
+two low-level reach-ins (`server.py` version stamp, `__main__.py` `list_tools`
+override). Worth doing even if the port never happens: it retires 10 `mcp: Any`
+signatures that carry no type information. **Also in T2-2:** the three tests
+with fake `_tool_manager` objects (`test_metrics.py:112-125`,
+`test_capability_unavailable.py:213-233`, `test_sensitive_reveal.py:246-263`)
+hard-code the SDK's internal shape and would keep passing while production
+breaks — point them at the seam.
+
+**Two Track-1 leftovers also landed since:** v1.59.0 (hermetic tests — CI had
+been red for six commits behind a local `.env`) and v1.60.0
+(`T1-PATCH-NEXTSTEPS` — declared patch `next_steps` were never rendered).
+
+**A recurring failure mode this session, worth carrying forward:** three
+separate defects were invisible to checks that *appeared* to cover them — the
+unbounded `mcp` constraint (lockfile masked it), the red CI (local `.env` masked
+it), and the dead patch `next_steps` (the registry gate *injected* the declared
+targets before validating, so it tested "would this be valid" not "is this
+emitted"). Each time, **the gate tested a proxy for the thing rather than the
+thing.** Worth asking of any new gate.
 
 **Read before touching the port:** the SDK's own `docs/migration.md` (2,884
 lines of before/after) at `modelcontextprotocol/python-sdk@main`. It is far more
