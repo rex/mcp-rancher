@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.62.0] — 2026-09-03 — Agent: Claude
+### Changed
+- synced to agentic-skeleton 0.47.0 (path-scoped rules); Serena removed (rules, hooks, .mcp.json, .serena/)
+
 ## [1.61.0] — 2026-08-26 — Agent: Claude
 ### Added
 - **`src/rancher_mcp/sdk_registry.py` — the SDK seam** (T2-2). FastMCP publishes

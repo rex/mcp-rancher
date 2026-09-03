@@ -18,10 +18,6 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/serena-required.sh"
-          },
-          {
-            "type": "command",
             "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/inject-state.sh"
           }
         ]
@@ -34,15 +30,6 @@
           {
             "type": "command",
             "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/bash-guard.sh"
-          }
-        ]
-      },
-      {
-        "matcher": "Bash|Read|Edit|MultiEdit|Write|Glob|Grep",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/serena-gate.sh"
           }
         ]
       }

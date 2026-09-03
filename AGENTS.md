@@ -66,8 +66,7 @@ Required. `make test` runs the full suite with coverage (60% minimum). Contract 
 
 1. Read this file and `VIBE.yaml` before repo-wide decisions.
 2. Complete the oldest incomplete plan phase before starting later-phase work.
-3. If `.mcp.json` declares `serena`: call `mcp__serena__initial_instructions` → `mcp__serena__check_onboarding_performed` first. Use Serena symbolic tools over built-in Read/Edit/Grep for code work.
-4. Run §3 commands before declaring done.
+3. Run §3 commands before declaring done.
 
 ## 11. When ending a session
 
