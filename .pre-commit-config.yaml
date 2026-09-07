@@ -60,9 +60,15 @@ repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.15.8
     hooks:
+      # The skeleton-owned gate scripts under scripts/ are VERBATIM
+      # skeleton property, formatted to the skeleton's own standard and
+      # kept byte-identical by sync_skeleton.py. Reformatting them here
+      # drifts them from the skeleton and churns on every commit.
       - id: ruff
         args: [--fix]
+        exclude: &skeleton_scripts '^scripts/(check_architecture|check_module_rules|check_docs|check_version_bumped|bump_version|sync_skeleton|stamp_skill|check_skills)\.py$'
       - id: ruff-format
+        exclude: *skeleton_scripts
 
   # ── Repo-native gates — mirror `make validate`; no remote pins ──────
   - repo: local

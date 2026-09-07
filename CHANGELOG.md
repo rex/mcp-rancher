@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.64.0] — 2026-09-07 — Agent: Claude Opus 5
+### Fixed
+- Excluded the skeleton-owned gate scripts under `scripts/` from `ruff` and `ruff-format`. They are VERBATIM skeleton property kept byte-identical by `sync_skeleton.py`; without the exclusion the formatter rewrites them on commit and they drift from the skeleton permanently. Preventive — the scripts here are currently byte-clean. This was the last repo in the fleet still carrying the latent bug (already fixed in palantir, homelab-ansible and homelab-inventory).
+
 ## [1.63.0] — 2026-09-06 — Agent: Claude Sonnet 5
 ### Changed
 - synced skeleton-owned scripts (check_architecture.py, check_module_rules.py) to agentic-skeleton 0.48.0
