@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.63.0] — 2026-09-06 — Agent: Claude Sonnet 5
+### Changed
+- synced skeleton-owned scripts (check_architecture.py, check_module_rules.py) to agentic-skeleton 0.48.0
+
 ## [1.62.0] — 2026-09-03 — Agent: Claude
 ### Changed
 - synced to agentic-skeleton 0.47.0 (path-scoped rules); Serena removed (rules, hooks, .mcp.json, .serena/)
