@@ -249,7 +249,7 @@ the plumbing-leak fix + footprint ratchet (v1.54.0), the 118→3 tool collapse
 Full plan: `~/.claude/plans/wobbly-seeking-scott.md`. Key finding: **mcp 2.0.0's
 dual-era support is automatic and cannot be disabled** (`docs/run/legacy-clients.md`:
 *"There is no `legacy=` option… Both eras are always on"*), so the port does not
-risk Claude Code, which speaks legacy today.
+strand any client still on the legacy handshake.
 
 - [x] **T2-0** (v1.58.0) constrain `mcp[cli]` to `<2` — mcp 2.0.0 removed the
   `fastmcp` module, and the unbounded `>=1.0` meant every published install
@@ -263,13 +263,15 @@ risk Claude Code, which speaks legacy today.
   again — verified by planting a violation. The three fake-`_tool_manager` tests
   now build a real `FastMCP` (`tests/unit/_sdk_registry_support.py`), as do the
   sixteen others that walked `_tool_manager.list_tools()`.
-- [ ] **T2-3** the port. `stamp_server_version()` is deleted (`MCPServer` takes
-  `version=`); `__main__.py`'s two-phase startup needs redesign (lowlevel
-  decorators are gone, and modern connections have no `initialize` deadline to
-  beat); the `call_tool` monkeypatches can retire in favour of returning
-  `CallToolResult(is_error=True, …)` and `Extension.intercept_tool_call`;
-  `httpx` → `httpx2`. **Silent break to watch:** `model_dump()` emits snake_case
-  on MCP types in v2 — `test_context_footprint.py:106` and `test_toolset_gate.py`
-  call it on `ToolAnnotations` and need `by_alias=True`.
-- [ ] **T2-4** modern-only wins: caching hints (`CacheHint`, spec MUST),
-  `server/discover` (automatic), server `title`/`description`.
+- **T2-3** the port — moved to the board:
+  [rex/mcp-rancher#2](https://github.com/rex/mcp-rancher/issues/2). One claim
+  that used to sit here was wrong and is corrected there: modern connections
+  *do* have a startup deadline (about 3 s, on `server/discover`), so the fast
+  startup path stays.
+- **T2-4** modern-only wins — moved to the board:
+  [rex/mcp-rancher#3](https://github.com/rex/mcp-rancher/issues/3).
+
+Since 2026-11-12 Claude Code probes for the modern protocol itself and falls
+back to legacy only because we answer `-32602`; see
+`docs/reference/claude-code-mcp-client.md`. The proposals that research produced
+are #4–#9 on the board, unapproved.

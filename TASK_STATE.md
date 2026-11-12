@@ -79,8 +79,16 @@ The governing finding, source-verified: **mcp 2.0.0's dual-era support is
 automatic and cannot be disabled** — `docs/run/legacy-clients.md`: *"There is no
 `legacy=` option, no version allowlist, no way to reject or disable an era…
 Both eras are always on."* Requests route by `MCP-Protocol-Version` header
-before our code runs. So the port does **not** risk Claude Code, which
-demonstrably speaks legacy today. That removed the main reason to wait.
+before our code runs. So the port does **not** risk Claude Code. That removed
+the main reason to wait.
+
+**Updated 2026-11-12 — the client moved, and that changes the urgency.** Claude
+Code is now a *modern* client: it probes every stdio server with
+`server/discover` for `2026-07-28` and only falls back to the legacy handshake
+because we answer `-32602`. So we are not waiting on the client any more — we
+are the legacy side, and tasks, MRTR elicitation and cache hints are out of
+reach until the port. Evidence, wire captures and the ranked consequences are in
+`docs/reference/claude-code-mcp-client.md`.
 
 - **T2-0 done (v1.58.0).** `mcp[cli]>=1.0` had no upper bound; mcp 2.0.0
   (2026-07-28) removed the `fastmcp` module, so **every published install
@@ -102,6 +110,12 @@ demonstrably speaks legacy today. That removed the main reason to wait.
   tests now build a real `FastMCP`.
 
 **⏭️ NEXT, PICK UP HERE: T2-3 — the port itself. None of it is written yet.**
+**Open work now lives on the Rivendell board, not in this file:** T2-3 is
+[rex/mcp-rancher#2](https://github.com/rex/mcp-rancher/issues/2) and T2-4 is
+[#3](https://github.com/rex/mcp-rancher/issues/3) (both `Ready`); the proposals
+from the 2026-11-12 client research are #4–#9 (`Inbox`, unapproved). Claim there
+before editing. What follows is context for #2, not a second tracker.
+
 Verified state at v1.61.0 (counted in-tree, not remembered): still pinned
 `mcp[cli]>=1.26,<2`, locked 1.29.1; **50 `src/` + 19 `tests/` + 3 `devtools/`
 files import `FastMCP`**. Of the `src/` ones, **32 are pack `__init__.py` files
@@ -116,9 +130,14 @@ module that has to change semantically); mechanical import swap everywhere else
 `test_server_version.py`'s precondition assert flips — retarget the mechanism,
 keep the handshake assertion); redesign `__main__.py`'s two-phase startup
 (lowlevel decorators became `on_*` params; the guide blesses subclassing
-`MCPServer` and overriding `list_tools()` — and re-examine whether the daemon
-thread is needed at all, since it exists to beat an `initialize` deadline that
-modern connections do not have); retire the `call_tool` interpositions in favour
+`MCPServer` and overriding `list_tools()`). **Keep the fast path — an earlier
+version of this note said the daemon thread might go because modern connections
+have no `initialize` deadline. That was wrong.** Measured against Claude Code
+2.1.321: it waits about 3 s (2.93 s observed) for the `server/discover` answer
+and then sends a legacy `initialize`; a Python server on mcp 2.3.0 took 2.9 s
+and 4.3 s to first response while the client was starting. The deadline moved
+to `server/discover`, which needs only name, version, capabilities and
+instructions — no tool module. Retire the `call_tool` interpositions in favour
 of returning `CallToolResult(is_error=True, …)` and `Extension.intercept_tool_call`;
 decide `httpx` vs `httpx2`. **Silent break to watch:** `model_dump()` emits
 snake_case on MCP types in v2 — `test_context_footprint.py` and

@@ -1,5 +1,12 @@
 # Python MCP SDK (`mcp`) — Reference for Modernization Planning
 
+> **Partly superseded, 2026-11-12.** This file was written against `mcp` 1.26.0
+> with 2.0.0 just released; the SDK is now at **2.3.0**. Facts about 2.x read
+> from the released 2.3.0 wheel — the `MCPServer` constructor, the `Extension`
+> API, era-agnostic elicitation, the absence of Tasks support — are in
+> `claude-code-mcp-client.md` §6, and they win wherever they disagree with §10
+> here. Everything below about **1.x** behaviour still stands.
+
 ## Provenance
 
 | | |
