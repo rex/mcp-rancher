@@ -1,5 +1,53 @@
 # Changelog
 
+## [1.74.0] — 2026-11-15 — Agent: Claude Fable 5.2
+### Fixed
+- **The published package did not start. It does now.** (rex/mcp-rancher#26)
+  `uvx rancher-mcp` exited at startup from any directory that was not a checkout
+  of this repository — `FileNotFoundError: 'catalog/capabilities.yaml'` — which
+  is every directory an MCP client launches it from. Reproduced with the wheel
+  built from `main` **and with 1.59.0 as published on PyPI**.
+  The capability catalog is read before the server serves anything. Its default
+  path was relative to the working directory, and `catalog/` sits at the
+  repository root, outside the package, so it was never in the wheel.
+  The catalog now ships inside the package and the server defaults to that
+  copy wherever it is started from. `RANCHER_MCP_CATALOG_PATH` remains as an
+  override. `catalog/capabilities.yaml` is still the file to edit;
+  `make sync-catalog` regenerates the packaged copy and `make check-catalog`
+  (part of `make validate`) fails on drift.
+- `.env.example` no longer sets `RANCHER_MCP_CATALOG_PATH` to that relative
+  path, which reintroduced the same failure for anyone who copied it.
+
+### Why nothing caught it, and what does now
+- The release pipeline's smoke test ran `uvx --from dist/*.whl rancher-mcp
+  < /dev/null` **from the checkout root**, where `catalog/` exists. The
+  maintainer runs the server with `uv run --directory <checkout>`, which changes
+  into the checkout too. Nothing ever ran the artifact the way a user does.
+- That smoke test had a second hole: it closed stdin at once, so the process
+  could exit 0 before the background tool loader had finished or failed. It
+  said nothing about whether a single tool registered.
+- **`scripts/smoke_stdio.py` replaces it.** It runs the given command from an
+  empty directory with only the environment a client would pass, and performs a
+  real handshake on each protocol era — legacy `initialize` and the
+  `2026-07-28` `server/discover` probe. Each time it requires the server to
+  name itself with the expected version, to list its tools, and to exit cleanly
+  when stdin closes. Standard library only, so it cannot import the checkout by
+  accident. It fails against 1.59.0 from PyPI and passes against this build.
+- It runs in the release pipeline before anything is published, and — as
+  `make smoke-wheel` — in CI on every push, so "installs and serves" is no
+  longer discovered at release time.
+
+### Changed
+- The README quick start leads with what a user actually does: `uvx rancher-mcp`
+  in a Claude Code or Claude Desktop server entry. It still said "Once published
+  to PyPI", four months after it was, and showed only the run-from-a-checkout
+  form. Running from source is now the last section rather than the first.
+
+### Verified
+- The built wheel, run from an empty directory: 207 tools and 10 prompts on
+  both eras, reporting 1.74.0, first answer in 1.4 s (legacy) and 0.3 s
+  (modern).
+
 ## [1.73.0] — 2026-11-15 — Agent: Claude Fable 5.2
 ### Added
 - **`rancher_rollout_wait` — follow a rollout to its end in one call**

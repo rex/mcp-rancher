@@ -11,6 +11,7 @@
         check-precommit check-skeleton sync-skeleton fix test test-unit \
         version clean clean-all \
         codegen check-codegen tool-manifest check-tool-manifest \
+        sync-catalog check-catalog smoke-wheel \
         capture-fixtures capture-sweep mock-rancher \
         live-health live-read-matrix live-steve live-lifecycle \
         lab-up lab-down lab-reset lab-status lab-logs lab-tools \
@@ -237,8 +238,23 @@ sync-versions:
 check-versions:
 	@$(PYTHON) scripts/sync_versions.py --check
 
+## sync-catalog: Rewrite the capability catalog that ships in the wheel
+sync-catalog:
+	@$(PYTHON) scripts/sync_catalog.py
+
+## check-catalog: Fail if the packaged catalog drifts from catalog/capabilities.yaml (CI gate)
+check-catalog:
+	@$(PYTHON) scripts/sync_catalog.py --check
+
+## smoke-wheel: Build the wheel, run it from OUTSIDE the checkout, handshake on both protocol eras
+smoke-wheel:
+	@tmp="$$(mktemp -d)"; \
+	uv build --out-dir "$$tmp/dist" >/dev/null 2>&1 || { echo "✗ uv build failed"; rm -rf "$$tmp"; exit 1; }; \
+	python3 scripts/smoke_stdio.py --expect-version "$$(cat VERSION)" -- uvx --from "$$(ls "$$tmp"/dist/*.whl)" rancher-mcp; \
+	rc=$$?; rm -rf "$$tmp"; exit $$rc
+
 ## validate: Run the repo's aggregate validation flow
-validate: check-codegen check-tool-manifest check-readme-badges check-server-json check-versions check-architecture lint typecheck test
+validate: check-codegen check-tool-manifest check-readme-badges check-server-json check-versions check-catalog check-architecture lint typecheck test
 	@echo "$(GREEN)Validation complete.$(RESET)"
 
 # ─── Local Lab ────────────────────────────────────────────────────────

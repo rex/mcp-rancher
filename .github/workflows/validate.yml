@@ -37,3 +37,10 @@ jobs:
 
       - name: Run the full validation gate
         run: make validate
+
+      # The suite runs from the checkout, where repo-relative files exist. This
+      # builds the wheel and runs it from an empty directory, the way a user's
+      # MCP client does, so "installs and serves" is checked on every push and
+      # not discovered at release time.
+      - name: Smoke-run the wheel from outside the checkout
+        run: make smoke-wheel

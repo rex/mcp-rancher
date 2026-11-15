@@ -84,21 +84,13 @@ context budget) can opt into a smaller surface via `RANCHER_TOOLSETS`; see
 
 ### Requirements
 
-- Python 3.12+ and [uv](https://docs.astral.sh/uv/)
+- [uv](https://docs.astral.sh/uv/) — it brings its own Python (3.12 or newer)
 - A Rancher API token ([creating one](https://ranchermanager.docs.rancher.com/reference-guides/user-settings/api-keys))
 
-### Install & run
-
-```bash
-# From source
-git clone https://github.com/rex/mcp-rancher.git
-cd mcp-rancher
-make setup                 # deps, .env scaffold, pre-commit hooks
-cp .env.example .env       # set RANCHER_URL + RANCHER_TOKEN
-make dev                   # run the MCP server (stdio)
-```
-
-Once published to PyPI, it's one line: `uvx rancher-mcp`.
+There is nothing to clone or install first: `uvx rancher-mcp` fetches the
+[package from PyPI](https://pypi.org/project/rancher-mcp/) and runs it. Start
+with a read-only token, or add `RANCHER_READ_ONLY=true`, until you have seen
+what an agent does with it — see the [safety model](#safety-model).
 
 ### Claude Code
 
@@ -106,17 +98,17 @@ Once published to PyPI, it's one line: `uvx rancher-mcp`.
 claude mcp add rancher \
   -e RANCHER_URL=https://rancher.example.com \
   -e RANCHER_TOKEN=token-xxxxx:yyyyyyyyy \
-  -- uv run --directory /path/to/mcp-rancher rancher-mcp
+  -- uvx rancher-mcp
 ```
 
-### Claude Desktop
+### Claude Desktop, and any client that takes a JSON server entry
 
 ```json
 {
   "mcpServers": {
     "rancher": {
-      "command": "uv",
-      "args": ["run", "--directory", "/path/to/mcp-rancher", "rancher-mcp"],
+      "command": "uvx",
+      "args": ["rancher-mcp"],
       "env": {
         "RANCHER_URL": "https://rancher.example.com",
         "RANCHER_TOKEN": "token-xxxxx:yyyyyyyyy"
@@ -125,6 +117,23 @@ claude mcp add rancher \
   }
 }
 ```
+
+`uvx` keeps using the version it first downloaded. Write `rancher-mcp@latest`
+in place of `rancher-mcp` to pick up a new release.
+
+### From source
+
+```bash
+git clone https://github.com/rex/mcp-rancher.git
+cd mcp-rancher
+make setup                 # deps, .env scaffold, pre-commit hooks
+$EDITOR .env               # set RANCHER_URL + RANCHER_TOKEN
+make dev                   # run the MCP server (stdio)
+```
+
+To point a client at a checkout, use
+`uv run --directory /path/to/mcp-rancher rancher-mcp` in place of
+`uvx rancher-mcp`.
 
 ### Multiple instances
 

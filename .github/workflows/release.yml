@@ -3,7 +3,7 @@
 #   git tag -s vX.Y.Z && git push origin vX.Y.Z
 #
 # Flow: guard (tag == VERSION == pyproject) → full validate → build
-# sdist+wheel → smoke-run the wheel via uvx → publish to PyPI via
+# sdist+wheel → smoke-run the wheel from outside the checkout → publish to PyPI via
 # TRUSTED PUBLISHING (OIDC, no stored tokens) → GitHub Release with
 # artifacts + generated notes.
 #
@@ -53,11 +53,14 @@ jobs:
       - name: Build sdist + wheel
         run: uv build
 
-      - name: Smoke-run the built wheel (uvx, clean EOF exit)
-        env:
-          RANCHER_URL: https://rancher.invalid
-          RANCHER_TOKEN: token-ci:smoke # pragma: allowlist secret
-        run: timeout 30 uvx --from dist/*.whl rancher-mcp < /dev/null
+      # Runs the wheel from an EMPTY directory and performs a real handshake on
+      # both protocol eras, checking the version it reports and that every tool
+      # registered. This used to be `uvx --from dist/*.whl rancher-mcp < /dev/null`
+      # from the checkout root — which passed for months while the published
+      # package crashed on startup for everyone who installed it, because a
+      # data file it needed existed in the checkout and not in the wheel.
+      - name: Smoke-run the built wheel from outside the checkout (handshake, both eras)
+        run: python3 scripts/smoke_stdio.py --expect-version "$(cat VERSION)" -- uvx --from "$PWD"/dist/*.whl rancher-mcp
 
       - uses: actions/upload-artifact@v7
         with:

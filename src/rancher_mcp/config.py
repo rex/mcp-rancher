@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from functools import lru_cache
+from pathlib import Path
 from typing import cast
 
 from pydantic import Field, PrivateAttr, SecretStr, ValidationError, model_validator
@@ -12,11 +13,29 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from rancher_mcp.models.discovery import RancherInstanceConfig
 
 
+def packaged_catalog_path() -> str:
+    """Where the capability catalog that ships with this package lives.
+
+    Resolved from the installed package, never from the working directory. An
+    MCP client starts the server wherever it likes, and for as long as the
+    default was the repository-relative ``catalog/capabilities.yaml`` the
+    server crashed on startup from every directory except a checkout — which
+    is to say, for everyone who installed it. The copy here is generated from
+    that file (``make sync-catalog``) and gated against drift.
+    """
+
+    return str(Path(__file__).resolve().parent / "catalog_data" / "capabilities.yaml")
+
+
 class AppSettings(BaseSettings):
     """Top-level application settings."""
 
     default_instance: str = Field(default="default", alias="RANCHER_DEFAULT_INSTANCE")
-    catalog_path: str = Field(default="catalog/capabilities.yaml", alias="RANCHER_MCP_CATALOG_PATH")
+    # An override, for running against a catalog under development. Left unset,
+    # the server uses the catalog it was shipped with.
+    catalog_path: str = Field(
+        default_factory=packaged_catalog_path, alias="RANCHER_MCP_CATALOG_PATH"
+    )
     log_level: str = Field(default="INFO", alias="LOG_LEVEL")
     instances_json: str | None = Field(default=None, alias="RANCHER_INSTANCES_JSON")
     rancher_url: str | None = Field(default=None, alias="RANCHER_URL")
