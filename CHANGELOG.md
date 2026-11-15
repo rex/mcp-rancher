@@ -1,5 +1,37 @@
 # Changelog
 
+## [1.66.0] — 2026-11-15 — Agent: Claude Fable 5.2
+### Changed
+- **The text half of every tool result is now compact JSON** (rex/mcp-rancher#5).
+  A structured result goes out twice — as `structuredContent`, and as a text
+  block for clients that predate it — and the SDK renders that text block with
+  `indent=2`. On `rancher_capability_domain_list` that was 3,989 characters
+  against 2,723: **+46%, all whitespace**; across a populated instance of every
+  tool's output model, 21.8%.
+  It went unnoticed because who pays is lopsided. Claude Code feeds the model
+  `structuredContent` and drops text blocks, so there the indentation is free;
+  every client that reads `content` instead paid it on every response — the
+  small-context hosts the footprint work was done for. The AE-10 size budgets
+  had been measuring the compact form the whole time: the text block was never
+  the thing under test.
+  `src/rancher_mcp/result_compaction.py` re-renders the text block's **own**
+  JSON on the way out of dispatch, rather than substituting `structuredContent`
+  for it, so a client reading either representation is told the same thing.
+- The `rancher://instances` resource body is compact for the same reason.
+
+### Added
+- `tests/unit/test_result_compaction.py` — 226 tests. The one that matters runs
+  the SDK's **own** result conversion on a maximally populated instance of every
+  tool's output model and asserts the compacted text equals `structuredContent`
+  (206/206). A non-vacuity guard asserts the SDK still indents at all, so the
+  module cannot quietly become dead weight after an SDK upgrade; an end-to-end
+  call through dispatch fails if the pass is correct but never installed.
+
+### Verified
+- Over the real stdio wire: `rancher_capability_domain_list` returns a
+  2,723-character text block with no newlines, byte-identical to the compact
+  serialization of its `structuredContent`.
+
 ## [1.65.0] — 2026-11-12 — Agent: Claude Fable 5.2
 ### Added
 - **`docs/reference/claude-code-mcp-client.md`** — what Claude Code's MCP client

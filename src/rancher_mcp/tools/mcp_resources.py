@@ -21,7 +21,9 @@ async def _instances_resource() -> str:
     settings = get_settings()
     catalog = get_capability_catalog(settings.catalog_path)
     instance_list = build_instance_list(settings, catalog.primary_target.version)
-    return json.dumps(instance_list.model_dump(mode="json"), indent=2)
+    # Compact, like every tool result (see `rancher_mcp.result_compaction`):
+    # a resource body is read by a model, and indentation is tokens it pays for.
+    return json.dumps(instance_list.model_dump(mode="json"), separators=(",", ":"))
 
 
 def register_mcp_resources(mcp: FastMCP) -> None:

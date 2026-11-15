@@ -82,8 +82,14 @@ def register_all_tools(mcp: FastMCP) -> None:
     apply_capability_unavailable_translation(mcp)
     apply_metrics_to_all_tools(mcp)
     apply_structured_errors_to_all_tools(mcp)
-    # Not a tool wrapper: patches the tool MANAGER, so it sits outside even
-    # `Tool.run` — the only place we can undo the SDK's prose preamble and
+    # The two below are not tool wrappers: they interpose on DISPATCH, so they
+    # sit outside even `Tool.run`. Text compaction has to live there because the
+    # text block it rewrites does not exist until the SDK converts the tool's
+    # return value, after every wrapper above has already returned.
+    from rancher_mcp.result_compaction import apply_compact_result_text
+
+    apply_compact_result_text(mcp)
+    # Outermost: the only place we can undo the SDK's prose preamble and
     # guarantee every emitted error is valid JSON (AE-03).
     apply_bare_json_errors(mcp)
 
