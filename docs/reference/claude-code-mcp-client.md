@@ -68,7 +68,7 @@ gives us since 1.69.0.
 | Tools | Yes | W | any | 206 |
 | Annotations | `readOnlyHint` → runs in parallel with other read-only calls, and is safe to repeat. `idempotentHint` → safe to repeat once after a dropped connection (HTTP only). `title` displayed. | D | any | Set fleet-wide ✓ |
 | `structuredContent` | **The model is given `JSON.stringify(structuredContent)`. Text blocks are dropped;** non-text blocks are kept. | W+C | any | Emitted ✓ |
-| `outputSchema` | Validated client-side. A tool that declares one and returns no structured content, or content that does not conform, **fails the call**. Not part of what the model sees. | C | any | Published ✓ (parity-gated) |
+| `outputSchema` | Validated client-side. A tool that declares one and returns no structured content, or content that does not conform, **fails the call**. Not part of what the model sees. **Read from the client's code only** — a wire check with a deliberately non-conforming body was attempted on 2026-11-15 and not completed (the headless client would not start), so treat "fails the call" as likely, not observed. What *is* observed: the Python SDK's client rejects such a body, and under `mcp` 1.x our own server did. | C | any | Published ✓ — and since 1.71.0 every body, full or empty, is checked against it ([#22](https://github.com/rex/mcp-rancher/issues/22)) |
 | Images | Inline, plus the original saved to disk | D | any | — |
 | Audio / PDF / binary | Saved to disk with the right extension, not dumped as base64 | D | any | — |
 | `resource_link` | Yes | D | any | — |

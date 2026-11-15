@@ -5,8 +5,16 @@ WHY. `outputSchema` was **64% of this server's entire `tools/list` payload** —
 work. Most of that is not information a model uses to decide whether to CALL a
 tool; it is Pydantic's serialization scaffolding.
 
-Three things are removed or corrected here. The first is a correctness fix, not
-an optimization:
+Four things are removed or corrected here. The first two are correctness fixes,
+not optimizations:
+
+0. **`required` promised keys the body drops.** The response envelope omits
+   every null and empty value by design. The schema, derived from the model,
+   still listed such properties as required whenever the model gave them no
+   default — `namespace: str | None` on every namespaced list. A cluster-wide
+   list therefore violated its own contract, and 32 tools failed that call for
+   months. A property that can be dropped is no longer published as required;
+   see `_may_be_dropped`.
 
 1. **`suggestedNextSteps` was advertised but is never sent.** It is the internal
    backing field for the ``next_steps`` computed field. The SDK derives
@@ -31,11 +39,13 @@ collapsing it would save ~10% while publishing a contract that says a field is
 non-nullable when it can be null, which is how a strict client ends up rejecting
 a valid response. That is the exact failure this repo already shipped once.
 
-SAFETY. Every transformation removes only OPTIONAL properties and annotation
-keywords; no `required` entry and no `properties` key that a response actually
-carries is ever touched. `tests/unit/test_output_schema_dump_parity.py` proves
-this across all 206 tools by dumping a real instance of every model and checking
-each schema-required key is present.
+SAFETY. Every transformation either removes an annotation keyword or makes the
+contract *weaker*: no `properties` key a response carries is removed, and
+`required` only ever shrinks. A weaker promise cannot make a valid body
+invalid. `tests/unit/test_output_contract_fleet_wide.py` holds the result to the
+real thing across every tool: bodies in three shapes — full, sparse and bare —
+validated against what is published here with the validator a client uses, and
+every read tool called through the request path against an empty backend.
 
 `structuredContent` is unaffected: the SDK builds it from the tool's
 `fn_metadata`, which this pass does not touch. Only the *published* schema
@@ -105,13 +115,60 @@ def _compact(node: object, *, at_root: bool = False) -> object:
             out[key] = properties
             continue
         if key == "required" and isinstance(value, list):
-            # Defensive: the backing field is optional today, but never leave a
-            # `required` entry pointing at a property we just removed — that is
-            # precisely the schema/body split that killed every list tool once.
-            out[key] = [item for item in cast(list[object], value) if item != _BACKING_FIELD]
+            # `required` may only name what a body always carries. Two things
+            # fall short of that: the backing field removed above, and any
+            # property the envelope is free to drop (see `_may_be_dropped`).
+            declared = mapping.get("properties")
+            subschemas = cast(dict[str, object], declared) if isinstance(declared, dict) else {}
+            kept = [
+                item
+                for item in cast(list[object], value)
+                if item != _BACKING_FIELD
+                and not (isinstance(item, str) and _may_be_dropped(subschemas.get(item)))
+            ]
+            if kept:
+                out[key] = kept
             continue
         out[key] = _compact(value)
     return out
+
+
+# The only JSON types whose every value survives the response envelope.
+_ALWAYS_PRESENT_TYPES = frozenset({"string", "integer", "number", "boolean"})
+
+
+def _may_be_dropped(schema: object) -> bool:
+    """Whether a body may legitimately arrive WITHOUT a property of this schema.
+
+    The response envelope omits every null, every empty list and every empty
+    object (`envelope.shape_envelope`, ADR-0002) — including a nested model
+    that shapes down to nothing. So only a non-nullable scalar is guaranteed to
+    be there: an empty string, a zero and a ``false`` are all kept.
+
+    Errs toward "may be dropped". Wrongly calling a property optional costs a
+    client nothing; wrongly calling it required fails the whole call, which is
+    what 32 list tools did on every cluster-wide request.
+    """
+
+    if not isinstance(schema, dict):
+        return True
+    node = cast(dict[str, object], schema)
+    if "$ref" in node or "allOf" in node:
+        return True
+    for keyword in ("anyOf", "oneOf"):
+        options = node.get(keyword)
+        if isinstance(options, list):
+            return any(_may_be_dropped(option) for option in cast(list[object], options))
+    kind = node.get("type")
+    if isinstance(kind, list):
+        return not set(cast(list[object], kind)) <= _ALWAYS_PRESENT_TYPES
+    if kind is None:
+        # Untyped: a scalar only if it is pinned to non-null literal values.
+        literals = [node["const"]] if "const" in node else node.get("enum")
+        return not (
+            isinstance(literals, list) and literals and None not in cast(list[object], literals)
+        )
+    return kind not in _ALWAYS_PRESENT_TYPES
 
 
 def compact_output_schema(schema: dict[str, Any]) -> dict[str, Any]:

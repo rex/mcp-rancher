@@ -63,7 +63,46 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 
 ## Next Slice
 
-### 📌 HANDOFF (2026-11-15): the port to mcp 2.x SHIPPED (v1.69.0) — the modernization program is next
+### 📌 HANDOFF (2026-11-15): port SHIPPED (v1.69.0); two defects found and fixed after it (v1.70.0, v1.71.0); #8 is next
+
+**⚠️ Needs Pierce — a release.** Two fixes below are in `main` and in no
+published version. Nothing has been tagged since v1.59.0, and a tag is what
+publishes to PyPI.
+
+- **v1.70.0 — security** ([#21](https://github.com/rex/mcp-rancher/issues/21),
+  `docs/adr/0003-write-guards.md`, awaiting ratification). The two generic
+  `*_resource_action_invoke` tools invoked their action on a read-only instance
+  and were neither audited nor rate limited. Every release 1.0.0–1.69.0 is
+  affected. Fixed in the tools, backstopped in the HTTP client (a read-only
+  instance sends nothing but reads), and gated fleet-wide.
+- **v1.71.0 — functional** ([#22](https://github.com/rex/mcp-rancher/issues/22)).
+  32 namespaced list tools — pods, deployments, services, secrets, events… —
+  failed every cluster-wide call, because the published schema required a
+  `namespace` key the body drops when it is null. It read as an input error, so
+  agents worked around it one namespace at a time.
+
+**Both were found the same way, and that is the lesson.** Call every tool
+through the real request path with a real client and intercept the network;
+ask the question of the fleet, not of one tool. Three gates now do that:
+`test_write_guards_fleet_wide.py`, `test_output_contract_fleet_wide.py`, and
+their shared `_write_guards_support.observe_call`. Reach for it before adding
+another per-tool test.
+
+**Where #8 stands** (elicitation-based confirmation, claimed, no code written).
+Design settled while reading for it: keep the `confirmation` phrase required
+(the schema is static, so relaxing it would cost non-eliciting clients a round
+trip); add a `Resolve`-filled parameter on the five destructive `*_tool`
+wrappers; the resolver asks only when the client declares form elicitation
+*and* the call would otherwise proceed (read-only, phrase and namespace checks
+first, so a person is never asked to approve a call that will be refused);
+decline and cancel become a clean refusal; one setting,
+`RANCHER_MCP_REQUIRE_APPROVAL_FOR_DESTRUCTIVE`, governs both this and the
+Claude Code permission prompt. The `cluster_id` half of #8 changes ~20 tool
+signatures and deserves its own slice.
+
+**Open follow-ups filed, not started:**
+[#23](https://github.com/rex/mcp-rancher/issues/23) (the error envelope says
+`reason: not_installed` for a read-only refusal).
 
 **Where things stand.** The server runs on `mcp` 2.3.0 (`MCPServer`), and
 Claude Code 2.1.325 connects to it on protocol `2026-07-28` with no legacy
@@ -93,6 +132,8 @@ list ordering, cancellation). Awaiting a ruling — do not start: #10, #11,
 | 1.67.0 | Five triage tools load upfront in Claude Code (`anthropic/alwaysLoad`) | #6 |
 | 1.68.0 | Destructive tools need a person's approval (`anthropic/requiresUserInteraction`) | #7 |
 | 1.69.0 | The port to `mcp` 2.x | #2 |
+| 1.70.0 | **Security:** read-only mode now covers the generic action tools; fleet-wide write-guard gate | #21 |
+| 1.71.0 | Cluster-wide lists no longer violate their own schema (32 tools); fleet-wide output-contract gate | #22 |
 
 **What the port changed structurally** (detail in `CHANGELOG.md`, 1.69.0):
 
@@ -104,8 +145,10 @@ list ordering, cancellation). Awaiting a ruling — do not start: #10, #11,
 - `__main__.py` still answers the first request before any tool module loads,
   and now holds all seven registry-reading requests until loading finishes.
 - The SDK stopped checking its own structured output against `outputSchema`;
-  clients do it now. `test_output_schema_dump_parity.py` is the only early
-  warning left for that class of bug.
+  clients do it now. The early warning for that class of bug is
+  `test_output_contract_fleet_wide.py` (every body shape, against the published
+  schema) — the older `test_output_schema_dump_parity.py` only ever looked at a
+  fully populated body, which is how #22 got past it.
 
 **Deliberately not done.** `VIBE.yaml` still says `stack: python-fastmcp` /
 `framework: fastmcp` — skeleton vocabulary, Pierce's to change. Nothing has been

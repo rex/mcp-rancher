@@ -1,5 +1,60 @@
 # Changelog
 
+## [1.71.0] — 2026-11-15 — Agent: Claude Fable 5.2
+### Fixed
+- **A cluster-wide list no longer breaks its own contract — 32 tools.**
+  (rex/mcp-rancher#22) `rancher_pods_list`, `rancher_deployments_list`,
+  `rancher_services_list`, `rancher_secrets_list`, `rancher_config_maps_list`,
+  `rancher_cluster_events_list`, `rancher_persistent_volume_claims_list` and the
+  rest of the namespaced list family returned a body their own published
+  `outputSchema` rejected whenever `namespace` was omitted — the cluster-wide
+  list, which this server's instructions call "usually what triage wants".
+  The schema listed `namespace` as required. The response envelope drops every
+  null and empty value. So the key was demanded and absent.
+  **What a caller saw.** Through 1.68.0 the SDK validated the result on the way
+  out and discarded it: `isError`, *"Output validation error: 'namespace' is a
+  required property"* — reproduced against the 1.68.0 tree. The tool had done
+  its work. From 1.69.0 the server no longer checks, so the body went out and a
+  validating client rejected it instead.
+  **Why it survived for months.** That error reads like a complaint about the
+  *input*. An agent told "'namespace' is a required property" passes a
+  namespace, gets an answer, and carries on one namespace at a time — the
+  failure taught its own workaround. And nothing here exercised it: unit tests
+  call implementations directly, the live probes call the server object and so
+  skip validation, and the existing parity gate only ever built a *maximally
+  populated* example, in which nothing is empty and so nothing is dropped.
+  **The fix** is in the one pass that already rewrites every published output
+  schema: a property the envelope may drop — anything nullable, any list, any
+  object, any nested model — is no longer published as `required`. Only
+  non-nullable scalars are, because an empty string, a zero and a `false` all
+  survive. `rancher_pods_list` now promises `instance`, `clusterId` and `count`,
+  which is what it always delivers. No response body changed.
+
+### Added
+- **The missing half of the output-contract gate**
+  (`tests/unit/test_output_contract_fleet_wide.py`). For every tool, a real
+  body is built in three shapes — full, sparse (everything present, every leaf
+  empty) and bare (only what the model cannot be built without) — and validated
+  against the schema the tool actually *publishes*, with the validator a client
+  uses. The older gate compared one shape against the model's own schema, which
+  the publishing pass rewrites. Then every read tool is called through the
+  request path against a backend with nothing in it, and the client must accept
+  the result: the check that would have caught this outright.
+  Before the fix it failed on exactly the 32 tools, at the model level and
+  through the request path alike, and on nothing else. One test feeds the
+  incident's own shape to the judge to prove it objects.
+
+### Changed
+- `tools/list` is 601 bytes smaller (410,933 → 410,332 B) — shorter `required`
+  lists. A side effect, not the point.
+
+### Not established
+- Whether Claude Code itself rejects a non-conforming result. The reference
+  doc said so from reading the client's code; a wire check with a deliberately
+  bad body was attempted and could not be completed, and the doc now says that
+  rather than implying it was observed. It no longer matters for these tools —
+  the bodies conform — but it is still an open fact about the client.
+
 ## [1.70.0] — 2026-11-15 — Agent: Claude Fable 5.2
 ### Security
 - **Read-only mode did not cover the generic action tools. It does now.**

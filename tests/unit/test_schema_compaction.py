@@ -165,3 +165,92 @@ def test_every_registered_tool_survives_compaction_with_a_coherent_schema() -> N
                 if key not in declared:
                     offenders.append(f"{tool.name} {label}: requires undeclared {key!r}")
     assert not offenders, offenders
+
+
+# ── `required` only names what a body always carries ────────────────────────
+# The envelope drops null and empty values. A key it can drop must not be
+# published as required, or the first sparse response fails validation — which
+# is what every namespaced list did on a cluster-wide call.
+
+
+def _schema_requiring(**properties: dict[str, Any]) -> dict[str, Any]:
+    return {"type": "object", "properties": properties, "required": list(properties)}
+
+
+def test_a_nullable_property_is_not_published_as_required() -> None:
+    compacted = compact_output_schema(
+        _schema_requiring(
+            instance={"type": "string"},
+            namespace={"anyOf": [{"type": "string"}, {"type": "null"}]},
+        )
+    )
+
+    assert compacted["required"] == ["instance"]
+    assert "namespace" in compacted["properties"], "the property itself must stay declared"
+
+
+def test_containers_are_not_published_as_required() -> None:
+    """An empty list, an empty object and a nested model with nothing in it are
+    all dropped — so none of them can be promised."""
+
+    compacted = compact_output_schema(
+        {
+            **_schema_requiring(
+                count={"type": "integer"},
+                items={"type": "array", "items": {"type": "string"}},
+                labels={"type": "object", "additionalProperties": {"type": "string"}},
+                summary={"$ref": "#/$defs/Summary"},
+            ),
+            "$defs": {"Summary": _schema_requiring(running={"type": "integer"})},
+        }
+    )
+
+    assert compacted["required"] == ["count"]
+    assert compacted["$defs"]["Summary"]["required"] == ["running"]
+
+
+def test_every_scalar_stays_required() -> None:
+    """Empty strings, zeros and ``false`` survive the envelope, so a
+    non-nullable scalar really is always there — the promise is kept, not
+    thrown away wholesale."""
+
+    properties: dict[str, dict[str, Any]] = {
+        "name": {"type": "string"},
+        "count": {"type": "integer"},
+        "ratio": {"type": "number"},
+        "ready": {"type": "boolean"},
+        "phase": {"enum": ["Running", "Pending"]},
+        "kind": {"const": "Pod"},
+    }
+
+    assert compact_output_schema(_schema_requiring(**properties))["required"] == list(properties)
+
+
+def test_an_untyped_or_null_admitting_property_is_not_required() -> None:
+    compacted = compact_output_schema(
+        _schema_requiring(
+            anything={},
+            maybe={"enum": ["a", None]},
+            either={"type": ["string", "null"]},
+            kept={"type": ["string", "integer"]},
+        )
+    )
+
+    assert compacted["required"] == ["kept"]
+
+
+def test_required_disappears_when_nothing_can_be_promised() -> None:
+    compacted = compact_output_schema(
+        _schema_requiring(namespace={"anyOf": [{"type": "string"}, {"type": "null"}]})
+    )
+
+    assert "required" not in compacted
+
+
+def test_input_schemas_keep_their_required_arguments() -> None:
+    """The relaxation is about what a RESPONSE may omit. What a caller must
+    send is a different contract and is not touched."""
+
+    schema = _schema_requiring(namespace={"anyOf": [{"type": "string"}, {"type": "null"}]})
+
+    assert compact_input_schema(schema)["required"] == ["namespace"]
