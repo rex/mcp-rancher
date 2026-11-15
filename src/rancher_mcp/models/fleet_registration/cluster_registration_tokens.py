@@ -45,7 +45,7 @@ class RancherClusterRegistrationTokenDetail(RancherClusterRegistrationTokenSumma
     ``token``, and the ``*_command`` fields all embed it — because surfacing
     the join command is the tool's whole purpose. Retrieving it is a
     deliberate, **audited** single-resource reveal: the get tool is wrapped by
-    ``audit.apply_sensitive_reveal_audit`` (M-SEC), which emits an
+    ``audit_reveal.apply_sensitive_reveal_audit`` (M-SEC), which emits an
     ``operation="reveal"`` record on every call (identity only, never the value),
     mirroring how reading one Secret's value via ``secret_get`` is likewise a
     deliberate, audited act. The list surface never carries the real value

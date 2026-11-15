@@ -7,6 +7,7 @@ from collections.abc import Sequence
 import httpx
 from websockets.typing import Subprotocol
 
+from rancher_mcp.clients.request_guard import refuse_unsafe_request
 from rancher_mcp.clients.streaming_http import (
     stream_json_lines as _stream_json_lines,
 )
@@ -50,6 +51,7 @@ class RancherStreamingClient:
         transport: httpx.AsyncBaseTransport | None = None,
     ) -> None:
         self.instance_name = instance_name
+        self._read_only = config.read_only
         self._base_url = config.url.rstrip("/")
         self._token = config.token.get_secret_value()
         self._ssl = ssl_context_from_config(config)
@@ -77,6 +79,18 @@ class RancherStreamingClient:
 
         await self._client.aclose()
 
+    def _refuse_unsafe(self, method: str, path: str, params: StreamParams | None) -> None:
+        """The same last look the management client takes before it sends —
+        this is the other place a request can leave the process."""
+
+        refuse_unsafe_request(
+            instance_name=self.instance_name,
+            read_only=self._read_only,
+            method=method,
+            path=path,
+            query_keys=[key for key, _ in normalize_params(params)],
+        )
+
     async def stream_text_lines(
         self,
         path: str,
@@ -87,6 +101,7 @@ class RancherStreamingClient:
     ) -> TextLineStreamCapture:
         """Read a bounded text-line stream from a Rancher endpoint."""
 
+        self._refuse_unsafe("GET", path, params)
         return await _stream_text_lines(
             client=self._client,
             instance_name=self.instance_name,
@@ -106,6 +121,7 @@ class RancherStreamingClient:
     ) -> JSONEventStreamCapture:
         """Read a bounded JSON-line stream from a Rancher endpoint."""
 
+        self._refuse_unsafe("GET", path, params)
         return await _stream_json_lines(
             client=self._client,
             instance_name=self.instance_name,
@@ -125,8 +141,14 @@ class RancherStreamingClient:
         max_messages: int = 20,
         idle_timeout_seconds: float = 2.0,
     ) -> WebSocketCapture:
-        """Capture a bounded WebSocket exchange against a Rancher endpoint."""
+        """Capture a bounded WebSocket exchange against a Rancher endpoint.
 
+        A WebSocket can carry an exec or an attach, and messages sent over one
+        are writes whatever verb opened it. So on a read-only instance it is
+        refused outright when there is anything to send.
+        """
+
+        self._refuse_unsafe("POST" if outbound_messages else "GET", path, params)
         return await _websocket_capture(
             instance_name=self.instance_name,
             base_url=self._base_url,

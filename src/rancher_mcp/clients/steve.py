@@ -4,10 +4,12 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from typing import Protocol
+from urllib.parse import quote
 
 import httpx
 
 from rancher_mcp.clients.management import RancherManagementClient
+from rancher_mcp.identifiers import require_safe_identifier
 from rancher_mcp.models.discovery import RancherInstanceConfig
 
 
@@ -84,7 +86,9 @@ class RancherSteveClient:
         timeout: httpx.Timeout | None = None,
     ) -> None:
         self.instance_name = instance_name
-        self.cluster_id = cluster_id
+        # One plain name: it goes into the root of every path this client
+        # builds, where a `/` or a `..` would point the whole client elsewhere.
+        self.cluster_id = require_safe_identifier("cluster_id", cluster_id, single_segment=True)
         self._management_client = RancherManagementClient(
             instance_name=instance_name,
             config=config,
@@ -196,4 +200,4 @@ class RancherSteveClient:
 
         if self.cluster_id == "local":
             return "/v1"
-        return f"/k8s/clusters/{self.cluster_id}/v1"
+        return f"/k8s/clusters/{quote(self.cluster_id, safe='')}/v1"

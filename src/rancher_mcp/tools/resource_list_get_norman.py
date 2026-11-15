@@ -13,6 +13,8 @@ from rancher_mcp.services.resources import (
     build_resource_path,
     schema_reference_from_payload,
 )
+from rancher_mcp.services.resources.paths import schema_path
+from rancher_mcp.tools.support.json_args import OptionalJsonText
 
 
 async def _fetch_norman_resource_list(
@@ -28,7 +30,7 @@ async def _fetch_norman_resource_list(
 ) -> GenericResourceList:
     """Fetch a Norman collection by schema id."""
 
-    schema_payload = await client.get_json(f"/v3/schemas/{schema_id}")
+    schema_payload = await client.get_json(schema_path("/v3/schemas", schema_id))
     schema = schema_reference_from_payload(
         plane="norman",
         cluster_id=None,
@@ -59,8 +61,8 @@ async def rancher_norman_resource_list(
     marker: str | None = None,
     sort_by: str | None = None,
     reverse: bool | None = None,
-    filters_json: str | None = None,
-    params_json: str | None = None,
+    filters_json: OptionalJsonText = None,
+    params_json: OptionalJsonText = None,
     instance: str | None = None,
     settings: AppSettings | None = None,
     client: ManagementDiscoveryClient | None = None,
@@ -103,7 +105,7 @@ async def _fetch_norman_resource_get(
 ) -> GenericResourceDetail:
     """Fetch one Norman resource by schema id and resource id."""
 
-    schema_payload = await client.get_json(f"/v3/schemas/{schema_id}")
+    schema_payload = await client.get_json(schema_path("/v3/schemas", schema_id))
     schema = schema_reference_from_payload(
         plane="norman",
         cluster_id=None,
@@ -150,8 +152,8 @@ async def rancher_norman_resource_list_tool(
     marker: str | None = None,
     sort_by: str | None = None,
     reverse: bool | None = None,
-    filters_json: str | None = None,
-    params_json: str | None = None,
+    filters_json: OptionalJsonText = None,
+    params_json: OptionalJsonText = None,
     instance: str | None = None,
 ) -> GenericResourceList:
     """List any Norman resource collection by raw schema id with full untyped

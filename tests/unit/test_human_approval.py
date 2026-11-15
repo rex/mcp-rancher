@@ -16,15 +16,19 @@ from mcp.server.mcpserver import AcceptedElicitation, CancelledElicitation, Decl
 from mcp.types import ClientCapabilities, ElicitationCapability
 from structlog.testing import capture_logs
 
-from rancher_mcp.exceptions import RancherApprovalDeniedError
+from rancher_mcp.config import clear_toolset_settings_cache
+from rancher_mcp.exceptions import RancherApprovalDeniedError, RancherInvalidArgumentError
+from rancher_mcp.tools.support.approval_wording import (
+    action_question,
+    delete_question,
+    describe_target,
+)
 from rancher_mcp.tools.support.human_approval import (
     NOT_ASKED,
     Approval,
     Unasked,
-    action_question,
+    ask_unless_pointless,
     client_can_ask,
-    delete_question,
-    describe_target,
     settle,
 )
 
@@ -187,3 +191,46 @@ def test_a_refusal_is_on_the_audit_log() -> None:
     assert record["outcome"] == "error"
     assert record["error_code"] == "APPROVAL_DENIED"
     assert record["error_message"] == "declined"
+
+
+# ── A pre-flight that refuses IS the refusal ────────────────────────────────
+
+
+def test_a_preflight_error_travels_with_the_answer(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("RANCHER_MCP_REQUIRE_APPROVAL_FOR_DESTRUCTIVE", "true")
+    clear_toolset_settings_cache()
+    refusal = RancherInvalidArgumentError("`namespace` is not a plain name")
+    context: Any = _Context(ClientCapabilities(elicitation=ElicitationCapability(form={})))
+
+    def question() -> str:
+        raise refusal
+
+    outcome = ask_unless_pointless(context, question)
+    clear_toolset_settings_cache()
+
+    assert isinstance(outcome, Unasked)
+    assert outcome.reason == "call_will_be_refused"
+    assert outcome.refusal is refusal
+    assert "refusal" not in outcome.model_dump(), "the error would be serialized with the answer"
+
+
+def test_settling_a_refused_preflight_raises_it_and_records_it() -> None:
+    """Nobody was asked, because the call was going to be refused. That has to
+    be true whether or not the tool body repeats the check — a check that lived
+    in the pre-flight alone used to let the call through, unasked."""
+
+    refusal = RancherInvalidArgumentError("`namespace` is not a plain name")
+    unasked = AcceptedElicitation[Approval](
+        data=Unasked(reason="call_will_be_refused", refusal=refusal)
+    )
+
+    with capture_logs() as logs, pytest.raises(RancherInvalidArgumentError) as raised:
+        settle(unasked, tool_name="rancher_resource_delete", plane="steve", resource_id="web-0")
+
+    assert raised.value is refusal
+    (record,) = [dict(entry) for entry in logs if entry["event"] == "audit"]
+    assert record["operation"] == "approval"
+    assert record["outcome"] == "error"
+    assert record["error_code"] == "CAPABILITY_ERROR"
+    assert record["error_message"] == "`namespace` is not a plain name"
+    assert record["resource_id"] == "web-0"

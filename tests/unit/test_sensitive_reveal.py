@@ -12,7 +12,11 @@ import structlog
 from _config_secrets_support import StubConfigSecretsClient, build_settings
 from _sdk_registry_support import placeholder_tool, registry_with
 
-from rancher_mcp.audit import _REVEAL_TOOLS, _wrap_reveal_audit, apply_sensitive_reveal_audit
+from rancher_mcp.audit_reveal import (
+    _REVEAL_TOOLS,
+    _wrap_reveal_audit,
+    apply_sensitive_reveal_audit,
+)
 from rancher_mcp.models.base import RancherModel
 from rancher_mcp.models.config_secrets import (
     RancherSecretDetail,

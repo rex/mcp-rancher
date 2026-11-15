@@ -25,16 +25,16 @@ from rancher_mcp.services.safety import (
     ensure_instance_writable,
     require_delete_confirmation,
 )
+from rancher_mcp.tools.support.approval_wording import delete_question, generic_target
 from rancher_mcp.tools.support.human_approval import (
     NOT_ASKED,
     Approval,
     HumanApproval,
     Unasked,
     ask_unless_pointless,
-    delete_question,
-    describe_target,
     settle,
 )
+from rancher_mcp.tools.support.json_args import OptionalJsonText
 
 
 async def _delete_steve_resource(
@@ -100,8 +100,8 @@ async def rancher_steve_resource_delete(
     confirmation: str,
     cluster_id: str = "local",
     namespace: str | None = None,
-    payload_json: str | None = None,
-    params_json: str | None = None,
+    payload_json: OptionalJsonText = None,
+    params_json: OptionalJsonText = None,
     instance: str | None = None,
     settings: AppSettings | None = None,
     steve_client: SteveDiscoveryClient | None = None,
@@ -163,9 +163,9 @@ async def _approve(
             plane="steve", schema_id=schema_id, resource_id=resource_id, confirmation=confirmation
         )
         return delete_question(
-            describe_target(
-                what=schema_id,
-                name=resource_id,
+            generic_target(
+                schema_id=schema_id,
+                resource_id=resource_id,
                 instance=instance_name,
                 cluster_id=cluster_id,
                 namespace=namespace,
@@ -181,8 +181,8 @@ async def rancher_steve_resource_delete_tool(
     confirmation: str,
     cluster_id: str = "local",
     namespace: str | None = None,
-    payload_json: str | None = None,
-    params_json: str | None = None,
+    payload_json: OptionalJsonText = None,
+    params_json: OptionalJsonText = None,
     instance: str | None = None,
     approval: Annotated[HumanApproval, Resolve(_approve)] = NOT_ASKED,
 ) -> GenericResourceMutationResult:

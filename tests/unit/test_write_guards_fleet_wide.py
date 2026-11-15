@@ -37,6 +37,7 @@ from collections.abc import Iterator
 import pytest
 from _output_schema_dump_parity_support import build_registered_server
 from _write_guards_support import (
+    Observation,
     observe_call,
     rate_limit_refusal_problems,
     read_only_refusal_problems,
@@ -49,7 +50,7 @@ from rancher_mcp.clients.management import RancherManagementClient
 from rancher_mcp.config import clear_settings_cache, get_settings
 from rancher_mcp.sdk_registry import RegisteredTool, registered_tools
 from rancher_mcp.services.instances import resolve_instance
-from rancher_mcp.tools.support.annotations import SAFE_WRITE
+from rancher_mcp.tools.support.annotations import READ_ONLY, SAFE_WRITE
 
 _SERVER = build_registered_server()
 
@@ -68,6 +69,19 @@ def read_only_instance(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
     """The one configured instance is read-only for the duration of a test."""
 
     monkeypatch.setenv("RANCHER_READ_ONLY", "true")
+    clear_settings_cache()
+    rate_limit.reset_rate_limit_state()
+    yield
+    clear_settings_cache()
+    rate_limit.reset_rate_limit_state()
+
+
+@pytest.fixture
+def writable_instance(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
+    """The one configured instance accepts writes, so nothing downstream of a
+    tool can be what stopped one."""
+
+    monkeypatch.setenv("RANCHER_READ_ONLY", "false")
     clear_settings_cache()
     rate_limit.reset_rate_limit_state()
     yield
@@ -134,9 +148,21 @@ async def test_an_empty_write_bucket_refuses_every_tool_that_can_write(tool_name
     )
 
 
-@pytest.mark.usefixtures("read_only_instance")
+def _writes(seen: Observation) -> list[str]:
+    """Every request in *seen* that was not a read."""
+
+    return [request for request in seen.requests if not request.startswith("GET ")]
+
+
+@pytest.mark.usefixtures("writable_instance")
 async def test_tools_annotated_read_only_only_ever_read() -> None:
-    """The other half: the annotation the gates above trust must be true."""
+    """The other half: the annotation the gates above trust must be true.
+
+    Asked of a WRITABLE instance, and it has to be. On a read-only one the
+    transport refuses every write before it is sent, so a write tool mislabelled
+    as a read would show nothing here — which is how this check stood, proving
+    nothing, from the day that backstop was added until a review noticed.
+    """
 
     offenders: list[str] = []
     reached_http = 0
@@ -145,7 +171,7 @@ async def test_tools_annotated_read_only_only_ever_read() -> None:
             _SERVER, tool_name, synthesize_arguments(_TOOLS[tool_name].parameters)
         )
         reached_http += bool(seen.requests)
-        writes = [request for request in seen.requests if not request.startswith("GET ")]
+        writes = _writes(seen)
         if writes:
             offenders.append(f"{tool_name}: {writes}")
 
@@ -157,6 +183,25 @@ async def test_tools_annotated_read_only_only_ever_read() -> None:
         f"only {reached_http} of {len(_READERS)} read tools got as far as sending a request, "
         "so this check is not looking at much — the synthesized arguments have stopped working"
     )
+
+
+@pytest.mark.usefixtures("writable_instance")
+async def test_the_gate_catches_a_write_mislabelled_as_a_read() -> None:
+    """Non-vacuity for the check above: a tool annotated read-only that POSTs
+    is seen to. On a read-only instance this very call shows nothing."""
+
+    mcp = MCPServer(name="mislabelled-probe", instructions="probe")
+
+    @mcp.tool(name="rancher_mislabelled_read", annotations=READ_ONLY)
+    async def rancher_mislabelled_read(resource_id: str) -> str:  # pyright: ignore[reportUnusedFunction]
+        instance_name, instance_config = resolve_instance(get_settings(), None)
+        async with RancherManagementClient(instance_name, instance_config) as client:
+            await client.post_json(f"/v3/xs/{resource_id}?action=x")
+        return "done"
+
+    seen = await observe_call(mcp, "rancher_mislabelled_read", {"resource_id": "x"})
+
+    assert _writes(seen) == ["POST /v3/xs/x"], seen.requests
 
 
 @pytest.mark.usefixtures("read_only_instance")

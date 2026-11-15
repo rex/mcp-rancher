@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 from urllib.parse import quote, urlsplit
 
 from rancher_mcp.exceptions import RancherCapabilityError
+from rancher_mcp.identifiers import require_safe_identifier
 from rancher_mcp.services.resources.shared import mapping_value
 
 if TYPE_CHECKING:
@@ -122,7 +123,7 @@ def _path_from_value(value: object) -> str | None:
     if not isinstance(value, str) or not value:
         return None
     parsed = urlsplit(value)
-    if parsed.scheme:
+    if parsed.scheme or parsed.netloc:
         return parsed.path or None
     return value
 
@@ -165,9 +166,26 @@ def _to_steve_relative_path(path: str, cluster_id: str | None) -> str:
     return path
 
 
-def _append_identifier(base_path: str, resource_id: str) -> str:
-    """Append a potentially multi-segment resource identifier to a collection path."""
+def schema_path(root: str, schema_id: str) -> str:
+    """The path of one schema under *root* (``/v3/schemas`` or ``/schemas``).
 
+    A schema id is a single name. It used to be interpolated as it came, so a
+    ``/``, a ``..`` or a ``#`` in it addressed something else.
+    """
+
+    require_safe_identifier("schema_id", schema_id, single_segment=True)
+    return f"{root}/{quote(schema_id, safe='')}"
+
+
+def _append_identifier(base_path: str, resource_id: str) -> str:
+    """Append a potentially multi-segment resource identifier to a collection path.
+
+    Quoting each segment is not enough on its own: ``quote("..")`` is ``..``,
+    and the HTTP library resolves dot segments before it sends. The identifier
+    is refused first if any segment could address a different resource.
+    """
+
+    require_safe_identifier("resource_id", resource_id)
     trimmed = base_path.rstrip("/")
     encoded_segments = [quote(segment, safe="") for segment in resource_id.split("/") if segment]
     if not encoded_segments:
@@ -176,12 +194,18 @@ def _append_identifier(base_path: str, resource_id: str) -> str:
 
 
 def _request_target_from_value(value: object) -> str | None:
-    """Extract a request target preserving any query string."""
+    """Extract a request target preserving any query string.
+
+    Only ever a path on the Rancher this client was configured for: whatever
+    host a link names is dropped here — named with a scheme or, as
+    ``//host/…``, without one — so the path that is checked before sending is
+    the path that is sent.
+    """
 
     if not isinstance(value, str) or not value:
         return None
     parsed = urlsplit(value)
-    if not parsed.scheme:
+    if not parsed.scheme and not parsed.netloc:
         return value
     if parsed.query:
         return f"{parsed.path}?{parsed.query}"

@@ -20,16 +20,16 @@ from rancher_mcp.services.resources import (
 )
 from rancher_mcp.services.safety import ensure_instance_writable
 from rancher_mcp.tools.resource_actions.steve_common import load_steve_resource_context
+from rancher_mcp.tools.support.approval_wording import action_question, generic_target
 from rancher_mcp.tools.support.human_approval import (
     NOT_ASKED,
     Approval,
     HumanApproval,
     Unasked,
-    action_question,
     ask_unless_pointless,
-    describe_target,
     settle,
 )
+from rancher_mcp.tools.support.json_args import OptionalJsonText
 
 
 async def _fetch_steve_resource_action_invoke(
@@ -81,7 +81,7 @@ async def rancher_steve_resource_action_invoke(
     action_name: str,
     cluster_id: str = "local",
     namespace: str | None = None,
-    payload_json: str | None = None,
+    payload_json: OptionalJsonText = None,
     instance: str | None = None,
     settings: AppSettings | None = None,
     steve_client: SteveDiscoveryClient | None = None,
@@ -144,9 +144,9 @@ async def _approve(
         ensure_instance_writable(instance_name, instance_config)
         return action_question(
             action_name,
-            describe_target(
-                what=schema_id,
-                name=resource_id,
+            generic_target(
+                schema_id=schema_id,
+                resource_id=resource_id,
                 instance=instance_name,
                 cluster_id=cluster_id,
                 namespace=namespace,
@@ -162,7 +162,7 @@ async def rancher_steve_resource_action_invoke_tool(
     action_name: str,
     cluster_id: str = "local",
     namespace: str | None = None,
-    payload_json: str | None = None,
+    payload_json: OptionalJsonText = None,
     instance: str | None = None,
     approval: Annotated[HumanApproval, Resolve(_approve)] = NOT_ASKED,
 ) -> GenericResourceActionResult:

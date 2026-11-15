@@ -50,8 +50,19 @@ _PLAUSIBLE_PAYLOAD: dict[str, object] = {
         "availableReplicas": 1,
         "observedGeneration": 1,
     },
-    "resourceMethods": ["GET", "PUT", "DELETE"],
+    "resourceMethods": ["GET", "PUT", "PATCH", "DELETE"],
     "collectionMethods": ["GET", "POST"],
+    # What a Steve schema says about its Kubernetes resource. Without it the
+    # Steve write and watch tools stop at "schema does not advertise…", and a
+    # gate about the request they build would be looking at nothing.
+    "attributes": {
+        "group": "apps",
+        "version": "v1",
+        "resource": "xs",
+        "kind": "X",
+        "namespaced": False,
+        "verbs": ["get", "list", "watch", "create", "update", "patch", "delete"],
+    },
 }
 
 
@@ -100,6 +111,8 @@ class Observation:
     the tool's published ``outputSchema``. The tool itself ran to completion."""
     questions: list[str] = field(default_factory=list[str])
     """Every prompt the server put to the person behind the client."""
+    query_keys: list[str] = field(default_factory=list[str])
+    """The name of every query parameter any request carried."""
 
     @property
     def error_code(self) -> str | None:
@@ -168,6 +181,7 @@ async def observe_call(
             # the tool has run, and what it sent and logged is still on record.
             rejected_by_client = _innermost_message(exc)
         requests = [f"{call.request.method} {call.request.url.path}" for call in router.calls]
+        query_keys = sorted({key for call in router.calls for key in call.request.url.params})
 
     envelope: dict[str, Any] | None = None
     is_error = result is not None and bool(result.is_error)
@@ -188,6 +202,7 @@ async def observe_call(
         audit=[dict(record) for record in logs if record.get("event") == "audit"],
         rejected_by_client=rejected_by_client,
         questions=questions,
+        query_keys=query_keys,
     )
 
 

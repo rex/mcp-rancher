@@ -18,6 +18,7 @@ from rancher_mcp.services.resources.capabilities import (
 from rancher_mcp.services.resources.contexts import load_norman_resource_context
 from rancher_mcp.services.resources.schema import parse_required_payload_object
 from rancher_mcp.services.safety import ensure_instance_writable
+from rancher_mcp.tools.support.json_args import OptionalJsonText
 
 
 async def _patch_norman_resource(
@@ -69,7 +70,7 @@ async def rancher_norman_resource_patch(
     schema_id: str,
     resource_id: str,
     payload_json: str,
-    params_json: str | None = None,
+    params_json: OptionalJsonText = None,
     instance: str | None = None,
     settings: AppSettings | None = None,
     client: ManagementMutationClient | None = None,
@@ -103,7 +104,7 @@ async def rancher_norman_resource_patch_tool(
     schema_id: str,
     resource_id: str,
     payload_json: str,
-    params_json: str | None = None,
+    params_json: OptionalJsonText = None,
     instance: str | None = None,
 ) -> GenericResourceMutationResult:
     """Merge a partial JSON payload into one existing Norman resource under any

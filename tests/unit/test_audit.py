@@ -149,6 +149,28 @@ async def test_audit_mutation_decorator_logs_api_error_with_http_status() -> Non
 
 
 @pytest.mark.asyncio
+async def test_a_crash_after_the_request_went_out_is_still_on_record() -> None:
+    """A mutation can fail AFTER it was sent — a 2xx whose body will not parse,
+    a result that will not build. The change may well have been made, so the
+    attempt is recorded; only the exception's type, since its text can quote
+    the payload that broke it."""
+
+    @audit_mutation(operation="create", plane="norman")
+    async def fake_create(*, schema_id: str, payload_json: str) -> None:
+        raise ValueError(f"could not read the reply to {payload_json}")
+
+    with capture_logs() as logs, pytest.raises(ValueError, match="could not read"):
+        await fake_create(schema_id="token", payload_json='{"password": "hunter2"}')
+
+    [record] = [r for r in logs if r["event"] == "audit"]
+    assert record["outcome"] == "error"
+    assert record["error_code"] == "ValueError"
+    assert record["schema_id"] == "token"
+    assert "whether the change was made is unknown" in record["error_message"]
+    assert "hunter2" not in str(record)
+
+
+@pytest.mark.asyncio
 async def test_audit_mutation_emits_for_read_only_instance_rejection() -> None:
     """End-to-end: a read-only instance rejection on a real mutation tool emits audit."""
 

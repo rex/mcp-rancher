@@ -21,6 +21,7 @@ from rancher_mcp.services.resources.capabilities import (
 from rancher_mcp.services.resources.contexts import load_steve_schema_reference
 from rancher_mcp.services.resources.schema import parse_required_payload_object
 from rancher_mcp.services.safety import ensure_instance_writable
+from rancher_mcp.tools.support.json_args import OptionalJsonText
 
 
 async def _create_steve_resource(
@@ -71,7 +72,7 @@ async def rancher_steve_resource_create(
     payload_json: str,
     cluster_id: str = "local",
     namespace: str | None = None,
-    params_json: str | None = None,
+    params_json: OptionalJsonText = None,
     instance: str | None = None,
     settings: AppSettings | None = None,
     steve_client: SteveDiscoveryClient | None = None,
@@ -118,7 +119,7 @@ async def rancher_steve_resource_create_tool(
     payload_json: str,
     cluster_id: str = "local",
     namespace: str | None = None,
-    params_json: str | None = None,
+    params_json: OptionalJsonText = None,
     instance: str | None = None,
 ) -> GenericResourceMutationResult:
     """Create a new Steve Kubernetes-proxy resource from a raw JSON payload under any

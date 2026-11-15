@@ -43,7 +43,7 @@ class RancherModel(BaseModel):
     # purpose — the deliberate, audited reveal that mirrors `kubectl get secret
     # -o yaml`. LIST/summary models NEVER set this, so browse surfaces stay
     # redacted; every other model keeps the K-1 central scrub. The reveal is
-    # audited (see audit.apply_sensitive_reveal_audit). See SECURITY.md / ADR-0002.
+    # audited (see audit_reveal.apply_sensitive_reveal_audit). See SECURITY.md / ADR-0002.
     serializer_reveals_secrets: ClassVar[bool] = False
 
     suggested_next_steps: list[str] = Field(default_factory=list)

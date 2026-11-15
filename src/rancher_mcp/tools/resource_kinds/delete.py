@@ -20,6 +20,7 @@ from mcp.server.mcpserver import Context, Elicit, Resolve
 from rancher_mcp.audit import audit_mutation
 from rancher_mcp.config import AppSettings, get_settings
 from rancher_mcp.exceptions import RancherCapabilityError
+from rancher_mcp.identifiers import require_safe_identifier
 from rancher_mcp.models.discovery import RancherInstanceConfig
 from rancher_mcp.models.resources import RancherCuratedDeleteResult
 from rancher_mcp.rate_limit import rate_limit_writes
@@ -36,14 +37,13 @@ from rancher_mcp.tools.resource_kinds.shared import (
     resolve_kind,
     resolve_namespace,
 )
+from rancher_mcp.tools.support.approval_wording import delete_question, describe_target
 from rancher_mcp.tools.support.human_approval import (
     NOT_ASKED,
     Approval,
     HumanApproval,
     Unasked,
     ask_unless_pointless,
-    delete_question,
-    describe_target,
     settle,
 )
 
@@ -105,6 +105,7 @@ async def rancher_resource_delete(
     the next call for a reason no phrase can fix."""
 
     target = _preflight(resource_kind, name, confirmation, namespace, instance, settings)
+    require_safe_identifier("cluster_id", cluster_id, single_segment=True)
     if client is not None:
         return await _delete_resource(
             target.instance_name,
@@ -154,7 +155,13 @@ def _preflight(
     instance_name, instance_config = resolve_instance(settings or get_settings(), instance)
     ensure_instance_writable(instance_name, instance_config)
     spec = resolve_kind(resource_kind)
+    # One plain name each. A `..` here used to be sent as it stood, and the
+    # HTTP library resolved it: deleting a "pod" named `..` deleted its
+    # namespace, under a phrase, a prompt and an audit record that said "pod".
+    require_safe_identifier("name", name, single_segment=True)
     resolved_namespace = resolve_namespace(spec, namespace)
+    if resolved_namespace is not None:
+        require_safe_identifier("namespace", resolved_namespace, single_segment=True)
     expected_phrase = delete_confirmation_phrase(spec, name, resolved_namespace)
     if confirmation != expected_phrase:
         raise RancherCapabilityError(

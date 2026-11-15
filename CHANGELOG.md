@@ -1,5 +1,94 @@
 # Changelog
 
+## [1.75.0] — 2026-11-15 — Agent: Claude Fable 5.2
+### Security
+- **An identifier containing `..` reached a different resource than the one
+  named.** (rex/mcp-rancher#27) Identifiers were percent-quoted into URL paths.
+  That leaves `..` as it is, and the HTTP library resolves dot segments before
+  it sends: `…/namespaces/kube-system/pods/..` left the process as
+  `…/namespaces/kube-system`. So `rancher_resource_delete` of a "pod" named
+  `..` deleted its namespace, and a generic tool given
+  `resource_id="x/../../…"` reached any path on the Rancher host — under a
+  confirmation phrase and an audit record that named the original, and on a
+  read-only instance for reads. **Every earlier version is affected.**
+  Identifiers are now checked where they enter (`rancher_mcp.identifiers`): no
+  `.` or `..` segment, no whitespace or control character, none of
+  `" \ # ? %`, and a single name where only one is meant (`schema_id`,
+  `cluster_id`, `namespace`, a curated tool's `name`). The caller is told which
+  argument was wrong, with `"reason": "invalid_argument"`.
+- **The transport refuses what should never be sent, whoever built it.**
+  `clients/request_guard.py` is the last look at every request from both HTTP
+  clients. Besides the read-only rule it already held, it refuses a path with a
+  `.` or `..` segment (encoded or not), an encoded slash, a fragment, a control
+  character or a host.
+- **A query string can no longer overrule the method.** Rancher takes the HTTP
+  method from `?_method=` on both API planes, and on the management plane
+  treats `?action=remove` as a delete. `params_json` and `filters_json` went
+  into the query string as given — so a list, which a read-only instance
+  allows, could have been made a write; a patch a delete with no confirmation;
+  and a create an action invoke (that one reported by the review, the rest
+  found closing it). A caller may no longer set either parameter, and the
+  transport never sends `_method`, nor `action` on anything but a POST.
+  *Not reachable over MCP in any published version* — the defect under "Fixed"
+  rejected those arguments first — but it would have been the moment that was
+  fixed.
+- **The approval question can no longer be written by the caller.** The prompt
+  added in 1.72.0 dropped caller-supplied values into its one sentence as they
+  arrived. A `namespace` holding a quote and a newline could finish the
+  sentence itself — another cluster, another instance — and push the real ones
+  off the screen. Values are now validated and shown JSON-quoted; a `namespace`
+  that disagrees with the one inside `resource_id` is refused instead of
+  shown; an action name is checked the same way. (1.72.0 was never published.)
+- **A pre-flight that refuses is a refusal.** When nobody was asked because the
+  call was going to be refused anyway, the refusal rested on the tool body
+  repeating the same check. The error now travels with the answer, and
+  `settle()` raises it and records it on the audit log.
+- **A mutation that crashes is audited.** `audit_mutation` recorded successes
+  and this server's own errors. A crash can come after the request went out —
+  a reply that will not parse — so it is recorded too, by exception type
+  alone, because the text may quote a payload.
+- A link in a payload (`actions`, `links`) is followed on this Rancher only: a
+  host it names is dropped, with a scheme or without one.
+
+### Fixed
+- **Optional JSON-text arguments work through MCP.** `params_json`,
+  `filters_json`, and `payload_json` where it is optional, refused every
+  object they were given: the SDK JSON-decodes any string argument not
+  annotated exactly `str`, and the dict it made then failed validation as a
+  string. `rancher_norman_resource_list(params_json='{"limit": 5}')` has never
+  worked from a client. They are now `OptionalJsonText`
+  (`tools/support/json_args.py`), which re-encodes what the SDK decoded; a
+  client that sends the object itself is accepted too. Published input schemas
+  are unchanged.
+
+### Why nothing caught it, and what does now
+- *"Every identifier is quoted"* was true and proved nothing: `quote("..")` is
+  `..`. Every fleet-wide gate synthesized well-formed identifiers from the
+  schema. `tests/unit/test_request_path_integrity.py` sends hostile ones,
+  through the request path and at the transport directly.
+- **A gate went vacuous when a backstop was added beneath it.** "Tools
+  annotated read-only only ever read" ran on a read-only instance. Once the
+  transport refused writes there, no annotated tool *could* write, and the
+  check passed whatever a tool did. It now runs on a writable instance, with a
+  planted mislabelled tool to show it sees one.
+- **A test passed because of a bug.** The check that `?action=` could not ride
+  a create looked for the word `action` in the refusal — and found it in the
+  SDK's complaint about the argument it had mangled. The new gates
+  (`test_request_method_integrity.py`, `test_json_text_arguments.py`) require
+  the refusal to be *for the reason under test*, and list every call that was
+  refused for another.
+- Every test of the generic tools called the Python function, where the SDK's
+  argument decoding does not happen. The new gates use the request path, for
+  every tool that has such an argument — one added tomorrow included.
+- Found by an independent review of the day's security-sensitive commits (the
+  repo's `reviewer` agent), before the first release that would have advertised
+  the approval prompt. [ADR-0003](docs/adr/0003-write-guards.md) has an
+  addendum.
+
+### Changed
+- `rancher_mcp.audit` is split: reveal auditing lives in
+  `rancher_mcp.audit_reveal`.
+
 ## [1.74.0] — 2026-11-15 — Agent: Claude Fable 5.2
 ### Fixed
 - **The published package did not start. It does now.** (rex/mcp-rancher#26)

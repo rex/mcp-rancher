@@ -22,17 +22,18 @@ from rancher_mcp.services.resources import (
     resolve_resource_link_path,
     schema_reference_from_payload,
 )
+from rancher_mcp.services.resources.paths import schema_path
 from rancher_mcp.services.safety import ensure_instance_writable
+from rancher_mcp.tools.support.approval_wording import action_question, generic_target
 from rancher_mcp.tools.support.human_approval import (
     NOT_ASKED,
     Approval,
     HumanApproval,
     Unasked,
-    action_question,
     ask_unless_pointless,
-    describe_target,
     settle,
 )
+from rancher_mcp.tools.support.json_args import OptionalJsonText
 
 
 async def _fetch_norman_resource_action_invoke(
@@ -45,7 +46,7 @@ async def _fetch_norman_resource_action_invoke(
 ) -> GenericResourceActionResult:
     """Invoke a Norman resource action."""
 
-    schema_payload = await client.get_json(f"/v3/schemas/{schema_id}")
+    schema_payload = await client.get_json(schema_path("/v3/schemas", schema_id))
     schema = schema_reference_from_payload(
         plane="norman",
         cluster_id=None,
@@ -84,7 +85,7 @@ async def rancher_norman_resource_action_invoke(
     schema_id: str,
     resource_id: str,
     action_name: str,
-    payload_json: str | None = None,
+    payload_json: OptionalJsonText = None,
     instance: str | None = None,
     settings: AppSettings | None = None,
     client: ManagementDiscoveryClient | None = None,
@@ -97,21 +98,11 @@ async def rancher_norman_resource_action_invoke(
     ensure_instance_writable(instance_name, instance_config)
     if client is not None:
         return await _fetch_norman_resource_action_invoke(
-            instance_name,
-            schema_id,
-            resource_id,
-            action_name,
-            payload_json,
-            client,
+            instance_name, schema_id, resource_id, action_name, payload_json, client
         )
     async with RancherManagementClient(instance_name, instance_config) as managed_client:
         return await _fetch_norman_resource_action_invoke(
-            instance_name,
-            schema_id,
-            resource_id,
-            action_name,
-            payload_json,
-            managed_client,
+            instance_name, schema_id, resource_id, action_name, payload_json, managed_client
         )
 
 
@@ -124,7 +115,7 @@ async def _fetch_norman_resource_link_follow(
 ) -> GenericResourceLinkResult:
     """Follow a Norman resource link."""
 
-    schema_payload = await client.get_json(f"/v3/schemas/{schema_id}")
+    schema_payload = await client.get_json(schema_path("/v3/schemas", schema_id))
     schema = schema_reference_from_payload(
         plane="norman",
         cluster_id=None,
@@ -194,7 +185,9 @@ async def _approve(
     def question() -> str:
         instance_name, instance_config = resolve_instance(get_settings(), instance)
         ensure_instance_writable(instance_name, instance_config)
-        target = describe_target(what=schema_id, name=resource_id, instance=instance_name)
+        target = generic_target(
+            schema_id=schema_id, resource_id=resource_id, instance=instance_name
+        )
         return action_question(action_name, target)
 
     return ask_unless_pointless(ctx, question)
@@ -204,7 +197,7 @@ async def rancher_norman_resource_action_invoke_tool(
     schema_id: str,
     resource_id: str,
     action_name: str,
-    payload_json: str | None = None,
+    payload_json: OptionalJsonText = None,
     instance: str | None = None,
     approval: Annotated[HumanApproval, Resolve(_approve)] = NOT_ASKED,
 ) -> GenericResourceActionResult:

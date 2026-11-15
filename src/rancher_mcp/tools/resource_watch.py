@@ -14,6 +14,8 @@ from rancher_mcp.services.resources import (
     build_resource_watch_result,
     schema_reference_from_payload,
 )
+from rancher_mcp.services.resources.paths import schema_path
+from rancher_mcp.tools.support.json_args import OptionalJsonText
 
 
 async def _watch_steve_resource_collection(
@@ -34,7 +36,7 @@ async def _watch_steve_resource_collection(
     if max_events < 1:
         raise RancherCapabilityError("max_events must be greater than zero")
 
-    schema_payload = await steve_client.get_json(f"/schemas/{schema_id}")
+    schema_payload = await steve_client.get_json(schema_path("/schemas", schema_id))
     schema = schema_reference_from_payload(
         plane="steve",
         cluster_id=cluster_id,
@@ -81,7 +83,7 @@ async def rancher_steve_resource_watch(
     label_selector: str | None = None,
     field_selector: str | None = None,
     timeout_seconds: int | None = 30,
-    params_json: str | None = None,
+    params_json: OptionalJsonText = None,
     instance: str | None = None,
     settings: AppSettings | None = None,
     steve_client: SteveDiscoveryClient | None = None,
@@ -148,7 +150,7 @@ async def rancher_steve_resource_watch_tool(
     label_selector: str | None = None,
     field_selector: str | None = None,
     timeout_seconds: int | None = 30,
-    params_json: str | None = None,
+    params_json: OptionalJsonText = None,
     instance: str | None = None,
 ) -> GenericResourceWatchResult:
     """Stream change events for a Steve Kubernetes-proxy resource collection up to a

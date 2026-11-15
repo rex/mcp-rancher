@@ -7,13 +7,15 @@ from dataclasses import dataclass
 from rancher_mcp.clients.management import ManagementDiscoveryClient
 from rancher_mcp.clients.steve import SteveDiscoveryClient
 from rancher_mcp.exceptions import RancherCapabilityError, RancherNotFoundError
+from rancher_mcp.identifiers import require_safe_identifier
 from rancher_mcp.models.resources import GenericResourceItem
 from rancher_mcp.services.resources.builders_item import build_resource_item
-from rancher_mcp.services.resources.paths import build_resource_path
+from rancher_mcp.services.resources.paths import build_resource_path, schema_path
 from rancher_mcp.services.resources.schema import (
     ResourceSchemaReference,
     schema_reference_from_payload,
 )
+from rancher_mcp.services.safety import require_consistent_namespace
 
 
 @dataclass(frozen=True)
@@ -55,7 +57,9 @@ async def load_norman_schema_reference(
 ) -> ResourceSchemaReference:
     """Load and normalize one Norman schema reference."""
 
-    schema_payload = await _get_schema_json(client, f"/v3/schemas/{schema_id}", schema_id)
+    schema_payload = await _get_schema_json(
+        client, schema_path("/v3/schemas", schema_id), schema_id
+    )
     return schema_reference_from_payload(
         plane="norman",
         cluster_id=None,
@@ -94,7 +98,7 @@ async def load_steve_schema_reference(
 ) -> ResourceSchemaReference:
     """Load and normalize one Steve schema reference."""
 
-    schema_payload = await _get_schema_json(client, f"/schemas/{schema_id}", schema_id)
+    schema_payload = await _get_schema_json(client, schema_path("/schemas", schema_id), schema_id)
     return schema_reference_from_payload(
         plane="steve",
         cluster_id=cluster_id,
@@ -111,8 +115,17 @@ async def load_steve_resource_context(
     resource_id: str,
     steve_client: SteveDiscoveryClient,
 ) -> ResourceContext:
-    """Load one Steve resource and its schema-derived path context."""
+    """Load one Steve resource and its schema-derived path context.
 
+    ``namespace`` is checked before anything is fetched: it must be one plain
+    name, and it must not contradict the namespace ``resource_id`` already
+    carries — that one is what the request uses, so a different ``namespace``
+    could only mislead whoever reads the call, the prompt or the audit record.
+    """
+
+    if namespace is not None:
+        require_safe_identifier("namespace", namespace, single_segment=True)
+    require_consistent_namespace(namespace, resource_id)
     schema = await load_steve_schema_reference(cluster_id, schema_id, steve_client)
     resource_path = build_resource_path(
         schema,

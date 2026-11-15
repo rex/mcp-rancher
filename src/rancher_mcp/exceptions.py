@@ -45,6 +45,18 @@ class RancherCapabilityError(RancherMCPError):
         super().__init__(message)
 
 
+class RancherInvalidArgumentError(RancherCapabilityError):
+    """Raised when an argument cannot be used as given, before anything is sent.
+
+    Still a ``CAPABILITY_ERROR`` to whatever branches on the code — argument
+    refusals here always have been. ``reason`` is what sets it apart from an
+    app that is not installed, which is what the bare code otherwise reports:
+    told that, an agent goes looking for another way to do the same thing.
+    """
+
+    reason: str = "invalid_argument"
+
+
 class RancherManagementPlaneUnreachableError(RancherMCPError):
     """Raised when the Rancher management plane / tunnel is unreachable.
 

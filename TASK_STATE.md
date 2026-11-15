@@ -64,11 +64,30 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 
 ## Next Slice
 
-### 📌 HANDOFF (2026-11-15): port SHIPPED (v1.69.0); two defects found and fixed after it (v1.70.0, v1.71.0); #8 shipped (v1.72.0); #9 half done (v1.73.0)
+### 📌 HANDOFF (2026-11-15): port SHIPPED (v1.69.0); two defects found and fixed after it (v1.70.0, v1.71.0); #8 shipped (v1.72.0); #9 half done (v1.73.0); the package starts (v1.74.0); request-path hardening (v1.75.0)
 
-**⚠️ Needs Pierce — a release.** Two fixes below are in `main` and in no
-published version. Nothing has been tagged since v1.59.0, and a tag is what
-publishes to PyPI.
+**Release.** Pierce asked for one on 2026-11-15 — the server had just been
+listed on mcprush. **v1.75.0 is the version to tag.** Before it, the last tag
+and the PyPI latest were both v1.59.0, which does not start outside a checkout;
+1.60.0–1.74.0 were never published. Check PyPI for what is actually out before
+assuming either way.
+
+- **v1.75.0 — security** ([#27](https://github.com/rex/mcp-rancher/issues/27),
+  ADR-0003 addendum). An independent review of the day's commits found that an
+  identifier containing `..` reached a different resource than the one named,
+  approved and audited — in every version. Closing it turned up two more of the
+  same kind: Rancher lets `?_method=` and `?action=remove` overrule the HTTP
+  method, and the approval question could be written by the caller. Fixed in
+  two layers: identifiers and query parameters are refused by name where they
+  enter (`rancher_mcp.identifiers`, `services/resource_queries.py`), and
+  `clients/request_guard.py` refuses at the transport whatever got past.
+  The same commit fixes optional `*_json` arguments, which had never worked
+  through MCP (`tools/support/json_args.py`) — and whose failure was the only
+  thing hiding the `_method` hole.
+- **v1.74.0 — packaging** ([#26](https://github.com/rex/mcp-rancher/issues/26)).
+  The published package crashed at startup anywhere but a checkout. The catalog
+  now ships inside the package; `scripts/smoke_stdio.py` runs the built wheel
+  from an empty directory in CI and in the release pipeline (`make smoke-wheel`).
 
 - **v1.70.0 — security** ([#21](https://github.com/rex/mcp-rancher/issues/21),
   `docs/adr/0003-write-guards.md`, awaiting ratification). The two generic
@@ -84,10 +103,18 @@ publishes to PyPI.
 
 **Both were found the same way, and that is the lesson.** Call every tool
 through the real request path with a real client and intercept the network;
-ask the question of the fleet, not of one tool. Three gates now do that:
-`test_write_guards_fleet_wide.py`, `test_output_contract_fleet_wide.py`, and
-their shared `_write_guards_support.observe_call`. Reach for it before adding
-another per-tool test.
+ask the question of the fleet, not of one tool. The gates that do that share
+`_write_guards_support.observe_call`: `test_write_guards_fleet_wide.py`,
+`test_output_contract_fleet_wide.py`, `test_destructive_approval_fleet_wide.py`,
+and since v1.75.0 `test_request_path_integrity.py`,
+`test_request_method_integrity.py`, `test_approval_question_integrity.py` and
+`test_json_text_arguments.py`. Reach for it before adding another per-tool test.
+
+**And two ways such a gate lies** (v1.75.0, both in ADR-0003's addendum): a
+backstop added beneath a gate can make it pass whatever the layer above does —
+run it where the backstop cannot be what stopped the call, and plant the defect;
+and a refusal proves something only if it is for the reason under test — one
+check passed because the SDK rejected the argument for an unrelated bug.
 
 **#8 shipped — v1.72.0** (elicitation-based confirmation). The five destructive
 tools ask a person through MCP elicitation, in both protocol eras, on top of
@@ -117,6 +144,21 @@ split out; it has an open decision for Pierce in it) → #12–#16.
 `reason: not_installed` for a read-only refusal),
 [#24](https://github.com/rex/mcp-rancher/issues/24) (does Claude Code really
 reject a result that violates `outputSchema`? — known from code reading only).
+From the v1.75.0 review, all in Inbox:
+[#28](https://github.com/rex/mcp-rancher/issues/28) (apply and patch can remove
+or replace a resource with no approval prompt — needs Pierce's decision),
+[#29](https://github.com/rex/mcp-rancher/issues/29) (a destructive call names
+its target by name, not uid),
+[#30](https://github.com/rex/mcp-rancher/issues/30) (an approved round can be
+re-sent until its state expires — needs a decision),
+[#31](https://github.com/rex/mcp-rancher/issues/31) (audit records hold
+identifiers as sent),
+[#32](https://github.com/rex/mcp-rancher/issues/32) (an optional string argument
+whose text is `null` arrives as none).
+
+**Not verified against a live Rancher:** that `?_method=` and `?action=remove`
+behave as their source says (rancher/norman and rancher/apiserver,
+`parseMethod` / `parseAction`). Both are refused regardless.
 
 **Where things stand.** The server runs on `mcp` 2.3.0 (`MCPServer`), and
 Claude Code 2.1.325 connects to it on protocol `2026-07-28` with no legacy

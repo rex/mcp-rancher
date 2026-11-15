@@ -6,6 +6,7 @@ from rancher_mcp.clients.management import ManagementDiscoveryClient, RancherMan
 from rancher_mcp.config import AppSettings, get_settings
 from rancher_mcp.models.discovery import SchemaDetail, SchemaList
 from rancher_mcp.services.instances import resolve_instance
+from rancher_mcp.services.resources.paths import schema_path
 from rancher_mcp.tools.discovery_schema.shared import (
     schema_detail_from_payload,
     schema_payloads,
@@ -51,7 +52,7 @@ async def _fetch_norman_schema_get(
 ) -> SchemaDetail:
     """Fetch one Norman schema by id."""
 
-    payload = await client.get_json(f"/v3/schemas/{schema_id}")
+    payload = await client.get_json(schema_path("/v3/schemas", schema_id))
     return schema_detail_from_payload(instance=instance_name, plane="norman", payload=payload)
 
 

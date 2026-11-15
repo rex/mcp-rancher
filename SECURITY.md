@@ -94,7 +94,7 @@ disclosure.
   command (M-SEC-2 narrows `secret_get` only; this one is unchanged).
 - Every actual reveal above emits an `operation="reveal"` audit record —
   resource identity only, never the value (see
-  `audit.apply_sensitive_reveal_audit`). A names-only `secret_get` call (the
+  `audit_reveal.apply_sensitive_reveal_audit`). A names-only `secret_get` call (the
   default) is **not** logged as a reveal — it didn't reveal anything. The
   central scrubber still masks credentials **everywhere else**, including inside
   any untyped `payload` and on every list/summary. The generic
@@ -113,6 +113,12 @@ disclosure.
 | Fixed in | Affected | What |
 |---|---|---|
 | 1.70.0 | 1.0.0 – 1.69.0 | **Read-only mode did not cover the generic action tools.** `rancher_norman_resource_action_invoke` and `rancher_steve_resource_action_invoke` invoked their action on an instance configured `read_only: true`, and were neither audited nor rate limited. An agent pointed at a read-only instance could therefore still run any Rancher action its token allowed. Not reachable by a third party directly: it takes the operator's own agent calling the tool. **If you rely on `read_only`, upgrade**, and prefer a read-only Rancher token as well. [ADR-0003](docs/adr/0003-write-guards.md), [#21](https://github.com/rex/mcp-rancher/issues/21). |
+| 1.75.0 | 1.0.0 – 1.74.0 | **An identifier containing `..` reached a different resource than the one named.** Identifiers were percent-quoted into URL paths, which leaves `..` intact, and the HTTP library resolves dot segments before sending. Deleting a "pod" named `..` deleted its namespace; a generic tool given `resource_id="x/../../…"` reached any path on the Rancher host, under a confirmation phrase and an audit record naming the original; on a read-only instance a read could be steered the same way. It takes the operator's own agent calling the tool with such a value — which is what a prompt injection produces. Identifiers are now validated, and the transport refuses any path with a `.`/`..` segment, an encoded slash, a fragment, a control character or a host. **Upgrade.** [ADR-0003, addendum](docs/adr/0003-write-guards.md#addendum-2026-11-15--what-the-transport-guarantees), [#27](https://github.com/rex/mcp-rancher/issues/27). |
+| 1.75.0 | none over MCP | **A query parameter could overrule the request's method.** Rancher takes the HTTP method from `?_method=` and treats `?action=remove` as a delete; the generic tools passed `params_json` into the query string. A list on a read-only instance could have written, and a patch could have deleted unconfirmed. A separate defect rejected every such argument before it reached a tool, so no published version was exposed through MCP — it was closed in the release that fixed that defect. A caller can no longer set either parameter, and the transport never sends `_method`, nor `action` on anything but a POST. Same ADR addendum. |
+
+Versions 1.60.0 – 1.74.0 were never published to PyPI. **1.75.0 is the first
+published release that contains every fix above**; the last one before it is
+1.59.0.
 
 ## Hardening recommendations
 

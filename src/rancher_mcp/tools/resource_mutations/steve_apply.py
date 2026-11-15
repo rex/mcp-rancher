@@ -23,6 +23,7 @@ from rancher_mcp.services.resources.capabilities import (
 from rancher_mcp.services.resources.contexts import load_steve_resource_context
 from rancher_mcp.services.resources.schema import parse_required_payload_object
 from rancher_mcp.services.safety import ensure_instance_writable
+from rancher_mcp.tools.support.json_args import OptionalJsonText
 
 
 async def _apply_steve_resource(
@@ -93,7 +94,7 @@ async def rancher_steve_resource_apply(
     namespace: str | None = None,
     field_manager: str = "rancher-mcp",
     force: bool | None = None,
-    params_json: str | None = None,
+    params_json: OptionalJsonText = None,
     instance: str | None = None,
     settings: AppSettings | None = None,
     steve_client: SteveDiscoveryClient | None = None,
@@ -149,7 +150,7 @@ async def rancher_steve_resource_apply_tool(
     namespace: str | None = None,
     field_manager: str = "rancher-mcp",
     force: bool | None = None,
-    params_json: str | None = None,
+    params_json: OptionalJsonText = None,
     instance: str | None = None,
 ) -> GenericResourceMutationResult:
     """Apply one Steve Kubernetes-proxy resource via Kubernetes server-side apply

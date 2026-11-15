@@ -14,6 +14,8 @@ from rancher_mcp.services.resources import (
     build_resource_path,
     schema_reference_from_payload,
 )
+from rancher_mcp.services.resources.paths import schema_path
+from rancher_mcp.tools.support.json_args import OptionalJsonText
 
 
 async def _fetch_steve_resource_list(
@@ -30,7 +32,7 @@ async def _fetch_steve_resource_list(
 ) -> GenericResourceList:
     """Fetch a Steve collection by schema id."""
 
-    schema_payload = await client.get_json(f"/schemas/{schema_id}")
+    schema_payload = await client.get_json(schema_path("/schemas", schema_id))
     schema = schema_reference_from_payload(
         plane="steve",
         cluster_id=cluster_id,
@@ -65,7 +67,7 @@ async def rancher_steve_resource_list(
     continue_token: str | None = None,
     label_selector: str | None = None,
     field_selector: str | None = None,
-    params_json: str | None = None,
+    params_json: OptionalJsonText = None,
     instance: str | None = None,
     settings: AppSettings | None = None,
     client: SteveDiscoveryClient | None = None,
@@ -116,7 +118,7 @@ async def _fetch_steve_resource_get(
 ) -> GenericResourceDetail:
     """Fetch one Steve resource by schema id and resource id."""
 
-    schema_payload = await client.get_json(f"/schemas/{schema_id}")
+    schema_payload = await client.get_json(schema_path("/schemas", schema_id))
     schema = schema_reference_from_payload(
         plane="steve",
         cluster_id=cluster_id,
@@ -186,7 +188,7 @@ async def rancher_steve_resource_list_tool(
     continue_token: str | None = None,
     label_selector: str | None = None,
     field_selector: str | None = None,
-    params_json: str | None = None,
+    params_json: OptionalJsonText = None,
     instance: str | None = None,
 ) -> GenericResourceList:
     """List any Steve Kubernetes-proxy resource collection by raw schema id, cluster,

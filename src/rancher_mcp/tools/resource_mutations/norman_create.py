@@ -17,6 +17,7 @@ from rancher_mcp.services.resources.capabilities import (
 from rancher_mcp.services.resources.contexts import load_norman_schema_reference
 from rancher_mcp.services.resources.schema import parse_required_payload_object
 from rancher_mcp.services.safety import ensure_instance_writable
+from rancher_mcp.tools.support.json_args import OptionalJsonText
 
 
 async def _create_norman_resource(
@@ -56,7 +57,7 @@ async def _create_norman_resource(
 async def rancher_norman_resource_create(
     schema_id: str,
     payload_json: str,
-    params_json: str | None = None,
+    params_json: OptionalJsonText = None,
     instance: str | None = None,
     settings: AppSettings | None = None,
     client: ManagementMutationClient | None = None,
@@ -87,7 +88,7 @@ async def rancher_norman_resource_create(
 async def rancher_norman_resource_create_tool(
     schema_id: str,
     payload_json: str,
-    params_json: str | None = None,
+    params_json: OptionalJsonText = None,
     instance: str | None = None,
 ) -> GenericResourceMutationResult:
     """Create a new Norman resource from a raw JSON payload under any schema id and

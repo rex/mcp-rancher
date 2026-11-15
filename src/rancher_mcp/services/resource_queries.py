@@ -5,7 +5,8 @@ from __future__ import annotations
 import json
 from typing import cast
 
-from rancher_mcp.exceptions import RancherCapabilityError
+from rancher_mcp.clients.request_guard import REQUEST_REWRITING_PARAMS
+from rancher_mcp.exceptions import RancherCapabilityError, RancherInvalidArgumentError
 
 QueryParamValue = str | int | bool
 QueryParamMap = dict[str, QueryParamValue]
@@ -30,6 +31,18 @@ def parse_query_params(
     params: QueryParamMap = {}
     raw_params = cast(dict[str, object], decoded)
     for key, value in raw_params.items():
+        if key.strip().lower() in REQUEST_REWRITING_PARAMS:
+            # Rancher reads these two as an instruction about the request, not
+            # as input to it: `action` invokes an action (or, as `remove`, a
+            # delete) and `_method` replaces the HTTP method. Let through, a
+            # list or a patch becomes a delete or an action invoke — past
+            # read-only mode, the confirmation phrase and the approval prompt,
+            # which all judged the call by the tool that was named.
+            raise RancherInvalidArgumentError(
+                f"{source_name} must not set `{key.strip()}`: Rancher would treat the request "
+                "as a different operation than the one this tool performs. Call the tool for "
+                "that operation (an action: *_resource_action_invoke); it has its own guards."
+            )
         if isinstance(value, bool):
             params[key] = value
             continue

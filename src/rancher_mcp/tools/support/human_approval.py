@@ -47,7 +47,10 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from rancher_mcp.audit import AuditEntry, emit_audit
 from rancher_mcp.config import get_toolset_settings
-from rancher_mcp.exceptions import RancherApprovalDeniedError, RancherMCPError
+from rancher_mcp.exceptions import (
+    RancherApprovalDeniedError,
+    RancherMCPError,
+)
 
 UnaskedReason = Literal["not_a_request", "client_cannot_ask", "call_will_be_refused", "disabled"]
 
@@ -71,7 +74,14 @@ class Approval(BaseModel):
 # Stands in for an answer when nobody was asked. Never rendered for a client:
 # only `Approval` is ever passed to `Elicit`.
 class Unasked(Approval):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
     reason: UnaskedReason
+    # The error the pre-flight raised, when nobody was asked because the call
+    # was going to be refused anyway. `settle()` raises it. Without that, "the
+    # tool body will refuse this too" is only a convention — and a check that
+    # existed in a pre-flight alone would let the call through unasked.
+    refusal: RancherMCPError | None = Field(default=None, exclude=True, repr=False)
 
 
 HumanApproval = ElicitationResult[Approval]
@@ -105,7 +115,9 @@ def ask_unless_pointless(
 
     *question* runs the call's own cheap pre-flight checks and returns the
     wording. If it raises one of our errors the call is going to be refused, so
-    nobody is asked and the tool body is left to raise that same error itself.
+    nobody is asked — and the error travels with the answer, for ``settle()``
+    to raise, so the refusal does not depend on the tool body repeating the
+    same check.
     """
 
     if not get_toolset_settings().require_approval_for_destructive:
@@ -114,42 +126,9 @@ def ask_unless_pointless(
         return Unasked(reason="client_cannot_ask")
     try:
         wording = question()
-    except RancherMCPError:
-        return Unasked(reason="call_will_be_refused")
+    except RancherMCPError as refusal:
+        return Unasked(reason="call_will_be_refused", refusal=refusal)
     return Elicit(wording, Approval)
-
-
-def describe_target(
-    *,
-    what: str,
-    name: str,
-    instance: str,
-    cluster_id: str | None = None,
-    namespace: str | None = None,
-) -> str:
-    """One line a person can check against what they meant.
-
-    The cluster is always named, and ``local`` is spelled out: it is the default
-    whenever a caller omits ``cluster_id``, and it is Rancher's own cluster.
-    """
-
-    where = f' in namespace "{namespace}"' if namespace else ""
-    if cluster_id is not None:
-        where += f' on cluster "{cluster_id}"'
-        if cluster_id == "local":
-            where += " (Rancher's own management cluster)"
-    return f'{what} "{name}"{where} — Rancher instance "{instance}"'
-
-
-def delete_question(target: str) -> str:
-    return f"Delete {target}?\n\nThis is permanent."
-
-
-def action_question(action_name: str, target: str) -> str:
-    return (
-        f'Run the action "{action_name}" on {target}?\n\n'
-        "An action can change or destroy the resource, and may not be reversible."
-    )
 
 
 _DENIALS: Final[dict[str, tuple[str, str]]] = {
@@ -175,21 +154,17 @@ _DENIALS: Final[dict[str, tuple[str, str]]] = {
 def settle(outcome: HumanApproval, *, tool_name: str, plane: str, **identity: str | None) -> None:
     """Let the call through, or refuse it — and record what a person decided.
 
-    Returns normally when a person approved, and also when nobody was asked: in
-    that case the tool's own guards are what stand in the way, exactly as before
-    this module existed. Raises ``RancherApprovalDeniedError`` otherwise.
+    Returns normally when a person approved, and also when nobody could be
+    asked: in that case the tool's own guards are what stand in the way,
+    exactly as before this module existed. Raises ``RancherApprovalDeniedError``
+    when a person did not agree — and, when nobody was asked because the
+    pre-flight had already found the call would be refused, raises that
+    pre-flight error itself.
 
     Every answer a person actually gave is audited, approvals included. "An
     agent tried to delete this and a person said no" and "a person approved
     this delete" are both things an audit log exists to be able to say.
     """
-
-    if isinstance(outcome, AcceptedElicitation):
-        if isinstance(outcome.data, Unasked):
-            return
-        denial = None if outcome.data.proceed else "unconfirmed"
-    else:
-        denial = "declined" if isinstance(outcome, DeclinedElicitation) else "cancelled"
 
     entry: dict[str, Any] = {
         "tool_name": tool_name,
@@ -197,6 +172,24 @@ def settle(outcome: HumanApproval, *, tool_name: str, plane: str, **identity: st
         "plane": plane,
         **{key: value for key, value in identity.items() if value is not None},
     }
+    if isinstance(outcome, AcceptedElicitation):
+        if isinstance(outcome.data, Unasked):
+            refusal = outcome.data.refusal
+            if refusal is None:
+                return
+            emit_audit(
+                AuditEntry(
+                    **entry,
+                    outcome="error",
+                    error_code=refusal.error_code,
+                    error_message=str(refusal),
+                )
+            )
+            raise refusal
+        denial = None if outcome.data.proceed else "unconfirmed"
+    else:
+        denial = "declined" if isinstance(outcome, DeclinedElicitation) else "cancelled"
+
     if denial is None:
         emit_audit(AuditEntry(**entry, outcome="success"))
         return

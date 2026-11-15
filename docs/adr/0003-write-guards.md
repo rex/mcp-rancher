@@ -125,3 +125,70 @@ later; nothing here forecloses it.
   as [#23](https://github.com/rex/mcp-rancher/issues/23).
 - **Follow-up:** every published release is affected. Users get the fix only
   from a tagged release, which is Pierce's call.
+
+## Addendum (2026-11-15) — what the transport guarantees
+
+An independent review of the 1.70.0–1.74.0 commits found that the backstop
+above checked the wrong half of a request. It asked *what method is this?* and
+trusted the path. Three things made the path, and then the method itself,
+untrustworthy. All are closed in 1.75.0
+([#27](https://github.com/rex/mcp-rancher/issues/27)).
+
+**The path.** Identifiers were percent-quoted into URL paths. `quote("..")` is
+`..`, and the HTTP library resolves dot segments before sending, so a request
+built for `…/pods/..` left as the namespace. Every guard that had run — the
+confirmation phrase, the approval prompt, the audit record — described a
+resource the request never touched.
+
+**The method.** Rancher lets a query string overrule it: `?_method=` on both
+API planes (`parseMethod` in rancher/norman and rancher/apiserver), and
+`?action=remove` on the management plane (`parseAction`). A GET carrying either
+is not a read. The generic tools pass a caller's `params_json` into the query.
+
+**The question.** The approval prompt was assembled from the caller's own
+values, unquoted, so the caller could write it.
+
+`clients/request_guard.py` now states the transport's guarantee as three rules,
+enforced on every request from both HTTP clients:
+
+1. a read-only instance sends nothing but reads;
+2. a request is the method it was sent with — `_method` is never sent, and
+   `action` only on a POST;
+3. a request goes where its path says — no `.` or `..` segment (encoded or
+   not), no encoded slash, no fragment, no control character, no host.
+
+Above it, the same things are refused earlier and by name, so the caller learns
+which argument was wrong and nobody is asked to approve it:
+`rancher_mcp.identifiers` for anything that becomes a path segment or part of
+the approval question, and `services/resource_queries.py` for query parameters.
+These refusals carry `"reason": "invalid_argument"`.
+
+Two rules for the gates came out of it, both learned by a gate passing when it
+should not have:
+
+- **A backstop retires the test of the layer above it.** "Tools annotated
+  read-only only ever read" ran on a read-only instance; once rule 1 existed, no
+  annotated tool could write there, and the check passed whatever a tool did.
+  A gate on a layer runs where the layers beneath cannot be what stopped the
+  call, and plants the defect to prove it would see one.
+- **A refusal is evidence only if it is for the reason under test.** The check
+  that `?action=` could not ride a create passed because the SDK rejected the
+  argument first — for an unrelated defect — and the word `action` appeared in
+  its complaint. The gates now require the refusal to name its cause, and list
+  every call refused for any other.
+
+**A pre-flight is not a convention.** The approval resolver runs a tool's cheap
+checks first, so nobody is asked about a call that will be refused. That
+refusal used to depend on the tool body repeating the check. The error now
+travels with the answer and `settle()` raises it.
+
+**Not addressed here**, each filed separately: the generic apply and patch
+tools can remove or replace a resource without the approval the delete tools
+require ([#28](https://github.com/rex/mcp-rancher/issues/28)); a destructive
+call names its target by name, not by uid, so the resource approved and the
+resource acted on can differ if it is replaced in between
+([#29](https://github.com/rex/mcp-rancher/issues/29)); an approved round can be
+re-sent by the client until its state expires
+([#30](https://github.com/rex/mcp-rancher/issues/30)); and audit records hold
+identifier arguments as the caller sent them
+([#31](https://github.com/rex/mcp-rancher/issues/31)).

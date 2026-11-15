@@ -107,7 +107,7 @@ def register_all_tools(mcp: MCPServer) -> None:
     the heavy imports begin.
     """
     # Local imports are intentional: keep module-level import cost near-zero.
-    from rancher_mcp.audit import apply_sensitive_reveal_audit
+    from rancher_mcp.audit_reveal import apply_sensitive_reveal_audit
     from rancher_mcp.metrics import apply_metrics_to_all_tools
     from rancher_mcp.tools.mcp_prompts import register_mcp_prompts
     from rancher_mcp.tools.mcp_resources import register_mcp_resources
