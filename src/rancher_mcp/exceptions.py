@@ -105,6 +105,29 @@ class RancherRateLimitError(RancherMCPError):
     error_code: str = "RATE_LIMITED"
 
 
+class RancherApprovalDeniedError(RancherMCPError):
+    """Raised when a person was asked to approve a destructive call and did not.
+
+    ``reason`` says which of three things happened, because they call for
+    different next moves:
+
+    * ``declined`` — a person said no. Stop.
+    * ``unconfirmed`` — they accepted the prompt but left its confirmation
+      unticked. Nothing was agreed to.
+    * ``cancelled`` — the prompt was dismissed, or the session could not show
+      one. In an unattended run this call cannot be made at all.
+
+    Never retryable: asking again is the thing the person just refused.
+    """
+
+    error_code: str = "APPROVAL_DENIED"
+
+    def __init__(self, message: str, *, reason: str, hint: str) -> None:
+        self.reason = reason
+        self.hint = hint
+        super().__init__(message)
+
+
 class RancherAmbiguousContainerError(RancherMCPError):
     """Raised when a pod has multiple containers and none was specified.
 

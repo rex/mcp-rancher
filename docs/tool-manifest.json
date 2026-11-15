@@ -3201,7 +3201,7 @@
     },
     {
       "name": "rancher_norman_resource_action_invoke",
-      "description": "Invoke a named Norman resource action from that resource's own `actions`\n    links, with an optional JSON body, and return its response — the escape\n    hatch for lifecycle operations no curated tool wraps yet.",
+      "description": "Invoke a named Norman resource action from that resource's own `actions`\n    links, with an optional JSON body, and return its response — the escape\n    hatch for lifecycle operations no curated tool wraps yet. Where the client\n    can ask, a person is asked to approve it first (`APPROVAL_DENIED` if they\n    refuse).",
       "read_only": false,
       "destructive": true,
       "idempotent": null,
@@ -3284,7 +3284,7 @@
     },
     {
       "name": "rancher_norman_resource_delete",
-      "description": "Delete one Norman resource by schema id and resource id after an explicit\n    confirmation string, and report the deletion result — the untyped,\n    destructive escape hatch for resource types with no curated delete tool.",
+      "description": "Delete one Norman resource by schema id and resource id after an explicit\n    confirmation string, and report the deletion result — the untyped,\n    destructive escape hatch for resource types with no curated delete tool.\n    Where the client can ask, a person is asked to approve it too\n    (`APPROVAL_DENIED` if they refuse).",
       "read_only": false,
       "destructive": true,
       "idempotent": true,
@@ -4378,7 +4378,7 @@
     },
     {
       "name": "rancher_resource_delete",
-      "description": "Delete one resource of any deletable kind and return a typed receipt\n    of what was removed. Destructive and irreversible. `resource_kind`\n    selects the resource family (pod, deployment, config_map, secret, ...);\n    `name` is that resource's own name (uniform across every kind).\n    `namespace` is required for namespaced kinds, ignored for cluster-scoped\n    ones. The caller MUST first echo the exact confirmation phrase this\n    kind requires: `\"delete <kind> <name>\"`, plus `\" in namespace\n    <namespace>\"` for namespaced kinds — call this tool without a matching\n    `confirmation` first to see the required phrase in the error. Subject\n    to write rate limiting and audit logging.",
+      "description": "Delete one resource of any deletable kind and return a typed receipt\n    of what was removed. Destructive and irreversible. `resource_kind`\n    selects the resource family (pod, deployment, config_map, secret, ...);\n    `name` is that resource's own name (uniform across every kind).\n    `namespace` is required for namespaced kinds, ignored for cluster-scoped\n    ones. The caller MUST first echo the exact confirmation phrase this\n    kind requires: `\"delete <kind> <name>\"`, plus `\" in namespace\n    <namespace>\"` for namespaced kinds — call this tool without a matching\n    `confirmation` first to see the required phrase in the error. Where the\n    client can ask, a person is asked to approve it too; their refusal comes\n    back as `APPROVAL_DENIED`. Subject to write rate limiting and audit\n    logging.",
       "read_only": false,
       "destructive": true,
       "idempotent": true,
@@ -5251,7 +5251,7 @@
     },
     {
       "name": "rancher_steve_resource_action_invoke",
-      "description": "Invoke a named Steve Kubernetes-proxy resource action with an optional JSON\n    body and return its response — the escape hatch for lifecycle operations no\n    curated tool wraps yet.",
+      "description": "Invoke a named Steve Kubernetes-proxy resource action with an optional JSON\n    body and return its response — the escape hatch for lifecycle operations no\n    curated tool wraps yet. Where the client can ask, a person is asked to\n    approve it first (`APPROVAL_DENIED` if they refuse).",
       "read_only": false,
       "destructive": true,
       "idempotent": null,
@@ -5366,7 +5366,7 @@
     },
     {
       "name": "rancher_steve_resource_delete",
-      "description": "Delete one Steve Kubernetes-proxy resource by schema id and resource id after\n    an explicit confirmation string, and report the deletion result — the untyped,\n    destructive escape hatch for kinds with no curated delete tool.",
+      "description": "Delete one Steve Kubernetes-proxy resource by schema id and resource id after\n    an explicit confirmation string, and report the deletion result — the untyped,\n    destructive escape hatch for kinds with no curated delete tool. Where the\n    client can ask, a person is asked to approve it too (`APPROVAL_DENIED` if\n    they refuse).",
       "read_only": false,
       "destructive": true,
       "idempotent": true,

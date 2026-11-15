@@ -44,8 +44,21 @@ disclosure.
   person on every call to them, in every permission mode including
   `bypassPermissions`, offers no "don't ask again", and denies the call
   outright where a prompt can reach nobody. The confirmation phrase alone can
-  be supplied by the model; this cannot. Operators of an unattended pipeline
-  can turn it off with `RANCHER_MCP_REQUIRE_APPROVAL_FOR_DESTRUCTIVE=false`.
+  be supplied by the model; this cannot.
+- The same five tools also ask through **MCP elicitation**, which is not
+  specific to one client: any client that declares the capability is shown a
+  question the server worded — what will be destroyed, in which namespace, on
+  which cluster and instance — and the tool body does not run unless a person
+  ticks the confirmation and accepts. Declining, dismissing the prompt, or
+  accepting it unticked all refuse the call (`APPROVAL_DENIED`), and every
+  answer a person gives, approvals included, is audit-logged. Two properties
+  are deliberate: nobody is asked about a call that is going to be refused
+  anyway, and a client that cannot be asked is not waved through — it is held
+  to the guards above. A client may be configured to answer such prompts
+  automatically; that is the operator's decision and this server cannot see it.
+- Operators of an unattended pipeline can turn both prompts off with
+  `RANCHER_MCP_REQUIRE_APPROVAL_FOR_DESTRUCTIVE=false`. The confirmation
+  phrase, the read-only guard, the audit log and the rate limit all stay.
 - Every mutation is audit-logged (structured `event="audit"` records:
   tool, operation, plane, instance, resource, outcome — argument *names*
   only, never values). A generic action invoke also records which action.

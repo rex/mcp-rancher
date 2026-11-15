@@ -167,12 +167,8 @@ def test_every_registered_tool_survives_compaction_with_a_coherent_schema() -> N
     assert not offenders, offenders
 
 
-# ── `required` only names what a body always carries ────────────────────────
-# The envelope drops null and empty values. A key it can drop must not be
-# published as required, or the first sparse response fails validation — which
-# is what every namespaced list did on a cluster-wide call.
-
-
+# `required` may only name what a body always carries: the envelope drops nulls
+# and empties, which is what failed every cluster-wide namespaced list.
 def _schema_requiring(**properties: dict[str, Any]) -> dict[str, Any]:
     return {"type": "object", "properties": properties, "required": list(properties)}
 
@@ -190,8 +186,7 @@ def test_a_nullable_property_is_not_published_as_required() -> None:
 
 
 def test_containers_are_not_published_as_required() -> None:
-    """An empty list, an empty object and a nested model with nothing in it are
-    all dropped — so none of them can be promised."""
+    """Empty lists, empty objects and empty nested models are all dropped."""
 
     compacted = compact_output_schema(
         {
@@ -211,8 +206,7 @@ def test_containers_are_not_published_as_required() -> None:
 
 def test_every_scalar_stays_required() -> None:
     """Empty strings, zeros and ``false`` survive the envelope, so a
-    non-nullable scalar really is always there — the promise is kept, not
-    thrown away wholesale."""
+    non-nullable scalar really is always there — that promise is kept."""
 
     properties: dict[str, dict[str, Any]] = {
         "name": {"type": "string"},
@@ -248,8 +242,7 @@ def test_required_disappears_when_nothing_can_be_promised() -> None:
 
 
 def test_input_schemas_keep_their_required_arguments() -> None:
-    """The relaxation is about what a RESPONSE may omit. What a caller must
-    send is a different contract and is not touched."""
+    """What a RESPONSE may omit is not what a caller must send."""
 
     schema = _schema_requiring(namespace={"anyOf": [{"type": "string"}, {"type": "null"}]})
 

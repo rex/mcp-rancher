@@ -1,5 +1,84 @@
 # Changelog
 
+## [1.72.0] — 2026-11-15 — Agent: Claude Fable 5.2
+### Added
+- **Destructive tools ask a person, in words the server chose — in any client
+  that can show a prompt** (rex/mcp-rancher#8). The five tools annotated
+  destructive (the three deletes and the two generic action invokes) now use
+  MCP elicitation. A client that declares the capability is shown a question
+  such as:
+
+  > Delete deployment "web" in namespace "shop" on cluster "c-m-abc" — Rancher
+  > instance "prod"?
+  >
+  > This is permanent.
+
+  with one unticked box, and the tool does not run unless a person ticks it and
+  accepts. Until now the only server-worded check was the confirmation phrase,
+  which the model can type on its own, and the only human check was Claude
+  Code's permission prompt, which exists in one client and shows raw arguments.
+  The cluster is always named, and `local` is spelled out as *Rancher's own
+  management cluster* — it is what a call targets when `cluster_id` was left
+  out, and the one place a delete is likeliest to be both unintended and
+  expensive.
+- `APPROVAL_DENIED`, a new error code, with a `reason` that says which of three
+  things happened, because they call for different next moves: `declined` (a
+  person said no), `unconfirmed` (they accepted with the box unticked — nothing
+  was agreed), `cancelled` (the prompt was dismissed, or the session could not
+  show one). Never retryable.
+- Every answer a person gives is audit-logged as `operation="approval"`,
+  approvals included. "An agent tried to delete this and a person said no" and
+  "a person approved this delete" are both things the log can now say.
+
+### How it is built — the parts worth knowing
+- **Never fail open.** If nobody can be asked — the client declared no
+  elicitation, the call did not come through a request, or the operator turned
+  approval off — the call is neither waved through nor blocked. It reaches the
+  guards that were already there. Clients that predate this behave exactly as
+  they did.
+- **Nobody is asked about a call that will be refused anyway.** The question is
+  put only after the local checks pass: instance writable, target valid, phrase
+  correct. A person is not interrupted to approve something the server is about
+  to reject.
+- **The confirmation phrase stays required.** The tool list is the same for
+  every client, so relaxing it would cost clients that cannot elicit an extra
+  round trip. The model still states what it is destroying; a person now also
+  agrees to it.
+- **Both protocol eras, one implementation.** It uses the SDK's resolver form —
+  a server request on a legacy connection, a multi-round `input_required` result
+  on a modern one — and the parameter it fills never appears in a tool's input
+  schema. This is the first thing built on the port in 1.69.0.
+
+### Changed — behaviour to be aware of
+- **In Claude Code a destructive call now prompts twice**: the client's own
+  permission prompt, then the server-worded question. Deliberate, for five
+  rarely-called irreversible tools. `RANCHER_MCP_REQUIRE_APPROVAL_FOR_DESTRUCTIVE`
+  governs both together; set `false` and both go, with the confirmation phrase,
+  the read-only guard, the audit log and the rate limit all staying.
+- A client configured to answer elicitation prompts automatically will answer
+  this one too. That is the operator's decision and the server cannot see it.
+- The error envelope's `reason` now comes from the error itself when it has
+  one, falling back to the per-code table. No existing error changes.
+
+### Verified
+- **A fleet-wide gate, derived from `destructiveHint`, on both eras**
+  (`tests/unit/test_destructive_approval_fleet_wide.py`): a simulated person
+  who declines, dismisses or accepts-unticked stops every destructive tool with
+  nothing sent; one who agrees lets it through, on the record; a client that
+  cannot be asked still works; nobody is asked on a read-only instance, with a
+  wrong phrase, or with approval turned off. A destructive tool added later
+  with no approval wired in fails it the day it is annotated — one test plants
+  exactly that to prove it.
+- **Not verified:** how the prompt renders in Claude Code. Both eras were
+  exercised through the SDK's own client. The real client was seen completing
+  the same exchange on the wire on 2026-11-12, in a headless session that
+  cancelled it automatically; nobody has yet looked at the dialog.
+
+### Not in this release
+- The other half of the original issue — asking *which cluster* when a mutating
+  call omits `cluster_id` — is rex/mcp-rancher#25. It changes about twenty tool
+  signatures and needs a decision about clients that cannot be asked.
+
 ## [1.71.0] — 2026-11-15 — Agent: Claude Fable 5.2
 ### Fixed
 - **A cluster-wide list no longer breaks its own contract — 32 tools.**

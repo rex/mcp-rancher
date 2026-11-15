@@ -176,7 +176,7 @@ Built for the day an agent is pointed at the cluster that pays your salary:
 |---|---|
 | **Read-only instances** | `read_only: true` refuses every mutation for that instance before anything is sent — and the HTTP client of a read-only instance sends nothing but reads, so a tool that failed to refuse still could not write |
 | **Destructive confirmation** | Deletes require an explicit typed phrase (e.g. `"delete steve namespace foo"`) — no phrase, no delete |
-| **Human approval** | In Claude Code the destructive tools prompt a person on *every* call, in every permission mode including bypass (`anthropic/requiresUserInteraction`). A phrase the model can type proves the model read it; this proves a person agreed |
+| **Human approval** | A phrase the model can type proves the model read it; this proves a person agreed. Two mechanisms, both on for the destructive tools. **Any client that supports MCP elicitation** is shown a question the server worded — *Delete deployment "web" in namespace "shop" on cluster "c-m-abc"?* — and the tool does not run unless a person ticks the box and accepts. **Claude Code** additionally shows its own permission prompt on every call, in every permission mode including bypass (`anthropic/requiresUserInteraction`). A client that can do neither falls back to the confirmation phrase; nothing is waved through |
 | **Tool annotations** | Every tool declares `readOnlyHint` / `destructiveHint` / `idempotentHint`, so clients can gate UX on them |
 | **Audit log** | Every mutation emits a structured `event="audit"` record — tool, operation, plane, instance, resource, outcome. Argument *names* only; values never logged |
 | **Rate limiting** | Token-bucket on writes (default 60/min) — a runaway loop can't machine-gun your API |
@@ -214,7 +214,7 @@ the same test suite, and read paths have been validated live against both a
 | `RANCHER_TOOLSETS` | `all` | Comma-separated toolset profile(s) exposed at startup — see below |
 | `RANCHER_TOOLS` | — | Comma-separated tool names force-included on top of the selected profile(s) |
 | `RANCHER_EXCLUDE_TOOLS` | — | Comma-separated tool names removed, applied last — always wins over `RANCHER_TOOLS` |
-| `RANCHER_MCP_REQUIRE_APPROVAL_FOR_DESTRUCTIVE` | `true` | Publish destructive tools as needing a person's approval on every call in Claude Code. Set `false` only for an unattended pipeline that legitimately deletes — there the prompt can reach nobody and the call is denied |
+| `RANCHER_MCP_REQUIRE_APPROVAL_FOR_DESTRUCTIVE` | `true` | Require a person's approval for destructive tools: an elicitation prompt in any client that can show one, plus Claude Code's permission prompt on every call. Set `false` only for an unattended pipeline that legitimately deletes — there a prompt can reach nobody and the call is refused. The confirmation phrase stays either way |
 
 ### Toolset profiles
 

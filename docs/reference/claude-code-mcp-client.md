@@ -54,7 +54,7 @@ gives us since 1.69.0.
 | Legacy `initialize` (≤ `2025-11-25`) | Yes, as the fallback | W | any | Still served, to clients that do not probe |
 | `subscriptions/listen` | Opens one stream for `toolsListChanged` / `promptsListChanged` / `resourcesListChanged`. Does **not** request `resourceSubscriptions`. | W | modern | Acknowledged; nothing to send (static catalog) |
 | `list_changed` notifications | Re-fetches the list (interactive: all three; `-p`/SDK: tools only) | D | any | Not emitted |
-| Multi round-trip (`input_required`) | Yes — retries with `inputResponses` + `requestState` echoed | W | modern | Not used yet ([#8](https://github.com/rex/mcp-rancher/issues/8)) |
+| Multi round-trip (`input_required`) | Yes — retries with `inputResponses` + `requestState` echoed | W | modern | Used by the five destructive tools to ask a person (1.72.0, [#8](https://github.com/rex/mcp-rancher/issues/8)) |
 | Pagination | Follows `nextCursor` on every list call | D | any | Unpaginated |
 | Cache hints (`ttlMs` / `cacheScope`) | Tolerated when absent (2.1.302). Its discovery cache covers remote servers only. | D | modern | SDK default: `ttlMs: 0`, `private` ([#3](https://github.com/rex/mcp-rancher/issues/3)) |
 | Progress | Sends `progressToken` on **every** `tools/call`; renders progress; a notification resets the idle timeout | W+D | any | Only the three health rollups, two steps each, no message ([#13](https://github.com/rex/mcp-rancher/issues/13)) |
@@ -291,7 +291,7 @@ Ranked by value per unit of effort, not by novelty.
 
 **Unblocked by the port ([#2](https://github.com/rex/mcp-rancher/issues/2), shipped in 1.69.0) — not built yet**
 
-4. **Elicitation-based confirmation** ([#8](https://github.com/rex/mcp-rancher/issues/8)) — spec-native, so it protects in every client, and the prompt can name what will be destroyed.
+4. **Elicitation-based confirmation** ([#8](https://github.com/rex/mcp-rancher/issues/8)) — spec-native, so it protects in every client, and the prompt can name what will be destroyed. **Shipped in 1.72.0**, verified against the SDK's client in both eras; not yet seen in Claude Code's own dialog (the 2026-11-12 capture proved the wire exchange, in a session that auto-cancelled it).
 5. **Tasks and follow-to-completion workflows** ([#9](https://github.com/rex/mcp-rancher/issues/9)) — a new capability, not an optimization: the server has almost no long-running tools today.
 6. **Cache hints and server identity** ([#3](https://github.com/rex/mcp-rancher/issues/3)) — a spec MUST, small practical gain on stdio.
 

@@ -60,7 +60,11 @@ def _error_envelope(exc: Exception) -> str:
         # calls vs retry, without parsing the message.
         "retryable": _is_retryable(exc, code),
     }
-    reason = _REASON_BY_CODE.get(code)
+    # An error that knows its own reason says so; the per-code table is the
+    # fallback. Only our own exceptions are asked — plenty of stdlib ones carry
+    # an unrelated `.reason` (UnicodeError, URLError).
+    own_reason = getattr(exc, "reason", None) if isinstance(exc, RancherMCPError) else None
+    reason = own_reason if isinstance(own_reason, str) else _REASON_BY_CODE.get(code)
     if reason:
         payload["reason"] = reason
     hint = getattr(exc, "hint", None)

@@ -60,7 +60,7 @@ Required. `make test` runs the full suite with coverage (60% minimum). Contract 
 
 ## 9. Things agents get wrong here
 
-- **The formatter hook deletes imports that are unused at that instant.** It runs `ruff --fix` after every edit, so an import added one edit ahead of its first use is gone by the time the use lands. Write the usage first, or both in one edit.
+- **The formatter hook deletes imports that are unused at that instant.** It runs `ruff --fix` after every edit, so an import added one edit ahead of its first use is gone by the time the use lands. Write the usage first, or both in one edit. **One exception that bites the other way:** a `Literal["a", "b"]` written before `Literal` is imported gets its quotes stripped (ruff takes the strings for forward references), leaving `Literal[a, b]` — which still runs under `from __future__ import annotations` and only fails at lint. After adding the import, re-read the line.
 - **MCP types are snake_case in Python and camelCase on the wire** (`input_schema` / `inputSchema`). Anything that measures or asserts a wire shape goes through `await mcp.list_tools()` dumped with `by_alias=True`, or through the in-process client (`from mcp import Client`; `Client(mcp, mode="legacy" | "2026-07-28")`). A hand-built dict measures something no client receives.
 - **Never construct `MCPServer` directly** — `rancher_mcp.server.new_server()` is the one place, and it is what makes the handshake report this server's version rather than the SDK's. `tests/unit/test_server_version.py` enforces it.
 - **SDK internals are reachable from `rancher_mcp.sdk_registry` only.** Need another corner of the SDK? Widen that module; `tests/unit/test_sdk_seam_is_exclusive.py` fails on a reach-in anywhere else, tests included.

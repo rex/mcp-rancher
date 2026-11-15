@@ -63,7 +63,7 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 
 ## Next Slice
 
-### 📌 HANDOFF (2026-11-15): port SHIPPED (v1.69.0); two defects found and fixed after it (v1.70.0, v1.71.0); #8 is next
+### 📌 HANDOFF (2026-11-15): port SHIPPED (v1.69.0); two defects found and fixed after it (v1.70.0, v1.71.0); #8 shipped (v1.72.0); #9 is next
 
 **⚠️ Needs Pierce — a release.** Two fixes below are in `main` and in no
 published version. Nothing has been tagged since v1.59.0, and a tag is what
@@ -88,21 +88,24 @@ ask the question of the fleet, not of one tool. Three gates now do that:
 their shared `_write_guards_support.observe_call`. Reach for it before adding
 another per-tool test.
 
-**Where #8 stands** (elicitation-based confirmation, claimed, no code written).
-Design settled while reading for it: keep the `confirmation` phrase required
-(the schema is static, so relaxing it would cost non-eliciting clients a round
-trip); add a `Resolve`-filled parameter on the five destructive `*_tool`
-wrappers; the resolver asks only when the client declares form elicitation
-*and* the call would otherwise proceed (read-only, phrase and namespace checks
-first, so a person is never asked to approve a call that will be refused);
-decline and cancel become a clean refusal; one setting,
-`RANCHER_MCP_REQUIRE_APPROVAL_FOR_DESTRUCTIVE`, governs both this and the
-Claude Code permission prompt. The `cluster_id` half of #8 changes ~20 tool
-signatures and deserves its own slice.
+**#8 shipped — v1.72.0** (elicitation-based confirmation). The five destructive
+tools ask a person through MCP elicitation, in both protocol eras, on top of
+the confirmation phrase; `tools/support/human_approval.py` is the whole
+mechanism and `test_destructive_approval_fleet_wide.py` holds every
+destructive-annotated tool to it. The decisions and their reasons are in a
+comment on the issue. **Not yet seen:** the prompt in Claude Code's own dialog.
+
+**Next in the approved order:** [#9](https://github.com/rex/mcp-rancher/issues/9)
+MCP tasks → [#3](https://github.com/rex/mcp-rancher/issues/3) cache hints and
+server title/description → [#25](https://github.com/rex/mcp-rancher/issues/25)
+(ask which cluster when a write omits `cluster_id` — the half of #8 that was
+split out; it has an open decision for Pierce in it) → #12–#16.
 
 **Open follow-ups filed, not started:**
 [#23](https://github.com/rex/mcp-rancher/issues/23) (the error envelope says
-`reason: not_installed` for a read-only refusal).
+`reason: not_installed` for a read-only refusal),
+[#24](https://github.com/rex/mcp-rancher/issues/24) (does Claude Code really
+reject a result that violates `outputSchema`? — known from code reading only).
 
 **Where things stand.** The server runs on `mcp` 2.3.0 (`MCPServer`), and
 Claude Code 2.1.325 connects to it on protocol `2026-07-28` with no legacy
@@ -134,6 +137,7 @@ list ordering, cancellation). Awaiting a ruling — do not start: #10, #11,
 | 1.69.0 | The port to `mcp` 2.x | #2 |
 | 1.70.0 | **Security:** read-only mode now covers the generic action tools; fleet-wide write-guard gate | #21 |
 | 1.71.0 | Cluster-wide lists no longer violate their own schema (32 tools); fleet-wide output-contract gate | #22 |
+| 1.72.0 | Destructive tools ask a person through MCP elicitation, in any client that can show a prompt | #8 |
 
 **What the port changed structurally** (detail in `CHANGELOG.md`, 1.69.0):
 

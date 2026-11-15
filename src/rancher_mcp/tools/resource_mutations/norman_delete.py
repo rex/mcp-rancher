@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+from typing import Annotated, Any
+
+from mcp.server.mcpserver import Context, Elicit, Resolve
+
 from rancher_mcp.audit import audit_mutation
 from rancher_mcp.clients.management import ManagementMutationClient, RancherManagementClient
 from rancher_mcp.config import AppSettings, get_settings
@@ -16,6 +20,16 @@ from rancher_mcp.services.resources.schema import parse_payload_object
 from rancher_mcp.services.safety import (
     ensure_instance_writable,
     require_delete_confirmation,
+)
+from rancher_mcp.tools.support.human_approval import (
+    NOT_ASKED,
+    Approval,
+    HumanApproval,
+    Unasked,
+    ask_unless_pointless,
+    delete_question,
+    describe_target,
+    settle,
 )
 
 
@@ -96,6 +110,26 @@ async def rancher_norman_resource_delete(
         )
 
 
+async def _approve(
+    ctx: Context[Any, Any],
+    schema_id: str,
+    resource_id: str,
+    confirmation: str,
+    instance: str | None,
+) -> Elicit[Approval] | Unasked:
+    def question() -> str:
+        instance_name, instance_config = resolve_instance(get_settings(), instance)
+        ensure_instance_writable(instance_name, instance_config)
+        require_delete_confirmation(
+            plane="norman", schema_id=schema_id, resource_id=resource_id, confirmation=confirmation
+        )
+        return delete_question(
+            describe_target(what=schema_id, name=resource_id, instance=instance_name)
+        )
+
+    return ask_unless_pointless(ctx, question)
+
+
 async def rancher_norman_resource_delete_tool(
     schema_id: str,
     resource_id: str,
@@ -103,11 +137,22 @@ async def rancher_norman_resource_delete_tool(
     payload_json: str | None = None,
     params_json: str | None = None,
     instance: str | None = None,
+    approval: Annotated[HumanApproval, Resolve(_approve)] = NOT_ASKED,
 ) -> GenericResourceMutationResult:
     """Delete one Norman resource by schema id and resource id after an explicit
     confirmation string, and report the deletion result — the untyped,
-    destructive escape hatch for resource types with no curated delete tool."""
+    destructive escape hatch for resource types with no curated delete tool.
+    Where the client can ask, a person is asked to approve it too
+    (`APPROVAL_DENIED` if they refuse)."""
 
+    settle(
+        approval,
+        tool_name="rancher_norman_resource_delete",
+        plane="norman",
+        schema_id=schema_id,
+        resource_id=resource_id,
+        instance=instance,
+    )
     return await rancher_norman_resource_delete(
         schema_id=schema_id,
         resource_id=resource_id,

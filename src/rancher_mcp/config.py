@@ -173,12 +173,15 @@ class ToolsetSettings(BaseSettings):
     toolsets: str = Field(default="all", alias="RANCHER_TOOLSETS")
     include_tools: str = Field(default="", alias="RANCHER_TOOLS")
     exclude_tools: str = Field(default="", alias="RANCHER_EXCLUDE_TOOLS")
-    # Whether destructive tools are published as needing a person's approval on
-    # every call (see `tools/support/client_hints.py`). It lives here, not on
-    # `AppSettings`, for the reason in the docstring above: it shapes what is on
-    # the wire, not which Rancher is reachable. The only reason to turn it off is
-    # an unattended pipeline that legitimately deletes — there the prompt can
-    # reach nobody, so the client denies the call outright.
+    # Whether destructive tools need a person's approval. One switch, two
+    # mechanisms: the tools are published so that Claude Code prompts on every
+    # call (`tools/support/client_hints.py`), and any client that declares
+    # elicitation is asked a question the server worded
+    # (`tools/support/human_approval.py`). It lives here, not on `AppSettings`,
+    # for the reason in the docstring above: it shapes what is on the wire, not
+    # which Rancher is reachable. The only reason to turn it off is an
+    # unattended pipeline that legitimately deletes — there a prompt can reach
+    # nobody, so the call is refused.
     require_approval_for_destructive: bool = Field(
         default=True, alias="RANCHER_MCP_REQUIRE_APPROVAL_FOR_DESTRUCTIVE"
     )

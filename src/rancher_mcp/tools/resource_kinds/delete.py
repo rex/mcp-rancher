@@ -13,20 +13,38 @@ limiting (`@rate_limit_writes`), and the read-only-instance guard
 
 from __future__ import annotations
 
+from typing import Annotated, Any, NamedTuple
+
+from mcp.server.mcpserver import Context, Elicit, Resolve
+
 from rancher_mcp.audit import audit_mutation
 from rancher_mcp.config import AppSettings, get_settings
 from rancher_mcp.exceptions import RancherCapabilityError
+from rancher_mcp.models.discovery import RancherInstanceConfig
 from rancher_mcp.models.resources import RancherCuratedDeleteResult
 from rancher_mcp.rate_limit import rate_limit_writes
 from rancher_mcp.services.instances import resolve_instance
 from rancher_mcp.services.safety import ensure_instance_writable
-from rancher_mcp.tools.resource_kinds._generated_kinds import DeletableResourceKind
+from rancher_mcp.tools.resource_kinds._generated_kinds import (
+    DeletableResourceKind,
+    ResourceKindSpec,
+)
 from rancher_mcp.tools.resource_kinds.shared import (
     GenericMutationClient,
     delete_confirmation_phrase,
     open_mutation_client,
     resolve_kind,
     resolve_namespace,
+)
+from rancher_mcp.tools.support.human_approval import (
+    NOT_ASKED,
+    Approval,
+    HumanApproval,
+    Unasked,
+    ask_unless_pointless,
+    delete_question,
+    describe_target,
+    settle,
 )
 
 
@@ -86,8 +104,54 @@ async def rancher_resource_delete(
     was wrong will go and work out the right one, only to be refused again on
     the next call for a reason no phrase can fix."""
 
-    resolved_settings = settings or get_settings()
-    instance_name, instance_config = resolve_instance(resolved_settings, instance)
+    target = _preflight(resource_kind, name, confirmation, namespace, instance, settings)
+    if client is not None:
+        return await _delete_resource(
+            target.instance_name,
+            resource_kind,
+            name,
+            cluster_id,
+            target.namespace,
+            target.phrase,
+            client,
+        )
+    async with open_mutation_client(
+        target.instance_name, target.instance_config, cluster_id, target.spec.transport
+    ) as opened_client:
+        return await _delete_resource(
+            target.instance_name,
+            resource_kind,
+            name,
+            cluster_id,
+            target.namespace,
+            target.phrase,
+            opened_client,
+        )
+
+
+class _DeleteTarget(NamedTuple):
+    """What a delete resolved to once every local check has passed."""
+
+    instance_name: str
+    instance_config: RancherInstanceConfig
+    spec: ResourceKindSpec
+    namespace: str | None
+    phrase: str
+
+
+def _preflight(
+    resource_kind: str,
+    name: str,
+    confirmation: str,
+    namespace: str | None,
+    instance: str | None,
+    settings: AppSettings | None,
+) -> _DeleteTarget:
+    """Every check that needs no network, in the order a caller should hear of
+    them. Shared by the delete itself and by the question put to a person, so
+    nobody is asked to approve a call these would refuse."""
+
+    instance_name, instance_config = resolve_instance(settings or get_settings(), instance)
     ensure_instance_writable(instance_name, instance_config)
     spec = resolve_kind(resource_kind)
     resolved_namespace = resolve_namespace(spec, namespace)
@@ -96,28 +160,31 @@ async def rancher_resource_delete(
         raise RancherCapabilityError(
             f"Delete confirmation did not match the required phrase: {expected_phrase!r}"
         )
-    if client is not None:
-        return await _delete_resource(
-            instance_name,
-            resource_kind,
-            name,
-            cluster_id,
-            resolved_namespace,
-            expected_phrase,
-            client,
+    return _DeleteTarget(instance_name, instance_config, spec, resolved_namespace, expected_phrase)
+
+
+async def _approve(
+    ctx: Context[Any, Any],
+    resource_kind: str,
+    name: str,
+    confirmation: str,
+    cluster_id: str,
+    namespace: str | None,
+    instance: str | None,
+) -> Elicit[Approval] | Unasked:
+    def question() -> str:
+        target = _preflight(resource_kind, name, confirmation, namespace, instance, None)
+        return delete_question(
+            describe_target(
+                what=target.spec.kind.replace("_", " "),
+                name=name,
+                instance=target.instance_name,
+                cluster_id=cluster_id,
+                namespace=target.namespace,
+            )
         )
-    async with open_mutation_client(
-        instance_name, instance_config, cluster_id, spec.transport
-    ) as opened_client:
-        return await _delete_resource(
-            instance_name,
-            resource_kind,
-            name,
-            cluster_id,
-            resolved_namespace,
-            expected_phrase,
-            opened_client,
-        )
+
+    return ask_unless_pointless(ctx, question)
 
 
 async def rancher_resource_delete_tool(
@@ -127,6 +194,7 @@ async def rancher_resource_delete_tool(
     cluster_id: str = "local",
     namespace: str | None = None,
     instance: str | None = None,
+    approval: Annotated[HumanApproval, Resolve(_approve)] = NOT_ASKED,
 ) -> RancherCuratedDeleteResult:
     """Delete one resource of any deletable kind and return a typed receipt
     of what was removed. Destructive and irreversible. `resource_kind`
@@ -136,9 +204,21 @@ async def rancher_resource_delete_tool(
     ones. The caller MUST first echo the exact confirmation phrase this
     kind requires: `"delete <kind> <name>"`, plus `" in namespace
     <namespace>"` for namespaced kinds — call this tool without a matching
-    `confirmation` first to see the required phrase in the error. Subject
-    to write rate limiting and audit logging."""
+    `confirmation` first to see the required phrase in the error. Where the
+    client can ask, a person is asked to approve it too; their refusal comes
+    back as `APPROVAL_DENIED`. Subject to write rate limiting and audit
+    logging."""
 
+    settle(
+        approval,
+        tool_name="rancher_resource_delete",
+        plane="steve",
+        resource_kind=resource_kind,
+        resource_id=name,
+        cluster_id=cluster_id,
+        namespace=namespace,
+        instance=instance,
+    )
     return await rancher_resource_delete(
         resource_kind=resource_kind,
         name=name,

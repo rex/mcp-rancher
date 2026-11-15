@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+from typing import Annotated, Any
+
+from mcp.server.mcpserver import Context, Elicit, Resolve
+
 from rancher_mcp.audit import audit_mutation
 from rancher_mcp.clients.management import ManagementDiscoveryClient, RancherManagementClient
 from rancher_mcp.config import AppSettings, get_settings
@@ -19,6 +23,16 @@ from rancher_mcp.services.resources import (
     schema_reference_from_payload,
 )
 from rancher_mcp.services.safety import ensure_instance_writable
+from rancher_mcp.tools.support.human_approval import (
+    NOT_ASKED,
+    Approval,
+    HumanApproval,
+    Unasked,
+    action_question,
+    ask_unless_pointless,
+    describe_target,
+    settle,
+)
 
 
 async def _fetch_norman_resource_action_invoke(
@@ -75,12 +89,8 @@ async def rancher_norman_resource_action_invoke(
     settings: AppSettings | None = None,
     client: ManagementDiscoveryClient | None = None,
 ) -> GenericResourceActionResult:
-    """Invoke a Norman resource action by resource type and id.
-
-    An action is a POST: whatever it is called, it can change the resource.
-    So this carries the same three guards as every other mutation — audited,
-    rate limited, and refused on a read-only instance before anything is sent.
-    """
+    """Invoke a Norman resource action by resource type and id. An action is a
+    POST, so it is guarded like every other mutation — see ADR-0003."""
 
     resolved_settings = settings or get_settings()
     instance_name, instance_config = resolve_instance(resolved_settings, instance)
@@ -174,17 +184,45 @@ async def rancher_norman_resource_link_follow(
         )
 
 
+async def _approve(
+    ctx: Context[Any, Any],
+    schema_id: str,
+    resource_id: str,
+    action_name: str,
+    instance: str | None,
+) -> Elicit[Approval] | Unasked:
+    def question() -> str:
+        instance_name, instance_config = resolve_instance(get_settings(), instance)
+        ensure_instance_writable(instance_name, instance_config)
+        target = describe_target(what=schema_id, name=resource_id, instance=instance_name)
+        return action_question(action_name, target)
+
+    return ask_unless_pointless(ctx, question)
+
+
 async def rancher_norman_resource_action_invoke_tool(
     schema_id: str,
     resource_id: str,
     action_name: str,
     payload_json: str | None = None,
     instance: str | None = None,
+    approval: Annotated[HumanApproval, Resolve(_approve)] = NOT_ASKED,
 ) -> GenericResourceActionResult:
     """Invoke a named Norman resource action from that resource's own `actions`
     links, with an optional JSON body, and return its response — the escape
-    hatch for lifecycle operations no curated tool wraps yet."""
+    hatch for lifecycle operations no curated tool wraps yet. Where the client
+    can ask, a person is asked to approve it first (`APPROVAL_DENIED` if they
+    refuse)."""
 
+    settle(
+        approval,
+        tool_name="rancher_norman_resource_action_invoke",
+        plane="norman",
+        schema_id=schema_id,
+        resource_id=resource_id,
+        action_name=action_name,
+        instance=instance,
+    )
     return await rancher_norman_resource_action_invoke(
         schema_id=schema_id,
         resource_id=resource_id,

@@ -17,13 +17,13 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass, field
-from typing import Any, cast
+from typing import Any, Literal, cast
 
 import httpx
 import respx
 from mcp import Client
 from mcp.server.mcpserver import MCPServer
-from mcp.types import TextContent
+from mcp.types import ElicitRequestParams, ElicitResult, TextContent
 from structlog.testing import capture_logs
 
 # Enough structure for a tool to keep going after a GET: a collection, an
@@ -85,6 +85,8 @@ class Observation:
     rejected_by_client: str | None = None
     """Why the client refused the result, when it did — the body did not match
     the tool's published ``outputSchema``. The tool itself ran to completion."""
+    questions: list[str] = field(default_factory=list[str])
+    """Every prompt the server put to the person behind the client."""
 
     @property
     def error_code(self) -> str | None:
@@ -95,15 +97,46 @@ class Observation:
         return "" if self.envelope is None else str(self.envelope.get("message", ""))
 
 
-async def observe_call(mcp: MCPServer, tool_name: str, arguments: dict[str, object]) -> Observation:
+@dataclass(frozen=True)
+class Answer:
+    """How the person behind the client responds when the server asks.
+
+    Passing one makes the client declare elicitation; leaving it out gives a
+    client that cannot be asked anything, which is most of them.
+    """
+
+    action: Literal["accept", "decline", "cancel"]
+    proceed: bool | None = None
+
+
+async def observe_call(
+    mcp: MCPServer,
+    tool_name: str,
+    arguments: dict[str, object],
+    *,
+    answer: Answer | None = None,
+    mode: str = "2026-07-28",
+) -> Observation:
     """Call *tool_name* through the request path and record what it did."""
+
+    questions: list[str] = []
+
+    async def respond(context: object, params: ElicitRequestParams) -> ElicitResult:
+        assert answer is not None
+        questions.append(params.message)
+        accepted = answer.action == "accept" and answer.proceed is not None
+        return ElicitResult(
+            action=answer.action, content={"proceed": answer.proceed} if accepted else None
+        )
 
     result = None
     rejected_by_client: str | None = None
     with respx.mock(assert_all_called=False) as router, capture_logs() as logs:
         router.route().mock(return_value=httpx.Response(200, json=_PLAUSIBLE_PAYLOAD))
         try:
-            async with Client(mcp, mode="2026-07-28") as client:
+            async with Client(
+                mcp, mode=mode, elicitation_callback=respond if answer is not None else None
+            ) as client:
                 result = await client.call_tool(tool_name, arguments)
         except Exception as exc:
             # The client validates a result against the tool's published
@@ -131,6 +164,7 @@ async def observe_call(mcp: MCPServer, tool_name: str, arguments: dict[str, obje
         requests=requests,
         audit=[dict(record) for record in logs if record.get("event") == "audit"],
         rejected_by_client=rejected_by_client,
+        questions=questions,
     )
 
 
