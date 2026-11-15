@@ -1,5 +1,62 @@
 # Changelog
 
+## [1.73.0] — 2026-11-15 — Agent: Claude Fable 5.2
+### Added
+- **`rancher_rollout_wait` — follow a rollout to its end in one call**
+  (rex/mcp-rancher#9, first slice). After a restart, a scale or an image change
+  the only way to learn how it went was to ask again, and again: a model
+  polling `deployment_get` in a loop, paying for the whole response each time
+  and deciding for itself when to give up. This tool does the waiting. It reads
+  one deployment, statefulset or daemonset on a backing-off interval (2 s,
+  growing to 10 s) and returns once, with a verdict in `outcome`:
+  - `complete` — every replica is on the new revision and available;
+  - `timed_out` — still moving when `timeout_seconds` ran out (default 300, at
+    most 1,800). Not a verdict on the rollout: call again to keep waiting;
+  - `failed` — the controller itself gave up (a Deployment past its progress
+    deadline). Returned at once; waiting longer would not help;
+  - `paused` — a paused Deployment will not move until resumed. Returned at
+    once.
+
+  The four counts — desired, updated, ready, available — are always present,
+  zeros included, and a wait that does not end well points at
+  `rancher_find_failing_pods` and `rancher_cluster_events_list` with the
+  cluster and namespace filled in. Read-only: it sends nothing but `GET`.
+- **It says how it is going while it waits.** Each read is followed by a
+  progress notification — `2/5 updated, 1/5 available` — which a client can
+  show and which stops the call being dropped as idle. Until now only the three
+  health rollups reported progress at all, and without a message.
+- 207 tools: 179 read-only, 28 writes, 5 destructive.
+
+### How the completion rules were chosen
+- They are `kubectl rollout status`'s, per controller kind, with the cases that
+  make a rollout *look* finished handled explicitly: counts from before the
+  controller has observed the new spec do not count; old pods still terminating
+  keep a Deployment's rollout open even when every new pod is available; a
+  StatefulSet is done only once it has adopted the new revision, unless a
+  partition says otherwise; an `OnDelete` workload is judged on readiness and
+  says why `updated` may never catch up.
+- Progress is reported as elapsed time against the timeout, with the replica
+  counts in the message — the protocol requires progress only ever to increase,
+  and replica counts go down as well as up.
+
+### Verified
+- The rules, case by case; the loop on a fake clock (no test sleeps); and
+  through the request path on both protocol eras, where a client hears each
+  progress message in order and receives the verdict.
+- The fleet-wide gates picked the tool up with no changes: it only reads, and
+  its result satisfies its published schema in every shape.
+- **Not verified:** against a live cluster.
+
+### Changed
+- The fleet-wide gates now fail rather than hang if a tool does not return
+  through the request path within 20 s — a tool that waits would otherwise
+  stall CI for as long as its own timeout.
+
+### Still to come on #9
+- The MCP Tasks extension itself: for clients that can background a call,
+  return a task instead of holding the connection, and answer `tasks/get` by
+  re-reading the cluster. This slice is the part every client gets.
+
 ## [1.72.0] — 2026-11-15 — Agent: Claude Fable 5.2
 ### Added
 - **Destructive tools ask a person, in words the server chose — in any client

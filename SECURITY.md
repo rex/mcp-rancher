@@ -35,7 +35,7 @@ disclosure.
 
 **What an agent can do through this server**
 
-- 178 tools are read-only; 28 mutate; 5 of those are destructive
+- 179 tools are read-only; 28 mutate; 5 of those are destructive
   (see [`docs/tool-manifest.json`](docs/tool-manifest.json) — generated from
   the registry, per-tool safety annotations included).
 - The three delete tools require an explicit typed confirmation phrase.

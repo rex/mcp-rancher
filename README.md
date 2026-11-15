@@ -7,7 +7,7 @@
 <p align="center">
   <a href="https://github.com/rex/mcp-rancher/actions/workflows/validate.yml"><img src="https://img.shields.io/github/actions/workflow/status/rex/mcp-rancher/validate.yml?branch=main&label=CI" alt="CI" /></a>
   <a href="https://modelcontextprotocol.io"><img src="https://img.shields.io/badge/MCP-server-2b6cd0" alt="MCP server" /></a>
-  <a href="docs/tool-manifest.json"><img src="https://img.shields.io/badge/tools-206-2b6cd0" alt="206 tools" /></a>
+  <a href="docs/tool-manifest.json"><img src="https://img.shields.io/badge/tools-207-2b6cd0" alt="207 tools" /></a>
   <a href="https://www.python.org/"><img src="https://img.shields.io/badge/python-3.12%2B-3776ab?logo=python&logoColor=white" alt="Python 3.12+" /></a>
   <a href="https://github.com/microsoft/pyright"><img src="https://img.shields.io/badge/types-pyright%20strict-blue" alt="Pyright strict" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-lightgrey" alt="MIT license" /></a>
@@ -52,7 +52,7 @@ auditability, guardrails, and the management-plane view entirely.
 
 ## The tool surface
 
-**206 tools: 178 read-only · 28 writes · 5 destructive** — counted from the
+**207 tools: 179 read-only · 28 writes · 5 destructive** — counted from the
 registry itself, not by hand. [`docs/tool-manifest.json`](docs/tool-manifest.json)
 is **generated from the live tool registry** (`make tool-manifest`) and a CI
 gate fails the build if it ever drifts from the code. Per-tool descriptions,
@@ -74,7 +74,7 @@ logging pipeline · Prometheus monitoring · policy reports · CIS compliance ·
 backup operator · etcd backups · Longhorn · Fleet · provisioning · settings &
 features · alerts & notifiers.
 
-All 206 stay exposed by default — every tool schema is deferred behind
+All 207 stay exposed by default — every tool schema is deferred behind
 Claude Code's own search, so a small default would only help other hosts at
 the good host's expense. A constrained host (a small local model, a tight
 context budget) can opt into a smaller surface via `RANCHER_TOOLSETS`; see
@@ -230,7 +230,7 @@ budget) into a smaller surface. Values are either a family name — one per
 or the cross-family `core` profile: a ~32-tool triage/orientation set
 (`rancher_find_*`, the health/summary rollups, core list/get pairs, and the
 generic `rancher_{steve,norman}_resource_{list,get}` escape hatches). `core`
-cuts the `tools/list` payload from 206 tools / ~401 KB to 32 tools / ~78 KB
+cuts the `tools/list` payload from 207 tools / ~404 KB to 32 tools / ~78 KB
 (~80% smaller). Profiles compose: `RANCHER_TOOLSETS=core,storage` gives the
 triage set plus everything storage-related.
 

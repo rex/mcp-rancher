@@ -16,6 +16,7 @@ from rancher_mcp.tools.ops.find_services_no_endpoints import (
 from rancher_mcp.tools.ops.find_stalled_rollouts import rancher_find_stalled_rollouts_tool
 from rancher_mcp.tools.ops.find_unbound_pvcs import rancher_find_unbound_pvcs_tool
 from rancher_mcp.tools.ops.find_unready_nodes import rancher_find_unready_nodes_tool
+from rancher_mcp.tools.ops.rollout_wait import rancher_rollout_wait_tool
 from rancher_mcp.tools.ops.rollups import (
     rancher_namespace_workloads_summary_tool,
     rancher_project_health_summary_tool,
@@ -62,3 +63,4 @@ def register_ops_tools(mcp: MCPServer) -> None:
     mcp.tool(name="rancher_cluster_events_list", annotations=READ_ONLY)(
         rancher_cluster_events_list_tool
     )
+    mcp.tool(name="rancher_rollout_wait", annotations=READ_ONLY)(rancher_rollout_wait_tool)

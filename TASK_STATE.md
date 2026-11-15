@@ -32,10 +32,11 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 - Operational roadmap (track-level work breakdown): `ROADMAP.md`
 - Primary target: Rancher `2.9.3` (production)
 - Compat floor: Rancher `2.6.5` (devlab; never regress)
-- Public tool surface: **206 tools** (was 321 — v1.55.0 collapsed 118 mechanical
+- Public tool surface: **207 tools** (was 321 — v1.55.0 collapsed 118 mechanical
   `set_labels`/`set_annotations`/`delete` duplicates into 3 kind-dispatched
-  generics; no capability removed). `docs/tool-manifest.json` is authoritative.
-- `tools/list` footprint: **410,933 B / ~102,700 tokens**; `RANCHER_TOOLSETS=core`
+  generics; no capability removed; v1.73.0 added `rancher_rollout_wait`).
+  `docs/tool-manifest.json` is authoritative.
+- `tools/list` footprint: **414,095 B / ~103,500 tokens**; `RANCHER_TOOLSETS=core`
   → 32 tools / ~20,000. Budgeted by `tests/unit/test_context_footprint.py`,
   which measures the entries a client actually receives.
 - MCP SDK: `mcp[cli]>=2.3,<3`, locked at 2.3.0 (`MCPServer`). One process serves
@@ -63,7 +64,7 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 
 ## Next Slice
 
-### 📌 HANDOFF (2026-11-15): port SHIPPED (v1.69.0); two defects found and fixed after it (v1.70.0, v1.71.0); #8 shipped (v1.72.0); #9 is next
+### 📌 HANDOFF (2026-11-15): port SHIPPED (v1.69.0); two defects found and fixed after it (v1.70.0, v1.71.0); #8 shipped (v1.72.0); #9 half done (v1.73.0)
 
 **⚠️ Needs Pierce — a release.** Two fixes below are in `main` and in no
 published version. Nothing has been tagged since v1.59.0, and a tag is what
@@ -95,8 +96,18 @@ mechanism and `test_destructive_approval_fleet_wide.py` holds every
 destructive-annotated tool to it. The decisions and their reasons are in a
 comment on the issue. **Not yet seen:** the prompt in Claude Code's own dialog.
 
-**Next in the approved order:** [#9](https://github.com/rex/mcp-rancher/issues/9)
-MCP tasks → [#3](https://github.com/rex/mcp-rancher/issues/3) cache hints and
+**#9 is half done — v1.73.0 shipped its first slice.** `rancher_rollout_wait`
+follows a rollout to its end in one call and reports progress while it waits;
+it works in every client. **What is left on #9 is the Tasks extension itself**
+(a comment on the issue has the design): return a task instead of holding the
+connection when the request carries the tasks extension, and answer
+`tasks/get` by re-reading the cluster through
+`tools/ops/rollout_state.read_rollout_state`, which was kept pure for exactly
+that. Tasks only exist in the terminal CLI, so it needs a wire-level test
+rather than the SDK's client, which has no Tasks support.
+
+**Then, in the approved order:**
+[#3](https://github.com/rex/mcp-rancher/issues/3) cache hints and
 server title/description → [#25](https://github.com/rex/mcp-rancher/issues/25)
 (ask which cluster when a write omits `cluster_id` — the half of #8 that was
 split out; it has an open decision for Pierce in it) → #12–#16.
@@ -138,6 +149,7 @@ list ordering, cancellation). Awaiting a ruling — do not start: #10, #11,
 | 1.70.0 | **Security:** read-only mode now covers the generic action tools; fleet-wide write-guard gate | #21 |
 | 1.71.0 | Cluster-wide lists no longer violate their own schema (32 tools); fleet-wide output-contract gate | #22 |
 | 1.72.0 | Destructive tools ask a person through MCP elicitation, in any client that can show a prompt | #8 |
+| 1.73.0 | `rancher_rollout_wait` — follow a rollout to its end in one call, with progress (207 tools) | #9 (first slice) |
 
 **What the port changed structurally** (detail in `CHANGELOG.md`, 1.69.0):
 

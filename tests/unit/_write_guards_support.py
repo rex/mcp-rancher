@@ -19,12 +19,15 @@ import json
 from dataclasses import dataclass, field
 from typing import Any, Literal, cast
 
+import anyio
 import httpx
 import respx
 from mcp import Client
 from mcp.server.mcpserver import MCPServer
 from mcp.types import ElicitRequestParams, ElicitResult, TextContent
 from structlog.testing import capture_logs
+
+_CALL_DEADLINE_SECONDS = 20.0
 
 # Enough structure for a tool to keep going after a GET: a collection, an
 # object with an id, and an `actions` link for the generic action tools.
@@ -36,7 +39,17 @@ _PLAUSIBLE_PAYLOAD: dict[str, object] = {
     "items": [],
     "links": {"self": "https://rancher.test.invalid/v3/xs/x"},
     "actions": {"x": "https://rancher.test.invalid/v3/xs/x?action=x"},
-    "metadata": {"name": "x"},
+    # A workload whose rollout is already over, so a tool that WAITS for one
+    # (`rancher_rollout_wait`) returns at once instead of sitting on its timeout.
+    "metadata": {"name": "x", "generation": 1},
+    "spec": {"replicas": 1},
+    "status": {
+        "replicas": 1,
+        "updatedReplicas": 1,
+        "readyReplicas": 1,
+        "availableReplicas": 1,
+        "observedGeneration": 1,
+    },
     "resourceMethods": ["GET", "PUT", "DELETE"],
     "collectionMethods": ["GET", "POST"],
 }
@@ -137,7 +150,17 @@ async def observe_call(
             async with Client(
                 mcp, mode=mode, elicitation_callback=respond if answer is not None else None
             ) as client:
-                result = await client.call_tool(tool_name, arguments)
+                # A gate must fail, not hang: a tool that waits on something
+                # the fake backend never delivers would otherwise stall CI for
+                # as long as its own timeout.
+                with anyio.fail_after(_CALL_DEADLINE_SECONDS):
+                    result = await client.call_tool(tool_name, arguments)
+        except TimeoutError as exc:
+            raise AssertionError(
+                f"{tool_name} did not return within {_CALL_DEADLINE_SECONDS:g}s through the "
+                "request path. A tool that waits needs a fake backend that lets it finish "
+                "(see _PLAUSIBLE_PAYLOAD)."
+            ) from exc
         except Exception as exc:
             # The client validates a result against the tool's published
             # outputSchema and raises when it does not conform. That is a real

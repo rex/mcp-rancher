@@ -2,7 +2,7 @@
 
 ## 1. Project snapshot
 
-- **What**: Capability-aware Rancher MCP server; 206 tools across discovery, generic fallbacks, and curated operator workflows (`docs/tool-manifest.json` is the count of record). **Primary target: Rancher 2.9.3** (production). **Compat floor: 2.6.5** (devlab) — capability detection bridges the gap; never regress 2.6.5 behavior.
+- **What**: Capability-aware Rancher MCP server; some 200 tools across discovery, generic fallbacks, and curated operator workflows (`docs/tool-manifest.json` holds the exact count — never hand-type it). **Primary target: Rancher 2.9.3** (production). **Compat floor: 2.6.5** (devlab) — capability detection bridges the gap; never regress 2.6.5 behavior.
 - **Runtime**: Python 3.12 · MCP Python SDK 2.x (`MCPServer`; serves protocol `2026-07-28` and the legacy `2025-11-25` handshake) · uv · httpx · structlog
 - **Non-goals**: Does not manage Rancher itself; does not support non-Rancher Kubernetes APIs directly.
 

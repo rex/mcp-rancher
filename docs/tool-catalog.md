@@ -69,7 +69,7 @@ table. The [Status legend](#status-legend) explains the icons.
 
 ## Quick start
 
-- **Tool surface today: 206 registered** (authoritative count:
+- **Tool surface today: 207 registered** (authoritative count:
   [`tool-manifest.json`](tool-manifest.json), generated). See
   [Tool registry](#tool-registry). Down from 321 after the F2 collapse
   (below): 118 per-resource-family `set_labels`/`set_annotations`/`delete`
@@ -162,7 +162,7 @@ descriptor migration commit). That's fine — Slice IDs map
 
 | Bucket | Count |
 |---|---|
-| ✅ Built (registered tools) | **206** |
+| ✅ Built (registered tools) | **207** |
 | 🟡 Planned (gap from plan) | ~62 |
 | 🟠 Partial (documented limitations) | ~10 |
 | 🔴 Blocked (external dep / design) | ~12 |
@@ -583,6 +583,16 @@ Note: hand-written, not codegen — new operator verbs, not generic CRUD.
 `pod_describe` was considered and deliberately not built: `pod_get`
 (M-B4) already inlines `events[]` + status + conditions, so a separate
 describe tool would be redundant.
+
+### Follow-to-completion (1 tool — modernization epic, rex/mcp-rancher#9)
+
+| Status | Tool | Plane | Verb | Source |
+|---|---|---|---|---|
+| ✅ | rancher_rollout_wait | k8s-proxy | wait | `tools/ops/` |
+
+Note: the first tool that *waits*. It follows one deployment, statefulset or
+daemonset rollout to its end in a single call and reports progress while it
+does, instead of the model polling a get tool. Read-only.
 
 ---
 
