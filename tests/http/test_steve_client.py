@@ -6,6 +6,7 @@ import respx
 from pydantic import SecretStr
 
 from rancher_mcp.clients.steve import RancherSteveClient
+from rancher_mcp.exceptions import RancherCapabilityError
 from rancher_mcp.models.discovery import RancherInstanceConfig
 
 
@@ -87,3 +88,22 @@ async def test_steve_client_patch_content_uses_cluster_scoped_root() -> None:
 
     assert result == {"kind": "ConfigMap"}
     assert route.called
+
+
+@pytest.mark.asyncio
+@respx.mock
+@pytest.mark.parametrize("method", ["post_json", "patch_json", "delete_json"])
+async def test_a_read_only_instance_sends_no_mutating_request_through_steve(method: str) -> None:
+    """The Steve client rides on the management client, so the read-only
+    backstop there covers the Kubernetes proxy plane as well. Pinned here
+    because "it happens to share the transport" is exactly the kind of fact
+    that stops being true without anyone deciding it should."""
+
+    route = respx.route().mock(return_value=httpx.Response(200, json={}))
+    config = build_config().model_copy(update={"read_only": True})
+
+    async with RancherSteveClient("work", config, cluster_id="venue-local") as client:
+        with pytest.raises(RancherCapabilityError, match="read-only"):
+            await getattr(client, method)("/configmaps/default/demo", payload={"k": "v"})
+
+    assert not route.called, f"{method} reached the network on a read-only instance"

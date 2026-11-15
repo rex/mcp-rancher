@@ -51,6 +51,12 @@ class AuditEntry(BaseModel):
     signal in the call itself for which of many kinds a single tool name
     now covers. Absent (``None``) for every per-resource tool, whose own
     ``tool_name`` already encodes the kind."""
+    action_name: str | None = None
+    """Which action a generic ``*_resource_action_invoke`` call invoked. The
+    tool name says only "an action"; without this the record of a
+    ``rotateCertificates`` and of a ``generateKubeconfig`` are identical. It is
+    the operation's name, not a caller-supplied value, so it carries no
+    secret."""
     cluster_id: str | None = None
     namespace: str | None = None
     arg_keys: list[str] = Field(default_factory=list)
@@ -99,6 +105,7 @@ def _build_entry_kwargs(
         # that use the now-uniform `name` argument (F2).
         "resource_id": kwargs.get("resource_id") or kwargs.get("name"),
         "resource_kind": kwargs.get("resource_kind"),
+        "action_name": kwargs.get("action_name"),
         "cluster_id": kwargs.get("cluster_id"),
         "namespace": kwargs.get("namespace"),
         "arg_keys": sorted(kwargs.keys()),

@@ -7,6 +7,7 @@ from pydantic import SecretStr
 
 from rancher_mcp.clients.management import RancherManagementClient
 from rancher_mcp.exceptions import (
+    RancherCapabilityError,
     RancherManagementPlaneUnreachableError,
     RancherNotFoundError,
 )
@@ -178,3 +179,70 @@ async def test_get_text_retries_transport_errors() -> None:
 
     assert attempts == 2
     assert result == "ok"
+
+
+# ── Read-only backstop ──────────────────────────────────────────────────────
+# Tools are supposed to refuse a read-only instance themselves, before sending
+# anything. These pin what happens when one does not: the client is the only
+# place a request can leave the process, and on a read-only instance it lets
+# nothing but a read through. See docs/adr/0003-write-guards.md.
+
+
+def build_read_only_config() -> RancherInstanceConfig:
+    """The same instance, marked read-only by its operator."""
+
+    return build_config().model_copy(update={"read_only": True})
+
+
+@pytest.mark.asyncio
+@respx.mock
+@pytest.mark.parametrize("method", ["post_json", "put_json", "patch_json", "delete_json"])
+async def test_a_read_only_instance_sends_no_mutating_request(method: str) -> None:
+    route = respx.route().mock(return_value=httpx.Response(200, json={}))
+
+    async with RancherManagementClient("work", build_read_only_config()) as client:
+        with pytest.raises(RancherCapabilityError, match="read-only"):
+            await getattr(client, method)("/v3/clusters/c-abc", payload={"k": "v"})
+
+    assert not route.called, f"{method} reached the network on a read-only instance"
+
+
+@pytest.mark.asyncio
+@respx.mock
+async def test_a_read_only_instance_sends_no_raw_content_patch() -> None:
+    route = respx.route().mock(return_value=httpx.Response(200, json={}))
+
+    async with RancherManagementClient("work", build_read_only_config()) as client:
+        with pytest.raises(RancherCapabilityError, match="read-only"):
+            await client.patch_content_json(
+                "/v3/clusters/c-abc", "{}", content_type="application/apply-patch+yaml"
+            )
+
+    assert not route.called
+
+
+@pytest.mark.asyncio
+@respx.mock
+async def test_a_read_only_instance_still_reads() -> None:
+    route = respx.get("https://rancher.example.com/v3/clusters").mock(
+        return_value=httpx.Response(200, json={"data": []})
+    )
+
+    async with RancherManagementClient("work", build_read_only_config()) as client:
+        assert await client.get_json("/v3/clusters") == {"data": []}
+        assert await client.get_text("/v3/clusters")
+
+    assert route.call_count == 2
+
+
+@pytest.mark.asyncio
+@respx.mock
+async def test_a_writable_instance_is_unaffected_by_the_backstop() -> None:
+    route = respx.post("https://rancher.example.com/v3/clusters/c-abc").mock(
+        return_value=httpx.Response(200, json={"ok": True})
+    )
+
+    async with RancherManagementClient("work", build_config()) as client:
+        assert await client.post_json("/v3/clusters/c-abc", payload={}) == {"ok": True}
+
+    assert route.called

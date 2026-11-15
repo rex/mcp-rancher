@@ -11,12 +11,17 @@ import httpx
 from rancher_mcp.clients.retry import run_with_retry
 from rancher_mcp.exceptions import (
     RancherAPIError,
+    RancherCapabilityError,
     RancherConflictError,
     RancherManagementPlaneUnreachableError,
     RancherNotFoundError,
     RancherUnauthorizedError,
 )
 from rancher_mcp.models.discovery import RancherInstanceConfig
+
+# HTTP methods that cannot change anything. Every other method is a mutation
+# and is refused outright on a read-only instance (see `_request`).
+_SAFE_METHODS = frozenset({"GET", "HEAD", "OPTIONS"})
 
 
 class ManagementDiscoveryClient(Protocol):
@@ -138,6 +143,7 @@ class RancherManagementClient:
         timeout: httpx.Timeout | None = None,
     ) -> None:
         self.instance_name = instance_name
+        self._read_only = config.read_only
         verify: str | bool = config.ca_bundle or config.verify_ssl
         self._client = httpx.AsyncClient(
             base_url=config.url.rstrip("/"),
@@ -268,6 +274,19 @@ class RancherManagementClient:
         headers: Mapping[str, str] | None = None,
     ) -> httpx.Response:
         """Perform one Rancher HTTP request with transient-failure retries."""
+
+        if self._read_only and method.upper() not in _SAFE_METHODS:
+            # The backstop, not the guard. Every mutating tool is supposed to
+            # refuse a read-only instance before it does anything at all
+            # (`services.safety.ensure_instance_writable`), and a fleet-wide
+            # test holds them to it. This is what still holds when one forgets
+            # — as two tools once did, for as long as they existed. It sits at
+            # the only point where a request can leave the process, so no code
+            # path, present or future, can write to an instance the operator
+            # marked read-only. See docs/adr/0003-write-guards.md.
+            raise RancherCapabilityError(
+                f"Rancher instance {self.instance_name!r} is configured read-only for mutations"
+            )
 
         async def perform_request() -> httpx.Response:
             response = await self._client.request(

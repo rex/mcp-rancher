@@ -174,7 +174,7 @@ Built for the day an agent is pointed at the cluster that pays your salary:
 
 | Guard | Behavior |
 |---|---|
-| **Read-only instances** | `read_only: true` refuses every mutation for that instance, before tool logic runs |
+| **Read-only instances** | `read_only: true` refuses every mutation for that instance before anything is sent — and the HTTP client of a read-only instance sends nothing but reads, so a tool that failed to refuse still could not write |
 | **Destructive confirmation** | Deletes require an explicit typed phrase (e.g. `"delete steve namespace foo"`) — no phrase, no delete |
 | **Human approval** | In Claude Code the destructive tools prompt a person on *every* call, in every permission mode including bypass (`anthropic/requiresUserInteraction`). A phrase the model can type proves the model read it; this proves a person agreed |
 | **Tool annotations** | Every tool declares `readOnlyHint` / `destructiveHint` / `idempotentHint`, so clients can gate UX on them |

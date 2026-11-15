@@ -80,8 +80,15 @@ async def rancher_resource_delete(
     phrase. Namespace requiredness is resolved (and the confirmation
     phrase's shape decided) from `resource_kind`'s spec BEFORE the phrase
     is checked, so the expected phrase always matches what the kind
-    actually needs."""
+    actually needs.
 
+    The read-only check comes first of all. A caller who is told the phrase
+    was wrong will go and work out the right one, only to be refused again on
+    the next call for a reason no phrase can fix."""
+
+    resolved_settings = settings or get_settings()
+    instance_name, instance_config = resolve_instance(resolved_settings, instance)
+    ensure_instance_writable(instance_name, instance_config)
     spec = resolve_kind(resource_kind)
     resolved_namespace = resolve_namespace(spec, namespace)
     expected_phrase = delete_confirmation_phrase(spec, name, resolved_namespace)
@@ -89,9 +96,6 @@ async def rancher_resource_delete(
         raise RancherCapabilityError(
             f"Delete confirmation did not match the required phrase: {expected_phrase!r}"
         )
-    resolved_settings = settings or get_settings()
-    instance_name, instance_config = resolve_instance(resolved_settings, instance)
-    ensure_instance_writable(instance_name, instance_config)
     if client is not None:
         return await _delete_resource(
             instance_name,

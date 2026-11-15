@@ -26,7 +26,11 @@ disclosure.
   tool responses or audit records.
 - Use a Rancher token scoped to what you actually need. For inspection-only
   use, create a read-only Rancher user and/or set `read_only: true` on the
-  instance — mutations are then refused at the configuration layer.
+  instance. Mutations are then refused twice over: each mutating tool refuses
+  before it sends anything, and the HTTP client of a read-only instance sends
+  nothing but `GET`, so a tool that failed to refuse still could not write.
+  (Before 1.70.0 two tools did fail to refuse — see *Security history* below.
+  Do both: a read-only token is the guard that does not depend on this code.)
 - TLS verification is **on by default** (`RANCHER_VERIFY_SSL=true`).
 
 **What an agent can do through this server**
@@ -44,8 +48,12 @@ disclosure.
   can turn it off with `RANCHER_MCP_REQUIRE_APPROVAL_FOR_DESTRUCTIVE=false`.
 - Every mutation is audit-logged (structured `event="audit"` records:
   tool, operation, plane, instance, resource, outcome — argument *names*
-  only, never values).
+  only, never values). A generic action invoke also records which action.
 - Writes are rate-limited (token bucket, default 60/min).
+- These three — read-only refusal, audit, rate limit — are checked for every
+  tool that is not annotated read-only by a test that calls each one through
+  the request path (`tests/unit/test_write_guards_fleet_wide.py`), so a new
+  mutating tool cannot ship without them.
 
 **What is masked**
 
@@ -86,6 +94,12 @@ disclosure.
 - All logs go to `stderr` (never the MCP stdout channel).
 - No secrets, tokens, or payload values in any log stream. The repo enforces
   this with `detect-secrets` + gitleaks in pre-commit and an audited baseline.
+
+## Security history
+
+| Fixed in | Affected | What |
+|---|---|---|
+| 1.70.0 | 1.0.0 – 1.69.0 | **Read-only mode did not cover the generic action tools.** `rancher_norman_resource_action_invoke` and `rancher_steve_resource_action_invoke` invoked their action on an instance configured `read_only: true`, and were neither audited nor rate limited. An agent pointed at a read-only instance could therefore still run any Rancher action its token allowed. Not reachable by a third party directly: it takes the operator's own agent calling the tool. **If you rely on `read_only`, upgrade**, and prefer a read-only Rancher token as well. [ADR-0003](docs/adr/0003-write-guards.md), [#21](https://github.com/rex/mcp-rancher/issues/21). |
 
 ## Hardening recommendations
 

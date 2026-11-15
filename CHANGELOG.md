@@ -1,5 +1,75 @@
 # Changelog
 
+## [1.70.0] — 2026-11-15 — Agent: Claude Fable 5.2
+### Security
+- **Read-only mode did not cover the generic action tools. It does now.**
+  (rex/mcp-rancher#21) `rancher_norman_resource_action_invoke` and
+  `rancher_steve_resource_action_invoke` POST an arbitrary Rancher action —
+  certificate rotation, etcd backup and restore, node drain, kubeconfig
+  generation. On an instance configured `read_only: true` they went ahead and
+  invoked it. They were also not audited and not rate limited: the three
+  promises the safety model makes about every write, and these two kept none.
+  **Affected: every release, 1.0.0 through 1.69.0.** The tools were added three
+  weeks before the read-only guard existed, and the guard was applied to the
+  tools written alongside it rather than to the ones already there.
+  It is not something a third party can reach directly — it takes the
+  operator's own agent calling the tool — but an operator who set `read_only`
+  to make an agent safe against production was not getting what the README
+  told them they were. **If you rely on `read_only`, upgrade.**
+  Scope was measured, not assumed: of the 28 tools not annotated read-only, 26
+  refused a read-only instance without sending anything, and these two did not;
+  all 178 tools annotated read-only sent only `GET`.
+
+### Fixed
+- Both action tools now refuse a read-only instance before sending anything
+  (they used to perform two lookups first), count against the write rate limit,
+  and leave an audit record — which now names the action. The tool name says
+  only "an action"; without that, the record of a `rotateCertificates` and of a
+  `generateKubeconfig` were the same record.
+- **A read-only instance's HTTP client sends nothing but reads.** This is the
+  backstop rather than the guard: every method other than `GET`, `HEAD` or
+  `OPTIONS` is refused at the one place a request can leave the process, on
+  both API planes. A tool that forgets its guard — as these did for as long as
+  they existed — still cannot write.
+- `rancher_resource_delete` checks read-only before the confirmation phrase. It
+  used to tell a caller the phrase was wrong, let them work out the right one,
+  and then refuse for a reason no phrase could fix.
+
+### Changed — behaviour to be aware of
+- On a read-only instance the generic action tools refuse **every** action,
+  including ones that only read or mint a credential (`generateKubeconfig`). An
+  action is a POST; the server cannot tell which ones are harmless.
+
+### Added
+- **A gate that asks the question of the whole fleet**
+  (`tests/unit/test_write_guards_fleet_wide.py`). Each guard had only ever been
+  tested per tool, in the file written alongside that tool by whoever wrote it —
+  so a tool whose author forgot the guard had a test file that did not ask.
+  The gate takes its targets from the annotation a client reads, calls each one
+  through the request path with every HTTP request intercepted, and requires:
+  against a read-only instance, a refusal that *is* the read-only refusal,
+  nothing sent, and an audit record; with the write budget spent, a rate-limit
+  refusal, nothing sent, and an audit record. It checks the annotation from the
+  other side as well — tools marked read-only must only ever send `GET` — and
+  one test plants the original defect to prove the gate objects to it.
+  A tool added tomorrow is covered the moment it is registered.
+- `docs/adr/0003-write-guards.md` — the account, the options, and why the
+  enforcement sits where it does. `SECURITY.md` gains a *Security history*.
+
+### Verified
+- The gate failed on exactly these two tools before the fix (`sent 3 HTTP
+  request(s): GET, GET, POST — returned success — left no audit record`) and
+  passes for all 28 after it.
+- Not verified against a live Rancher. Every request in these tests is
+  intercepted; nothing here has been pointed at a real read-only instance.
+
+### Known and not fixed here
+- A read-only refusal's error envelope carries `"reason": "not_installed"`,
+  which is wrong (rex/mcp-rancher#23).
+- The same fleet-wide probing found that 32 namespaced list tools return a body
+  their own published schema rejects when `namespace` is omitted
+  (rex/mcp-rancher#22). Fixed next.
+
 ## [1.69.0] — 2026-11-15 — Agent: Claude Fable 5.2
 ### Changed
 - **Ported to the MCP Python SDK 2.x; the server now speaks protocol
