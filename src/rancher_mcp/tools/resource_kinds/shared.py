@@ -62,7 +62,7 @@ def resolve_kind(resource_kind: str) -> ResourceKindSpec:
 
     `resource_kind` is typed `LabelableResourceKind` / `AnnotatableResourceKind`
     / `DeletableResourceKind` (closed `Literal`s) on every public tool
-    signature, so FastMCP's own JSON-schema `enum` validation rejects an
+    signature, so the SDK's own JSON-schema `enum` validation rejects an
     unknown kind before this ever runs in normal MCP use. This guard exists
     for direct Python callers (tests, the `client=` bypass path) and keeps
     the error message actionable rather than a raw `KeyError`.

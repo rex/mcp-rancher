@@ -1,6 +1,6 @@
 """AE-03: every error this server emits is valid JSON, with no prose preamble.
 
-The server built a careful structured envelope and then FastMCP's ``Tool.run``
+The server built a careful structured envelope and then MCPServer's ``Tool.run``
 re-wrapped it as ``Error executing tool {name}: {envelope}``. ``JSON.parse``
 fails on that, which defeats the whole point: an agent that cannot parse the
 error cannot branch on ``retryable``, so it either gives up on a transient
@@ -16,8 +16,10 @@ from __future__ import annotations
 import json
 
 import pytest
-from mcp.server.fastmcp import FastMCP
-from mcp.server.fastmcp.exceptions import ToolError
+from mcp import Client
+from mcp.server.mcpserver import MCPServer
+from mcp.server.mcpserver.exceptions import ToolError, UnexpectedToolError
+from mcp.types import TextContent
 
 from rancher_mcp.exceptions import RancherAPIError, RancherManagementPlaneUnreachableError
 from rancher_mcp.tools.support.errors import (
@@ -27,8 +29,8 @@ from rancher_mcp.tools.support.errors import (
 )
 
 
-def _build_server() -> FastMCP:
-    mcp = FastMCP(name="test-errors")
+def _build_server() -> MCPServer:
+    mcp = MCPServer(name="test-errors")
 
     @mcp.tool()
     async def domain_failure() -> str:
@@ -44,7 +46,7 @@ def _build_server() -> FastMCP:
 
 
 async def _call_expecting_error(
-    mcp: FastMCP, name: str, args: dict[str, object]
+    mcp: MCPServer, name: str, args: dict[str, object]
 ) -> dict[str, object]:
     with pytest.raises(ToolError) as excinfo:
         await mcp.call_tool(name, args)
@@ -85,7 +87,7 @@ async def test_retryable_survives_the_unwrap() -> None:
     """`retryable` is the one field an agent branches on; losing it in the
     unwrap would be worse than the preamble it replaces."""
 
-    mcp = FastMCP(name="test-retryable")
+    mcp = MCPServer(name="test-retryable")
 
     @mcp.tool()
     async def tunnel_down() -> str:
@@ -121,7 +123,7 @@ async def test_canary_the_sdk_still_adds_the_preamble_we_strip() -> None:
     weight and should be removed rather than left to rot. This fails loudly at
     that moment instead of leaving a mystery wrapper in the chain."""
 
-    mcp = FastMCP(name="test-canary")
+    mcp = MCPServer(name="test-canary")
 
     @mcp.tool()
     async def raises_plain_json() -> str:
@@ -134,3 +136,48 @@ async def test_canary_the_sdk_still_adds_the_preamble_we_strip() -> None:
         "The MCP SDK no longer prefixes tool errors — apply_bare_json_errors is "
         "now a no-op and should be deleted (and this canary with it)."
     )
+
+
+async def test_a_crash_is_enveloped_without_losing_its_type() -> None:
+    """The SDK reads the exception's TYPE to decide what to log.
+
+    A return value it cannot convert is a crash, raised outside our per-tool
+    wrapper as ``UnexpectedToolError`` — which the SDK logs with a traceback,
+    while withholding the detail from the client. Giving the client a JSON
+    envelope must not turn that into a plain ``ToolError``: the client would
+    see the same thing, and the only record of what actually broke would be
+    downgraded to a one-line INFO.
+    """
+
+    mcp = MCPServer(name="test-crash")
+
+    @mcp.tool()
+    async def returns_the_wrong_type() -> int:
+        return "definitely not an int"  # type: ignore[return-value]
+
+    apply_structured_errors_to_all_tools(mcp)
+    apply_bare_json_errors(mcp)
+
+    with pytest.raises(UnexpectedToolError) as excinfo:
+        await mcp.call_tool("returns_the_wrong_type", {})
+
+    payload = json.loads(str(excinfo.value))
+    assert payload["error_code"] == "MCP_ERROR"
+    assert payload["tool"] == "returns_the_wrong_type"
+    assert "definitely not an int" not in str(excinfo.value), "crash detail reached the client"
+    assert excinfo.value.__cause__ is not None, "the original exception was dropped"
+
+
+@pytest.mark.parametrize("era", ["legacy", "2026-07-28"])
+async def test_a_client_receives_bare_json_for_every_kind_of_failure(era: str) -> None:
+    """Off the wire, in both protocol eras: whatever went wrong, the text the
+    client is handed parses, and says so with ``isError``."""
+
+    async with Client(_build_server(), mode=era) as client:
+        for name in ("domain_failure", "needs_an_argument", "no_such_tool"):
+            result = await client.call_tool(name, {})
+
+            assert result.is_error is True, name
+            block = result.content[0]
+            assert isinstance(block, TextContent)
+            assert "error_code" in json.loads(block.text), name

@@ -1,9 +1,9 @@
 """Human-readable `title` derivation, applied fleet-wide post-registration.
 
 No tool set the MCP spec's optional `Tool.title` (distinct from
-`ToolAnnotations.title` — this is the top-level field FastMCP's
+`ToolAnnotations.title` — this is the top-level field the SDK's
 `mcp.tool(title=...)` populates, read fresh from the tool registry by
-`FastMCP.list_tools()`). Rather than hand-author ~300 short strings across
+`MCPServer.list_tools()`). Rather than hand-author ~300 short strings across
 every codegen'd descriptor and every hand-written registration call site,
 one mechanical derivation from the already-unique, already-descriptive
 tool `name` covers all of them, consistently, with no risk of a newly
@@ -69,7 +69,7 @@ def apply_titles_to_all_tools(mcp: Any) -> None:
     `apply_structured_errors_to_all_tools` — a blanket post-registration
     pass over the registered tools, rather than threading a `title=` kwarg
     through ~300 individual `mcp.tool(...)` call sites across codegen and
-    every hand-written pack). `FastMCP.list_tools()` reads `Tool.title`
+    every hand-written pack). `MCPServer.list_tools()` reads `Tool.title`
     fresh at request time, so mutating it here after the fact is enough.
     """
 

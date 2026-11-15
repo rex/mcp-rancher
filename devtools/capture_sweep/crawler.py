@@ -23,7 +23,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any, cast
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 
 from devtools.capture_sweep.combos import plan_calls, signature_key
 from devtools.capture_sweep.constants import CALL_CAP
@@ -117,7 +117,7 @@ async def run_sweep(repo_root: Path, capture_dir: Path) -> SweepOutcome:
     token = login_to_lab(cfg)
     settings = build_sweep_settings(cfg, token, repo_root)
 
-    mcp = FastMCP("rancher-mcp-capture-sweep")
+    mcp = MCPServer("rancher-mcp-capture-sweep")
     register_all_tools(mcp)
     read_only_tools = load_read_only_tool_names(repo_root)
     plan = build_capture_plan(mcp, read_only_tools)

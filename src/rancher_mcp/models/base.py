@@ -104,7 +104,7 @@ class RancherModel(BaseModel):
     def _shape_on_dump(self, handler: SerializerFunctionWrapHandler) -> Any:
         """Scrub credentials and trim the raw payload on every serialized response.
 
-        Runs inside Pydantic's dump — and therefore inside FastMCP's
+        Runs inside Pydantic's dump — and therefore inside the SDK's
         ``model_dump`` of each tool result — so it is the single point that
         (1) enforces ``SECURITY.md``'s "credentials never appear in responses"
         guarantee across every tool, including secrets buried in an untyped

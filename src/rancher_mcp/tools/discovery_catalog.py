@@ -79,7 +79,7 @@ async def rancher_server_profile_get(
 # Public MCP wrappers.
 #
 # These three tools were registered directly against the implementations above,
-# so FastMCP derived their input schemas from the DI parameters and published
+# so the SDK derived their input schemas from the DI parameters and published
 # `settings` and `catalog` as ordinary, model-callable arguments. Two things
 # followed, both verified before this fix:
 #

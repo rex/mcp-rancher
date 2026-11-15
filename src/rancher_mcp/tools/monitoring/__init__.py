@@ -1,6 +1,6 @@
 """Curated Rancher monitoring status tool facade."""
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 
 from rancher_mcp.tools.monitoring.status import (
     rancher_monitoring_status,
@@ -14,8 +14,8 @@ __all__ = [
 ]
 
 
-def register_monitoring_tools(mcp: FastMCP) -> None:
-    """Register curated monitoring tools with the FastMCP server."""
+def register_monitoring_tools(mcp: MCPServer) -> None:
+    """Register curated monitoring tools with the MCP server."""
 
     mcp.tool(name="rancher_monitoring_status", annotations=READ_ONLY)(
         rancher_monitoring_status_tool

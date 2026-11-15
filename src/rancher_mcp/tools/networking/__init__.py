@@ -5,7 +5,7 @@
 
 """Curated Rancher networking tools."""
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 
 from rancher_mcp.tools.networking._generated_endpoint_slices import (
     rancher_endpoint_slice_get,
@@ -38,8 +38,8 @@ __all__ = [
 ]
 
 
-def register_networking_tools(mcp: FastMCP) -> None:
-    """Register curated networking tools with the FastMCP server."""
+def register_networking_tools(mcp: MCPServer) -> None:
+    """Register curated networking tools with the MCP server."""
 
     mcp.tool(name="rancher_endpoint_slices_list", annotations=READ_ONLY)(
         rancher_endpoint_slices_list_tool

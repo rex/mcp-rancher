@@ -30,9 +30,9 @@ remove ``RANCHER_EXCLUDE_TOOLS`` — exclude always wins, applied last.
 
 This module owns the mapping and the pure resolution logic only.
 ``rancher_mcp.tools.support.toolset_gate`` owns applying a ``ResolvedToolset``
-to a live ``FastMCP`` instance — removing disabled tools and making a direct
-call to one fail with a clear, actionable error instead of FastMCP's generic
-"Unknown tool" — matching the split every other cross-cutting FastMCP pass in
+to a live server — removing disabled tools and making a direct call to one
+fail with a clear, actionable error instead of the SDK's generic
+"Unknown tool" — matching the split every other cross-cutting pass in
 this repo already uses (``tools/support/errors.py``, ``.../titles.py``,
 ``.../capability_unavailable.py``).
 """
@@ -43,7 +43,7 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from typing import Final
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 
 from rancher_mcp.exceptions import ConfigurationError
 from rancher_mcp.sdk_registry import registered_tool_names
@@ -82,7 +82,7 @@ from rancher_mcp.tools.settings_features import register_settings_feature_tools
 from rancher_mcp.tools.storage import register_storage_tools
 from rancher_mcp.tools.workloads import register_workload_tools
 
-FamilyRegistrar = Callable[[FastMCP], None]
+FamilyRegistrar = Callable[[MCPServer], None]
 
 # THE mapping (design requirement: "put the mapping in ONE place"). Order
 # matches server.py's historical registration order — harmless to reorder,
@@ -223,7 +223,7 @@ def _parse_csv(value: str) -> frozenset[str]:
     return frozenset(part.strip() for part in value.split(",") if part.strip())
 
 
-def register_families(mcp: FastMCP) -> FamilyRegistration:
+def register_families(mcp: MCPServer) -> FamilyRegistration:
     """Call every family's ``register_*_tools(mcp)``, observing what each one
     added by diffing the tool manager immediately before and after the call.
 
@@ -262,7 +262,7 @@ def resolve_active_tools(
     include_raw: str,
     exclude_raw: str,
 ) -> ResolvedToolset:
-    """Pure resolution logic — no FastMCP, so it is cheap to test directly.
+    """Pure resolution logic — no server, so it is cheap to test directly.
 
     Raises ``ConfigurationError`` (fail loudly, never a silent empty/shrunk
     surface) for an unknown ``RANCHER_TOOLSETS`` profile, an unknown

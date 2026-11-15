@@ -5,7 +5,7 @@
 
 """Curated Rancher workload-controller tools."""
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 
 from rancher_mcp.tools.support.annotations import IDEMPOTENT_WRITE, READ_ONLY
 from rancher_mcp.tools.workloads._generated_daemonsets import (
@@ -61,8 +61,8 @@ __all__ = [
 ]
 
 
-def register_workload_tools(mcp: FastMCP) -> None:
-    """Register curated workload-controller tools with the FastMCP server."""
+def register_workload_tools(mcp: MCPServer) -> None:
+    """Register curated workload-controller tools with the MCP server."""
 
     mcp.tool(name="rancher_daemonsets_list", annotations=READ_ONLY)(rancher_daemonsets_list_tool)
     mcp.tool(name="rancher_daemonset_get", annotations=READ_ONLY)(rancher_daemonset_get_tool)

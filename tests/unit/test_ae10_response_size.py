@@ -30,7 +30,7 @@ from rancher_mcp.tools.settings_features.shared import setting_summary_from_payl
 
 
 def _compact_bytes(model: object) -> int:
-    """Bytes FastMCP would send: model_dump(mode='json', by_alias=True) -> compact JSON."""
+    """Bytes the SDK would send: model_dump(mode='json', by_alias=True) -> compact JSON."""
 
     dumped = model.model_dump(mode="json", by_alias=True)  # type: ignore[attr-defined]
     return len(json.dumps(dumped, separators=(",", ":")).encode("utf-8"))

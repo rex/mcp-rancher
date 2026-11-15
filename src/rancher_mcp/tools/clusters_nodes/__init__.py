@@ -5,7 +5,7 @@
 
 """Curated Rancher cluster and node tools."""
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 
 from rancher_mcp.tools.clusters_nodes._generated_clusters import (
     rancher_cluster_get,
@@ -30,8 +30,8 @@ __all__ = [
 ]
 
 
-def register_cluster_node_tools(mcp: FastMCP) -> None:
-    """Register curated cluster/node tools with the FastMCP server."""
+def register_cluster_node_tools(mcp: MCPServer) -> None:
+    """Register curated cluster/node tools with the MCP server."""
 
     mcp.tool(name="rancher_clusters_list", annotations=READ_ONLY)(rancher_clusters_list_tool)
     mcp.tool(name="rancher_cluster_get", annotations=READ_ONLY)(rancher_cluster_get_tool)

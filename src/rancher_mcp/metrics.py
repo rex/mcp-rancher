@@ -9,7 +9,7 @@ emits one structured ``MetricEntry`` to the dedicated
 file-based exporter, etc.) derives the histograms and counters from
 these records.
 
-Apply with ``apply_metrics_to_all_tools(mcp)`` at FastMCP
+Apply with ``apply_metrics_to_all_tools(mcp)`` at server
 construction time; this is the inner wrapper, ``wrap_with_structured_errors``
 is the outer wrapper, so metrics see the original ``RancherMCPError``
 with its real ``error_code`` before that exception gets translated to

@@ -5,7 +5,7 @@
 
 """Curated Longhorn storage tools (Volume, Node, Backup, Snapshot)."""
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 
 from rancher_mcp.tools.longhorn._generated_longhorn_backups import (
     rancher_longhorn_backup_get,
@@ -46,8 +46,8 @@ __all__ = [
 ]
 
 
-def register_longhorn_tools(mcp: FastMCP) -> None:
-    """Register curated Longhorn tools with the FastMCP server."""
+def register_longhorn_tools(mcp: MCPServer) -> None:
+    """Register curated Longhorn tools with the MCP server."""
 
     mcp.tool(name="rancher_longhorn_backups_list", annotations=READ_ONLY)(
         rancher_longhorn_backups_list_tool

@@ -2,8 +2,8 @@
 
 ## 1. Project snapshot
 
-- **What**: Capability-aware Rancher MCP server; 230+ tools across discovery, generic fallbacks, and curated operator workflows. **Primary target: Rancher 2.9.3** (production). **Compat floor: 2.6.5** (devlab) — capability detection bridges the gap; never regress 2.6.5 behavior.
-- **Runtime**: Python 3.12 · FastMCP · uv · httpx · structlog
+- **What**: Capability-aware Rancher MCP server; 206 tools across discovery, generic fallbacks, and curated operator workflows (`docs/tool-manifest.json` is the count of record). **Primary target: Rancher 2.9.3** (production). **Compat floor: 2.6.5** (devlab) — capability detection bridges the gap; never regress 2.6.5 behavior.
+- **Runtime**: Python 3.12 · MCP Python SDK 2.x (`MCPServer`; serves protocol `2026-07-28` and the legacy `2025-11-25` handshake) · uv · httpx · structlog
 - **Non-goals**: Does not manage Rancher itself; does not support non-Rancher Kubernetes APIs directly.
 
 ## 2. Setup
@@ -60,7 +60,11 @@ Required. `make test` runs the full suite with coverage (60% minimum). Contract 
 
 ## 9. Things agents get wrong here
 
-- (none yet)
+- **The formatter hook deletes imports that are unused at that instant.** It runs `ruff --fix` after every edit, so an import added one edit ahead of its first use is gone by the time the use lands. Write the usage first, or both in one edit.
+- **MCP types are snake_case in Python and camelCase on the wire** (`input_schema` / `inputSchema`). Anything that measures or asserts a wire shape goes through `await mcp.list_tools()` dumped with `by_alias=True`, or through the in-process client (`from mcp import Client`; `Client(mcp, mode="legacy" | "2026-07-28")`). A hand-built dict measures something no client receives.
+- **Never construct `MCPServer` directly** — `rancher_mcp.server.new_server()` is the one place, and it is what makes the handshake report this server's version rather than the SDK's. `tests/unit/test_server_version.py` enforces it.
+- **SDK internals are reachable from `rancher_mcp.sdk_registry` only.** Need another corner of the SDK? Widen that module; `tests/unit/test_sdk_seam_is_exclusive.py` fails on a reach-in anywhere else, tests included.
+- **Generated files are generated.** `_generated_*.py` and the pack `__init__.py` files come from `catalog/curated_tools/` and `scripts/codegen/templates/`; edit those and run `make codegen`.
 
 ## 10. Workflow
 

@@ -61,7 +61,7 @@ async def test_transport_error_maps_to_management_plane_unreachable() -> None:
 
     The Rancher tunnel dropping raises an httpx timeout that stringifies to "";
     it must become a distinct, hinted, non-empty error, not a bare exception
-    that FastMCP renders as "Error executing tool X:" with nothing after it.
+    that the SDK renders as "Error executing tool X:" with nothing after it.
     """
 
     respx.get("https://rancher.example.com/v3/pods").mock(side_effect=httpx.ConnectTimeout(""))

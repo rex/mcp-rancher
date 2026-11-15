@@ -5,7 +5,7 @@
 
 """Curated Rancher Fleet and registration tool facade."""
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 
 from rancher_mcp.tools.fleet_registration._generated_cluster_registration_tokens import (
     rancher_cluster_registration_token_get,
@@ -30,8 +30,8 @@ __all__ = [
 ]
 
 
-def register_fleet_registration_tools(mcp: FastMCP) -> None:
-    """Register curated Fleet and registration tools with the FastMCP server."""
+def register_fleet_registration_tools(mcp: MCPServer) -> None:
+    """Register curated Fleet and registration tools with the MCP server."""
 
     mcp.tool(name="rancher_cluster_registration_tokens_list", annotations=READ_ONLY)(
         rancher_cluster_registration_tokens_list_tool

@@ -5,7 +5,7 @@
 
 """Curated PolicyReport tools (wgpolicyk8s.io/v1alpha2 — Kyverno, Kubewarden, Falco)."""
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 
 from rancher_mcp.tools.policy_reports._generated_cluster_policy_reports import (
     rancher_cluster_policy_report_get,
@@ -30,8 +30,8 @@ __all__ = [
 ]
 
 
-def register_policy_reports_tools(mcp: FastMCP) -> None:
-    """Register curated PolicyReport tools with the FastMCP server."""
+def register_policy_reports_tools(mcp: MCPServer) -> None:
+    """Register curated PolicyReport tools with the MCP server."""
 
     mcp.tool(name="rancher_cluster_policy_reports_list", annotations=READ_ONLY)(
         rancher_cluster_policy_reports_list_tool

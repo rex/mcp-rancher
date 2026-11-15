@@ -1,6 +1,6 @@
 """Operational convenience tools — high-value aggregate helpers."""
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 
 from rancher_mcp.tools.ops.cluster_health import (
     rancher_cluster_health_check_tool,
@@ -23,8 +23,8 @@ from rancher_mcp.tools.ops.rollups import (
 from rancher_mcp.tools.support.annotations import READ_ONLY
 
 
-def register_ops_tools(mcp: FastMCP) -> None:
-    """Register operational convenience tools with the FastMCP server."""
+def register_ops_tools(mcp: MCPServer) -> None:
+    """Register operational convenience tools with the MCP server."""
 
     mcp.tool(name="rancher_cluster_health_check", annotations=READ_ONLY)(
         rancher_cluster_health_check_tool

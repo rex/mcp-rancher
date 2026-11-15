@@ -106,5 +106,5 @@ def apply_requires_user_interaction(mcp: Any) -> None:
         return
     for tool in registered_tools(mcp):
         annotations = tool.annotations
-        if annotations is not None and annotations.destructiveHint is True:
+        if annotations is not None and annotations.destructive_hint is True:
             tool.meta = {**(tool.meta or {}), REQUIRES_USER_INTERACTION_META_KEY: True}

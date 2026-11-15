@@ -5,7 +5,7 @@
 
 """Curated Rancher CIS compliance tool facade."""
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 
 from rancher_mcp.tools.compliance._generated_cis_scan_profiles import (
     rancher_cis_scan_profile_get,
@@ -30,8 +30,8 @@ __all__ = [
 ]
 
 
-def register_compliance_tools(mcp: FastMCP) -> None:
-    """Register curated CIS compliance tools with the FastMCP server."""
+def register_compliance_tools(mcp: MCPServer) -> None:
+    """Register curated CIS compliance tools with the MCP server."""
 
     mcp.tool(name="rancher_cis_scan_profiles_list", annotations=READ_ONLY)(
         rancher_cis_scan_profiles_list_tool

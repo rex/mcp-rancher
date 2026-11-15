@@ -2,37 +2,33 @@
 
 Startup strategy
 ----------------
-``from mcp.server.fastmcp import FastMCP`` alone takes ~1.5-2 s on this
-machine.  Loading all 100+ tool modules on top pushes total startup past the
-~3 s threshold at which Claude Code gives up waiting for the MCP
-``initialize`` response.
+A client's first message has a deadline. Claude Code probes a stdio server
+with ``server/discover`` the moment the process starts and waits about three
+seconds for the answer (2.93 s measured); after that it sends a legacy
+``initialize`` and the connection is served on the old protocol. Importing the
+SDK takes ~0.7-1.4 s and importing every tool module costs more again — and
+both happen while the client is itself starting and competing for the CPU. See
+``docs/reference/claude-code-mcp-client.md`` §4.
 
-To fix this we split startup into two phases that run concurrently:
+So startup is split in two, running concurrently:
 
-Phase A (main thread, ~2 s total):
-    1. Import lightweight config/logging/catalog modules.
-    2. Validate settings and configure logging.
-    3. Import FastMCP and create a bare server instance.
-    4. Kick off Phase B in a daemon thread.
-    5. Override ``list_tools`` so it blocks until Phase B finishes.
-    6. Call ``mcp.run()`` — the event loop starts and responds to
-       ``initialize`` immediately (well under the 3 s deadline).
+Phase A (main thread):
+    Config, logging, the SDK import, and a bare server that already knows its
+    name, version, capabilities and instructions — which is all
+    ``server/discover`` or ``initialize`` need. Then ``mcp.run()``.
 
-Phase B (daemon thread, ~1.5-2 s, runs in parallel with Phase A):
-    Import every tool module and register tools on the shared ``mcp`` object.
-    Set ``_tools_ready`` when done.
+Phase B (daemon thread):
+    Import every tool module and register tools, prompts and resources on the
+    shared server; set the ready flag.
 
-When the client sends ``tools/list`` (always after ``initialize``), the
-patched handler awaits ``_tools_ready`` before returning, so the response
-is deferred only if the background thread is still running.  In practice
-Phase B finishes within ~200 ms of ``initialize`` being sent, so the client
-never waits long.
+Every request that reads the registry waits for Phase B (see
+``rancher_mcp.server.hold_requests_until``). In practice Phase B finishes
+within a few hundred milliseconds of the first request, so nobody waits long.
 """
 
 from __future__ import annotations
 
 import threading
-from typing import Any
 
 
 def main() -> None:
@@ -47,25 +43,21 @@ def main() -> None:
     configure_logging(settings.log_level)
     get_capability_catalog(settings.catalog_path)
 
-    # FastMCP import is the heavy bit (~1.5 s); must happen before mcp.run().
-    from anyio import to_thread
-    from mcp.server.fastmcp import FastMCP
+    # Importing `rancher_mcp.server` imports the SDK — the heavy bit of Phase A,
+    # and it has to finish before `mcp.run()` can answer anything.
+    from rancher_mcp.server import hold_requests_until, new_server
 
-    mcp = FastMCP(
-        name=settings.server_name,
-        instructions=settings.server_instructions,
-    )
+    mcp = new_server(settings.server_name, settings.server_instructions)
 
-    # Advertise our own version in the MCP handshake (see the helper's docstring:
-    # without this the SDK reports *its* version, so ours never moved). Cheap and
-    # import-light, so it happens in Phase A rather than with the tool loading.
-    from rancher_mcp.server import stamp_server_version
-
-    stamp_server_version(mcp)
+    # ── Hold registry-reading requests until Phase B finishes ──────────────
+    # Installed BEFORE the loader thread exists, not after it starts: both
+    # replace methods on the same server object, and two threads doing that at
+    # once can lose one of the replacements. This way the hold always goes on
+    # first and everything the loader installs stacks on top of it.
+    _tools_ready = threading.Event()
+    hold_requests_until(mcp, _tools_ready)
 
     # ── Phase B: background tool loading ───────────────────────────────────
-    _tools_ready = threading.Event()
-
     def _load_tools() -> None:
         from rancher_mcp.server import register_all_tools
 
@@ -75,8 +67,8 @@ def main() -> None:
             # A daemon thread's unhandled exception does NOT crash the
             # process — Python just prints it via threading.excepthook and
             # the thread dies, leaving `_tools_ready` unset forever. Left
-            # alone, that means `_lazy_list_tools` below blocks silently for
-            # its full 30 s timeout before failing: a misconfiguration (e.g.
+            # alone, that means every held request below blocks silently for
+            # its full timeout before failing: a misconfiguration (e.g.
             # an unknown RANCHER_TOOLSETS profile) would "fail loudly" only
             # in the sense of a buried stderr traceback, not to the operator
             # watching the process start. Report it, then exit hard — a
@@ -112,23 +104,6 @@ def main() -> None:
         _tools_ready.set()
 
     threading.Thread(target=_load_tools, daemon=True, name="tool-loader").start()
-
-    # ── Patch list_tools to wait for Phase B ───────────────────────────────
-    # The low-level server stores its handler in request_handlers[ListToolsRequest];
-    # the seam re-registers ours over the top of the one FastMCP installed.
-    from rancher_mcp.sdk_registry import install_list_tools_handler
-
-    _original_list_tools = mcp.list_tools
-
-    async def _lazy_list_tools() -> list[Any]:
-        """Block (async-friendly) until all tools are registered, then list."""
-        await to_thread.run_sync(
-            lambda: _tools_ready.wait(timeout=30),
-            abandon_on_cancel=True,
-        )
-        return await _original_list_tools()  # type: ignore[return-value]
-
-    install_list_tools_handler(mcp, _lazy_list_tools)
 
     mcp.run()
 

@@ -5,7 +5,7 @@
 
 """Curated Rancher alerting and notifier tool facade."""
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 
 from rancher_mcp.tools.alerts._generated_cluster_alert_rules import (
     rancher_cluster_alert_rule_get,
@@ -30,8 +30,8 @@ __all__ = [
 ]
 
 
-def register_alerts_tools(mcp: FastMCP) -> None:
-    """Register curated alerting and notifier tools with the FastMCP server."""
+def register_alerts_tools(mcp: MCPServer) -> None:
+    """Register curated alerting and notifier tools with the MCP server."""
 
     mcp.tool(name="rancher_cluster_alert_rules_list", annotations=READ_ONLY)(
         rancher_cluster_alert_rules_list_tool

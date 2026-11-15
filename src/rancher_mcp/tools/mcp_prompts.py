@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 
 _MSG = list[dict[str, str]]
 
@@ -11,7 +11,7 @@ def _user(text: str) -> _MSG:
     return [{"role": "user", "content": text}]
 
 
-def register_mcp_prompts(mcp: FastMCP) -> None:
+def register_mcp_prompts(mcp: MCPServer) -> None:
     """Register operator workflow prompt templates with the server."""
 
     mcp.prompt(

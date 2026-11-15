@@ -1,6 +1,6 @@
 # ╔══════════════════════════════════════════════════════════════════════╗
 # ║          rancher-mcp — Makefile                                      ║
-# ║          Python / FastMCP                                           ║
+# ║          Python / MCP SDK                                           ║
 # ╚══════════════════════════════════════════════════════════════════════╝
 #
 # Usage: make <target>
@@ -47,7 +47,7 @@ BOLD   := $(shell printf '\033[1m')
 ## help: Display this help message with all available targets
 help:
 	@echo ""
-	@echo "$(BOLD)$(CYAN)$(APP_NAME)$(RESET)  •  Python / FastMCP"
+	@echo "$(BOLD)$(CYAN)$(APP_NAME)$(RESET)  •  Python / MCP SDK"
 	@echo "$(CYAN)════════════════════════════════════════════════════$(RESET)"
 	@echo ""
 	@echo "$(BOLD)Setup & Installation$(RESET)"

@@ -244,7 +244,7 @@ the plumbing-leak fix + footprint ratchet (v1.54.0), the 118→3 tool collapse
   Track E; predates Tracks M/N and all of Track 1). CLAUDE.md §11 requires it
   at session end.
 
-## Track 2 — MCP 2.0.0 / modern protocol (in progress)
+## Track 2 — MCP 2.0.0 / modern protocol (port shipped v1.69.0; follow-ons on the board)
 
 Full plan: `~/.claude/plans/wobbly-seeking-scott.md`. Key finding: **mcp 2.0.0's
 dual-era support is automatic and cannot be disabled** (`docs/run/legacy-clients.md`:
@@ -263,15 +263,16 @@ strand any client still on the legacy handshake.
   again — verified by planting a violation. The three fake-`_tool_manager` tests
   now build a real `FastMCP` (`tests/unit/_sdk_registry_support.py`), as do the
   sixteen others that walked `_tool_manager.list_tools()`.
-- **T2-3** the port — moved to the board:
-  [rex/mcp-rancher#2](https://github.com/rex/mcp-rancher/issues/2). One claim
-  that used to sit here was wrong and is corrected there: modern connections
-  *do* have a startup deadline (about 3 s, on `server/discover`), so the fast
-  startup path stays.
-- **T2-4** modern-only wins — moved to the board:
+- [x] **T2-3** (v1.69.0) the port —
+  [rex/mcp-rancher#2](https://github.com/rex/mcp-rancher/issues/2). On `mcp`
+  2.3.0 (`MCPServer`), served on `2026-07-28` by Claude Code 2.1.325 with the
+  legacy handshake still answered from the same process. One claim that used to
+  sit here was wrong: modern connections *do* have a startup deadline (about
+  3 s, on `server/discover`), so the fast startup path stayed — and now holds
+  every registry-reading request, not only `tools/list`.
+- **T2-4** modern-only wins — on the board:
   [rex/mcp-rancher#3](https://github.com/rex/mcp-rancher/issues/3).
 
-Since 2026-11-12 Claude Code probes for the modern protocol itself and falls
-back to legacy only because we answer `-32602`; see
-`docs/reference/claude-code-mcp-client.md`. The proposals that research produced
-are #4–#9 on the board, unapproved.
+Everything after the port is the modernization program, tracked as the epic
+[#4](https://github.com/rex/mcp-rancher/issues/4) on the board and nowhere
+else. `docs/reference/claude-code-mcp-client.md` holds the evidence it rests on.

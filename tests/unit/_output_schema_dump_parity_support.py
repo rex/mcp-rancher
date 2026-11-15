@@ -1,8 +1,8 @@
-"""Shared support for the FastMCP output-schema / actual-dump parity gate.
+"""Shared support for the MCPServer output-schema / actual-dump parity gate.
 
-FastMCP publishes each tool's ``outputSchema`` from
+MCPServer publishes each tool's ``outputSchema`` from
 ``model.model_json_schema()`` in **validation** mode — the default, unchanged
-by FastMCP (see ``func_metadata._try_create_model_and_schema``) — then
+by MCPServer (see ``func_metadata._try_create_model_and_schema``) — then
 validates the ACTUAL response body against that schema (see
 ``mcp.server.lowlevel.server.Server.call_tool``'s
 ``jsonschema.validate(instance=maybe_structured_content, schema=tool.outputSchema)``).
@@ -29,7 +29,7 @@ introspect: ``model_json_schema(mode="serialization")`` comes back a bare
 against that blind schema would flag every required field on every model as
 "missing" — useless. Instead this module builds a REAL instance from the
 schema (:func:`synthesize_example`), runs it through the REAL
-``model_validate`` + ``model_dump(mode="json", by_alias=True)`` FastMCP
+``model_validate`` + ``model_dump(mode="json", by_alias=True)`` MCPServer
 itself calls, and diffs the schema's ``required`` lists against the keys
 that dump *actually* produced — recursively, through every nested ``$defs``
 model reachable from the root.
@@ -41,7 +41,7 @@ from dataclasses import dataclass
 from functools import cache
 from typing import Any
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 from pydantic import BaseModel
 
 from rancher_mcp.sdk_registry import registered_tools
@@ -63,8 +63,8 @@ class ToolOutput:
     model: type[BaseModel]
 
 
-def build_registered_server() -> FastMCP:
-    """Construct a FastMCP server with every production tool registered.
+def build_registered_server() -> MCPServer:
+    """Construct a MCPServer server with every production tool registered.
 
     Mirrors ``rancher_mcp.server.create_mcp_server`` minus the
     settings-dependent name/instructions, so this needs no
@@ -74,12 +74,12 @@ def build_registered_server() -> FastMCP:
 
     from rancher_mcp.server import register_all_tools
 
-    mcp = FastMCP(name="schema-dump-parity-probe", instructions="probe")
+    mcp = MCPServer(name="schema-dump-parity-probe", instructions="probe")
     register_all_tools(mcp)
     return mcp
 
 
-def iter_tool_outputs(mcp: FastMCP) -> list[ToolOutput]:
+def iter_tool_outputs(mcp: MCPServer) -> list[ToolOutput]:
     """Every registered tool that publishes a structured ``outputSchema``.
 
     Reads the live tool registry (through ``rancher_mcp.sdk_registry``)
@@ -87,7 +87,7 @@ def iter_tool_outputs(mcp: FastMCP) -> list[ToolOutput]:
     automatically. The ``apply_*`` post-processing passes in
     ``register_all_tools`` only ever rewrap ``Tool.fn`` — never
     ``Tool.fn_metadata`` — so ``fn_metadata.output_model`` is always the
-    real, production-accurate model FastMCP derived the schema from.
+    real, production-accurate model MCPServer derived the schema from.
     """
 
     outputs: list[ToolOutput] = []
@@ -263,9 +263,9 @@ class MissingRequiredKey:
 
         return (
             f"model={model_name} path={self.path!r} key={self.key!r}: the outputSchema "
-            f"FastMCP publishes (model_json_schema(mode='validation')) REQUIRES "
+            f"MCPServer publishes (model_json_schema(mode='validation')) REQUIRES "
             f"{self.key!r} at this path, but the REAL dump (model_validate(...)"
-            f".model_dump(mode='json', by_alias=True) — exactly what FastMCP validates "
+            f".model_dump(mode='json', by_alias=True) — exactly what MCPServer validates "
             f"the response against) never produces it. Keys the dump actually has at "
             f"this path: {sorted(self.dumped_keys)!r}. This is the schema-vs-body split "
             f"that silently killed rancher_clusters_list and 11 other list tools (the "
@@ -353,7 +353,7 @@ def check_model_dump_parity(model: type[BaseModel]) -> tuple[MissingRequiredKey,
 
     Builds a maximally-populated synthetic instance from the model's OWN
     validation-mode ``outputSchema``, validates it (``model_validate``), and
-    dumps it exactly as FastMCP's ``func_metadata.convert_result`` does
+    dumps it exactly as MCPServer's ``func_metadata.convert_result`` does
     (``model_dump(mode="json", by_alias=True)``) before handing the body to
     ``jsonschema.validate``. Then recursively confirms every property the
     schema calls REQUIRED, at every nesting level, is a key in that real dump.

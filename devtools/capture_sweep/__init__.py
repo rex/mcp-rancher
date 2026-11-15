@@ -20,7 +20,7 @@ Package layout:
 - ``cli`` — the ``python -m`` entrypoint.
 
 Everything except ``crawler``/``login``/``cli`` (and ``enumerator``'s
-registry-walking, which needs a live FastMCP instance) is pure logic with
+registry-walking, which needs a live server instance) is pure logic with
 no lab or network dependency — see ``tests/unit/test_capture_sweep_*.py``.
 """
 

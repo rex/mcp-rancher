@@ -5,7 +5,7 @@
 
 """Curated Rancher pod and service tools."""
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 
 from rancher_mcp.tools.pods_services._generated_pods import (
     rancher_pod_get,
@@ -33,8 +33,8 @@ __all__ = [
 ]
 
 
-def register_pod_service_tools(mcp: FastMCP) -> None:
-    """Register curated pod/service tools with the FastMCP server."""
+def register_pod_service_tools(mcp: MCPServer) -> None:
+    """Register curated pod/service tools with the MCP server."""
 
     mcp.tool(name="rancher_pods_list", annotations=READ_ONLY)(rancher_pods_list_tool)
     mcp.tool(name="rancher_pod_get", annotations=READ_ONLY)(rancher_pod_get_tool)

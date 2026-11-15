@@ -36,7 +36,7 @@ fixed: not just today's known instances, but any new one, forever.
 
 **Design — reuses the established "build the real registry" pattern.**
 Both ``test_list_tools_namespace_optional.py`` and
-``test_output_schema_dump_parity.py`` construct a real ``FastMCP`` instance
+``test_output_schema_dump_parity.py`` construct a real ``MCPServer`` instance
 via ``rancher_mcp.server.register_all_tools`` rather than trusting a
 hand-maintained tool inventory. This file does the same (reusing
 ``_output_schema_dump_parity_support.build_registered_server`` directly)
@@ -57,7 +57,7 @@ import pytest
 from _next_steps_instance_support import build_representative_instance
 from _next_steps_registry_support import NextStepDeclaration, iter_all_next_step_declarations
 from _output_schema_dump_parity_support import build_registered_server
-from mcp.server.fastmcp.tools.base import Tool
+from mcp.server.mcpserver.tools.base import Tool
 from pydantic import BaseModel
 
 from rancher_mcp.sdk_registry import registered_tools

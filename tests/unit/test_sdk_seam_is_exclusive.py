@@ -1,15 +1,18 @@
 """The MCP SDK's private internals are reachable from exactly one module.
 
-``rancher_mcp.sdk_registry`` exists because FastMCP publishes no API for what
-a fleet-wide post-registration pass needs, so this server reaches through the
-tool manager's private registry and the low-level server. Those names carry no
-compatibility promise — mcp 2.0.0 renames one of them outright — and before the
-seam they appeared at eleven production call sites plus nineteen more across
-the tests, each an independent chance for an SDK upgrade to miss one.
+``rancher_mcp.sdk_registry`` exists because the SDK publishes no API for what
+a fleet-wide post-registration pass needs — the registered tool objects
+themselves — so this server reaches through the tool manager's private
+registry. (Until the port to mcp 2.x it reached the low-level server too. That
+reach-in is gone; both of its names stay on the list below so it cannot come
+back unnoticed.) Those names carry no compatibility promise — mcp 2.0.0 renamed
+one of them outright — and before the seam they appeared at eleven production
+call sites plus nineteen more across the tests, each an independent chance for
+an SDK upgrade to miss one.
 
 Consolidation only holds if something enforces it. A new pass that reaches in
-directly would work perfectly today and stay invisible until the port, which is
-precisely when it costs the most. So this gate scans the SOURCE rather than
+directly would work perfectly today and stay invisible until the next SDK
+upgrade, which is precisely when it costs the most. So this gate scans the SOURCE rather than
 asserting behavior: the defect it catches is the *existence of a second copy*
 of this knowledge, and no runtime assertion can see that.
 
@@ -37,7 +40,7 @@ EXEMPT = frozenset({SEAM, Path(__file__).resolve()})
 # public function name that merely CONTAINS `_mcp_server`, and a plain
 # substring scan would flag every call site of it.
 PRIVATE_NAMES: dict[str, str] = {
-    r"(?<![A-Za-z0-9_])_tool_manager\b": "FastMCP's tool manager",
+    r"(?<![A-Za-z0-9_])_tool_manager\b": "the server's tool manager",
     r"(?<![A-Za-z0-9_])_mcp_server\b": "the low-level Server (mcp 1.x name)",
     r"(?<![A-Za-z0-9_])_lowlevel_server\b": "the low-level Server (mcp 2.x name)",
     r"\._tools\b": "the tool manager's registry dict",
@@ -68,7 +71,7 @@ def test_no_module_outside_the_seam_reaches_into_the_sdk() -> None:
         + "\n\nThe SDK gives these names no compatibility promise, and an upgrade "
         "that renames one has to find every site. Route the access through "
         "`rancher_mcp.sdk_registry` — widening it if what you need isn't there "
-        "yet — so the port stays a one-module rewrite. Prose counts: a comment "
+        "yet — so an SDK upgrade stays a one-module rewrite. Prose counts: a comment "
         "naming an internal this module no longer touches is documentation that "
         "will quietly go stale."
     )

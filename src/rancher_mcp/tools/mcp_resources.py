@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 
 from rancher_mcp.config import get_settings
 from rancher_mcp.services.catalog import get_capability_catalog
@@ -26,10 +26,10 @@ async def _instances_resource() -> str:
     return json.dumps(instance_list.model_dump(mode="json"), separators=(",", ":"))
 
 
-def register_mcp_resources(mcp: FastMCP) -> None:
+def register_mcp_resources(mcp: MCPServer) -> None:
     """Register rancher:// MCP resources with the server."""
 
-    # FastMCP treats all rancher:// URIs as the same template pattern, so a
+    # The SDK treats all rancher:// URIs as the same template pattern, so a
     # single template handler with internal dispatch is required.
     @mcp.resource(
         "rancher://{resource_id}",

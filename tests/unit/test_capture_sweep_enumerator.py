@@ -1,6 +1,6 @@
 """Tests for capture-sweep's tool-registry enumeration (no live lab needed).
 
-``build_capture_plan`` itself needs a fully-registered FastMCP instance
+``build_capture_plan`` itself needs a fully-registered server instance
 (every ``rancher_mcp`` tool module) and is exercised end-to-end whenever
 ``make capture-sweep`` runs against the lab, so it is not re-tested here.
 This file targets ``resolve_impl_fn`` in isolation — the one load-bearing

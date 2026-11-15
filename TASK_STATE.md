@@ -35,10 +35,13 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 - Public tool surface: **206 tools** (was 321 — v1.55.0 collapsed 118 mechanical
   `set_labels`/`set_annotations`/`delete` duplicates into 3 kind-dispatched
   generics; no capability removed). `docs/tool-manifest.json` is authoritative.
-- `tools/list` footprint: **410,488 B / ~102,622 tokens**; `RANCHER_TOOLSETS=core`
-  → 32 tools / ~20,051. Budgeted by `tests/unit/test_context_footprint.py`.
-- MCP SDK: `mcp[cli]>=1.26,<2`, locked at 1.29.1. **The upper bound is
-  load-bearing** — 2.0.0 removed the `fastmcp` module (see Track 2).
+- `tools/list` footprint: **410,933 B / ~102,700 tokens**; `RANCHER_TOOLSETS=core`
+  → 32 tools / ~20,000. Budgeted by `tests/unit/test_context_footprint.py`,
+  which measures the entries a client actually receives.
+- MCP SDK: `mcp[cli]>=2.3,<3`, locked at 2.3.0 (`MCPServer`). One process serves
+  protocol `2026-07-28` and the legacy `2025-11-25` handshake. **Both bounds are
+  load-bearing** — the floor is the release the port was verified against, the
+  ceiling is there because the last major removed a module outright.
 - Completion gate: `make check-if-the-agent-can-consider-this-task-completed`
 - Active quality gates:
   `make check-architecture`
@@ -60,7 +63,61 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 
 ## Next Slice
 
-### 📌 HANDOFF (2026-08-25): Track 1 CLOSED — Track 2 (MCP 2.0.0) IN PROGRESS
+### 📌 HANDOFF (2026-11-15): the port to mcp 2.x SHIPPED (v1.69.0) — the modernization program is next
+
+**Where things stand.** The server runs on `mcp` 2.3.0 (`MCPServer`), and
+Claude Code 2.1.325 connects to it on protocol `2026-07-28` with no legacy
+fallback. A client that never probes still gets the `2025-11-25` handshake from
+the same process. Verified three ways: the suite drives the real request path
+through the SDK's in-process client in both eras; `python -m rancher_mcp` was
+driven by hand over stdio in both eras (206 tools, 10 prompts, 1 resource
+template); and one real Claude Code session negotiated modern and called a tool.
+
+**Open work lives on the Rivendell board, not here.** The epic is
+[#4](https://github.com/rex/mcp-rancher/issues/4) — Pierce, 2026-11-15: *"fully
+modernize this MCP server … take advantage of all modern MCP features wherever
+reasonable."* Approved order:
+[#8](https://github.com/rex/mcp-rancher/issues/8) elicitation-based
+confirmation → [#9](https://github.com/rex/mcp-rancher/issues/9) MCP tasks →
+[#3](https://github.com/rex/mcp-rancher/issues/3) cache hints and server
+title/description; then #12–#16 (resource surface, progress, prompt polish,
+list ordering, cancellation). Awaiting a ruling — do not start: #10, #11,
+#17–#20. Claim on the board before the first edit.
+
+**Shipped in this stretch**, each its own validated slice:
+
+| Version | What | Issue |
+|---|---|---|
+| 1.65.0 | `docs/reference/claude-code-mcp-client.md` — what the client really implements, from wire captures | — |
+| 1.66.0 | The text content block is sent as compact JSON | #5 |
+| 1.67.0 | Five triage tools load upfront in Claude Code (`anthropic/alwaysLoad`) | #6 |
+| 1.68.0 | Destructive tools need a person's approval (`anthropic/requiresUserInteraction`) | #7 |
+| 1.69.0 | The port to `mcp` 2.x | #2 |
+
+**What the port changed structurally** (detail in `CHANGELOG.md`, 1.69.0):
+
+- `sdk_registry.py` is down to one private reach-in, the tool manager's
+  registry. Every fleet-wide pass that used to patch an SDK internal now wraps
+  one of the server's *public* request methods through `wrap_server_method`.
+- `server.new_server()` is the only place an `MCPServer` is constructed. The
+  version is a constructor argument, so `stamp_server_version` is gone.
+- `__main__.py` still answers the first request before any tool module loads,
+  and now holds all seven registry-reading requests until loading finishes.
+- The SDK stopped checking its own structured output against `outputSchema`;
+  clients do it now. `test_output_schema_dump_parity.py` is the only early
+  warning left for that class of bug.
+
+**Deliberately not done.** `VIBE.yaml` still says `stack: python-fastmcp` /
+`framework: fastmcp` — skeleton vocabulary, Pierce's to change. Nothing has been
+tagged since v1.59.0; a tag publishes to PyPI, which is Pierce's call.
+
+**Carry forward.** `AGENTS.md` §9 now lists the mistakes made repeatedly during
+the port (the formatter hook eating imports; Python-side names versus the wire
+shape). Read it before the first edit.
+
+---
+
+### 📌 HANDOFF (2026-08-25): Track 1 CLOSED — Track 2 (MCP 2.0.0) started
 
 **Track 1 — context footprint — closed at v1.57.0.** `tools/list` went
 800,548 → 410,488 B (~200,137 → ~102,622 tokens) with **no capability removed**.
@@ -71,9 +128,9 @@ compaction (v1.56.0), toolset profiles (v1.57.0). agenteval schema score
 **99.6/A**, one finding left. Full detail in `CHANGELOG.md` and the
 `mcp-exposure-architecture` memory.
 
-**Track 2 — MCP 2.0.0 / modern protocol — in progress.** Full plan:
-`~/.claude/plans/wobbly-seeking-scott.md`. Slice list: `docs/track-m-plan.md`
-(Track 2 section).
+**Track 2 — MCP 2.0.0 / modern protocol — the port shipped in v1.69.0** (see
+the handoff above). Full plan: `~/.claude/plans/wobbly-seeking-scott.md`. Slice
+list: `docs/track-m-plan.md` (Track 2 section).
 
 The governing finding, source-verified: **mcp 2.0.0's dual-era support is
 automatic and cannot be disabled** — `docs/run/legacy-clients.md`: *"There is no
@@ -109,40 +166,16 @@ reach until the port. Evidence, wire captures and the ranked consequences are in
   it and was verified by planting a violation; the three fake-`_tool_manager`
   tests now build a real `FastMCP`.
 
-**⏭️ NEXT, PICK UP HERE: T2-3 — the port itself. None of it is written yet.**
-**Open work now lives on the Rivendell board, not in this file:** T2-3 is
-[rex/mcp-rancher#2](https://github.com/rex/mcp-rancher/issues/2) and T2-4 is
-[#3](https://github.com/rex/mcp-rancher/issues/3) (both `Ready`); the proposals
-from the 2026-11-12 client research are #4–#9 (`Inbox`, unapproved). Claim there
-before editing. What follows is context for #2, not a second tracker.
-
-Verified state at v1.61.0 (counted in-tree, not remembered): still pinned
-`mcp[cli]>=1.26,<2`, locked 1.29.1; **50 `src/` + 19 `tests/` + 3 `devtools/`
-files import `FastMCP`**. Of the `src/` ones, **32 are pack `__init__.py` files
-generated from `scripts/codegen/templates/pack_init.py.j2`** — edit the
-TEMPLATE, or `make codegen` reverts the migration. Behavior is deliberately
-unchanged by T2-2.
-
-T2-3 shape, in order: rewrite `sdk_registry.py` against `MCPServer` (the only
-module that has to change semantically); mechanical import swap everywhere else
-(all the renames fail loudly, so they are safe in bulk); delete
-`stamp_server_version()` (`MCPServer.__init__` takes `version=`, so
-`test_server_version.py`'s precondition assert flips — retarget the mechanism,
-keep the handshake assertion); redesign `__main__.py`'s two-phase startup
-(lowlevel decorators became `on_*` params; the guide blesses subclassing
-`MCPServer` and overriding `list_tools()`). **Keep the fast path — an earlier
-version of this note said the daemon thread might go because modern connections
-have no `initialize` deadline. That was wrong.** Measured against Claude Code
-2.1.321: it waits about 3 s (2.93 s observed) for the `server/discover` answer
-and then sends a legacy `initialize`; a Python server on mcp 2.3.0 took 2.9 s
-and 4.3 s to first response while the client was starting. The deadline moved
-to `server/discover`, which needs only name, version, capabilities and
-instructions — no tool module. Retire the `call_tool` interpositions in favour
-of returning `CallToolResult(is_error=True, …)` and `Extension.intercept_tool_call`;
-decide `httpx` vs `httpx2`. **Silent break to watch:** `model_dump()` emits
-snake_case on MCP types in v2 — `test_context_footprint.py` and
-`test_toolset_gate.py` call it on `ToolAnnotations` and need `by_alias=True`, or
-the footprint gate silently mis-measures.
+- **T2-3 done (v1.69.0)** — the port itself,
+  [rex/mcp-rancher#2](https://github.com/rex/mcp-rancher/issues/2). How it
+  differed from the plan that used to sit here: the `call_tool` interpositions
+  were *kept*, re-seated on the server's public `call_tool` rather than moved
+  to `Extension.intercept_tool_call` (the handlers route through the public
+  methods in both eras, so one wrapper covers every request with no private
+  name); `MCPServer` was not subclassed; and `httpx` stayed for the Rancher
+  client alongside the SDK's `httpx2`. The predicted silent break was real —
+  two gates measured snake_case keys until they were switched to the entries a
+  client actually receives.
 
 **Two Track-1 leftovers also landed since:** v1.59.0 (hermetic tests — CI had
 been red for six commits behind a local `.env`) and v1.60.0
@@ -156,11 +189,11 @@ targets before validating, so it tested "would this be valid" not "is this
 emitted"). Each time, **the gate tested a proxy for the thing rather than the
 thing.** Worth asking of any new gate.
 
-**Read before touching the port:** the SDK's own `docs/migration.md` (2,884
-lines of before/after) at `modelcontextprotocol/python-sdk@main`. It is far more
-complete than the rendered docs site. Note that `docs/reference/python-mcp-sdk.md`
-in this repo has **known-wrong v2 claims** in §10 (flagged low-confidence when
-written; since superseded) — correct it during T2-3.
+**For SDK questions:** the SDK's own `docs/migration.md` (2,884 lines of
+before/after) at `modelcontextprotocol/python-sdk@main` is far more complete
+than the rendered docs site. `docs/reference/python-mcp-sdk.md` in this repo
+describes the 1.x SDK and is marked historical; current 2.x facts are in
+`docs/reference/claude-code-mcp-client.md` §6.
 
 ---
 

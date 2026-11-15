@@ -5,7 +5,7 @@
 
 """Curated Rancher project and namespace tools."""
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 
 from rancher_mcp.tools.projects_namespaces._generated_namespaces import (
     rancher_namespace_get,
@@ -30,8 +30,8 @@ __all__ = [
 ]
 
 
-def register_project_namespace_tools(mcp: FastMCP) -> None:
-    """Register curated project/namespace tools with the FastMCP server."""
+def register_project_namespace_tools(mcp: MCPServer) -> None:
+    """Register curated project/namespace tools with the MCP server."""
 
     mcp.tool(name="rancher_namespaces_list", annotations=READ_ONLY)(rancher_namespaces_list_tool)
     mcp.tool(name="rancher_namespace_get", annotations=READ_ONLY)(rancher_namespace_get_tool)

@@ -1,6 +1,6 @@
 """Thin facade for generic resource tool registration and stable imports."""
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 
 from rancher_mcp.tools.resource_actions import (
     rancher_norman_resource_action_invoke,
@@ -74,8 +74,8 @@ __all__ = [
 ]
 
 
-def register_resource_tools(mcp: FastMCP) -> None:
-    """Register generic resource tools with the FastMCP server."""
+def register_resource_tools(mcp: MCPServer) -> None:
+    """Register generic resource tools with the MCP server."""
 
     mcp.tool(name="rancher_norman_resource_list", annotations=READ_ONLY)(
         rancher_norman_resource_list_tool

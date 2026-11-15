@@ -5,7 +5,7 @@
 
 """Curated app catalog tool facade."""
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 
 from rancher_mcp.tools.apps_catalogs._generated_catalogs import (
     rancher_catalog_get,
@@ -38,8 +38,8 @@ __all__ = [
 ]
 
 
-def register_app_catalog_tools(mcp: FastMCP) -> None:
-    """Register curated app catalog tools with the FastMCP server."""
+def register_app_catalog_tools(mcp: MCPServer) -> None:
+    """Register curated app catalog tools with the MCP server."""
 
     mcp.tool(name="rancher_catalogs_list", annotations=READ_ONLY)(rancher_catalogs_list_tool)
     mcp.tool(name="rancher_catalog_get", annotations=READ_ONLY)(rancher_catalog_get_tool)

@@ -13,7 +13,7 @@ from collections.abc import Iterator
 
 import pytest
 from _output_schema_dump_parity_support import build_registered_server
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 from mcp.types import Tool
 
 from rancher_mcp.config import clear_toolset_settings_cache
@@ -34,7 +34,7 @@ _FRONT_DOOR_BUDGET_CHARS = 3_000
 _FRONT_DOOR_MAX_TOOLS = 9
 
 
-async def _published(mcp: FastMCP) -> dict[str, Tool]:
+async def _published(mcp: MCPServer) -> dict[str, Tool]:
     return {tool.name: tool for tool in await mcp.list_tools()}
 
 
@@ -44,7 +44,7 @@ def _upfront_cost(tool: Tool) -> int:
     return (
         len(tool.name)
         + len(tool.description or "")
-        + len(json.dumps(tool.inputSchema, separators=(",", ":")))
+        + len(json.dumps(tool.input_schema, separators=(",", ":")))
     )
 
 
@@ -58,7 +58,7 @@ def _restore_full_registry(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
     monkeypatch.delenv(_APPROVAL_SWITCH, raising=False)
     clear_toolset_settings_cache()
     reset_tool_parameters()
-    register_all_tools(FastMCP(name="client-hints-restore-probe"))
+    register_all_tools(MCPServer(name="client-hints-restore-probe"))
 
 
 async def test_exactly_the_front_door_tools_are_published_as_always_load() -> None:
@@ -98,7 +98,7 @@ async def test_the_front_door_is_read_only() -> None:
 
     for name in ALWAYS_LOAD_TOOLS:
         annotations = published[name].annotations
-        assert annotations is not None and annotations.readOnlyHint is True, name
+        assert annotations is not None and annotations.read_only_hint is True, name
 
 
 async def test_the_front_door_stays_within_its_context_budget() -> None:
@@ -121,7 +121,7 @@ async def test_a_profile_that_drops_a_front_door_tool_just_has_a_smaller_front_d
     dropped = "rancher_resource_events"
     monkeypatch.setenv("RANCHER_EXCLUDE_TOOLS", dropped)
     clear_toolset_settings_cache()
-    mcp = FastMCP(name="client-hints-reduced-probe")
+    mcp = MCPServer(name="client-hints-reduced-probe")
 
     register_all_tools(mcp)
     published = await _published(mcp)
@@ -152,7 +152,7 @@ async def test_every_destructive_tool_requires_a_person_and_nothing_else_does() 
     destructive = {
         name
         for name, tool in published.items()
-        if tool.annotations is not None and tool.annotations.destructiveHint is True
+        if tool.annotations is not None and tool.annotations.destructive_hint is True
     }
 
     assert destructive, "no tool is annotated destructive, so this would check nothing"
@@ -172,7 +172,7 @@ async def test_every_tool_that_demands_a_confirmation_phrase_also_requires_a_per
     demands_phrase = {
         name
         for name, tool in published.items()
-        if "confirmation" in tool.inputSchema.get("properties", {})
+        if "confirmation" in tool.input_schema.get("properties", {})
     }
 
     assert len(demands_phrase) >= 3, "the delete tools should all demand a confirmation phrase"
@@ -186,7 +186,7 @@ async def test_no_read_only_tool_requires_a_person() -> None:
 
     for name in _needs_a_person(published):
         annotations = published[name].annotations
-        assert annotations is not None and annotations.readOnlyHint is not True, name
+        assert annotations is not None and annotations.read_only_hint is not True, name
 
 
 @pytest.mark.usefixtures("_restore_full_registry")
@@ -195,7 +195,7 @@ async def test_the_switch_turns_approval_off_and_touches_nothing_else(
 ) -> None:
     monkeypatch.setenv(_APPROVAL_SWITCH, "false")
     clear_toolset_settings_cache()
-    mcp = FastMCP(name="client-hints-unattended-probe")
+    mcp = MCPServer(name="client-hints-unattended-probe")
 
     register_all_tools(mcp)
     published = await _published(mcp)

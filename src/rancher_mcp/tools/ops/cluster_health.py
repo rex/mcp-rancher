@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from mcp.server.fastmcp import Context
+from mcp.server.mcpserver import Context
 
 from rancher_mcp.clients.management import ManagementDiscoveryClient, RancherManagementClient
 from rancher_mcp.config import AppSettings, get_settings
@@ -63,7 +63,7 @@ async def _build_cluster_health(
     instance_name: str,
     cluster_id: str,
     client: ManagementDiscoveryClient,
-    ctx: Context[Any, Any, Any] | None = None,
+    ctx: Context[Any, Any] | None = None,
 ) -> ClusterHealthCheck:
     """Fetch cluster detail + nodes and produce a health diagnosis."""
 
@@ -115,7 +115,7 @@ async def rancher_cluster_health_check(
     instance: str | None = None,
     settings: AppSettings | None = None,
     client: ManagementDiscoveryClient | None = None,
-    ctx: Context[Any, Any, Any] | None = None,
+    ctx: Context[Any, Any] | None = None,
 ) -> ClusterHealthCheck:
     """One-call cluster health diagnosis."""
 
@@ -130,7 +130,7 @@ async def rancher_cluster_health_check(
 async def rancher_cluster_health_check_tool(
     cluster_id: str,
     instance: str | None = None,
-    ctx: Context[Any, Any, Any] | None = None,
+    ctx: Context[Any, Any] | None = None,
 ) -> ClusterHealthCheck:
     """Diagnose one cluster in a single call: state, condition failures, unhealthy
     components, and a node-readiness rollup, plus a derived list of concrete issues —
@@ -146,7 +146,7 @@ async def rancher_cluster_health_check_tool(
 async def _build_clusters_health_summary(
     instance_name: str,
     client: ManagementDiscoveryClient,
-    ctx: Context[Any, Any, Any] | None = None,
+    ctx: Context[Any, Any] | None = None,
 ) -> ClustersHealthSummary:
     """Fetch all clusters and produce a fleet-wide health rollup."""
 
@@ -216,7 +216,7 @@ async def rancher_clusters_health_summary(
     instance: str | None = None,
     settings: AppSettings | None = None,
     client: ManagementDiscoveryClient | None = None,
-    ctx: Context[Any, Any, Any] | None = None,
+    ctx: Context[Any, Any] | None = None,
 ) -> ClustersHealthSummary:
     """Estate-wide cluster health rollup across all clusters."""
 
@@ -230,7 +230,7 @@ async def rancher_clusters_health_summary(
 
 async def rancher_clusters_health_summary_tool(
     instance: str | None = None,
-    ctx: Context[Any, Any, Any] | None = None,
+    ctx: Context[Any, Any] | None = None,
 ) -> ClustersHealthSummary:
     """Summarize health across every cluster on an instance in one call — per-cluster
     state, node readiness, top issues, and a fleet-wide severity breakdown — the

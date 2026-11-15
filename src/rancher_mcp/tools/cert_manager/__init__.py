@@ -5,7 +5,7 @@
 
 """Curated cert-manager tools (Certificate, Issuer, ClusterIssuer at cert-manager.io/v1)."""
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 
 from rancher_mcp.tools.cert_manager._generated_cert_manager_certificates import (
     rancher_cert_manager_certificate_get,
@@ -38,8 +38,8 @@ __all__ = [
 ]
 
 
-def register_cert_manager_tools(mcp: FastMCP) -> None:
-    """Register curated cert-manager tools with the FastMCP server."""
+def register_cert_manager_tools(mcp: MCPServer) -> None:
+    """Register curated cert-manager tools with the MCP server."""
 
     mcp.tool(name="rancher_cert_manager_certificates_list", annotations=READ_ONLY)(
         rancher_cert_manager_certificates_list_tool

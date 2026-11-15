@@ -8,7 +8,7 @@ engineering the codebase.
 
 Last updated: 2026-07-10 (v1.1.0). NOTE: the machine-readable,
 always-current registry is [`tool-manifest.json`](tool-manifest.json)
-(generated from the live FastMCP registry, drift-gated in `make
+(generated from the live tool registry, drift-gated in `make
 validate`) — trust it over any hand-typed count in this narrative doc.
 
 ---

@@ -5,7 +5,7 @@
 
 """Curated Banzai logging-pipeline tools (Output, ClusterOutput, Flow, ClusterFlow)."""
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 
 from rancher_mcp.tools.logging_pipeline._generated_cluster_flows import (
     rancher_cluster_flow_get,
@@ -46,8 +46,8 @@ __all__ = [
 ]
 
 
-def register_logging_pipeline_tools(mcp: FastMCP) -> None:
-    """Register curated logging-pipeline tools with the FastMCP server."""
+def register_logging_pipeline_tools(mcp: MCPServer) -> None:
+    """Register curated logging-pipeline tools with the MCP server."""
 
     mcp.tool(name="rancher_cluster_flows_list", annotations=READ_ONLY)(
         rancher_cluster_flows_list_tool

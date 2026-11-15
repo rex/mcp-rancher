@@ -5,7 +5,7 @@
 
 """Curated Rancher logging and backup tool facade."""
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 
 from rancher_mcp.tools.logging_backups._generated_cluster_loggings import (
     rancher_cluster_logging_get,
@@ -38,8 +38,8 @@ __all__ = [
 ]
 
 
-def register_logging_backup_tools(mcp: FastMCP) -> None:
-    """Register curated logging and backup tools with the FastMCP server."""
+def register_logging_backup_tools(mcp: MCPServer) -> None:
+    """Register curated logging and backup tools with the MCP server."""
 
     mcp.tool(name="rancher_cluster_loggings_list", annotations=READ_ONLY)(
         rancher_cluster_loggings_list_tool

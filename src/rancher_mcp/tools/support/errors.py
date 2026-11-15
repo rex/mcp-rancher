@@ -9,17 +9,19 @@ from collections.abc import Callable
 from typing import Any
 
 import structlog
-from mcp.server.fastmcp.exceptions import ToolError
+from mcp.server.mcpserver.exceptions import ToolError, UnexpectedToolError
 
 from rancher_mcp.exceptions import RancherAPIError, RancherMCPError
 from rancher_mcp.sdk_registry import DispatchFn, registered_tools, wrap_dispatch
 
 _logger = structlog.get_logger("rancher_mcp.tools.errors")
 
-# FastMCP's `Tool.run` prefix, verbatim: `f"Error executing tool {self.name}: "`.
+# The SDK's `Tool.run` prefix, verbatim: `f"Error executing tool {self.name}: "`.
 # Anchored and tolerant of any tool name so that if the SDK ever changes the
 # wording we simply stop matching (and fall back to building an envelope)
-# rather than silently truncating someone's error message.
+# rather than silently truncating someone's error message. A crash the SDK did
+# not anticipate arrives as the bare `Error executing tool <name>` with nothing
+# after it — no colon, so no match, and it gets an envelope of its own.
 _TOOL_ERROR_PREFIX = re.compile(r"^Error executing tool [^\s:]+: ")
 
 # Error codes whose condition is transient — the agent should retry rather than
@@ -91,7 +93,7 @@ def wrap_with_structured_errors(fn: Callable[..., Any]) -> Callable[..., Any]:
     """Wrap an async tool function so RancherMCPError surfaces a structured envelope.
 
     Raises ``ToolError`` carrying a JSON envelope with ``error_code``,
-    ``message``, and (for API errors) ``http_status``/``field``. FastMCP
+    ``message``, and (for API errors) ``http_status``/``field``. The SDK
     converts ``ToolError`` to a ``CallToolResult`` with ``isError=True`` and
     ``TextContent``. The agent parses the text to dispatch on ``error_code``.
 
@@ -119,7 +121,7 @@ def wrap_with_structured_errors(fn: Callable[..., Any]) -> Callable[..., Any]:
             raise
         except Exception as exc:
             # Backstop: an unforeseen exception (or one whose str() is empty)
-            # must never reach FastMCP as a bare "Error executing tool X:"
+            # must never reach the SDK as a bare "Error executing tool X:"
             # with nothing after the colon. Log it and surface a structured,
             # guaranteed-non-empty envelope. K-5.
             _logger.error(
@@ -168,10 +170,10 @@ def _as_bare_envelope(message: str, tool_name: str) -> str:
 
 
 def apply_bare_json_errors(mcp: Any) -> None:
-    """Strip FastMCP's prose preamble so every error is valid JSON. AE-03.
+    """Strip the SDK's prose preamble so every error is valid JSON. AE-03.
 
     ``Tool.run`` catches everything and re-raises
-    ``ToolError(f"Error executing tool {name}: {e}")``. The low-level handler
+    ``ToolError(f"Error executing tool {name}: {e}")``. The request handler
     then renders ``str(e)`` into the ``TextContent``, so the structured envelope
     we went to some trouble to build reached the client as::
 
@@ -182,10 +184,16 @@ def apply_bare_json_errors(mcp: Any) -> None:
     ``retryable`` and just gives up (or retries a permanent failure forever).
 
     The SDK offers no hook to change that format string, so we unwrap it one
-    level up, at the tool manager — the same "patch at construction time, never
-    at request time" seam the other ``apply_*`` passes use. Errors that were
+    level up, at dispatch — the same "patch at construction time, never at
+    request time" seam the other ``apply_*`` passes use. Errors that were
     never ours get an envelope built for them rather than being passed through,
     so the guarantee is total: **every** failure this server emits parses.
+
+    The exception's TYPE is preserved, because the SDK reads it: a plain
+    ``ToolError`` is an anticipated failure it logs in one line, while an
+    ``UnexpectedToolError`` is a crash it logs with the traceback. Re-raising a
+    crash as a plain ``ToolError`` would hand the client the same envelope and
+    quietly delete the only record of what actually went wrong.
     """
 
     def wrap(original_call_tool: DispatchFn) -> DispatchFn:
@@ -193,7 +201,8 @@ def apply_bare_json_errors(mcp: Any) -> None:
             try:
                 return await original_call_tool(name, *args, **kwargs)
             except ToolError as exc:
-                raise ToolError(_as_bare_envelope(str(exc), name)) from exc.__cause__ or exc
+                kind = UnexpectedToolError if isinstance(exc, UnexpectedToolError) else ToolError
+                raise kind(_as_bare_envelope(str(exc), name)) from exc.__cause__ or exc
 
         return call_tool
 

@@ -5,7 +5,7 @@
 
 """Curated cluster-governance tools (HPA, ResourceQuota, LimitRange)."""
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 
 from rancher_mcp.tools.governance._generated_horizontal_pod_autoscalers import (
     rancher_horizontal_pod_autoscaler_get,
@@ -41,8 +41,8 @@ __all__ = [
 ]
 
 
-def register_governance_tools(mcp: FastMCP) -> None:
-    """Register curated cluster-governance tools with the FastMCP server."""
+def register_governance_tools(mcp: MCPServer) -> None:
+    """Register curated cluster-governance tools with the MCP server."""
 
     mcp.tool(name="rancher_horizontal_pod_autoscalers_list", annotations=READ_ONLY)(
         rancher_horizontal_pod_autoscalers_list_tool

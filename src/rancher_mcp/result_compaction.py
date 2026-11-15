@@ -28,7 +28,7 @@ shape, and substituting would silently change what a text-reading client sees.
 from __future__ import annotations
 
 import json
-from typing import Any, cast
+from typing import Any
 
 from mcp.types import CallToolResult, TextContent
 
@@ -56,34 +56,21 @@ def compact_json_text(text: str) -> str:
     return json.dumps(parsed, separators=(",", ":"), ensure_ascii=False)
 
 
-def _compact_blocks(blocks: object) -> None:
-    if not isinstance(blocks, list):
-        return
-    for block in cast(list[object], blocks):
-        if isinstance(block, TextContent):
-            block.text = compact_json_text(block.text)
-
-
 def compact_result_text(result: Any) -> Any:
     """Compact the text blocks of one dispatch result, in place.
 
-    The SDK hands back one of three shapes — a bare list of content blocks, a
-    ``(content, structured)`` pair, or a ready-made ``CallToolResult`` — and
-    each carries its text blocks somewhere different. Anything else (a raw
-    return value from an unconverted call) is returned untouched.
+    Dispatch hands back a ``CallToolResult``, or — when a tool still needs an
+    answer from the person — an ``InputRequiredResult``, which carries no
+    content yet and is returned untouched, as is anything else.
     """
 
     # Inspect through an `object`-typed alias: narrowing `result` itself would
     # turn the `Any` this returns into a partially-unknown union under strict.
     shape: object = result
     if isinstance(shape, CallToolResult):
-        _compact_blocks(shape.content)
-    elif isinstance(shape, tuple):
-        pair = cast(tuple[object, ...], shape)
-        if pair:
-            _compact_blocks(pair[0])
-    else:
-        _compact_blocks(shape)
+        for block in shape.content:
+            if isinstance(block, TextContent):
+                block.text = compact_json_text(block.text)
     return result
 
 

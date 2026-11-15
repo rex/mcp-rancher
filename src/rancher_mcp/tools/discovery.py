@@ -1,6 +1,6 @@
 """Thin facade for discovery tool registration and stable imports."""
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 
 from rancher_mcp.tools.discovery_catalog import (
     rancher_capability_domain_list,
@@ -45,11 +45,11 @@ __all__ = [
 ]
 
 
-def register_discovery_tools(mcp: FastMCP) -> None:
-    """Register discovery tools with the FastMCP server."""
+def register_discovery_tools(mcp: MCPServer) -> None:
+    """Register discovery tools with the MCP server."""
 
     # Register the `*_tool` wrappers, never the implementations: the impls carry
-    # `settings`/`catalog` DI parameters that FastMCP would otherwise publish as
+    # `settings`/`catalog` DI parameters that the SDK would otherwise publish as
     # model-callable arguments (see discovery_catalog.py for what that leaked).
     mcp.tool(name="rancher_instance_list", annotations=READ_ONLY)(rancher_instance_list_tool)
     mcp.tool(name="rancher_capability_domain_list", annotations=READ_ONLY)(

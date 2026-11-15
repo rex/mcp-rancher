@@ -16,6 +16,7 @@ written). Treat every row as dated, and re-run §8 before betting work on one.
 | Client examined | Claude Code **2.1.321** (the build bundled with the desktop app, driven headless). Latest published: 2.1.322. |
 | Server used for the wire capture | Python `mcp` **2.3.0** (`MCPServer`) over stdio, behind a logging proxy |
 | Our server at the time | rancher-mcp 1.64.0 on `mcp` 1.29.1 (legacy protocol) |
+| Our server now | rancher-mcp **1.69.0** on `mcp` 2.3.0. Re-checked 2026-11-15 against Claude Code **2.1.325**: it negotiated `2026-07-28` with no `initialize` fallback. The "rancher-mcp" columns, §6's port notes and §7 are as of that check; everything about the client is still the 2026-11-12 capture. |
 
 Three independent sources, and each row below says which one backs it:
 
@@ -32,30 +33,31 @@ Tasks support for Claude Code, and the wire shows it working.
 ## 1. Bottom line
 
 1. **Claude Code is a modern client.** Its v2 runtime (MCP TypeScript SDK 2.0) is the default, and since 2.1.292 it probes every stdio server for protocol `2026-07-28` and uses it when the server answers.
-2. **We are served on the legacy path.** rancher-mcp answers that probe with `-32602` in ~0.5 s, stays up, and is then connected with the `2025-11-25` handshake. Nothing is broken — but everything era-gated (tasks, MRTR, cache hints, the notification stream) is out of reach until the port ([#2](https://github.com/rex/mcp-rancher/issues/2)).
+2. **We are served on the modern path** — since 1.69.0, the port to `mcp` 2.x ([#2](https://github.com/rex/mcp-rancher/issues/2)). rancher-mcp answers the probe in 0.6–0.8 s and the session runs on `2026-07-28`; a client that never probes still gets the `2025-11-25` handshake from the same process. Through 1.68.0 we answered the probe with `-32602` and were connected on the legacy handshake, which put everything era-gated (tasks, MRTR, cache hints, the notification stream) out of reach.
 3. **MCP tasks are real, and narrower than the headline.** Proven end to end here. But only on a `2026-07-28` connection; only in the terminal CLI (≥ 2.1.304), Agent SDK / stream-json sessions and GitHub Actions — **not the desktop app, not VS Code**, not subagents, not one-shot `-p`; and the Python SDK ships no Tasks support, so the server side is ours to write.
-4. **Three server-author hooks work on today's connection and we use none of them** — see §3.
+4. **Three server-author hooks are independent of the protocol era.** We use two of them, since 1.67.0 and 1.68.0 — see §3.
 
 ---
 
 ## 2. Capability matrix
 
-"Era" is the protocol revision the feature needs: **any** works on the legacy
-connection we have now; **modern** needs `2026-07-28`.
+"Era" is the protocol revision the feature needs: **any** also works on a
+legacy connection; **modern** needs `2026-07-28`, which is what Claude Code
+gives us since 1.69.0.
 
 ### Base protocol
 
 | Feature | Claude Code | Src | Era | rancher-mcp today |
 |---|---|---|---|---|
-| Protocol `2026-07-28` (stateless, per-request `_meta`) | Yes — v2 runtime, default | W | — | Not spoken |
-| `server/discover` | Sent first on stdio as an era probe, then again after connecting | W | modern | Answered `-32602` |
-| Legacy `initialize` (≤ `2025-11-25`) | Yes, as the fallback | W | any | **This is our path** |
-| `subscriptions/listen` | Opens one stream for `toolsListChanged` / `promptsListChanged` / `resourcesListChanged`. Does **not** request `resourceSubscriptions`. | W | modern | n/a (static catalog) |
+| Protocol `2026-07-28` (stateless, per-request `_meta`) | Yes — v2 runtime, default | W | — | **Spoken** (1.69.0) |
+| `server/discover` | Sent first on stdio as an era probe, then again after connecting | W | modern | Answered in 0.6–0.8 s |
+| Legacy `initialize` (≤ `2025-11-25`) | Yes, as the fallback | W | any | Still served, to clients that do not probe |
+| `subscriptions/listen` | Opens one stream for `toolsListChanged` / `promptsListChanged` / `resourcesListChanged`. Does **not** request `resourceSubscriptions`. | W | modern | Acknowledged; nothing to send (static catalog) |
 | `list_changed` notifications | Re-fetches the list (interactive: all three; `-p`/SDK: tools only) | D | any | Not emitted |
-| Multi round-trip (`input_required`) | Yes — retries with `inputResponses` + `requestState` echoed | W | modern | — |
+| Multi round-trip (`input_required`) | Yes — retries with `inputResponses` + `requestState` echoed | W | modern | Not used yet ([#8](https://github.com/rex/mcp-rancher/issues/8)) |
 | Pagination | Follows `nextCursor` on every list call | D | any | Unpaginated |
-| Cache hints (`ttlMs` / `cacheScope`) | Tolerated when absent (2.1.302). Its discovery cache covers remote servers only. | D | modern | — |
-| Progress | Sends `progressToken` on **every** `tools/call`; renders progress; a notification resets the idle timeout | W+D | any | Never sent |
+| Cache hints (`ttlMs` / `cacheScope`) | Tolerated when absent (2.1.302). Its discovery cache covers remote servers only. | D | modern | SDK default: `ttlMs: 0`, `private` ([#3](https://github.com/rex/mcp-rancher/issues/3)) |
+| Progress | Sends `progressToken` on **every** `tools/call`; renders progress; a notification resets the idle timeout | W+D | any | Only the three health rollups, two steps each, no message ([#13](https://github.com/rex/mcp-rancher/issues/13)) |
 | Cancellation | `notifications/cancelled`; `tasks/cancel` for tasks | D | any | SDK default |
 | Logging | Not requested — no `logLevel` key, no `logging/setLevel` | W | — | — |
 
@@ -102,7 +104,10 @@ On the legacy fallback `initialize` it is the same minus `extensions`.
 ## 3. Server-author hooks that are specific to Claude Code
 
 All three are `_meta` keys on a tool's `tools/list` entry, so they are
-independent of protocol era and work on the connection we have now.
+independent of protocol era. rancher-mcp sets the first on five triage entry
+points (1.67.0) and the second on the five tools annotated destructive (1.68.0;
+`RANCHER_MCP_REQUIRE_APPROVAL_FOR_DESTRUCTIVE=false` turns it off). The third
+is unused.
 
 | Key | Effect |
 |---|---|
@@ -153,6 +158,15 @@ So the fast-startup path in `__main__.py` is still load-bearing after the
 port. Only the request it must answer quickly changes: `server/discover`
 instead of `initialize`. It needs name, version, capabilities and
 instructions — none of which require a tool module.
+
+**Measured after the port (1.69.0, 2026-11-15).** rancher-mcp answers
+`server/discover` in 0.56–0.62 s driven by hand and in 0.78 s under a real
+Claude Code 2.1.325 start (`uv run`), against the ~3 s window; a legacy
+`initialize` takes 0.39–0.48 s. While the tool modules finish importing in the
+background, `__main__.py` holds every request that reads the registry — the
+three list calls, `tools/call`, `prompts/get`, `resources/read`, the template
+list — rather than only `tools/list` as before, so no early request can be
+answered from a half-built catalog.
 
 ---
 
@@ -238,10 +252,10 @@ extension `resultType` shape is the extension's to own").
 
 ---
 
-## 6. Python SDK 2.3.0 — facts the port needs
+## 6. Python SDK 2.3.0 — facts the port needed
 
 Read from the released wheel. Where these conflict with `python-mcp-sdk.md`
-§10, these win.
+§10, these win. The second list is what the port itself turned up.
 
 - `MCPServer(name, title, description, instructions, website_url, icons, version, …, *, extensions=, cache_hints=, middleware=, subscriptions=)`. `version=` is real, so the handshake-version stamp becomes a constructor argument.
 - `import mcp.server.fastmcp` raises `ModuleNotFoundError` carrying a migration hint, rather than failing bare.
@@ -251,19 +265,31 @@ Read from the released wheel. Where these conflict with `python-mcp-sdk.md`
 - A server that receives `server/discover` first serves that pipe as modern and rejects a later `initialize` with `-32022`.
 - Requires `httpx2>=2.10`.
 
+Found while porting (rancher-mcp 1.69.0):
+
+- **`MCPServer`'s request handlers call the server's own public methods** — `list_tools`, `call_tool`, `list_prompts`, `get_prompt`, `list_resources`, `list_resource_templates`, `read_resource` — in both eras. Replacing one on the instance therefore interposes on every request without naming anything private. That is all `rancher_mcp.sdk_registry.wrap_server_method` does, and `tests/unit/test_sdk_registry.py` proves it through a real client in each era.
+- **The server no longer checks `structuredContent` against `outputSchema` before sending.** 1.x did; in 2.x only the client does (the Python client in `ClientSession`, and Claude Code per §2). A schema/dump mismatch now fails at the client with nothing on the server noticing first, which leaves `tests/unit/test_output_schema_dump_parity.py` as the only early warning.
+- The text content block is still rendered with `indent=2` (hence `result_compaction.py` survives the port).
+- `Tool.run` turns an anticipated failure into `ToolError("Error executing tool <name>: …")` and a crash into `UnexpectedToolError("Error executing tool <name>")` with the detail withheld. The SDK decides what to log by that type, so an error wrapper must re-raise the same type.
+- On a modern connection, list results carry `_meta["io.modelcontextprotocol/serverInfo"]` (`name`, `version`) and the cache hints.
+- MCP types are snake_case in Python (`input_schema`, `structured_content`, `is_error`, `read_only_hint`); `model_dump(by_alias=True)` gives the wire shape. A hand-built dict of a wire entry silently measures the wrong keys.
+- In-process client for tests: `from mcp import Client`, then `async with Client(server, mode="legacy" | "2026-07-28" | "auto")`. It exercises the real request path, including client-side output validation.
+- `mcp/server/fastmcp.py` still ships as a shim, so `importlib.util.find_spec("mcp.server.fastmcp")` succeeds — only *importing* it raises. "The module is findable" proves nothing.
+- `httpx` stays a direct dependency here for the Rancher client and `respx`; the SDK's own transport uses `httpx2`. Both are installed side by side.
+
 ---
 
 ## 7. What this means for rancher-mcp
 
 Ranked by value per unit of effort, not by novelty.
 
-**Ships on today's connection**
+**Shipped — independent of the protocol era**
 
-1. **Compact the text content block** ([#5](https://github.com/rex/mcp-rancher/issues/5)). The SDK renders it with `indent=2`: 3,989 chars against 2,723 compact on `rancher_capability_domain_list`, **+46%**. Claude Code never shows that block to the model, so the cost lands entirely on the clients that do read it — the small-context hosts the footprint work was for.
-2. **`anthropic/alwaysLoad` on the triage entry points** ([#6](https://github.com/rex/mcp-rancher/issues/6)). The `core` profile idea, delivered without removing a tool.
-3. **`anthropic/requiresUserInteraction` on destructive tools** ([#7](https://github.com/rex/mcp-rancher/issues/7)). Our confirmation phrase can be satisfied by the model alone; this cannot.
+1. **Compact the text content block** ([#5](https://github.com/rex/mcp-rancher/issues/5), 1.66.0). The SDK renders it with `indent=2`: 3,989 chars against 2,723 compact on `rancher_capability_domain_list`, **+46%**. Claude Code never shows that block to the model, so the cost lands entirely on the clients that do read it — the small-context hosts the footprint work was for.
+2. **`anthropic/alwaysLoad` on the triage entry points** ([#6](https://github.com/rex/mcp-rancher/issues/6), 1.67.0). The `core` profile idea, delivered without removing a tool.
+3. **`anthropic/requiresUserInteraction` on destructive tools** ([#7](https://github.com/rex/mcp-rancher/issues/7), 1.68.0). Our confirmation phrase can be satisfied by the model alone; this cannot.
 
-**Needs the port ([#2](https://github.com/rex/mcp-rancher/issues/2))**
+**Unblocked by the port ([#2](https://github.com/rex/mcp-rancher/issues/2), shipped in 1.69.0) — not built yet**
 
 4. **Elicitation-based confirmation** ([#8](https://github.com/rex/mcp-rancher/issues/8)) — spec-native, so it protects in every client, and the prompt can name what will be destroyed.
 5. **Tasks and follow-to-completion workflows** ([#9](https://github.com/rex/mcp-rancher/issues/9)) — a new capability, not an optimization: the server has almost no long-running tools today.

@@ -54,10 +54,9 @@ from rancher_mcp.server import create_mcp_server
 
 
 def _content_text(result: Any) -> str:
-    """Extract the first text content block from a FastMCP tool result."""
+    """Extract the first text content block from a tool call's result."""
 
-    content = result[0] if isinstance(result, tuple) else result.content
-    return next((c.text for c in content if hasattr(c, "text")), "")
+    return next((c.text for c in result.content if hasattr(c, "text")), "")
 
 
 async def _call(mcp: Any, tool_name: str, args: dict[str, Any]) -> dict[str, Any]:

@@ -8,7 +8,7 @@ resource families through one uniform `(resource_kind, name, cluster_id,
 namespace)` signature instead of a bespoke per-resource tool for each.
 
 `LabelableResourceKind` / `AnnotatableResourceKind` / `DeletableResourceKind`
-are the closed enums FastMCP publishes in each collapsed tool's JSON input
+are the closed enums the SDK publishes in each collapsed tool's JSON input
 schema — an invalid kind is rejected before the tool body ever runs, and a
 client can discover the valid set directly from the schema.
 """

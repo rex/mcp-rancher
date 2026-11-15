@@ -1,57 +1,59 @@
-"""The one place this server touches the MCP SDK's private internals.
+"""The one place this server depends on how the MCP SDK is built inside.
 
-FastMCP exposes no public API for the things a fleet-wide post-registration
-pass needs: enumerating the registered tools, rewriting a published schema,
-interposing on dispatch, or stamping the handshake version. Every such pass
-therefore reaches through ``mcp._tool_manager._tools`` or ``mcp._mcp_server``
-— names carrying no compatibility promise, which the SDK may rename in any
-release and which mcp 2.0.0 in fact does rename (``_mcp_server`` becomes
-``_lowlevel_server``).
+Two kinds of dependency live here, and nowhere else:
 
-Before this module those reaches were spread across eleven call sites, each
-carrying its own copy of the same ``Any``-coercion dance and its own comment
-re-explaining the same escape hatch — eleven independent chances for a port to
-miss one, silently, in a place no type checker looks. Consolidating them here
-makes the SDK upgrade a rewrite of ONE module plus a mechanical import swap,
-and turns "did we miss one?" into a question a test can answer:
-``tests/unit/test_sdk_seam_is_exclusive.py`` fails if any other module under
-``src/`` or ``devtools/`` names an SDK private again.
+**The tool registry.** ``MCPServer`` publishes no API for what a fleet-wide
+post-registration pass needs — enumerating the registered tools, rewrapping a
+tool's function, rewriting a published schema. Those passes reach through
+``mcp._tool_manager._tools``, a name with no compatibility promise.
 
-The seam deliberately does NOT import the SDK. Its parameters are typed
-``Any`` because the only thing it knows about *mcp* is the shape of the
-private attributes it reaches for — which is exactly the knowledge being
-quarantined. Typing the parameter ``Any`` from the outset is also what retires
-the two-step coercion the old call sites needed to keep pyright strict's
-``reportPrivateUsage`` quiet. As a bonus it keeps the ~1.5 s
-``mcp.server.fastmcp`` import off this module, which matters to ``__main__``'s
-two-phase startup.
+**Request routing.** ``MCPServer``'s request handlers do not do the work
+themselves; they call back into the server's own public methods —
+``tools/call`` runs ``self.call_tool(...)``, ``tools/list`` runs
+``self.list_tools()``, and so on. Replacing one of those methods on the
+*instance* therefore changes what every request does, without touching a
+private name. But that routing is an implementation fact, not a promise, so it
+is relied on from this one module and pinned by a test that goes through the
+real request path.
 
-What the seam hands back is PUBLIC: ``Tool.name`` / ``.title`` / ``.fn`` /
-``.parameters`` / ``.output_schema`` are documented attributes of the SDK's
-tool object. Callers keep operating on them directly, so each pass's own logic
-stays where it belongs. Only the *path* to those objects is privileged, and
-only that path lives here.
+This module exists because those reaches used to be spread across eleven call
+sites, each with its own copy of the same coercion dance — eleven chances for
+an upgrade to miss one, silently, where no type checker looks. It earned its
+keep on the port to mcp 2.x: the SDK renamed its low-level server and deleted
+the handshake-version hack, and the change landed here and in the entrypoint
+rather than across the codebase. ``tests/unit/test_sdk_seam_is_exclusive.py``
+fails if any other module names an SDK private again.
+
+The seam deliberately does NOT import the SDK. Its parameters are typed ``Any``
+because the only thing it knows about *mcp* is the shape of what it reaches
+for — which is exactly the knowledge being quarantined. That also keeps the
+SDK's import cost off this module, which matters to ``__main__``'s fast path.
+
+What it hands back is PUBLIC: ``Tool.name`` / ``.title`` / ``.fn`` /
+``.meta`` / ``.parameters`` / ``.output_schema`` are documented attributes of
+the SDK's tool object. Callers keep operating on them directly, so each pass's
+own logic stays where it belongs. Only the *path* is privileged.
 """
 
 from __future__ import annotations
 
 import functools
 from collections.abc import Awaitable, Callable
-from typing import Any, Protocol
+from typing import Any, Final, Protocol
 
 
 class RegisteredTool(Protocol):
     """A registered tool, narrowed to the fields this server reads or writes.
 
-    A structural stand-in for ``mcp.server.fastmcp.tools.base.Tool``, declared
+    A structural stand-in for ``mcp.server.mcpserver.tools.base.Tool``, declared
     rather than imported so the seam stays SDK-import-free (see the module
     docstring) — and so the exact surface this server depends on is written
     down in one place instead of being implied by scattered attribute access.
 
-    Every field here is public SDK API, so a port has only to confirm these
+    Every field here is public SDK API, so an upgrade has only to confirm these
     eight names survive. ``fn_metadata`` and ``annotations`` are deliberately
     ``Any``: the output-schema parity check reads ``fn_metadata.output_model``
-    and the client-hints pass reads ``annotations.destructiveHint``, but nothing
+    and the client-hints pass reads ``annotations.destructive_hint``, but nothing
     here should grow an opinion about the SDK's own types. ``meta`` is what the
     SDK publishes as the tool's ``_meta`` in ``tools/list``.
     ``output_schema`` is a ``functools.cached_property`` on
@@ -71,24 +73,31 @@ class RegisteredTool(Protocol):
     output_schema: dict[str, Any] | None
 
 
-#: The tool manager's dispatch entry point (``ToolManager.call_tool``).
-DispatchFn = Callable[..., Awaitable[Any]]
+#: One of ``MCPServer``'s public async methods (``call_tool``, ``list_tools``, …).
+ServerMethod = Callable[..., Awaitable[Any]]
+
+#: The dispatch entry point: ``MCPServer.call_tool``.
+DispatchFn = ServerMethod
+
+#: The public methods ``MCPServer``'s request handlers route through, one per
+#: kind of request a client can make for tools, prompts and resources. Gating
+#: all of them is how the entrypoint keeps a client from being answered out of
+#: a registry that is still loading.
+REQUEST_METHODS: Final[tuple[str, ...]] = (
+    "list_tools",
+    "call_tool",
+    "list_prompts",
+    "get_prompt",
+    "list_resources",
+    "list_resource_templates",
+    "read_resource",
+)
 
 
 def _tool_manager(mcp: Any) -> Any:
-    """FastMCP's ``ToolManager``. Private attribute — no stability promise."""
+    """The server's ``ToolManager``. Private attribute — no stability promise."""
 
     return mcp._tool_manager
-
-
-def _lowlevel_server(mcp: Any) -> Any:
-    """The low-level ``Server`` FastMCP wraps.
-
-    Private attribute, and the one the SDK actually renames: mcp 2.0.0 calls
-    it ``_lowlevel_server``.
-    """
-
-    return mcp._mcp_server
 
 
 def registered_tools(mcp: Any) -> list[RegisteredTool]:
@@ -129,83 +138,32 @@ def is_registered(mcp: Any, name: str) -> bool:
     return name in tools
 
 
-def wrap_dispatch(mcp: Any, wrap: Callable[[DispatchFn], DispatchFn]) -> None:
-    """Interpose *wrap* around the tool manager's dispatch entry point.
+def wrap_server_method(mcp: Any, name: str, wrap: Callable[[ServerMethod], ServerMethod]) -> None:
+    """Interpose *wrap* around one of the server's public async methods.
 
-    ``ToolManager.call_tool`` sits OUTSIDE ``Tool.run``, which is what makes it
-    the only seam that can reject a call before dispatch, and the only one that
-    can undo the prose preamble ``Tool.run`` puts on every ``ToolError``.
+    The replacement is installed on this INSTANCE, so it applies to everything
+    that reaches the server — a request off the wire (the SDK's handlers call
+    ``self.<name>(...)``) and a direct in-process call alike — and to no other
+    server in the process.
 
-    *wrap* receives the current dispatch callable and returns its replacement;
-    ``functools.wraps`` is applied here so callers don't each repeat it. Called
-    more than once, the interpositions stack — outermost last, exactly as the
-    raw monkeypatches did.
+    *wrap* receives the current method and returns its replacement;
+    ``functools.wraps`` is applied here so callers need not repeat it. Called
+    more than once on the same method, the interpositions stack, outermost
+    last.
 
     Construction time only, never per request.
     """
 
-    manager = _tool_manager(mcp)
-    original: DispatchFn = manager.call_tool
-    manager.call_tool = functools.wraps(original)(wrap(original))
+    original: ServerMethod = getattr(mcp, name)
+    setattr(mcp, name, functools.wraps(original)(wrap(original)))
 
 
-def stamp_server_version(mcp: Any, version: str) -> None:
-    """Set the version reported as ``serverInfo.version`` in the handshake.
+def wrap_dispatch(mcp: Any, wrap: Callable[[DispatchFn], DispatchFn]) -> None:
+    """Interpose *wrap* around tool dispatch (``MCPServer.call_tool``).
 
-    ``FastMCP.__init__`` accepts no ``version``, so it builds the low-level
-    ``Server`` with ``version=None`` and the SDK falls back to
-    ``pkg_version("mcp")`` — telling every client the *SDK's* version instead
-    of ours. Assigning the attribute is the only seam v1 exposes. (mcp 2.0.0
-    takes ``version=`` on the constructor, so the port deletes this rather
-    than porting it.)
+    This sits OUTSIDE ``Tool.run``, which is what lets it reject a call before
+    any tool runs, rewrite a result after the SDK has built it, and undo the
+    prose preamble ``Tool.run`` puts on every ``ToolError``.
     """
 
-    _lowlevel_server(mcp).version = version
-
-
-def advertised_server_version(mcp: Any) -> str:
-    """The version a client would actually be told during the handshake.
-
-    The read that pairs with :func:`stamp_server_version`. It goes through
-    ``create_initialization_options()`` rather than reading the attribute back,
-    so it proves what reaches the wire rather than merely that an assignment
-    happened.
-    """
-
-    options: Any = _lowlevel_server(mcp).create_initialization_options()
-    version: str = options.server_version
-    return version
-
-
-def install_list_tools_handler(mcp: Any, handler: Callable[[], Awaitable[Any]]) -> None:
-    """Replace the low-level ``tools/list`` request handler with *handler*.
-
-    The low-level server keeps its handlers in a dict keyed by request type;
-    re-invoking its ``list_tools()`` decorator overwrites the entry FastMCP
-    installed. Used by the two-phase startup to defer ``tools/list`` until the
-    background tool-loading thread has finished.
-    """
-
-    _lowlevel_server(mcp).list_tools()(handler)
-
-
-def installed_list_tools_handler(mcp: Any) -> Any:
-    """The handler currently answering ``tools/list``, or ``None``.
-
-    The read that pairs with :func:`install_list_tools_handler`. Two-phase
-    startup is correct only if the install actually DISPLACES the handler
-    FastMCP registered at construction — a silent no-op there would mean
-    ``tools/list`` racing the background tool loader and answering with a
-    partial registry, which is the exact failure the two-phase design exists
-    to prevent. This is how that is checked without a second module having to
-    learn where the low-level server keeps its handlers.
-
-    Matched on the request type's name rather than by importing
-    ``mcp.types.ListToolsRequest``, so the seam stays SDK-import-free.
-    """
-
-    handlers: dict[Any, Any] = _lowlevel_server(mcp).request_handlers
-    for request_type, handler in handlers.items():
-        if request_type.__name__ == "ListToolsRequest":
-            return handler
-    return None
+    wrap_server_method(mcp, "call_tool", wrap)

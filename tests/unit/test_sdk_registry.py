@@ -1,6 +1,6 @@
 """Contract tests for the one module allowed to touch the MCP SDK's internals.
 
-Every assertion here runs against a REAL ``FastMCP``. That is the whole point:
+Every assertion here runs against a REAL ``MCPServer``. That is the whole point:
 the seam's job is to be the single place that knows how the SDK's registry is
 shaped, so a test that asserted against a stand-in would just move the stale
 copy somewhere new. When the SDK upgrade lands, these are the tests that should
@@ -12,22 +12,21 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Any
 
-import mcp.types as types
 import pytest
 from _sdk_registry_support import placeholder_tool, registry_with
-from mcp.server.fastmcp import FastMCP
+from mcp import Client
+from mcp.server.mcpserver import MCPServer
 
 from rancher_mcp.sdk_registry import (
+    REQUEST_METHODS,
     DispatchFn,
     RegisteredTool,
-    advertised_server_version,
-    install_list_tools_handler,
-    installed_list_tools_handler,
+    ServerMethod,
     is_registered,
     registered_tool_names,
     registered_tools,
-    stamp_server_version,
     wrap_dispatch,
+    wrap_server_method,
 )
 
 
@@ -133,41 +132,99 @@ async def test_wrap_dispatch_stacks_outermost_last() -> None:
     assert order == ["outer", "inner"]
 
 
-def test_server_version_round_trips_to_what_a_client_is_told() -> None:
-    mcp = FastMCP(name="version-test")
-    before = advertised_server_version(mcp)
+# --- the routing the seam relies on, checked on the real request path -------
+#
+# `wrap_server_method` works only because the SDK's request handlers call back
+# into the server's own public methods. That is how the SDK is built today, not
+# something it promises. Calling `mcp.call_tool(...)` directly would prove
+# nothing about it — these go through the SDK's own client and request runner,
+# in both protocol eras, so the day a handler stops routing through the public
+# method these fail instead of every interposition silently turning into a no-op.
 
-    stamp_server_version(mcp, "9.9.9")
-
-    assert before != "9.9.9"
-    assert advertised_server_version(mcp) == "9.9.9"
+_ERAS = ("legacy", "2026-07-28")
 
 
-async def test_install_list_tools_handler_displaces_the_sdk_handler() -> None:
-    """The two-phase startup is only correct if this actually displaces.
-
-    A silent no-op here would leave ``tools/list`` racing the background tool
-    loader — answering with a partially registered surface, which is exactly
-    what the two-phase design exists to prevent, and which would look like a
-    flaky client rather than a bug here.
-    """
-
+def _server_with_one_of_everything() -> MCPServer:
     mcp = registry_with("rancher_pods_list")
-    sdk_handler = installed_list_tools_handler(mcp)
-    assert sdk_handler is not None, "FastMCP should register a tools/list handler itself"
 
-    called: list[bool] = []
+    @mcp.prompt()
+    def greet(who: str = "operator") -> str:  # pyright: ignore[reportUnusedFunction]
+        return f"hello {who}"
 
-    async def handler() -> list[Any]:
-        called.append(True)
-        return []
+    @mcp.resource("probe://static")
+    def static() -> str:  # pyright: ignore[reportUnusedFunction]
+        return "static"
 
-    install_list_tools_handler(mcp, handler)
-    ours = installed_list_tools_handler(mcp)
-    assert ours is not sdk_handler
+    @mcp.resource("probe://item/{item}")
+    def item(item: str) -> str:  # pyright: ignore[reportUnusedFunction]
+        return item
 
-    await ours(types.ListToolsRequest(method="tools/list"))
-    assert called == [True]
+    return mcp
+
+
+@pytest.mark.parametrize("era", _ERAS)
+async def test_a_tool_call_off_the_wire_goes_through_wrap_dispatch(era: str) -> None:
+    mcp = registry_with("rancher_pods_list")
+    seen: list[str] = []
+
+    def wrap(original: DispatchFn) -> DispatchFn:
+        async def call_tool(name: str, *args: Any, **kwargs: Any) -> Any:
+            seen.append(name)
+            return await original(name, *args, **kwargs)
+
+        return call_tool
+
+    wrap_dispatch(mcp, wrap)
+    async with Client(mcp, mode=era) as client:
+        result = await client.call_tool("rancher_pods_list", {})
+
+    assert seen == ["rancher_pods_list"]
+    assert result.is_error is False
+
+
+@pytest.mark.parametrize("era", _ERAS)
+async def test_every_request_method_is_what_the_wire_dispatches_through(era: str) -> None:
+    """One interposition per method in ``REQUEST_METHODS``, then one real
+    request of each kind. A method the wire does not route through would be a
+    hole in the entrypoint's startup gate: that request would be answered out
+    of a registry that is still loading."""
+
+    mcp = _server_with_one_of_everything()
+    reached: set[str] = set()
+
+    def record(method_name: str) -> Callable[[ServerMethod], ServerMethod]:
+        def wrap(method: ServerMethod) -> ServerMethod:
+            async def recorded(*args: Any, **kwargs: Any) -> Any:
+                reached.add(method_name)
+                return await method(*args, **kwargs)
+
+            return recorded
+
+        return wrap
+
+    for method_name in REQUEST_METHODS:
+        wrap_server_method(mcp, method_name, record(method_name))
+
+    async with Client(mcp, mode=era) as client:
+        await client.list_tools()
+        await client.call_tool("rancher_pods_list", {})
+        await client.list_prompts()
+        await client.get_prompt("greet", {"who": "pierce"})
+        await client.list_resources()
+        await client.list_resource_templates()
+        await client.read_resource("probe://static")
+
+    assert reached == set(REQUEST_METHODS)
+
+
+def test_request_methods_names_real_public_methods() -> None:
+    """A typo here would raise at startup; say so in a test instead."""
+
+    mcp = MCPServer(name="request-methods-probe")
+
+    for method_name in REQUEST_METHODS:
+        assert not method_name.startswith("_")
+        assert callable(getattr(mcp, method_name)), method_name
 
 
 @pytest.mark.parametrize("name", sorted(RegisteredTool.__annotations__))

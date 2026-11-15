@@ -54,7 +54,7 @@ auditability, guardrails, and the management-plane view entirely.
 
 **206 tools: 178 read-only · 28 writes · 5 destructive** — counted from the
 registry itself, not by hand. [`docs/tool-manifest.json`](docs/tool-manifest.json)
-is **generated from the live FastMCP registry** (`make tool-manifest`) and a CI
+is **generated from the live tool registry** (`make tool-manifest`) and a CI
 gate fails the build if it ever drifts from the code. Per-tool descriptions,
 safety annotations, and parameters all live there; the narrative registry with
 slice tracking is [`docs/tool-catalog.md`](docs/tool-catalog.md).
@@ -190,6 +190,7 @@ Built for the day an agent is pointed at the cluster that pays your salary:
 | **Primary target** | Rancher **2.9.3** (production-validated) |
 | **Compatibility floor** | Rancher **2.6.5** (kept green via capability detection) |
 | **API planes** | Norman `/v3` + Steve `/v1` (+ per-cluster Kubernetes proxy) |
+| **MCP protocol** | `2026-07-28`, and the older `2025-11-25` handshake for clients that have not moved — one process serves both and the client chooses |
 | **Transport** | stdio |
 
 Capability detection bridges version differences at runtime — no
@@ -300,11 +301,11 @@ make mock-rancher       # fixture-backed mock Rancher for provider-config testin
   `tests/fixtures/`; `respx` pins the HTTP boundary in tests.
 - **Codegen** — curated tools are emitted from `catalog/curated_tools/*.yml`
   descriptors; `make check-codegen` fails on drift.
-- **Gates** — ruff, pyright strict, 624 tests with coverage floor, architecture
+- **Gates** — ruff, pyright strict, the test suite with a coverage floor, architecture
   line-limits, module-shape checks, secret scanning. All fail closed, all wired
   into pre-commit.
 
-Stack: Python 3.12 · [FastMCP](https://github.com/modelcontextprotocol/python-sdk) ·
+Stack: Python 3.12 · [MCP Python SDK 2.x](https://github.com/modelcontextprotocol/python-sdk) ·
 [httpx](https://www.python-httpx.org/) · [Pydantic v2](https://docs.pydantic.dev/) ·
 [structlog](https://www.structlog.org/) · [uv](https://docs.astral.sh/uv/)
 

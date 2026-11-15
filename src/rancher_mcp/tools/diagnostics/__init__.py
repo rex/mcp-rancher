@@ -7,7 +7,7 @@ friends (whose `__init__.py` is itself generated — never hand-edited).
 Mirrors the `tools/ops/` curated convenience-tool convention instead.
 """
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 
 from rancher_mcp.tools.diagnostics.pod_logs import rancher_pod_logs, rancher_pod_logs_tool
 from rancher_mcp.tools.diagnostics.resource_events import (
@@ -25,8 +25,8 @@ __all__ = [
 ]
 
 
-def register_diagnostics_tools(mcp: FastMCP) -> None:
-    """Register curated diagnosis-verb tools with the FastMCP server."""
+def register_diagnostics_tools(mcp: MCPServer) -> None:
+    """Register curated diagnosis-verb tools with the MCP server."""
 
     mcp.tool(name="rancher_pod_logs", annotations=READ_ONLY)(rancher_pod_logs_tool)
     mcp.tool(name="rancher_resource_events", annotations=READ_ONLY)(rancher_resource_events_tool)

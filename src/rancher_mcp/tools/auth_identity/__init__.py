@@ -5,7 +5,7 @@
 
 """Curated auth and identity tool facade."""
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 
 from rancher_mcp.tools.auth_identity._generated_auth_configs import (
     rancher_auth_config_get,
@@ -38,8 +38,8 @@ __all__ = [
 ]
 
 
-def register_auth_identity_tools(mcp: FastMCP) -> None:
-    """Register curated auth and identity tools with the FastMCP server."""
+def register_auth_identity_tools(mcp: MCPServer) -> None:
+    """Register curated auth and identity tools with the MCP server."""
 
     mcp.tool(name="rancher_auth_configs_list", annotations=READ_ONLY)(
         rancher_auth_configs_list_tool

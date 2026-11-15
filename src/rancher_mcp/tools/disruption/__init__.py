@@ -5,7 +5,7 @@
 
 """Curated Rancher disruption-management read-only tools."""
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 
 from rancher_mcp.tools.disruption._generated_pod_disruption_budgets import (
     rancher_pod_disruption_budget_get,
@@ -22,8 +22,8 @@ __all__ = [
 ]
 
 
-def register_disruption_tools(mcp: FastMCP) -> None:
-    """Register curated disruption-management tools with the FastMCP server."""
+def register_disruption_tools(mcp: MCPServer) -> None:
+    """Register curated disruption-management tools with the MCP server."""
 
     mcp.tool(name="rancher_pod_disruption_budgets_list", annotations=READ_ONLY)(
         rancher_pod_disruption_budgets_list_tool

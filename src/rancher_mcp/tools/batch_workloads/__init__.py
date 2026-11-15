@@ -5,7 +5,7 @@
 
 """Curated Kubernetes batch/v1 tools (Job, CronJob)."""
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 
 from rancher_mcp.tools.batch_workloads._generated_cron_jobs import (
     rancher_cron_job_get,
@@ -36,8 +36,8 @@ __all__ = [
 ]
 
 
-def register_batch_workloads_tools(mcp: FastMCP) -> None:
-    """Register curated batch/v1 tools with the FastMCP server."""
+def register_batch_workloads_tools(mcp: MCPServer) -> None:
+    """Register curated batch/v1 tools with the MCP server."""
 
     mcp.tool(name="rancher_cron_jobs_list", annotations=READ_ONLY)(rancher_cron_jobs_list_tool)
     mcp.tool(name="rancher_cron_job_get", annotations=READ_ONLY)(rancher_cron_job_get_tool)

@@ -1,6 +1,6 @@
 [project]
 name = "rancher-mcp"
-version = "1.68.0"
+version = "1.69.0"
 description = "Capability-aware MCP server for Rancher-managed Kubernetes: discovery, generic resource access, and curated operator workflows across the Norman and Steve planes (Rancher 2.6.5–2.9.3)"
 readme = "README.md"
 license = "MIT"
@@ -21,16 +21,15 @@ requires-python = ">=3.12"
 dependencies = [
     "httpx>=0.28.1",
     # UPPER BOUND IS LOAD-BEARING — do not widen without porting the server.
-    # `mcp` 2.0.0 (2026-07-28) implements protocol revision 2026-07-28 and
-    # REMOVED the `fastmcp` module entirely: `FastMCP` is now `MCPServer`, and
-    # `mcp.server.fastmcp` does not exist. This package imports `FastMCP` in 40
-    # source files, so an unbounded constraint means a fresh resolve installs
-    # 2.0.0 and the server dies with ImportError before it can serve anything.
-    # That is not hypothetical: `>=1.0` shipped in 1.26.4 and broke every
-    # `uvx rancher-mcp` / `pip install rancher-mcp` from 2026-07-28 onward,
-    # because a lockfile only protects this repo, never a downstream install.
+    # The SDK breaks its API on a major: `mcp` 2.0.0 (2026-07-28) removed the
+    # `fastmcp` module outright, so `>=1.0` — which shipped in 1.26.4 — broke
+    # every `uvx rancher-mcp` / `pip install rancher-mcp` for four weeks. A
+    # lockfile only protects this repo, never a downstream install, so the bound
+    # has to live in the constraint we PUBLISH. The same will be true of 3.0.
+    # The lower bound is the first release whose `MCPServer`, `Extension` and
+    # `Resolve` APIs this server was ported and wire-tested against.
     # Enforced by tests/unit/test_dependency_constraints.py.
-    "mcp[cli]>=1.26,<2",
+    "mcp[cli]>=2.3,<3",
     "pydantic>=2.12.5",
     "pydantic-settings>=2.13.1",
     "pyyaml>=6.0.3",

@@ -5,7 +5,7 @@
 
 """Curated kube-prometheus-stack tools (PrometheusRule, ServiceMonitor, PodMonitor)."""
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 
 from rancher_mcp.tools.prometheus_monitoring._generated_pod_monitors import (
     rancher_pod_monitor_get,
@@ -38,8 +38,8 @@ __all__ = [
 ]
 
 
-def register_prometheus_monitoring_tools(mcp: FastMCP) -> None:
-    """Register curated kube-prometheus-stack tools with the FastMCP server."""
+def register_prometheus_monitoring_tools(mcp: MCPServer) -> None:
+    """Register curated kube-prometheus-stack tools with the MCP server."""
 
     mcp.tool(name="rancher_pod_monitors_list", annotations=READ_ONLY)(
         rancher_pod_monitors_list_tool

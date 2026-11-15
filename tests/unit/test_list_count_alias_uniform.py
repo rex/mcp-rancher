@@ -8,7 +8,7 @@ and is immune to unrelated required-field churn elsewhere in a model. A
 negative check proves semantic/multi-count rollups were deliberately left
 alone, and `test_no_serialization_alias_split_on_any_output_model` guards the
 whole surface against the validation/serialization alias split that made the
-FastMCP outputSchema reject every list response (the `clusterCount` P0).
+published outputSchema reject every list response (the `clusterCount` P0).
 
 The bottom of the file adds end-to-end call-through (real tool + dumped JSON)
 coverage for the representative sample named in the M-A1 slice: clusters,
@@ -182,8 +182,8 @@ def test_list_collection_count_field_aliases_to_count(
     # serialization_alias to `count`, leaving the general `alias` unset so
     # __init__ still takes the field name (`cluster_count`) and the builders
     # type-check. A BARE `serialization_alias` splits the dump key (`count`) from
-    # the validation-mode outputSchema key (`clusterCount`) FastMCP publishes and
-    # validates against — which rejected every list response (the clusterCount
+    # the validation-mode outputSchema key (`clusterCount`) the SDK publishes and
+    # the dump is validated against — which rejected every list response (the clusterCount
     # P0). See test_no_serialization_alias_split_on_any_output_model.
     assert field_info.validation_alias == "count", (
         f'{model_cls.__name__}.{field_name} must set validation_alias="count"'
@@ -227,8 +227,8 @@ def test_uniform_count_fields_table_has_no_duplicate_entries() -> None:
 def test_no_serialization_alias_split_on_any_output_model() -> None:
     """Fleet-wide regression gate for the `clusterCount` output-validation P0.
 
-    FastMCP publishes each tool's ``outputSchema`` from ``model_json_schema()``
-    in **validation** mode and validates the tool result against it. A field
+    The SDK publishes each tool's ``outputSchema`` from ``model_json_schema()``
+    in **validation** mode, and the tool result is validated against it. A field
     whose ``serialization_alias`` differs from its *validation* alias makes the
     schema require a key the ``by_alias`` dump never emits (schema wants
     ``clusterCount``; the body sends ``count``) — so MCP rejects the entire
@@ -270,7 +270,7 @@ def test_no_serialization_alias_split_on_any_output_model() -> None:
             ser = field.serialization_alias
             if ser is None:
                 continue
-            # The key FastMCP's validation-mode outputSchema will require.
+            # The key the published validation-mode outputSchema will require.
             if isinstance(field.validation_alias, str):
                 validate_key = field.validation_alias
             elif isinstance(field.alias, str):
@@ -293,9 +293,9 @@ def test_no_serialization_alias_split_on_any_output_model() -> None:
     assert scanned > 100, f"gate scanned only {scanned} production models — filter is wrong"
     assert not offenders, (
         "output models must not SPLIT serialization_alias from the validation "
-        "alias: FastMCP publishes the validation-mode outputSchema and validates "
-        "the by-alias dump against it, so a split makes it require a key the body "
-        f"never sends and MCP rejects the whole response. Offenders: {sorted(offenders)}"
+        "alias: the SDK publishes the validation-mode outputSchema and the by-alias "
+        "dump is validated against it, so a split makes it require a key the body "
+        f"never sends and the whole response is rejected. Offenders: {sorted(offenders)}"
     )
 
 

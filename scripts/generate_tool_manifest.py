@@ -1,8 +1,8 @@
-"""Generate ``docs/tool-manifest.json`` from the live FastMCP tool registry.
+"""Generate ``docs/tool-manifest.json`` from the live tool registry.
 
 The manifest is the machine-readable, always-current tool catalog: one
 entry per registered MCP tool with its description, safety annotations,
-and input parameters. It is GENERATED — the FastMCP registry inside
+and input parameters. It is GENERATED — the tool registry inside
 ``create_mcp_server()`` is the single source of truth, so the committed
 file can never silently drift from the code (``--check`` regenerates in
 memory and fails when it does; wired into ``make validate``).
@@ -48,16 +48,16 @@ def build_manifest() -> dict[str, Any]:
     entries: list[dict[str, Any]] = []
     for tool in sorted(tools, key=lambda t: t.name):
         ann = tool.annotations
-        schema: dict[str, Any] = tool.inputSchema or {}
+        schema: dict[str, Any] = tool.input_schema or {}
         properties: dict[str, Any] = schema.get("properties") or {}
         required = set(schema.get("required") or [])
         entries.append(
             {
                 "name": tool.name,
                 "description": (tool.description or "").strip(),
-                "read_only": None if ann is None else ann.readOnlyHint,
-                "destructive": None if ann is None else ann.destructiveHint,
-                "idempotent": None if ann is None else ann.idempotentHint,
+                "read_only": None if ann is None else ann.read_only_hint,
+                "destructive": None if ann is None else ann.destructive_hint,
+                "idempotent": None if ann is None else ann.idempotent_hint,
                 "params": [
                     {"name": name, "required": name in required} for name in sorted(properties)
                 ],

@@ -2,4 +2,4 @@ schema_version: 1
 id: certificates
 register_function: register_certificates_tools
 docstring: Curated Rancher certificate-inventory tools (cert payloads masked).
-register_docstring: Register curated certificate tools with the FastMCP server.
+register_docstring: Register curated certificate tools with the MCP server.

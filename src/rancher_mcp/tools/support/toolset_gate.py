@@ -1,20 +1,20 @@
-"""Apply a resolved toolset profile to a live FastMCP instance.
+"""Apply a resolved toolset profile to a live server.
 
 ``rancher_mcp.toolsets`` owns the family mapping and the pure resolution
-logic; this module owns doing something to a real ``FastMCP`` with the
+logic; this module owns doing something to a real ``MCPServer`` with the
 result — the same split every other cross-cutting post-registration pass in
 this repo uses (``tools/support/errors.py``, ``.../titles.py``,
 ``.../capability_unavailable.py``).
 
 Two things happen here, in order:
 
-1. Every disabled tool is removed from the tool manager (``FastMCP.remove_tool``)
+1. Every disabled tool is removed from the registry (``MCPServer.remove_tool``)
    — so it vanishes from ``tools/list``, the whole point of a reduced profile.
-2. ``ToolManager.call_tool`` is patched so a direct call to one of those
-   removed names still fails with a clear, actionable error naming the tool,
-   its family, and the env var to fix it — never FastMCP's generic "Unknown
-   tool", which would make a real-but-disabled tool indistinguishable from a
-   typo or a tool that never existed at all.
+2. Dispatch is interposed on so a direct call to one of those removed names
+   still fails with a clear, actionable error naming the tool, its family, and
+   the env var to fix it — never the SDK's generic "Unknown tool", which would
+   make a real-but-disabled tool indistinguishable from a typo or a tool that
+   never existed at all.
 """
 
 from __future__ import annotations
@@ -24,8 +24,8 @@ from collections.abc import Mapping
 from typing import Any
 
 import structlog
-from mcp.server.fastmcp import FastMCP
-from mcp.server.fastmcp.exceptions import ToolError
+from mcp.server.mcpserver import MCPServer
+from mcp.server.mcpserver.exceptions import ToolError
 
 from rancher_mcp.config import get_toolset_settings
 from rancher_mcp.sdk_registry import DispatchFn, is_registered, wrap_dispatch
@@ -69,14 +69,14 @@ def _disabled_tool_envelope(
 
 
 def _install_dispatch_gate(
-    mcp: FastMCP,
+    mcp: MCPServer,
     *,
     family_of: Mapping[str, str],
     excluded: frozenset[str],
     toolsets_raw: str,
 ) -> None:
     """Make calling a real-but-inactive tool fail with a clear, actionable
-    error instead of FastMCP's generic "Unknown tool".
+    error instead of the SDK's generic "Unknown tool".
 
     Interposes on dispatch (the same "patch at construction time, never at
     request time" seam ``apply_bare_json_errors`` uses) and is installed
@@ -106,7 +106,7 @@ def _install_dispatch_gate(
     wrap_dispatch(mcp, wrap)
 
 
-def apply_toolset_filter(mcp: FastMCP, registration: FamilyRegistration) -> ResolvedToolset:
+def apply_toolset_filter(mcp: MCPServer, registration: FamilyRegistration) -> ResolvedToolset:
     """Resolve the active toolset from settings, remove every disabled tool,
     and install the dispatch gate that explains a disabled call clearly.
 

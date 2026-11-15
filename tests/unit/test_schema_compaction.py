@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 
 from rancher_mcp.schema_compaction import (
     apply_compact_output_schemas,
@@ -151,7 +151,7 @@ def test_every_registered_tool_survives_compaction_with_a_coherent_schema() -> N
     """Fleet-wide backstop over the real registry: after the pass, no tool may
     require a key it does not also declare."""
 
-    mcp = FastMCP(name="compaction-probe")
+    mcp = MCPServer(name="compaction-probe")
     register_all_tools(mcp)
     apply_compact_output_schemas(mcp)
 

@@ -9,7 +9,7 @@ Three things are removed or corrected here. The first is a correctness fix, not
 an optimization:
 
 1. **`suggestedNextSteps` was advertised but is never sent.** It is the internal
-   backing field for the ``next_steps`` computed field. FastMCP derives
+   backing field for the ``next_steps`` computed field. The SDK derives
    `outputSchema` from ``model_json_schema()`` in *validation* mode, where the
    backing field appears and the computed field does not — while the response
    body is the *serialization* dump, where exactly the reverse is true. So the
@@ -37,7 +37,7 @@ carries is ever touched. `tests/unit/test_output_schema_dump_parity.py` proves
 this across all 206 tools by dumping a real instance of every model and checking
 each schema-required key is present.
 
-`structuredContent` is unaffected: FastMCP builds it from the tool's
+`structuredContent` is unaffected: the SDK builds it from the tool's
 `fn_metadata`, which this pass does not touch. Only the *published* schema
 changes.
 """
@@ -131,7 +131,7 @@ def compact_input_schema(schema: dict[str, Any]) -> dict[str, Any]:
     field name (`cluster_id` → `"Cluster Id"`), so it restates the key it is
     attached to, 1,200 times over.
 
-    Safe by construction: FastMCP validates arguments through the tool's
+    Safe by construction: the SDK validates arguments through the tool's
     `fn_metadata` model, not through this published schema, and `title` is an
     annotation keyword that constrains nothing either way.
     """

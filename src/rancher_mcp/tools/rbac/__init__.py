@@ -5,7 +5,7 @@
 
 """Curated Rancher RBAC tool facade."""
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 
 from rancher_mcp.tools.rbac._generated_cluster_role_template_bindings import (
     rancher_cluster_role_template_binding_get,
@@ -54,8 +54,8 @@ __all__ = [
 ]
 
 
-def register_rbac_tools(mcp: FastMCP) -> None:
-    """Register curated RBAC tools with the FastMCP server."""
+def register_rbac_tools(mcp: MCPServer) -> None:
+    """Register curated RBAC tools with the MCP server."""
 
     mcp.tool(name="rancher_cluster_role_template_bindings_list", annotations=READ_ONLY)(
         rancher_cluster_role_template_bindings_list_tool

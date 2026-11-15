@@ -28,7 +28,8 @@ from _output_schema_dump_parity_support import (
     iter_tool_outputs,
     synthesize_example,
 )
-from mcp.types import CallToolResult, ImageContent, TextContent
+from mcp import Client
+from mcp.types import CallToolResult, ImageContent, InputRequiredResult, TextContent
 from pydantic import BaseModel
 
 from rancher_mcp.result_compaction import compact_json_text, compact_result_text
@@ -96,47 +97,41 @@ def test_anything_that_is_not_an_indented_document_is_returned_untouched(text: s
     assert compact_json_text(text) is text
 
 
-# --- the three shapes the SDK hands back ------------------------------------
+# --- what dispatch hands back ------------------------------------------------
 
 
-def test_a_bare_content_list_is_compacted_in_place() -> None:
-    blocks = [_text(_INDENTED)]
-
-    assert compact_result_text(blocks) is blocks
-    assert blocks[0].text == _COMPACT
-
-
-def test_a_content_and_structured_pair_leaves_the_structured_half_alone() -> None:
+def test_a_call_tool_result_is_compacted_in_place() -> None:
     structured = {"count": 2, "items": [{"name": "a"}]}
-    pair = ([_text(_INDENTED)], structured)
+    result = CallToolResult(content=[_text(_INDENTED)], structured_content=structured)
 
-    content, returned = compact_result_text(pair)
-
-    assert content[0].text == _COMPACT
-    assert returned is structured
-
-
-def test_a_ready_made_call_tool_result_is_compacted() -> None:
-    result = CallToolResult(content=[_text(_INDENTED)])
-
-    compact_result_text(result)
+    assert compact_result_text(result) is result
 
     block = result.content[0]
     assert isinstance(block, TextContent)
     assert block.text == _COMPACT
+    assert result.structured_content is structured
 
 
 def test_non_text_blocks_are_left_alone() -> None:
-    image = ImageContent(type="image", data="aGk=", mimeType="image/png")
-    blocks = [image, _text(_INDENTED)]
+    image = ImageContent(type="image", data="aGk=", mime_type="image/png")
+    result = CallToolResult(content=[image, _text(_INDENTED)])
 
-    compact_result_text(blocks)
+    compact_result_text(result)
 
-    assert blocks[0] is image
+    assert result.content[0] is image
     assert image.data == "aGk="
 
 
-def test_an_unconverted_return_value_passes_straight_through() -> None:
+def test_a_result_still_waiting_on_the_person_passes_straight_through() -> None:
+    """An ``InputRequiredResult`` has no content yet — there is nothing to
+    compact, and it must reach the client exactly as the SDK built it."""
+
+    pending = InputRequiredResult(request_state="opaque")
+
+    assert compact_result_text(pending) is pending
+
+
+def test_anything_else_passes_straight_through() -> None:
     raw = object()
 
     assert compact_result_text(raw) is raw
@@ -150,29 +145,45 @@ def test_the_sdk_still_indents_which_is_the_only_reason_this_module_exists() -> 
     trivially and the module is dead weight — this is what would say so."""
 
     tool = _TOOLS["rancher_capability_domain_list"]
-    content, _ = tool.fn_metadata.convert_result(_populated(tool.fn_metadata.output_model))
+    result = tool.fn_metadata.convert_result(_populated(tool.fn_metadata.output_model))
 
-    assert "\n" in content[0].text
+    assert "\n" in result.content[0].text
 
 
 async def test_a_real_tool_call_goes_out_compact() -> None:
     """End to end through dispatch — the only test that fails if the pass is
     written correctly but never installed."""
 
-    content, structured = await _SERVER.call_tool("rancher_capability_domain_list", {})
-    text = content[0].text
+    result = await _SERVER.call_tool("rancher_capability_domain_list", {})
+    text = result.content[0].text
+    structured = result.structured_content
 
     assert "\n" not in text
     assert json.loads(text) == structured
     assert len(text) == len(json.dumps(structured, separators=(",", ":"), ensure_ascii=False))
 
 
+@pytest.mark.parametrize("era", ["legacy", "2026-07-28"])
+async def test_a_client_receives_the_compact_text_in_both_eras(era: str) -> None:
+    """The same, but off the wire: through the SDK's client and request runner
+    rather than a direct call, so it also proves the request path reaches the
+    interposition at all."""
+
+    async with Client(_SERVER, mode=era) as client:
+        result = await client.call_tool("rancher_capability_domain_list", {})
+
+    text = result.content[0].text
+    assert "\n" not in text
+    assert json.loads(text) == result.structured_content
+
+
 @pytest.mark.parametrize("output", _OUTPUTS, ids=lambda output: output.tool_name)
 def test_every_tools_text_block_equals_its_structured_content(output: ToolOutput) -> None:
     converted = _TOOLS[output.tool_name].fn_metadata.convert_result(_populated(output.model))
 
-    content, structured = compact_result_text(converted)
-    text = content[0].text
+    result = compact_result_text(converted)
+    text = result.content[0].text
+    structured = result.structured_content
 
     assert "\n" not in text
     assert json.loads(text) == structured, (

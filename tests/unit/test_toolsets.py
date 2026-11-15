@@ -13,7 +13,7 @@ from __future__ import annotations
 from collections.abc import Iterator
 
 import pytest
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 
 from rancher_mcp.config import clear_toolset_settings_cache
 from rancher_mcp.exceptions import ConfigurationError
@@ -27,7 +27,7 @@ from rancher_mcp.toolsets import (
     resolve_active_tools,
 )
 
-_FAMILY_MAP = register_families(FastMCP(name="toolsets-family-map-probe"))
+_FAMILY_MAP = register_families(MCPServer(name="toolsets-family-map-probe"))
 
 
 @pytest.fixture(autouse=True)
@@ -49,7 +49,7 @@ def _restore_full_registry_after_each_test(monkeypatch: pytest.MonkeyPatch) -> I
     monkeypatch.delenv("RANCHER_EXCLUDE_TOOLS", raising=False)
     clear_toolset_settings_cache()
     reset_tool_parameters()
-    register_all_tools(FastMCP(name="toolsets-restore-probe"))
+    register_all_tools(MCPServer(name="toolsets-restore-probe"))
 
 
 def _build_profile(
@@ -58,7 +58,7 @@ def _build_profile(
     toolsets: str | None = None,
     tools: str | None = None,
     exclude_tools: str | None = None,
-) -> FastMCP:
+) -> MCPServer:
     """Build a real, fully-registered server under a specific env config."""
 
     for var, value in (
@@ -72,12 +72,12 @@ def _build_profile(
             monkeypatch.setenv(var, value)
     clear_toolset_settings_cache()  # else a prior _build_profile call in this test would be cached
 
-    mcp = FastMCP(name="toolsets-probe")
+    mcp = MCPServer(name="toolsets-probe")
     register_all_tools(mcp)
     return mcp
 
 
-def _active_names(mcp: FastMCP) -> set[str]:
+def _active_names(mcp: MCPServer) -> set[str]:
     return {tool.name for tool in registered_tools(mcp)}
 
 
@@ -106,7 +106,7 @@ def test_families_are_disjoint_and_cover_all_tools() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Pure resolution logic — no FastMCP construction needed.
+# Pure resolution logic — no MCPServer construction needed.
 # ---------------------------------------------------------------------------
 
 
@@ -239,7 +239,7 @@ def test_unknown_toolsets_profile_fails_loudly_at_registration(
     clear_toolset_settings_cache()
 
     with pytest.raises(ConfigurationError) as excinfo:
-        register_all_tools(FastMCP(name="toolsets-unknown-probe"))
+        register_all_tools(MCPServer(name="toolsets-unknown-probe"))
     assert "bogus_profile_xyz" in str(excinfo.value)
 
 
@@ -292,7 +292,7 @@ def test_next_steps_drops_suggestions_outside_the_active_profile(
 def test_next_steps_unfiltered_when_registry_never_populated(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Back-compat guardrail: a model built with no FastMCP registry in the
+    """Back-compat guardrail: a model built with no MCPServer registry in the
     process at all (e.g. a bare unit test) must keep emitting every declared
     suggestion, exactly as before this feature existed."""
 

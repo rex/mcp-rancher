@@ -3,7 +3,7 @@
 Every tool implementation in this repo takes `settings` / `client` / `catalog`
 as an injection seam for tests, and is meant to be registered through a thin
 `*_tool` wrapper that omits them. Three discovery tools predated that convention
-and were registered against their implementations directly, so FastMCP derived
+and were registered against their implementations directly, so the SDK derived
 their input schemas from the DI signature and published those parameters as
 ordinary, model-callable arguments.
 
@@ -30,7 +30,7 @@ from __future__ import annotations
 
 import json
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 
 from rancher_mcp.sdk_registry import registered_tools
 from rancher_mcp.server import register_all_tools
@@ -44,8 +44,8 @@ PLUMBING_PARAMETERS = frozenset({"settings", "client", "clients", "catalog", "di
 INTERNAL_TYPES = frozenset({"AppSettings", "RancherInstanceConfig"})
 
 
-def _registry() -> FastMCP:
-    mcp = FastMCP(name="plumbing-probe")
+def _registry() -> MCPServer:
+    mcp = MCPServer(name="plumbing-probe")
     register_all_tools(mcp)
     return mcp
 

@@ -8,7 +8,7 @@ namespace)` signature each, dispatched through the generated kind registry
 `catalog/curated_tools/*.yml` descriptor that sets `generic_kind`).
 """
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 
 from rancher_mcp.tools.resource_kinds.delete import (
     rancher_resource_delete,
@@ -30,7 +30,7 @@ __all__ = [
 ]
 
 
-def register_resource_kind_tools(mcp: FastMCP) -> None:
+def register_resource_kind_tools(mcp: MCPServer) -> None:
     """Register the three collapsed generic resource-kind tools."""
 
     mcp.tool(name="rancher_resource_set_labels", annotations=IDEMPOTENT_WRITE)(

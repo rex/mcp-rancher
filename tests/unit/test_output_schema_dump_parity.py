@@ -1,9 +1,13 @@
 """Fleet-wide regression gate: outputSchema (validation mode) vs the REAL dump.
 
-**The incident this gates.** FastMCP publishes each tool's ``outputSchema``
-from the return model's ``model_json_schema()`` in *validation* mode, then
-validates the actual response — the model's *serialization* dump — against
-that published schema. A ``count`` field was given a bare
+**The incident this gates.** The SDK publishes each tool's ``outputSchema``
+from the return model's JSON schema in *validation* mode, and the actual
+response — the model's *serialization* dump — is validated against that
+published schema. (mcp 1.x ran that check in the server before sending; mcp
+2.x leaves it to the client, and both the Python client and Claude Code run
+it. Either way a mismatch costs the whole response — and under 2.x nothing
+on the server side notices first, which makes this gate the only early
+warning.) A ``count`` field was given a bare
 ``serialization_alias="count"`` while the model field was ``cluster_count``
 with no matching ``validation_alias``. The validation-mode schema therefore
 required ``clusterCount``; the dumped body sent ``count``; MCP's
@@ -33,11 +37,11 @@ This file instead:
    hand-maintained tool list to keep in sync.
 2. For every registered tool's output model, synthesizes a maximally
    populated example straight from that model's own validation-mode
-   ``outputSchema`` (the exact schema FastMCP publishes), constructs a REAL
+   ``outputSchema`` (the exact schema the SDK publishes), constructs a REAL
    instance via ``model_validate``, and dumps it via
-   ``model_dump(mode="json", by_alias=True)`` — the *exact* call FastMCP's
-   ``func_metadata.convert_result`` makes right before handing the body to
-   ``jsonschema.validate``.
+   ``model_dump(mode="json", by_alias=True)`` — the *exact* call the SDK's
+   ``func_metadata.convert_result`` makes to build ``structuredContent``,
+   the body a client then checks against the schema.
 3. Recursively confirms every property the schema calls REQUIRED, at every
    nesting level (root and every reachable ``$defs`` model — list-item
    models included), is actually a key in that real dump.
@@ -113,9 +117,9 @@ def test_tool_output_schema_matches_real_dump(tool_output: ToolOutput) -> None:
     appear, at every nesting level, in the model's REAL serialized dump.
 
     A failure here means this tool is (or would be, given realistic data)
-    the next ``rancher_clusters_list`` — MCP's ``jsonschema.validate()``
-    silently rejects the entire response the moment one required key the
-    schema promises never shows up in the body FastMCP actually sends.
+    the next ``rancher_clusters_list`` — schema validation rejects the
+    entire response the moment one required key the schema promises never
+    shows up in the body the server actually sends.
     """
 
     missing = check_model_dump_parity(tool_output.model)

@@ -5,7 +5,7 @@
 
 """Curated Rancher certificate-inventory tools (cert payloads masked)."""
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 
 from rancher_mcp.tools.certificates._generated_certificates import (
     rancher_certificate_get,
@@ -30,8 +30,8 @@ __all__ = [
 ]
 
 
-def register_certificates_tools(mcp: FastMCP) -> None:
-    """Register curated certificate tools with the FastMCP server."""
+def register_certificates_tools(mcp: MCPServer) -> None:
+    """Register curated certificate tools with the MCP server."""
 
     mcp.tool(name="rancher_certificates_list", annotations=READ_ONLY)(
         rancher_certificates_list_tool

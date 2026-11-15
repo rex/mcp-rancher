@@ -2,4 +2,4 @@ schema_version: 1
 id: pods_services
 register_function: register_pod_service_tools
 docstring: Curated Rancher pod and service tools.
-register_docstring: Register curated pod/service tools with the FastMCP server.
+register_docstring: Register curated pod/service tools with the MCP server.

@@ -5,7 +5,7 @@
 
 """Curated Rancher storage tools."""
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 
 from rancher_mcp.tools.storage._generated_persistent_volume_claims import (
     rancher_persistent_volume_claim_get,
@@ -41,8 +41,8 @@ __all__ = [
 ]
 
 
-def register_storage_tools(mcp: FastMCP) -> None:
-    """Register curated storage tools with the FastMCP server."""
+def register_storage_tools(mcp: MCPServer) -> None:
+    """Register curated storage tools with the MCP server."""
 
     mcp.tool(name="rancher_persistent_volume_claims_list", annotations=READ_ONLY)(
         rancher_persistent_volume_claims_list_tool

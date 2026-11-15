@@ -5,7 +5,7 @@
 
 """Curated Rancher provisioning tools (drivers, credentials, templates)."""
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 
 from rancher_mcp.tools.provisioning._generated_cloud_credentials import (
     rancher_cloud_credential_get,
@@ -46,8 +46,8 @@ __all__ = [
 ]
 
 
-def register_provisioning_tools(mcp: FastMCP) -> None:
-    """Register curated provisioning tools with the FastMCP server."""
+def register_provisioning_tools(mcp: MCPServer) -> None:
+    """Register curated provisioning tools with the MCP server."""
 
     mcp.tool(name="rancher_cloud_credentials_list", annotations=READ_ONLY)(
         rancher_cloud_credentials_list_tool

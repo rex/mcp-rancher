@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from mcp.server.fastmcp import Context
+from mcp.server.mcpserver import Context
 
 from rancher_mcp.clients.management import ManagementDiscoveryClient, RancherManagementClient
 from rancher_mcp.config import AppSettings, get_settings
@@ -196,7 +196,7 @@ async def _build_project_health(
     instance_name: str,
     project_id: str,
     client: ManagementDiscoveryClient,
-    ctx: Context[Any, Any, Any] | None = None,
+    ctx: Context[Any, Any] | None = None,
 ) -> ProjectHealthSummary:
     """Fetch one project and its namespaces, compute health summary."""
 
@@ -326,7 +326,7 @@ async def rancher_project_health_summary(
     instance: str | None = None,
     settings: AppSettings | None = None,
     client: ManagementDiscoveryClient | None = None,
-    ctx: Context[Any, Any, Any] | None = None,
+    ctx: Context[Any, Any] | None = None,
 ) -> ProjectHealthSummary:
     """One-call project health: state, namespaces, failing pods, unhealthy workloads."""
 
@@ -341,7 +341,7 @@ async def rancher_project_health_summary(
 async def rancher_project_health_summary_tool(
     project_id: str,
     instance: str | None = None,
-    ctx: Context[Any, Any, Any] | None = None,
+    ctx: Context[Any, Any] | None = None,
 ) -> ProjectHealthSummary:
     """Aggregate one project's namespaces, pod counts, failing-pod tallies, and
     unhealthy-workload counts into a single rollup, saving the per-namespace calls

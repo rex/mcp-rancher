@@ -33,10 +33,9 @@ from __future__ import annotations
 
 import json
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 
 from rancher_mcp.config import get_settings
-from rancher_mcp.sdk_registry import registered_tools
 from rancher_mcp.server import register_all_tools
 
 # ---------------------------------------------------------------------------
@@ -75,10 +74,14 @@ MAX_SINGLE_TOOL_BYTES = 5_000
 """No single tool should dominate. Worst: 6,310 B → 4,637 B (cluster_get)."""
 
 HOST_INSTRUCTIONS_BUDGET_BYTES = 2_000
-"""Claude Code truncates server `instructions` past roughly this."""
+"""What every Claude Code version in use will show of server `instructions`.
+
+Claude Code cuts instructions at 4,096 characters since v2.1.296, and at 2,048
+before it. The lower figure is the budget on purpose: text past it is silently
+truncated for anyone on an older client, so it cannot be relied on."""
 
 
-def _build() -> FastMCP:
+def _build() -> MCPServer:
     """Build the real production registry.
 
     Deliberately self-contained rather than importing the parity gate's
@@ -86,29 +89,25 @@ def _build() -> FastMCP:
     than that one, and a shared helper would couple two independent gates.
     """
 
-    mcp = FastMCP(name="footprint-probe")
+    mcp = MCPServer(name="footprint-probe")
     register_all_tools(mcp)
     return mcp
 
 
-def _wire_shape(tool: object) -> dict[str, object]:
-    """Exactly the fields `tools/list` puts on the wire for one tool."""
+async def _wire_entries(mcp: MCPServer) -> dict[str, dict[str, object]]:
+    """Every tool exactly as `tools/list` puts it on the wire.
 
-    blob: dict[str, object] = {
-        "name": tool.name,  # type: ignore[attr-defined]
-        "description": tool.description or "",  # type: ignore[attr-defined]
-        "inputSchema": tool.parameters,  # type: ignore[attr-defined]
+    Taken from the entries the SDK itself builds, dumped the way it serializes
+    them — by alias, nulls omitted. This used to be re-assembled field by field
+    here, which measured what this file *believed* was sent: it never counted
+    `_meta`, and under mcp 2.x a dump without `by_alias` would have silently
+    measured snake_case keys that no client ever receives.
+    """
+
+    return {
+        tool.name: tool.model_dump(mode="json", by_alias=True, exclude_none=True)
+        for tool in await mcp.list_tools()
     }
-    output_schema = getattr(tool, "output_schema", None)
-    if output_schema:
-        blob["outputSchema"] = output_schema
-    annotations = getattr(tool, "annotations", None)
-    if annotations is not None:
-        blob["annotations"] = annotations.model_dump(exclude_none=True)
-    title = getattr(tool, "title", None)
-    if title:
-        blob["title"] = title
-    return blob
 
 
 def _compact(obj: object) -> int:
@@ -138,10 +137,8 @@ def _report(blobs: dict[str, dict[str, object]], total: int) -> str:
     return "\n".join(lines)
 
 
-def test_tools_list_payload_stays_within_budget() -> None:
-    mcp = _build()
-    tools = registered_tools(mcp)
-    blobs = {t.name: _wire_shape(t) for t in tools}
+async def test_tools_list_payload_stays_within_budget() -> None:
+    blobs = await _wire_entries(_build())
     total = _compact({"tools": list(blobs.values())})
 
     assert total <= MAX_TOTAL_BYTES, (
@@ -155,7 +152,7 @@ def test_tools_list_payload_stays_within_budget() -> None:
     )
 
 
-def test_mean_cost_per_tool_stays_within_budget() -> None:
+async def test_mean_cost_per_tool_stays_within_budget() -> None:
     """Guards the OTHER axis: total bytes can be held flat by deleting tools
     while each surviving tool quietly gets fatter, which is how a surface rots
     without tripping a total-size check.
@@ -164,9 +161,8 @@ def test_mean_cost_per_tool_stays_within_budget() -> None:
     and must be read alongside the total.
     """
 
-    mcp = _build()
-    tools = registered_tools(mcp)
-    mean = sum(_compact(_wire_shape(t)) for t in tools) // len(tools)
+    blobs = await _wire_entries(_build())
+    mean = sum(_compact(blob) for blob in blobs.values()) // len(blobs)
 
     assert mean <= MAX_MEAN_BYTES_PER_TOOL, (
         f"mean per-tool cost grew to {mean:,} B (budget {MAX_MEAN_BYTES_PER_TOOL:,} B, "
@@ -175,12 +171,12 @@ def test_mean_cost_per_tool_stays_within_budget() -> None:
     )
 
 
-def test_no_single_tool_dominates() -> None:
-    mcp = _build()
+async def test_no_single_tool_dominates() -> None:
+    blobs = await _wire_entries(_build())
     offenders = [
-        (t.name, size)
-        for t in registered_tools(mcp)
-        if (size := _compact(_wire_shape(t))) > MAX_SINGLE_TOOL_BYTES
+        (name, size)
+        for name, blob in blobs.items()
+        if (size := _compact(blob)) > MAX_SINGLE_TOOL_BYTES
     ]
     assert not offenders, (
         f"tool(s) over the single-tool budget of {MAX_SINGLE_TOOL_BYTES:,} B: "

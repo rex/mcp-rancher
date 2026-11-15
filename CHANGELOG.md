@@ -1,5 +1,94 @@
 # Changelog
 
+## [1.69.0] — 2026-11-15 — Agent: Claude Fable 5.2
+### Changed
+- **Ported to the MCP Python SDK 2.x; the server now speaks protocol
+  `2026-07-28`** (rex/mcp-rancher#2). `mcp[cli]` moves from `>=1.26,<2` to
+  `>=2.3,<3`, and `FastMCP` becomes `MCPServer`. Claude Code has probed every
+  stdio server for the modern protocol since 2.1.292; until now this server
+  answered that probe with an error and was connected on the 2025 handshake,
+  which put everything era-gated — multi-round-trip elicitation, tasks, cache
+  hints, the notification stream — out of reach. Nothing is built on those yet.
+  This release is the floor they stand on.
+  **No client is stranded.** The SDK serves both eras from one process and the
+  client chooses: one that never probes gets the `2025-11-25` handshake exactly
+  as before.
+  **The tool surface is untouched** — the same 206 tools, names, arguments,
+  annotations and output schemas. `docs/tool-manifest.json` did not change.
+
+### Changed — behaviour to be aware of
+- **Every request that reads the registry now waits for it.** Startup answers
+  the first request before any tool module is imported and loads the rest in
+  the background. Only `tools/list` used to wait for that, so `prompts/list`,
+  `resources/list`, a `tools/call` and the rest could be answered from a
+  half-built catalog. All seven are held now, and one still waiting after 30 s
+  gets a JSON-RPC error saying the server is registering its tools — not a
+  wrong answer. A request parked while loading runs is released through
+  everything loading installed (the toolset gate, the JSON error envelope,
+  compact text), not through the server as it stood when the request arrived;
+  the first draft of the hold got that wrong and a test written to prove it
+  did.
+- **The SDK no longer checks a result against the tool's `outputSchema` before
+  sending it.** 2.x leaves that to the client, and Claude Code and the Python
+  client both do it. Nothing changes while schema and body agree, which
+  `tests/unit/test_output_schema_dump_parity.py` enforces for every tool — but
+  that gate is now the only thing between a mismatch and a failed call on the
+  client, where 1.x would have caught it on the way out.
+- Code that imports this package as a library gets an `MCPServer` back from
+  `create_mcp_server()`.
+
+### Fixed
+- **Two gates would have gone on passing while measuring nothing.** Under 2.x
+  MCP types are snake_case in Python and camelCase only on the wire. The
+  context-footprint ratchet and the toolset-gate size check each built a
+  `tools/list` entry by hand; left alone they would have counted `input_schema`
+  where a client receives `inputSchema`, and never counted `_meta` at all. Both
+  now measure the entries the server builds for a client.
+- **`test_dependency_constraints.py` passed against the release it exists to
+  keep out.** It asked whether the old `fastmcp` module was *findable*, and 2.x
+  ships a stub at that path that raises on import. It imports now.
+- A crash inside a tool keeps its type through the error-envelope pass. The SDK
+  decides what to log from that type, and the pass flattened every failure to
+  the anticipated kind.
+
+### Internal
+- `sdk_registry.py` is down to one private reach-in — the tool manager's
+  registry, which the per-tool passes walk. In 2.x the request handlers call
+  the server's own public methods, so the passes that interpose on a request
+  (the toolset gate, the error envelope, compact text, and the startup hold)
+  wrap a public method on the instance through `wrap_server_method` instead of
+  patching an internal. Five seam functions that reached the low-level server
+  are deleted.
+- The server is constructed in exactly one place, `new_server()`, which hands
+  the version to the constructor. The handshake-version stamp is gone, and a
+  test fails if `MCPServer(` appears anywhere else under `src/`.
+- `httpx` stays a direct dependency for the Rancher client and its `respx`
+  suite; the SDK brings `httpx2` for its own transport.
+- `AGENTS.md` §9 now records the mistakes the port made more than once.
+  `docs/reference/python-mcp-sdk.md` is marked historical (it describes 1.x);
+  what the port learned about 2.x is in
+  `docs/reference/claude-code-mcp-client.md` §6.
+
+### Verified
+- **Through the real request path, in both eras.** The suite drives the server
+  with the SDK's in-process client, once as a legacy client and once as a
+  `2026-07-28` client: a tool call passes through every wrapper, a disabled
+  tool says why it refused, every kind of failure arrives as the JSON envelope,
+  the text block is compact, and the handshake reports this server's version
+  rather than the SDK's.
+- **Over stdio, by hand, in both eras:** 206 tools, 10 prompts, 1 resource
+  template, the five always-load and five approval-required hints, compact
+  text, a JSON error for an unknown tool. First answer in 0.56–0.62 s
+  (`server/discover`) and 0.39–0.48 s (`initialize`); the three list requests,
+  sent back to back straight after connecting, were held and then answered in
+  full about a second after the process started.
+- **With Claude Code 2.1.325:** it negotiated `2026-07-28` with no fallback to
+  `initialize`, got its probe answered 0.78 s into a window of about 3 s, had
+  `subscriptions/listen` acknowledged, listed 206 tools and 10 prompts, and
+  completed a tool call.
+- **Not verified:** a live Rancher. No tool body changed, and the HTTP layer
+  and its tests are untouched — but that is an argument, not a run.
+
 ## [1.68.0] — 2026-11-15 — Agent: Claude Fable 5.2
 ### Security
 - **Destructive tools now put a person in the loop in Claude Code**

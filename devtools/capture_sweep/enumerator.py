@@ -28,7 +28,7 @@ def load_read_only_tool_names(repo_root: Path) -> frozenset[str]:
     ``docs/tool-manifest.json`` is generated (``make tool-manifest``) and
     gated fresh (``make check-tool-manifest``), so this is the same
     read_only/destructive classification the rest of the repo trusts —
-    no need to re-derive it from FastMCP annotations here.
+    no need to re-derive it from the tools' annotations here.
     """
 
     manifest_path = repo_root / "docs" / "tool-manifest.json"
@@ -67,7 +67,7 @@ def build_capture_plan(mcp: Any, read_only_tools: frozenset[str]) -> list[ToolPl
     """Introspect every registered tool's real IMPL signature into a capture plan."""
 
     # Enumerated through `rancher_mcp.sdk_registry`, the one module allowed
-    # to reach into the SDK's internals: FastMCP publishes no API listing
+    # to reach into the SDK's internals: the SDK publishes no API listing
     # "every registered tool + its raw callable".
     tools = {tool.name: tool for tool in registered_tools(mcp)}
     plans: list[ToolPlan] = []

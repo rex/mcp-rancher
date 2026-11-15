@@ -18,14 +18,14 @@ here regardless of which layer it crept back in through.
 
 from __future__ import annotations
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 
 from rancher_mcp.sdk_registry import registered_tools
 from rancher_mcp.server import register_all_tools
 
 
-def _build_registered_server() -> FastMCP:
-    """Construct a FastMCP server with every production tool registered.
+def _build_registered_server() -> MCPServer:
+    """Construct a MCPServer server with every production tool registered.
 
     Self-contained on purpose (no shared support-module import): needs no
     ``RANCHER_URL`` / ``RANCHER_TOKEN`` / ``.env`` and can never flake on
@@ -33,7 +33,7 @@ def _build_registered_server() -> FastMCP:
     ``register_all_tools`` publishes, never calls a tool.
     """
 
-    mcp = FastMCP(name="namespace-optional-probe", instructions="probe")
+    mcp = MCPServer(name="namespace-optional-probe", instructions="probe")
     register_all_tools(mcp)
     return mcp
 
@@ -102,7 +102,7 @@ def test_no_registered_list_tool_requires_namespace() -> None:
     """Fleet-wide gate: no tool whose name ends in `_list` may have
     `namespace` in its JSON input schema's `required` list.
 
-    Scans every tool actually registered on a real `FastMCP` instance
+    Scans every tool actually registered on a real `MCPServer` instance
     (`register_all_tools`), not a hand-maintained inventory — a new list
     tool added later that reintroduces a required `namespace` fails this
     immediately.

@@ -1,6 +1,6 @@
 """{{ pack.docstring }}"""
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 
 {% for entry in import_blocks -%}
 from rancher_mcp.tools.{{ pack.id }}._generated_{{ entry.id }} import (
@@ -19,7 +19,7 @@ __all__ = [
 ]
 
 
-def {{ pack.register_function }}(mcp: FastMCP) -> None:
+def {{ pack.register_function }}(mcp: MCPServer) -> None:
     """{{ pack.register_docstring }}"""
 
 {% for reg in registrations %}

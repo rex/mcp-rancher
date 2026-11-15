@@ -5,7 +5,7 @@
 
 """Curated Kubernetes scheduling tools (PriorityClass, RuntimeClass)."""
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 
 from rancher_mcp.tools.scheduling._generated_priority_classes import (
     rancher_priority_class_get,
@@ -30,8 +30,8 @@ __all__ = [
 ]
 
 
-def register_scheduling_tools(mcp: FastMCP) -> None:
-    """Register curated scheduling tools with the FastMCP server."""
+def register_scheduling_tools(mcp: MCPServer) -> None:
+    """Register curated scheduling tools with the MCP server."""
 
     mcp.tool(name="rancher_priority_classes_list", annotations=READ_ONLY)(
         rancher_priority_classes_list_tool

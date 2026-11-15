@@ -96,7 +96,7 @@ For each resource descriptor:
 - (when `operations` includes deletes) delete with confirmation phrase
 - public `rancher_X_*_tool` MCP wrappers
 - a per-pack `register_X_tools(mcp)` function that wires the wrappers
-  with FastMCP annotations (`readOnly`, `destructive`, `idempotent`)
+  with MCP tool annotations (`readOnly`, `destructive`, `idempotent`)
   and tool descriptions
 
 ### What stays hand-written
@@ -722,7 +722,7 @@ substrate work.
   `emitter.py`.
 - `_public_names`, `_tool_metas`, `_registrations` in `plan.py` updated
   to emit `rancher_<singular>_create`,
-  `rancher_<singular>_create_tool`, and the FastMCP registration line.
+  `rancher_<singular>_create_tool`, and the registration line.
 - New CREATE OPERATION block in
   `scripts/codegen/templates/tool_module.py.j2` emitting:
   - `_create_<singular>` private async helper (composer call → POST →

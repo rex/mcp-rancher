@@ -2,4 +2,4 @@ schema_version: 1
 id: workloads
 register_function: register_workload_tools
 docstring: Curated Rancher workload-controller tools.
-register_docstring: Register curated workload-controller tools with the FastMCP server.
+register_docstring: Register curated workload-controller tools with the MCP server.

@@ -5,7 +5,7 @@
 
 """Curated settings/features tool facade."""
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 
 from rancher_mcp.tools.settings_features._generated_features import (
     rancher_feature_get,
@@ -30,8 +30,8 @@ __all__ = [
 ]
 
 
-def register_settings_feature_tools(mcp: FastMCP) -> None:
-    """Register curated settings/features tools with the FastMCP server."""
+def register_settings_feature_tools(mcp: MCPServer) -> None:
+    """Register curated settings/features tools with the MCP server."""
 
     mcp.tool(name="rancher_features_list", annotations=READ_ONLY)(rancher_features_list_tool)
     mcp.tool(name="rancher_feature_get", annotations=READ_ONLY)(rancher_feature_get_tool)

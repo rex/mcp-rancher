@@ -33,7 +33,7 @@ _populated = False
 
 
 def reset_tool_parameters() -> None:
-    """Clear the registry. Tests that build more than one isolated FastMCP
+    """Clear the registry. Tests that build more than one isolated server
     instance in the same process may call this between builds; production
     never needs to (``register_all_tools`` runs exactly once at startup)."""
 
@@ -49,12 +49,12 @@ def register_tool_parameters(tool_name: str, parameter_names: frozenset[str]) ->
 
 
 def populate_from_tools(tools: Iterable[Any]) -> None:
-    """Populate the registry from FastMCP's own registered ``Tool`` objects
+    """Populate the registry from the SDK's own registered ``Tool`` objects
     (``rancher_mcp.sdk_registry.registered_tools``).
 
     Called once by ``rancher_mcp.server.register_all_tools`` after every
     pack is registered — deliberately typed ``Any`` per item rather than
-    importing FastMCP's ``Tool`` class, so this module truly has zero
+    importing the SDK's ``Tool`` class, so this module truly has zero
     dependency on the MCP SDK or on ``tools/``, not just an informal one.
     """
 
@@ -69,7 +69,7 @@ def is_active_tool(tool_name: str) -> bool:
 
     Same "unknown means don't filter" contract as ``accepts_parameter``:
     before ``populate_from_tools`` has ever run in this process (e.g. a test
-    that builds a bare model with no FastMCP registry at all), every name is
+    that builds a bare model with no tool registry at all), every name is
     treated as active so ``next_steps`` behaves exactly as it always has.
     Once populated, a name is active only if it is a real key in the
     registry — and because ``register_all_tools`` filters (deregisters)

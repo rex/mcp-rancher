@@ -5,7 +5,7 @@
 
 """Curated Rancher Backup Operator tools (Backup, Restore on local cluster)."""
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 
 from rancher_mcp.tools.backup_operator._generated_backups import (
     rancher_backup_get,
@@ -30,8 +30,8 @@ __all__ = [
 ]
 
 
-def register_backup_operator_tools(mcp: FastMCP) -> None:
-    """Register curated Rancher Backup Operator tools with the FastMCP server."""
+def register_backup_operator_tools(mcp: MCPServer) -> None:
+    """Register curated Rancher Backup Operator tools with the MCP server."""
 
     mcp.tool(name="rancher_backups_list", annotations=READ_ONLY)(rancher_backups_list_tool)
     mcp.tool(name="rancher_backup_get", annotations=READ_ONLY)(rancher_backup_get_tool)

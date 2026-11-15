@@ -22,11 +22,12 @@ import ast
 import re
 from pathlib import Path
 
-from mcp.server.fastmcp import FastMCP
+import pytest
+from mcp import Client
+from mcp.server.mcpserver import MCPServer
 
 import rancher_mcp
-from rancher_mcp.sdk_registry import advertised_server_version
-from rancher_mcp.server import stamp_server_version
+from rancher_mcp.server import new_server
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -67,25 +68,50 @@ def test_version_is_not_read_from_installed_dist_metadata() -> None:
     assert "rancher_mcp._version" in imported
 
 
-def test_handshake_advertises_our_version_not_the_sdk_version() -> None:
-    """Regression guard for cause (1) — the bug an operator actually hit."""
+@pytest.mark.parametrize("era", ["legacy", "auto"])
+async def test_a_client_is_told_our_version_not_the_sdks(era: str) -> None:
+    """Regression guard for cause (1) — the bug an operator actually hit.
 
-    mcp = FastMCP(name="test-server")
+    Asked the way a client asks: through the SDK's own client, once over the
+    legacy handshake and once over ``server/discover``. Reading an attribute
+    back off the server would prove only that it was assigned.
+    """
 
-    # Read through `rancher_mcp.sdk_registry` — the one module allowed to touch
-    # the SDK's internals — and via `create_initialization_options()` rather
-    # than the attribute, so this asserts the value a CLIENT would be told
-    # rather than merely that an assignment happened.
-    #
-    # Precondition: FastMCP alone does NOT carry our version. If a future SDK
-    # gains a `version=` constructor arg this assert flips and we should plumb
-    # it properly instead of assigning the attribute.
-    assert advertised_server_version(mcp) != rancher_mcp.__version__
+    async with Client(new_server("version-probe", "probe"), mode=era) as client:
+        info = client.server_info
 
-    stamp_server_version(mcp)
-    stamped = advertised_server_version(mcp)
-    assert stamped == rancher_mcp.__version__
-    assert stamped == _version_file()
+    assert info is not None
+    assert info.version == rancher_mcp.__version__
+    assert info.version == _version_file()
+
+
+async def test_a_bare_sdk_server_reports_something_else() -> None:
+    """Non-vacuity for the test above: left to itself the SDK does NOT report
+    our version, so ``new_server`` passing it is doing real work."""
+
+    async with Client(MCPServer(name="bare-probe"), mode="legacy") as client:
+        info = client.server_info
+
+    assert info is not None
+    assert info.version != rancher_mcp.__version__
+
+
+def test_the_server_is_constructed_in_exactly_one_place() -> None:
+    """``new_server`` is the only construction site in the package.
+
+    The version was once missing because there were two places a server got
+    built and only one of them set it. A second ``MCPServer(...)`` call under
+    ``src/`` reopens that — it would work, pass every other test, and report
+    the SDK's version to whoever connected through it.
+    """
+
+    offenders = sorted(
+        str(path.relative_to(ROOT))
+        for path in (ROOT / "src").rglob("*.py")
+        if path.name != "server.py" and "MCPServer(" in path.read_text(encoding="utf-8")
+    )
+
+    assert not offenders, f"construct servers with rancher_mcp.server.new_server: {offenders}"
 
 
 def test_version_module_is_a_bare_generated_literal() -> None:

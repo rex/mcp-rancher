@@ -50,7 +50,7 @@ def test_every_tool_has_open_world_hint_false() -> None:
     offenders = [
         tool.name
         for tool in _TOOLS
-        if tool.annotations is None or tool.annotations.openWorldHint is not False
+        if tool.annotations is None or tool.annotations.open_world_hint is not False
     ]
     assert not offenders, (
         "these tools do not publish openWorldHint=False (either annotations "
@@ -123,10 +123,10 @@ def test_collapsed_resource_kind_tools_are_registered_with_expected_annotations(
     ):
         tool = by_name[name]
         assert tool.annotations is not None
-        assert tool.annotations.readOnlyHint is False
-        assert tool.annotations.openWorldHint is False
+        assert tool.annotations.read_only_hint is False
+        assert tool.annotations.open_world_hint is False
         assert tool.title
 
-    assert by_name["rancher_resource_delete"].annotations.destructiveHint is True
-    assert by_name["rancher_resource_set_labels"].annotations.destructiveHint is False
-    assert by_name["rancher_resource_set_annotations"].annotations.destructiveHint is False
+    assert by_name["rancher_resource_delete"].annotations.destructive_hint is True
+    assert by_name["rancher_resource_set_labels"].annotations.destructive_hint is False
+    assert by_name["rancher_resource_set_annotations"].annotations.destructive_hint is False
