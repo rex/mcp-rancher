@@ -176,6 +176,7 @@ Built for the day an agent is pointed at the cluster that pays your salary:
 |---|---|
 | **Read-only instances** | `read_only: true` refuses every mutation for that instance, before tool logic runs |
 | **Destructive confirmation** | Deletes require an explicit typed phrase (e.g. `"delete steve namespace foo"`) — no phrase, no delete |
+| **Human approval** | In Claude Code the destructive tools prompt a person on *every* call, in every permission mode including bypass (`anthropic/requiresUserInteraction`). A phrase the model can type proves the model read it; this proves a person agreed |
 | **Tool annotations** | Every tool declares `readOnlyHint` / `destructiveHint` / `idempotentHint`, so clients can gate UX on them |
 | **Audit log** | Every mutation emits a structured `event="audit"` record — tool, operation, plane, instance, resource, outcome. Argument *names* only; values never logged |
 | **Rate limiting** | Token-bucket on writes (default 60/min) — a runaway loop can't machine-gun your API |
@@ -212,6 +213,7 @@ the same test suite, and read paths have been validated live against both a
 | `RANCHER_TOOLSETS` | `all` | Comma-separated toolset profile(s) exposed at startup — see below |
 | `RANCHER_TOOLS` | — | Comma-separated tool names force-included on top of the selected profile(s) |
 | `RANCHER_EXCLUDE_TOOLS` | — | Comma-separated tool names removed, applied last — always wins over `RANCHER_TOOLS` |
+| `RANCHER_MCP_REQUIRE_APPROVAL_FOR_DESTRUCTIVE` | `true` | Publish destructive tools as needing a person's approval on every call in Claude Code. Set `false` only for an unattended pipeline that legitimately deletes — there the prompt can reach nobody and the call is denied |
 
 ### Toolset profiles
 

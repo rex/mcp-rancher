@@ -1,5 +1,49 @@
 # Changelog
 
+## [1.68.0] — 2026-11-15 — Agent: Claude Fable 5.2
+### Security
+- **Destructive tools now put a person in the loop in Claude Code**
+  (rex/mcp-rancher#7). The confirmation phrase this server requires on a delete
+  proves that whoever made the call read the phrase. It does not prove a
+  *person* did: the model can supply it alone, and in `bypassPermissions`,
+  `acceptEdits` or `auto` mode nobody is shown the call at all.
+  The five tools annotated `destructiveHint: true` — the three deletes and the
+  two generic action invokes — now carry
+  `_meta["anthropic/requiresUserInteraction"]: true`. Claude Code then shows the
+  tool's permission prompt on **every** call, in every permission mode, offers
+  no "don't ask again", and ignores allow-rules for it.
+  The targets are derived from the annotation rather than listed, so a
+  destructive tool added later is covered the day it is annotated — and it stops
+  at destructive on purpose: a prompt on every label change would only train the
+  reflex to click through. This is in addition to the confirmation phrase, which
+  remains the guard for every client that does not know the key.
+
+### Changed — behaviour to be aware of
+- **Unattended Claude Code runs can no longer call the destructive tools by
+  default.** Where a prompt can reach nobody — `dontAsk` mode, or behind
+  `--permission-prompt-tool` — Claude Code denies the call instead of waving it
+  through. A pipeline that legitimately deletes sets
+  `RANCHER_MCP_REQUIRE_APPROVAL_FOR_DESTRUCTIVE=false`. Other clients are
+  unaffected: they ignore the key.
+
+### Added
+- `RANCHER_MCP_REQUIRE_APPROVAL_FOR_DESTRUCTIVE` (default `true`).
+- Tests that assert against the published `tools/list` entries, including one
+  that checks an **independent** signal: every tool demanding a `confirmation`
+  argument must also require a person. The pass derives its targets from
+  `destructiveHint`, so a delete tool that lost the annotation would shrink both
+  sides of an annotation-only check together and still pass.
+
+### Fixed
+- `SECURITY.md` claimed "176 tools are read-only; 143 mutate; 38 are
+  destructive" — numbers from before the family collapse. It is 178 / 28 / 5,
+  and only the three deletes take a confirmation phrase, not "destructive
+  tools" at large.
+
+### Verified
+- Over the real stdio wire: exactly those five `tools/list` entries carry
+  `anthropic/requiresUserInteraction: true`.
+
 ## [1.67.0] — 2026-11-15 — Agent: Claude Fable 5.2
 ### Added
 - **Five front-door tools load upfront in Claude Code** (rex/mcp-rancher#6).

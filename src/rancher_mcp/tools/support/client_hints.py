@@ -17,9 +17,11 @@ from __future__ import annotations
 
 from typing import Any, Final
 
+from rancher_mcp.config import get_toolset_settings
 from rancher_mcp.sdk_registry import registered_tools
 
 ALWAYS_LOAD_META_KEY: Final = "anthropic/alwaysLoad"
+REQUIRES_USER_INTERACTION_META_KEY: Final = "anthropic/requiresUserInteraction"
 
 #: The front door: the tools that are plausible FIRST calls in a session.
 #:
@@ -71,3 +73,38 @@ def apply_always_load(mcp: Any) -> None:
     for tool in registered_tools(mcp):
         if tool.name in ALWAYS_LOAD_TOOLS:
             tool.meta = {**(tool.meta or {}), ALWAYS_LOAD_META_KEY: True}
+
+
+def apply_requires_user_interaction(mcp: Any) -> None:
+    """Make Claude Code put a person in front of every destructive call.
+
+    The confirmation phrase this server requires on a delete proves that
+    whoever made the call read the phrase. It does not prove a *person* did:
+    the model can supply it by itself, and in ``bypassPermissions``,
+    ``acceptEdits`` or ``auto`` mode nobody is shown the call at all.
+
+    ``anthropic/requiresUserInteraction`` closes that. Claude Code then shows
+    the tool's permission prompt on every call, in every permission mode, with
+    no "don't ask again", and ignores allow-rules for it. Where a prompt can
+    reach nobody — ``dontAsk`` mode, or behind ``--permission-prompt-tool`` —
+    the call is denied instead of waved through.
+
+    Which tools is derived, not listed: every tool annotated
+    ``destructiveHint: true``. One source of truth means a destructive tool
+    added later is covered the day it is annotated, and it deliberately stops
+    there — a prompt on every label change would only train the reflex to
+    click through, which defeats the point.
+
+    This is in addition to the confirmation phrase, not instead of it: the
+    phrase is still the guard for every client that does not know this key.
+
+    ``RANCHER_MCP_REQUIRE_APPROVAL_FOR_DESTRUCTIVE=false`` turns it off, for an
+    unattended pipeline that legitimately deletes. Construction time only.
+    """
+
+    if not get_toolset_settings().require_approval_for_destructive:
+        return
+    for tool in registered_tools(mcp):
+        annotations = tool.annotations
+        if annotations is not None and annotations.destructiveHint is True:
+            tool.meta = {**(tool.meta or {}), REQUIRES_USER_INTERACTION_META_KEY: True}

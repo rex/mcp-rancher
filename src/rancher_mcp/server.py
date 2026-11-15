@@ -73,11 +73,17 @@ def register_all_tools(mcp: FastMCP) -> None:
 
     apply_compact_output_schemas(mcp)
     # A third data pass: client hints carried in each tool's `_meta`. Claude
-    # Code defers every tool definition behind tool search by default; this
-    # marks the handful of front-door tools to load upfront instead.
-    from rancher_mcp.tools.support.client_hints import apply_always_load
+    # Code defers every tool definition behind tool search by default, so one
+    # marks the handful of front-door tools to load upfront instead; the other
+    # makes it put a person in front of every destructive call, in any
+    # permission mode — which a model-supplied confirmation phrase cannot do.
+    from rancher_mcp.tools.support.client_hints import (
+        apply_always_load,
+        apply_requires_user_interaction,
+    )
 
     apply_always_load(mcp)
+    apply_requires_user_interaction(mcp)
     # Order (each apply wraps the previous, so the LAST is outermost at call time):
     # sensitive-reveal audit is INNERMOST (M-SEC) — it wraps the impl and emits an
     # audit record on the raw successful reveal; capability-unavailable translation

@@ -19,7 +19,13 @@ from mcp.types import Tool
 from rancher_mcp.config import clear_toolset_settings_cache
 from rancher_mcp.next_step_targets import reset_tool_parameters
 from rancher_mcp.server import register_all_tools
-from rancher_mcp.tools.support.client_hints import ALWAYS_LOAD_META_KEY, ALWAYS_LOAD_TOOLS
+from rancher_mcp.tools.support.client_hints import (
+    ALWAYS_LOAD_META_KEY,
+    ALWAYS_LOAD_TOOLS,
+    REQUIRES_USER_INTERACTION_META_KEY,
+)
+
+_APPROVAL_SWITCH = "RANCHER_MCP_REQUIRE_APPROVAL_FOR_DESTRUCTIVE"
 
 #: Characters of name + description + input schema the whole front door may
 #: cost. It is paid on every turn of every session the server is connected to,
@@ -49,6 +55,7 @@ def _restore_full_registry(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
 
     yield
     monkeypatch.delenv("RANCHER_EXCLUDE_TOOLS", raising=False)
+    monkeypatch.delenv(_APPROVAL_SWITCH, raising=False)
     clear_toolset_settings_cache()
     reset_tool_parameters()
     register_all_tools(FastMCP(name="client-hints-restore-probe"))
@@ -124,3 +131,77 @@ async def test_a_profile_that_drops_a_front_door_tool_just_has_a_smaller_front_d
         name for name, tool in published.items() if (tool.meta or {}).get(ALWAYS_LOAD_META_KEY)
     }
     assert marked == ALWAYS_LOAD_TOOLS - {dropped}
+
+
+# --- anthropic/requiresUserInteraction --------------------------------------
+
+
+def _needs_a_person(published: dict[str, Tool]) -> set[str]:
+    """Tools published as requiring approval — strictly the JSON boolean
+    ``true``, which is the only value Claude Code honours."""
+
+    return {
+        name
+        for name, tool in published.items()
+        if (tool.meta or {}).get(REQUIRES_USER_INTERACTION_META_KEY) is True
+    }
+
+
+async def test_every_destructive_tool_requires_a_person_and_nothing_else_does() -> None:
+    published = await _published(build_registered_server())
+    destructive = {
+        name
+        for name, tool in published.items()
+        if tool.annotations is not None and tool.annotations.destructiveHint is True
+    }
+
+    assert destructive, "no tool is annotated destructive, so this would check nothing"
+    assert _needs_a_person(published) == destructive
+
+
+async def test_every_tool_that_demands_a_confirmation_phrase_also_requires_a_person() -> None:
+    """An independent signal, on purpose.
+
+    The pass derives its targets from ``destructiveHint``. If a delete tool
+    ever lost that annotation, the check above would still pass — both sides
+    of it would shrink together. A ``confirmation`` parameter is the other
+    mark of a destructive tool, and it does not move when an annotation does.
+    """
+
+    published = await _published(build_registered_server())
+    demands_phrase = {
+        name
+        for name, tool in published.items()
+        if "confirmation" in tool.inputSchema.get("properties", {})
+    }
+
+    assert len(demands_phrase) >= 3, "the delete tools should all demand a confirmation phrase"
+    assert demands_phrase <= _needs_a_person(published)
+
+
+async def test_no_read_only_tool_requires_a_person() -> None:
+    """A prompt in front of a read would train the reflex to click through."""
+
+    published = await _published(build_registered_server())
+
+    for name in _needs_a_person(published):
+        annotations = published[name].annotations
+        assert annotations is not None and annotations.readOnlyHint is not True, name
+
+
+@pytest.mark.usefixtures("_restore_full_registry")
+async def test_the_switch_turns_approval_off_and_touches_nothing_else(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv(_APPROVAL_SWITCH, "false")
+    clear_toolset_settings_cache()
+    mcp = FastMCP(name="client-hints-unattended-probe")
+
+    register_all_tools(mcp)
+    published = await _published(mcp)
+
+    assert _needs_a_person(published) == set()
+    front_door = {
+        name for name, tool in published.items() if (tool.meta or {}).get(ALWAYS_LOAD_META_KEY)
+    }
+    assert front_door == ALWAYS_LOAD_TOOLS

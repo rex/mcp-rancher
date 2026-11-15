@@ -31,10 +31,17 @@ disclosure.
 
 **What an agent can do through this server**
 
-- 176 tools are read-only; 143 mutate; 38 are destructive
+- 178 tools are read-only; 28 mutate; 5 of those are destructive
   (see [`docs/tool-manifest.json`](docs/tool-manifest.json) — generated from
   the registry, per-tool safety annotations included).
-- Destructive tools require an explicit typed confirmation phrase.
+- The three delete tools require an explicit typed confirmation phrase.
+- All five destructive tools (the deletes and the two generic action invokes)
+  are published with `anthropic/requiresUserInteraction`: Claude Code prompts a
+  person on every call to them, in every permission mode including
+  `bypassPermissions`, offers no "don't ask again", and denies the call
+  outright where a prompt can reach nobody. The confirmation phrase alone can
+  be supplied by the model; this cannot. Operators of an unattended pipeline
+  can turn it off with `RANCHER_MCP_REQUIRE_APPROVAL_FOR_DESTRUCTIVE=false`.
 - Every mutation is audit-logged (structured `event="audit"` records:
   tool, operation, plane, instance, resource, outcome — argument *names*
   only, never values).

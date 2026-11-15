@@ -173,6 +173,15 @@ class ToolsetSettings(BaseSettings):
     toolsets: str = Field(default="all", alias="RANCHER_TOOLSETS")
     include_tools: str = Field(default="", alias="RANCHER_TOOLS")
     exclude_tools: str = Field(default="", alias="RANCHER_EXCLUDE_TOOLS")
+    # Whether destructive tools are published as needing a person's approval on
+    # every call (see `tools/support/client_hints.py`). It lives here, not on
+    # `AppSettings`, for the reason in the docstring above: it shapes what is on
+    # the wire, not which Rancher is reachable. The only reason to turn it off is
+    # an unattended pipeline that legitimately deletes — there the prompt can
+    # reach nobody, so the client denies the call outright.
+    require_approval_for_destructive: bool = Field(
+        default=True, alias="RANCHER_MCP_REQUIRE_APPROVAL_FOR_DESTRUCTIVE"
+    )
 
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=False, extra="ignore")
 
