@@ -245,6 +245,20 @@ naming the tool, the toolset that would enable it, and the env var to set —
 never a bare "unknown tool", which would make a disabled tool indistinguishable
 from a typo.
 
+### Front-door tools
+
+Because Claude Code defers tool definitions, the model's first Rancher call
+normally costs a tool-search round trip. Five tools opt out and load upfront —
+the ones that are plausible *first* calls in a session:
+`rancher_clusters_health_summary`, `rancher_cluster_health_check`,
+`rancher_find_failing_pods`, `rancher_find_unready_nodes` and
+`rancher_resource_events`. They carry `_meta["anthropic/alwaysLoad"]`, cost
+about 590 tokens of context between them, and a test budgets the set so it
+cannot grow by accretion.
+
+Other clients ignore the hint. To defer everything again in Claude Code, set
+`"alwaysLoad": false` on this server's entry in your MCP configuration.
+
 ## Project status
 
 Shipping and stable for **read, triage, and guarded write** operations. Honest

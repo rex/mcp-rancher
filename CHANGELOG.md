@@ -1,5 +1,39 @@
 # Changelog
 
+## [1.67.0] — 2026-11-15 — Agent: Claude Fable 5.2
+### Added
+- **Five front-door tools load upfront in Claude Code** (rex/mcp-rancher#6).
+  With tool search — Claude Code's default — only tool *names* and the server
+  instructions load at session start, so the model's first Rancher call costs a
+  search round trip. `rancher_clusters_health_summary`,
+  `rancher_cluster_health_check`, `rancher_find_failing_pods`,
+  `rancher_find_unready_nodes` and `rancher_resource_events` now carry
+  `_meta["anthropic/alwaysLoad"]: true`. It is the `core` profile idea delivered
+  without removing a tool: a small always-visible entrance, everything else
+  still discoverable.
+  Chosen by measuring, not by taste. Membership is "would the model reach for
+  this before it has learned anything?", because each entry costs context on
+  every turn of every session the server is connected to — including the ones
+  that are not about Rancher. The five cost about 2,360 characters (~590 tokens)
+  of name, description and input schema; for scale, loading all 206 definitions
+  upfront would cost ~32,600 tokens.
+  Other clients ignore the key. `"alwaysLoad": false` on the server's MCP config
+  entry defers everything again.
+- `src/rancher_mcp/tools/support/client_hints.py` — the home for hints a client
+  reads from a tool's `_meta`. `tests/unit/test_client_hints.py` asserts against
+  the `tools/list` entries the SDK actually builds, not the attribute the pass
+  assigns, and budgets the set (≤ 9 tools, ≤ 3,000 characters, all read-only) so
+  it cannot grow by accretion.
+
+### Changed
+- The seam's `RegisteredTool` Protocol gained `meta` and `annotations`, and its
+  contract test now reads the field list off the Protocol instead of a
+  hand-written copy — which had already gone stale the moment the Protocol grew.
+
+### Verified
+- Over the real stdio wire: exactly those five `tools/list` entries carry the
+  hint; payload 410,668 B (+180 B).
+
 ## [1.66.0] — 2026-11-15 — Agent: Claude Fable 5.2
 ### Changed
 - **The text half of every tool result is now compact JSON** (rex/mcp-rancher#5).

@@ -49,9 +49,11 @@ class RegisteredTool(Protocol):
     down in one place instead of being implied by scattered attribute access.
 
     Every field here is public SDK API, so a port has only to confirm these
-    six names survive. ``fn_metadata`` is deliberately ``Any``: the output-schema
-    parity check reads ``fn_metadata.output_model`` off it, but nothing here
-    should grow an opinion about the SDK's own metadata type.
+    eight names survive. ``fn_metadata`` and ``annotations`` are deliberately
+    ``Any``: the output-schema parity check reads ``fn_metadata.output_model``
+    and the client-hints pass reads ``annotations.destructiveHint``, but nothing
+    here should grow an opinion about the SDK's own types. ``meta`` is what the
+    SDK publishes as the tool's ``_meta`` in ``tools/list``.
     ``output_schema`` is a ``functools.cached_property`` on
     the real class rather than a model field; assigning it (as schema
     compaction does) populates the cache, which is what makes the published
@@ -63,6 +65,8 @@ class RegisteredTool(Protocol):
     title: str | None
     fn: Callable[..., Any]
     fn_metadata: Any
+    annotations: Any
+    meta: dict[str, Any] | None
     parameters: dict[str, Any]
     output_schema: dict[str, Any] | None
 

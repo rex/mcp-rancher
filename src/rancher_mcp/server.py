@@ -72,6 +72,12 @@ def register_all_tools(mcp: FastMCP) -> None:
     from rancher_mcp.schema_compaction import apply_compact_output_schemas
 
     apply_compact_output_schemas(mcp)
+    # A third data pass: client hints carried in each tool's `_meta`. Claude
+    # Code defers every tool definition behind tool search by default; this
+    # marks the handful of front-door tools to load upfront instead.
+    from rancher_mcp.tools.support.client_hints import apply_always_load
+
+    apply_always_load(mcp)
     # Order (each apply wraps the previous, so the LAST is outermost at call time):
     # sensitive-reveal audit is INNERMOST (M-SEC) — it wraps the impl and emits an
     # audit record on the raw successful reveal; capability-unavailable translation

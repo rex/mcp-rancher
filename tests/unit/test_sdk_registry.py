@@ -19,6 +19,7 @@ from mcp.server.fastmcp import FastMCP
 
 from rancher_mcp.sdk_registry import (
     DispatchFn,
+    RegisteredTool,
     advertised_server_version,
     install_list_tools_handler,
     installed_list_tools_handler,
@@ -169,16 +170,16 @@ async def test_install_list_tools_handler_displaces_the_sdk_handler() -> None:
     assert called == [True]
 
 
-@pytest.mark.parametrize(
-    "name",
-    ["fn", "fn_metadata", "name", "output_schema", "parameters", "title"],
-)
+@pytest.mark.parametrize("name", sorted(RegisteredTool.__annotations__))
 def test_registered_tool_protocol_matches_the_real_sdk_tool(name: str) -> None:
     """Every field the seam's ``RegisteredTool`` promises must really exist.
 
     The Protocol is structural, so nothing type-checks it against the SDK's
     concrete class — a field could be renamed upstream and the seam would keep
     claiming it until something read it at runtime, deep inside a pass.
+
+    The field list is read off the Protocol itself. It used to be written out
+    by hand here, and so went stale the first time the Protocol grew.
     """
 
     tool: Any = registered_tools(registry_with("rancher_pods_list"))[0]
