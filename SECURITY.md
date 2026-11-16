@@ -118,9 +118,9 @@ disclosure.
 | 1.76.0 | 1.0.0 – 1.75.0 | **A read could open a session.** A cluster's `shell` link is a kubectl shell, and Rancher creates the pod it runs in before it checks that the request is a WebSocket upgrade. The link-follow tools, which a read-only instance allows, followed it with a GET. A link to a WebSocket endpoint is no longer followed and no request carries a `shell` parameter. From Rancher's source; not verified against a live Rancher. |
 | 1.76.0 | none over MCP | **A query parameter could overrule the request's method.** Rancher takes the HTTP method from `?_method=` and treats `?action=remove` as a delete; the generic tools passed `params_json` into the query string. A list on a read-only instance could have written, and a patch could have deleted unconfirmed. A separate defect rejected every such argument before it reached a tool, so no published version was exposed through MCP — it was closed in the release that fixed that defect. A caller can no longer set either parameter, and the transport never sends `_method`, nor `action` on anything but a POST. |
 
-Versions 1.60.0 – 1.75.0 were never published to PyPI. **1.76.0 is the first
-published release that contains every fix above**; the last one before it is
-1.59.0.
+Versions 1.60.0 – 1.76.0 were never published to PyPI. **1.77.0 is the first
+published release, and it contains every fix above**; the last one before it
+is 1.59.0.
 
 ## Hardening recommendations
 

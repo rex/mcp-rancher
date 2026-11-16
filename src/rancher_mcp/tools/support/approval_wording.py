@@ -26,9 +26,11 @@ from rancher_mcp.services.resource_queries import parse_query_params
 from rancher_mcp.services.resources.schema import parse_payload_object
 from rancher_mcp.services.safety import require_consistent_namespace
 
-# The longest a set of options is shown at. Past this it would push the
-# question itself — what, and where — off the screen.
-_SHOWN_LIMIT = 400
+# A string value is shown up to this length, then cut with its true length.
+_LEAF_LIMIT = 80
+# The longest a set of options may be once its strings are cut. Past this it
+# cannot be shown in full, and a set that cannot be shown in full is refused.
+_SHOWN_LIMIT = 1000
 
 # A key containing any of these (ignoring case and punctuation) holds a value
 # that is masked in a question: `newPassword`, `secret_key`, `bootstrapToken`.
@@ -80,14 +82,35 @@ def _looks_secret(key: object) -> bool:
     return any(hint in name for hint in _SECRET_HINTS)
 
 
-def _compact(value: Mapping[str, object]) -> str:
-    """*value* on one line, with secrets masked, and not long enough to bury
-    the question it is part of."""
+def _shortened(value: object) -> object:
+    """*value* with every long string cut — and every key kept."""
 
-    text = json.dumps(_masked(dict(value)), sort_keys=True)
-    if len(text) <= _SHOWN_LIMIT:
-        return text
-    return f"{text[:_SHOWN_LIMIT]}… ({len(text)} characters in all)"
+    if isinstance(value, str) and len(value) > _LEAF_LIMIT:
+        return f"{value[:_LEAF_LIMIT]}... ({len(value)} characters)"
+    if isinstance(value, dict):
+        items = cast(dict[object, object], value).items()
+        return {key: _shortened(item) for key, item in items}
+    if isinstance(value, list):
+        return [_shortened(item) for item in cast(list[object], value)]
+    return value
+
+
+def _compact(source_name: str, value: Mapping[str, object]) -> str:
+    """*value* on one line: every key, secrets masked, long strings cut.
+
+    Never cut as a whole. A key that falls off the end of a truncated line is
+    an option a person approved without seeing it — and keys are sorted, so a
+    caller could choose which ones fall off by adding one that sorts first.
+    What is too long to show in full is refused, and nobody is asked.
+    """
+
+    text = json.dumps(_shortened(_masked(dict(value))), sort_keys=True)
+    if len(text) > _SHOWN_LIMIT:
+        raise RancherInvalidArgumentError(
+            f"{source_name} is too long to put to a person in full ({len(text)} characters; "
+            f"the limit is {_SHOWN_LIMIT}), so nobody was asked. Send fewer options."
+        )
+    return text
 
 
 def _sent_with(*, params_json: str | None, payload_json: str | None, body: str) -> str:
@@ -101,9 +124,9 @@ def _sent_with(*, params_json: str | None, payload_json: str | None, body: str) 
 
     params = parse_query_params(params_json)
     payload = parse_payload_object(payload_json)
-    shown = f"\n\nWith query options: {_compact(params)}" if params else ""
+    shown = f"\n\nWith query options: {_compact('params_json', params)}" if params else ""
     if payload:
-        shown += f"\n\n{body}: {_compact(payload)}"
+        shown += f"\n\n{body}: {_compact('payload_json', payload)}"
     return shown
 
 

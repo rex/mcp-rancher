@@ -67,11 +67,13 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 ### 📌 HANDOFF (2026-11-15): port SHIPPED (v1.69.0); two defects found and fixed after it (v1.70.0, v1.71.0); #8 shipped (v1.72.0); #9 half done (v1.73.0); the package starts (v1.74.0); request-path hardening (v1.75.0, v1.76.0)
 
 **Release.** Pierce asked for one on 2026-11-15 — the server had just been
-listed on mcprush. **v1.76.0 is the version to tag.** v1.75.0 was reviewed
-again before tagging and blocked, so it was never tagged. Before this, the last
-tag and the PyPI latest were both v1.59.0, which does not start outside a
-checkout; 1.60.0–1.75.0 were never published. Check PyPI for what is actually
-out before assuming either way.
+listed on mcprush. **v1.77.0 is the version to tag.** v1.75.0 and v1.76.0 were
+each reviewed on Opus before tagging: the first was blocked, the second
+approved with four notes that v1.77.0 fixes
+([#35](https://github.com/rex/mcp-rancher/issues/35)), so neither was tagged.
+Before this, the last tag and the PyPI latest were both v1.59.0, which does not
+start outside a checkout; 1.60.0–1.76.0 were never published. Check PyPI for
+what is actually out before assuming either way.
 
 - **v1.76.0 — security** ([#33](https://github.com/rex/mcp-rancher/issues/33),
   ADR-0003 second addendum). The second review found that a resource id of `/`

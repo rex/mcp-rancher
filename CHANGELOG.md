@@ -1,5 +1,31 @@
 # Changelog
 
+## [1.77.0] — 2026-11-15 — Agent: Claude Fable 5.2
+The third review, of 1.76.0, approved it with four notes and no blocker. One
+of the notes made a line of 1.76.0's own entry untrue, so they are fixed here
+rather than after the release. **1.76.0 was never published either; this is
+the release.** (rex/mcp-rancher#35)
+
+### Security
+- **Options can no longer be padded out of the approval question.** 1.76.0
+  showed a call's options and cut them, as a whole, at 400 characters. Keys
+  are sorted — so one padding key that sorted first filled the line, and
+  `propagationPolicy` and `gracePeriodSeconds` fell off the end of it: unseen,
+  and approved. Nothing is cut as a whole any more. Every key is shown, at
+  every depth; a long *string* is shortened with its true length; and a set of
+  options too long to show in full is refused, with nobody asked.
+- The transport judges a `DELETE` on a Kubernetes collection, and a WebSocket
+  to `/exec`, by the path the server will route — decoded — not by how it is
+  spelled. Nothing could reach either spelled otherwise; it is the last check,
+  and now reads as its neighbours do.
+
+### Fixed
+- The 253-character limit on a name applied to a whole management-plane id.
+  Such an id is `namespace:name`, and each part may be that long.
+- Codegen stops on a path placeholder it does not recognise (`{clusterId}`,
+  `{}`) instead of emitting it as text, which would have been sent with its
+  braces and never checked. `{node2_id}` is recognised.
+
 ## [1.76.0] — 2026-11-15 — Agent: Claude Fable 5.2
 1.75.0 was reviewed a second time before it was tagged, and the review blocked
 it. This is what it found. **1.75.0 was never published.**

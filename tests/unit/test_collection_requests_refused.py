@@ -45,6 +45,9 @@ def _config() -> RancherInstanceConfig:
         ("delete_json", f"{_K8S}/apis/apiextensions.k8s.io/v1/customresourcedefinitions"),
         ("delete_json", "/k8s/clusters/local/apis/management.cattle.io/v3/clusters"),
         ("delete_json", "/api/v1/namespaces/shop/secrets"),
+        # ...judged as the server will route it, not as it is spelled
+        ("delete_json", f"{_K8S}/api/v1/%6Eamespaces/shop/pods"),
+        ("delete_json", "/k8s/clusters/c-prod/%61pi/v1/pods"),
         # a mutation on a path that ends in `/`
         ("delete_json", f"{_K8S}/api/v1/namespaces/shop/pods/"),
         ("patch_json", f"{_K8S}/apis/apps/v1/namespaces/shop/deployments/"),

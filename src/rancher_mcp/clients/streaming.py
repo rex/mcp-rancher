@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
+from urllib.parse import unquote
 
 import httpx
 from websockets.typing import Subprotocol
@@ -153,7 +154,8 @@ class RancherStreamingClient:
         single message is sent.
         """
 
-        acts_on_connect = path.partition("?")[0].rstrip("/").endswith(_SESSION_SUBRESOURCES)
+        route = unquote(path.partition("?")[0]).rstrip("/")
+        acts_on_connect = route.endswith(_SESSION_SUBRESOURCES)
         self._refuse_unsafe("POST" if outbound_messages or acts_on_connect else "GET", path, params)
         return await _websocket_capture(
             instance_name=self.instance_name,

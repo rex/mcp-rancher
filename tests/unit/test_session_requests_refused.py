@@ -111,7 +111,7 @@ def test_a_caller_cannot_ask_for_a_shell_or_name_a_link(key: str, source_name: s
         parse_query_params(f'{{"{key}": "shell"}}', source_name=source_name)
 
 
-@pytest.mark.parametrize("subresource", ["exec", "attach", "portforward"])
+@pytest.mark.parametrize("subresource", ["exec", "attach", "portforward", "%65xec", "exec/"])
 async def test_a_session_websocket_is_a_mutation_with_nothing_sent(subresource: str) -> None:
     """On a read-only instance it is refused as any write is — with no
     outbound messages at all, which used to make it a read."""

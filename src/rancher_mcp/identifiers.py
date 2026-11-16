@@ -65,7 +65,9 @@ def require_safe_identifier(label: str, value: str, *, single_segment: bool = Fa
             f"`{label}` contains a '.' or '..' path segment, which would address a "
             "different resource than the one it names"
         )
-    if any(len(segment) > _LONGEST_NAME for segment in segments):
+    # A management-plane id joins names with `:` (`namespace:name`), and each
+    # of those may be as long as a name may be.
+    if any(len(part) > _LONGEST_NAME for segment in segments for part in segment.split(":")):
         raise RancherInvalidArgumentError(
             f"`{label}` is longer than any Rancher or Kubernetes name ({_LONGEST_NAME} characters)"
         )

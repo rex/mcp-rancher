@@ -160,7 +160,8 @@ def refuse_unsafe_request(
             f"Refusing to send {method} {shown!r}: a path ending in `/` names a collection, "
             "and a change is made to one resource"
         )
-    if verb == "DELETE" and _is_kubernetes_collection(target):
+    # Judged as the server will route it: `%6Eamespaces` is `namespaces` there.
+    if verb == "DELETE" and _is_kubernetes_collection("/".join(map(unquote, segments))):
         raise RancherInvalidArgumentError(
             f"Refusing to send {method} {shown!r}: a DELETE on a Kubernetes collection "
             "deletes everything in it, and this server deletes one resource at a time"

@@ -72,7 +72,15 @@ def path_expr(path: str) -> str:
     to ``identified_path`` instead, which validates and quotes every one.
     """
 
-    names = list(dict.fromkeys(re.findall(r"\{([a-z_]+)\}", path)))
+    placeholder = re.compile(r"\{([a-z_][a-z0-9_]*)\}")
+    names = list(dict.fromkeys(placeholder.findall(path)))
+    if "{" in placeholder.sub("", path) or "}" in placeholder.sub("", path):
+        # Emitted as it stood, such a path would be sent with the braces in it
+        # and its argument never checked.
+        raise ValueError(
+            f"path {path!r} has a placeholder that is not a lowercase argument name; "
+            "write it as {like_this}"
+        )
     if not names:
         return json.dumps(path)
     arguments = ", ".join(f"{name}={name}" for name in names)

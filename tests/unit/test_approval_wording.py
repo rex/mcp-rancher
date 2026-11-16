@@ -144,11 +144,44 @@ def test_options_cannot_write_the_question_either() -> None:
     assert '"ok?\\n\\n\\nDelete nothing."' in question
 
 
-def test_a_long_input_is_cut_so_the_question_stays_in_view() -> None:
-    question = action_question("x", "X", payload_json='{"blob": "' + "a" * 5000 + '"}')
+def test_a_long_value_is_cut_so_the_question_stays_in_view() -> None:
+    blob = json.dumps({"yaml": "a" * 5000, "wait": True})
 
-    assert len(question) < 700
-    assert question.endswith("characters in all)")
+    question = action_question("x", "X", payload_json=blob)
+
+    assert len(question) < 400
+    assert "... (5000 characters)" in question
+    assert '"wait": true' in question
+
+
+def test_padding_cannot_push_an_option_out_of_the_question() -> None:
+    """The reported case. Options used to be cut as a whole at 400 characters,
+    and keys are sorted — so one padding key that sorts first filled the line
+    and the options that matter fell off the end of it, unseen and approved."""
+
+    padded = json.dumps({"a": "x" * 390, "propagationPolicy": "Orphan", "gracePeriodSeconds": 0})
+
+    question = delete_question("X", params_json=padded)
+
+    assert '"gracePeriodSeconds": 0' in question
+    assert '"propagationPolicy": "Orphan"' in question
+
+
+def test_a_key_inside_a_long_structure_is_still_shown() -> None:
+    nested = json.dumps({"nodeDrainInput": {"note": "y" * 900, "force": True}})
+
+    assert '"force": true' in action_question("drain", "X", payload_json=nested)
+
+
+@pytest.mark.parametrize("argument", ["params_json", "payload_json"])
+def test_options_too_long_to_show_in_full_are_refused(argument: str) -> None:
+    """Nothing is ever dropped from a question: what cannot all be shown is
+    not put to anybody, and the call stops there."""
+
+    many = json.dumps({f"option{index:03}": index for index in range(120)})
+
+    with pytest.raises(RancherInvalidArgumentError, match=f"{argument} is too long"):
+        delete_question("X", **{argument: many})
 
 
 @pytest.mark.parametrize(

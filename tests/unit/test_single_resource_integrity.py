@@ -77,6 +77,10 @@ def test_an_identifier_longer_than_any_name_is_refused() -> None:
     with pytest.raises(RancherInvalidArgumentError, match="`namespace` is longer"):
         require_safe_identifier("namespace", "a" * 254, single_segment=True)
     assert require_safe_identifier("namespace", "a" * 253, single_segment=True)
+    # A management-plane id is `namespace:name`, and each part may be that long.
+    assert require_safe_identifier("resource_id", f"shop:{'a' * 253}", single_segment=True)
+    with pytest.raises(RancherInvalidArgumentError, match="`resource_id` is longer"):
+        require_safe_identifier("resource_id", f"shop:{'a' * 254}", single_segment=True)
 
 
 # ── The path ────────────────────────────────────────────────────────────────

@@ -133,7 +133,8 @@ above checked the wrong half of a request. It asked *what method is this?* and
 trusted the path. Three things made the path, and then the method itself,
 untrustworthy. All were addressed in 1.75.0
 ([#27](https://github.com/rex/mcp-rancher/issues/27)) — incompletely, as the
-second addendum below records. 1.76.0 is the first release to carry them.
+second addendum below records. 1.76.0 is the first version to carry them, and
+1.77.0 the first one published.
 
 **The path.** Identifiers were percent-quoted into URL paths. `quote("..")` is
 `..`, and the HTTP library resolves dot segments before sending, so a request
@@ -242,3 +243,13 @@ principal id such as `local://name` — is refused by the curated tools
 `tools/*/paths.py` helpers quote their identifiers without validating them, so
 a malformed one is refused by the transport, which cannot say which argument
 it was (same issue).
+
+**A third review, of 1.76.0, approved it** — no way found to act on anything
+but the one resource named, to write through a read-only instance, or to send
+the token elsewhere; no legitimate call found refused. Its four notes are fixed
+in 1.77.0 ([#35](https://github.com/rex/mcp-rancher/issues/35)). The one that
+mattered is a rule for anything shown to a person: **never cut it as a
+whole.** 1.76.0 truncated a call's options at a fixed length, and keys sort —
+so a caller could choose which options fell off the end. Every key is shown
+now, long strings are shortened individually, and what cannot be shown in
+full is not put to anybody.
