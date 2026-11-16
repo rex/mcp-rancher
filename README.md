@@ -65,7 +65,7 @@ slice tracking is [`docs/tool-catalog.md`](docs/tool-catalog.md).
 | **Generic engine** | CRUD + actions + links + watch on *any* resource, both planes | `rancher_steve_resource_list`, `rancher_norman_resource_action_invoke`, `rancher_steve_resource_watch` |
 | **Curated reads** | Typed, shaped responses across ~25 domains | `rancher_pods_list`, `rancher_deployments_list`, `rancher_longhorn_volumes_list`, `rancher_policy_reports_list` |
 | **Curated writes** | Guarded mutations | `rancher_deployment_scale`, `rancher_deployment_restart`, `rancher_cron_job_suspend`, `rancher_node_cordon`, `rancher_secret_create` |
-| **Operator rollups** | One-call triage | `rancher_cluster_health_check`, `rancher_find_failing_pods`, `rancher_find_stalled_rollouts`, `rancher_project_health_summary` |
+| **Operator rollups** | One-call triage, and waiting on a change | `rancher_cluster_health_check`, `rancher_find_failing_pods`, `rancher_find_stalled_rollouts`, `rancher_project_health_summary`, `rancher_rollout_wait` |
 
 Domains covered: clusters & nodes · projects & namespaces · workloads · pods &
 services · storage · networking · config & secrets *(values masked)* ·
@@ -121,6 +121,10 @@ claude mcp add rancher \
 `uvx` keeps using the version it first downloaded. Write `rancher-mcp@latest`
 in place of `rancher-mcp` to pick up a new release.
 
+> **On 1.59.0 or earlier? Upgrade.** Those versions do not start from a normal
+> install, and 1.77.0 closed security issues that affect every version before
+> it — see the [security history](SECURITY.md#security-history).
+
 ### From source
 
 ```bash
@@ -147,6 +151,7 @@ RANCHER_DEFAULT_INSTANCE=production
 
 Every tool takes an optional `instance` argument. Instances flagged
 `read_only: true` refuse **all** mutations at the settings layer.
+`RANCHER_DEFAULT_INSTANCE` has to name one of them.
 
 ## Architecture
 
@@ -159,7 +164,7 @@ flowchart LR
         L1[Discovery & schema<br/>planes · schemas · capabilities]
         L2[Generic engine<br/>any resource · both planes<br/>CRUD · actions · links · watch]
         L3[Curated tools<br/>typed models · shaped output<br/>next-step hints]
-        G[Safety layer<br/>read-only guard · confirmation phrases<br/>audit log · rate limit · masking]
+        G[Safety layer<br/>read-only guard · request guard<br/>confirmation phrases · human approval<br/>audit log · rate limit · masking]
         L1 --> L2 --> L3
         L3 --> G
         L2 --> G
@@ -184,10 +189,11 @@ Built for the day an agent is pointed at the cluster that pays your salary:
 | Guard | Behavior |
 |---|---|
 | **Read-only instances** | `read_only: true` refuses every mutation for that instance before anything is sent — and the HTTP client of a read-only instance sends nothing but reads, so a tool that failed to refuse still could not write |
+| **One resource, as named** | A request goes to the resource its arguments name, by the method it was sent with — nothing else. Every identifier is checked where it enters a path (no `..`, no empty segment, no `/` where one name is meant), and the HTTP client refuses whatever gets past: a path that would resolve elsewhere, a host, a query parameter Rancher reads as a change of method, and any `DELETE` addressed to a whole Kubernetes collection |
 | **Destructive confirmation** | Deletes require an explicit typed phrase (e.g. `"delete steve namespace foo"`) — no phrase, no delete |
-| **Human approval** | A phrase the model can type proves the model read it; this proves a person agreed. Two mechanisms, both on for the destructive tools. **Any client that supports MCP elicitation** is shown a question the server worded — *Delete deployment "web" in namespace "shop" on cluster "c-m-abc"?* — and the tool does not run unless a person ticks the box and accepts. **Claude Code** additionally shows its own permission prompt on every call, in every permission mode including bypass (`anthropic/requiresUserInteraction`). A client that can do neither falls back to the confirmation phrase; nothing is waved through |
+| **Human approval** | A phrase the model can type proves the model read it; this proves a person agreed. **Any client that supports MCP elicitation** is shown a question the server worded — *Delete deployment "web" in namespace "shop" on cluster "c-m-abc"?* — with every option the call carries, and the tool does not run unless a person ticks the box and accepts. The destructive tools (deletes and action invokes) ask **every time**. The generic apply and patch tools ask too, and there a person may also tick **Keep going**: further calls of that one tool, on that one instance and cluster, then go through unasked for 15 minutes — never a delete, never another cluster. **Claude Code** additionally shows its own permission prompt on every destructive call, in every permission mode including bypass (`anthropic/requiresUserInteraction`). A client that can do neither falls back to the guards that were already there; nothing is waved through |
 | **Tool annotations** | Every tool declares `readOnlyHint` / `destructiveHint` / `idempotentHint`, so clients can gate UX on them |
-| **Audit log** | Every mutation emits a structured `event="audit"` record — tool, operation, plane, instance, resource, outcome. Argument *names* only; values never logged |
+| **Audit log** | Every mutation emits a structured `event="audit"` record — tool, operation, plane, instance, resource, outcome — whether it completed, was refused, crashed or was cancelled. So does every approval a person gave or withheld, and every call that went through on a standing one. Argument *names* only; values never logged |
 | **Rate limiting** | Token-bucket on writes (default 60/min) — a runaway loop can't machine-gun your API |
 | **Secret & key masking** | Secret values and certificate private keys are structurally absent from curated responses (reveal is an explicit generic-tool opt-in) |
 | **Structured errors** | Guard rejections return typed `error_code` envelopes agents can branch on — never raw strings |
@@ -215,15 +221,20 @@ the same test suite, and read paths have been validated live against both a
 | `RANCHER_URL` | — | Rancher server URL (single-instance mode) |
 | `RANCHER_TOKEN` | — | API token (`token-xxxxx:yyyyyyyyy`) |
 | `RANCHER_VERIFY_SSL` | `true` | TLS verification |
+| `RANCHER_CA_BUNDLE` | — | Path to a CA bundle, for a Rancher behind a private CA |
+| `RANCHER_READ_ONLY` | `false` | Refuse every mutation (single-instance mode; per instance it is `read_only` in the JSON) |
 | `RANCHER_INSTANCES_JSON` | — | Multi-instance config (see above) |
-| `RANCHER_DEFAULT_INSTANCE` | first defined | Instance used when a tool call names none |
+| `RANCHER_DEFAULT_INSTANCE` | `default` | Instance used when a tool call names none. `default` is the name single-instance mode gives its one instance; with `RANCHER_INSTANCES_JSON`, set this to one of yours — the server will not start if it names none of them |
 | `RANCHER_MCP_SERVER_NAME` | `rancher-mcp` | Server identity announced to clients |
 | `RANCHER_MCP_SERVER_DESCRIPTION` | built-in | Server description announced to clients |
 | `RANCHER_MCP_WRITE_RATE_LIMIT_PER_MIN` | `60` | Write rate limit (`0` disables) |
 | `RANCHER_TOOLSETS` | `all` | Comma-separated toolset profile(s) exposed at startup — see below |
 | `RANCHER_TOOLS` | — | Comma-separated tool names force-included on top of the selected profile(s) |
 | `RANCHER_EXCLUDE_TOOLS` | — | Comma-separated tool names removed, applied last — always wins over `RANCHER_TOOLS` |
-| `RANCHER_MCP_REQUIRE_APPROVAL_FOR_DESTRUCTIVE` | `true` | Require a person's approval for destructive tools: an elicitation prompt in any client that can show one, plus Claude Code's permission prompt on every call. Set `false` only for an unattended pipeline that legitimately deletes — there a prompt can reach nobody and the call is refused. The confirmation phrase stays either way |
+| `RANCHER_MCP_REQUIRE_APPROVAL_FOR_DESTRUCTIVE` | `true` | Require a person's approval for the destructive tools and for the generic apply and patch tools: an elicitation prompt in any client that can show one, plus Claude Code's permission prompt on every destructive call. Set `false` only for an unattended pipeline that legitimately changes things — there a prompt can reach nobody and the call is refused. The confirmation phrase stays either way |
+| `RANCHER_MCP_APPROVAL_KEEP_GOING_MINUTES` | `15` | How long a person's "Keep going" on an apply or patch prompt lets further calls of that tool, on that instance and cluster, through unasked. `0` withdraws the offer, so every call asks. Held in memory only; it ends with the session |
+| `RANCHER_MCP_CATALOG_PATH` | packaged | Override the capability catalog the server ships with |
+| `LOG_LEVEL` | `INFO` | Log verbosity. Logs go to stderr; stdout is the protocol |
 
 ### Toolset profiles
 
@@ -239,7 +250,7 @@ budget) into a smaller surface. Values are either a family name — one per
 or the cross-family `core` profile: a ~32-tool triage/orientation set
 (`rancher_find_*`, the health/summary rollups, core list/get pairs, and the
 generic `rancher_{steve,norman}_resource_{list,get}` escape hatches). `core`
-cuts the `tools/list` payload from 207 tools / ~404 KB to 32 tools / ~78 KB
+cuts the `tools/list` payload from 207 tools / ~405 KB to 32 tools / ~78 KB
 (~80% smaller). Profiles compose: `RANCHER_TOOLSETS=core,storage` gives the
 triage set plus everything storage-related.
 
@@ -294,6 +305,7 @@ Work is tracked to the tool level: [`docs/tool-catalog.md`](docs/tool-catalog.md
 ```bash
 make help               # every target, documented
 make validate           # codegen drift + manifest drift + architecture + lint + typecheck + tests
+make smoke-wheel        # build the wheel, run it from an empty directory, handshake on both protocol eras
 make tool-manifest      # regenerate docs/tool-manifest.json from the registry
 make lab-up             # local Rancher 2.6.5 lab (kind + helm), fully scripted
 make integration-current # isolated Rancher 2.14.3 end-to-end test run
@@ -310,6 +322,13 @@ make mock-rancher       # fixture-backed mock Rancher for provider-config testin
   `tests/fixtures/`; `respx` pins the HTTP boundary in tests.
 - **Codegen** — curated tools are emitted from `catalog/curated_tools/*.yml`
   descriptors; `make check-codegen` fails on drift.
+- **Fleet-wide gates** — the safety model is tested by calling *every* tool
+  through the real request path with the network intercepted, not tool by
+  tool: every tool that can write obeys read-only mode, the rate limit and the
+  audit log; every result matches its published schema; every tool that asks a
+  person takes no for an answer; and every string argument of every tool is
+  given hostile values to see what reaches the wire. A tool added tomorrow is
+  covered the day it is registered.
 - **Gates** — ruff, pyright strict, the test suite with a coverage floor, architecture
   line-limits, module-shape checks, secret scanning. All fail closed, all wired
   into pre-commit.

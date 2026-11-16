@@ -1,5 +1,7 @@
 """Shared exception types."""
 
+from typing import Self
+
 
 class RancherMCPError(Exception):
     """Base exception for Rancher MCP errors."""
@@ -138,6 +140,34 @@ class RancherApprovalDeniedError(RancherMCPError):
         self.reason = reason
         self.hint = hint
         super().__init__(message)
+
+    @classmethod
+    def because(cls, reason: str) -> Self:
+        """The refusal for one of the three reasons, in the words an agent reads."""
+
+        message, hint = _APPROVAL_DENIALS[reason]
+        return cls(message, reason=reason, hint=hint)
+
+
+# What an agent is told, and what it should do next, for each way a person can
+# fail to approve a call.
+_APPROVAL_DENIALS: dict[str, tuple[str, str]] = {
+    "declined": (
+        "A person was asked to approve this call and declined. Nothing was changed.",
+        "Do not retry it, and do not attempt the same change another way, unless they ask.",
+    ),
+    "unconfirmed": (
+        "The approval prompt was accepted with its confirmation left unticked, so nothing "
+        "was approved. Nothing was changed.",
+        "Say what you intended to do and let the person decide. Do not retry unprompted.",
+    ),
+    "cancelled": (
+        "The approval prompt was dismissed, or this session could not show one. "
+        "Nothing was changed.",
+        "This call needs a person's approval and cannot be made unattended. An operator who "
+        "runs these calls unattended sets RANCHER_MCP_REQUIRE_APPROVAL_FOR_DESTRUCTIVE=false.",
+    ),
+}
 
 
 class RancherAmbiguousContainerError(RancherMCPError):

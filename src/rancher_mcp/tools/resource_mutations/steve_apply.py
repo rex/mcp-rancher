@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 import json
+from typing import Annotated, Any
+
+from mcp.server.mcpserver import Context, Elicit, Resolve
 
 from rancher_mcp.audit import audit_mutation
 from rancher_mcp.clients.management import ManagementMutationClient, RancherManagementClient
@@ -23,6 +26,16 @@ from rancher_mcp.services.resources.capabilities import (
 from rancher_mcp.services.resources.contexts import load_steve_resource_context
 from rancher_mcp.services.resources.schema import parse_required_payload_object
 from rancher_mcp.services.safety import ensure_instance_writable
+from rancher_mcp.tools.support.approval_wording import change_question, generic_target
+from rancher_mcp.tools.support.human_approval import (
+    NOT_ASKED,
+    Approval,
+    HumanApproval,
+    KeepGoing,
+    Unasked,
+    ask_unless_pointless,
+    settle,
+)
 from rancher_mcp.tools.support.json_args import OptionalJsonText
 
 
@@ -142,6 +155,47 @@ async def rancher_steve_resource_apply(
         )
 
 
+_TOOL = "rancher_steve_resource_apply"
+
+
+async def _approve(
+    ctx: Context[Any, Any],
+    schema_id: str,
+    resource_id: str,
+    payload_json: str,
+    cluster_id: str,
+    namespace: str | None,
+    field_manager: str,
+    force: bool | None,
+    params_json: str | None,
+    instance: str | None,
+) -> Elicit[Approval] | Unasked:
+    def question() -> str:
+        instance_name, instance_config = resolve_instance(get_settings(), instance)
+        ensure_instance_writable(instance_name, instance_config)
+        target = generic_target(
+            schema_id=schema_id,
+            resource_id=resource_id,
+            instance=instance_name,
+            cluster_id=cluster_id,
+            namespace=namespace,
+        )
+        # The same query the request will carry, so `force` — which takes
+        # fields away from whoever owns them — is on the page.
+        build_steve_apply_query_params(
+            field_manager=field_manager, force=force, params_json=params_json
+        )
+        return change_question(
+            "Apply to",
+            target,
+            payload_json=payload_json,
+            params_json=params_json,
+            options={"force": force} if force is not None else None,
+        )
+
+    return ask_unless_pointless(ctx, question, KeepGoing(_TOOL, instance, cluster_id))
+
+
 async def rancher_steve_resource_apply_tool(
     schema_id: str,
     resource_id: str,
@@ -152,11 +206,24 @@ async def rancher_steve_resource_apply_tool(
     force: bool | None = None,
     params_json: OptionalJsonText = None,
     instance: str | None = None,
+    approval: Annotated[HumanApproval, Resolve(_approve)] = NOT_ASKED,
 ) -> GenericResourceMutationResult:
     """Apply one Steve Kubernetes-proxy resource via Kubernetes server-side apply
     under any schema id and return the updated object — the untyped escape hatch
-    for updates with no curated apply tool yet."""
+    for updates with no curated apply tool yet. Where the client can ask, a
+    person is asked to approve it first, and may let further applies on that
+    cluster through unasked for a while (`APPROVAL_DENIED` if they refuse)."""
 
+    settle(
+        approval,
+        tool_name=_TOOL,
+        plane="steve",
+        schema_id=schema_id,
+        resource_id=resource_id,
+        cluster_id=cluster_id,
+        namespace=namespace,
+        instance=instance,
+    )
     return await rancher_steve_resource_apply(
         schema_id=schema_id,
         resource_id=resource_id,

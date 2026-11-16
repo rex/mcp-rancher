@@ -36,7 +36,7 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
   `set_labels`/`set_annotations`/`delete` duplicates into 3 kind-dispatched
   generics; no capability removed; v1.73.0 added `rancher_rollout_wait`).
   `docs/tool-manifest.json` is authoritative.
-- `tools/list` footprint: **414,095 B / ~103,500 tokens**; `RANCHER_TOOLSETS=core`
+- `tools/list` footprint: **415,010 B / ~103,750 tokens**; `RANCHER_TOOLSETS=core`
   → 32 tools / ~20,000. Budgeted by `tests/unit/test_context_footprint.py`,
   which measures the entries a client actually receives.
 - MCP SDK: `mcp[cli]>=2.3,<3`, locked at 2.3.0 (`MCPServer`). One process serves
@@ -66,14 +66,26 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 
 ### 📌 HANDOFF (2026-11-15): port SHIPPED (v1.69.0); two defects found and fixed after it (v1.70.0, v1.71.0); #8 shipped (v1.72.0); #9 half done (v1.73.0); the package starts (v1.74.0); request-path hardening (v1.75.0, v1.76.0)
 
-**Release.** Pierce asked for one on 2026-11-15 — the server had just been
-listed on mcprush. **v1.77.0 is the version to tag.** v1.75.0 and v1.76.0 were
-each reviewed on Opus before tagging: the first was blocked, the second
-approved with four notes that v1.77.0 fixes
-([#35](https://github.com/rex/mcp-rancher/issues/35)), so neither was tagged.
-Before this, the last tag and the PyPI latest were both v1.59.0, which does not
-start outside a checkout; 1.60.0–1.76.0 were never published. Check PyPI for
-what is actually out before assuming either way.
+**Releases.** Pierce asked for one on 2026-11-15 — the server had just been
+listed on mcprush. **v1.77.0 was tagged and published that day**: PyPI, the
+GitHub Release and the MCP registry all carry it, and the published package was
+run from an empty directory to check. v1.75.0 and v1.76.0 were each reviewed on
+Opus before tagging — the first blocked, the second approved with four notes
+that v1.77.0 fixes ([#35](https://github.com/rex/mcp-rancher/issues/35)) — so
+neither was tagged, and 1.60.0–1.76.0 do not exist on PyPI. The release before
+it, v1.59.0, does not start outside a checkout. **v1.78.0 is the next version
+to tag**, asked for on 2026-11-15 as well. Check PyPI for what is actually out
+before assuming either way.
+
+- **v1.78.0 — approval for apply and patch**
+  ([#28](https://github.com/rex/mcp-rancher/issues/28)). Pierce's decision:
+  *"default to approval required with the ability to permit an agent to simply
+  continue."* The four generic apply/patch tools ask a person through
+  elicitation, with the payload shown; a second box, *Keep going*, lets further
+  calls of that tool on that instance and cluster through for 15 minutes
+  (`tools/support/standing_approval.py`). Deletes and action invokes still ask
+  every time — that part is my reading, recorded on the issue. The README was
+  brought up to date in the same commit.
 
 - **v1.76.0 — security** ([#33](https://github.com/rex/mcp-rancher/issues/33),
   ADR-0003 second addendum). The second review found that a resource id of `/`

@@ -79,11 +79,11 @@ class AppSettings(BaseSettings):
             "cluster-wide, which is usually what triage wants.\n"
             "\n"
             "WRITES. Mutations are rate-limited and audited. Destructive tools take a "
-            "required `confirmation` argument and refuse unless it exactly echoes the "
-            "phrase the tool names — they do not act on a partial match and there is no "
-            "dry-run form. Secret values are withheld unless a tool's `reveal` argument "
-            "is set, and revealing is audited. Under RANCHER_READ_ONLY every mutating "
-            "tool refuses.\n"
+            "required `confirmation` and refuse unless it exactly echoes the phrase the "
+            "tool names; there is no dry-run. Deletes, actions and generic apply/patch "
+            "may also ask a person: `APPROVAL_DENIED` is final — do not retry or work "
+            "around it. Secret values are withheld unless `reveal` is set, and revealing "
+            "is audited. Under RANCHER_READ_ONLY every mutating tool refuses.\n"
             "\n"
             "ERRORS are JSON objects, never prose: branch on `error_code` and retry "
             "only when `retryable` is true."
@@ -203,6 +203,13 @@ class ToolsetSettings(BaseSettings):
     # nobody, so the call is refused.
     require_approval_for_destructive: bool = Field(
         default=True, alias="RANCHER_MCP_REQUIRE_APPROVAL_FOR_DESTRUCTIVE"
+    )
+    # The same switch covers the generic apply and patch tools. For those a
+    # person who is asked may also say "keep going", and further calls of that
+    # tool on that instance and cluster go through unasked for this many
+    # minutes (`tools/support/standing_approval.py`). 0 withdraws the offer.
+    approval_keep_going_minutes: int = Field(
+        default=15, ge=0, le=240, alias="RANCHER_MCP_APPROVAL_KEEP_GOING_MINUTES"
     )
 
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=False, extra="ignore")

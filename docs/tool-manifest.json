@@ -3230,7 +3230,7 @@
     },
     {
       "name": "rancher_norman_resource_apply",
-      "description": "Replace one Norman resource's full body via PUT under any schema id and\n    return the updated object — the untyped escape hatch for updates no curated\n    apply tool yet covers.",
+      "description": "Replace one Norman resource's full body via PUT under any schema id and\n    return the updated object — the untyped escape hatch for updates no curated\n    apply tool yet covers. Where the client can ask, a person is asked to\n    approve it first, and may let further applies through unasked for a while\n    (`APPROVAL_DENIED` if they refuse).",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -3404,7 +3404,7 @@
     },
     {
       "name": "rancher_norman_resource_patch",
-      "description": "Merge a partial JSON payload into one existing Norman resource under any\n    schema id and return the patched object — the untyped escape hatch for a\n    scoped field update with no curated patch tool.",
+      "description": "Merge a partial JSON payload into one existing Norman resource under any\n    schema id and return the patched object — the untyped escape hatch for a\n    scoped field update with no curated patch tool. Where the client can ask, a\n    person is asked to approve it first, and may let further patches through\n    unasked for a while (`APPROVAL_DENIED` if they refuse).",
       "read_only": false,
       "destructive": false,
       "idempotent": false,
@@ -5321,7 +5321,7 @@
     },
     {
       "name": "rancher_steve_resource_apply",
-      "description": "Apply one Steve Kubernetes-proxy resource via Kubernetes server-side apply\n    under any schema id and return the updated object — the untyped escape hatch\n    for updates with no curated apply tool yet.",
+      "description": "Apply one Steve Kubernetes-proxy resource via Kubernetes server-side apply\n    under any schema id and return the updated object — the untyped escape hatch\n    for updates with no curated apply tool yet. Where the client can ask, a\n    person is asked to approve it first, and may let further applies on that\n    cluster through unasked for a while (`APPROVAL_DENIED` if they refuse).",
       "read_only": false,
       "destructive": false,
       "idempotent": true,
@@ -5547,7 +5547,7 @@
     },
     {
       "name": "rancher_steve_resource_patch",
-      "description": "Merge a JSON merge-patch into one existing Steve Kubernetes-proxy resource\n    under any schema id and return the patched object — the untyped escape hatch\n    for a scoped field update with no curated patch tool.",
+      "description": "Merge a JSON merge-patch into one existing Steve Kubernetes-proxy resource\n    under any schema id and return the patched object — the untyped escape hatch\n    for a scoped field update with no curated patch tool. Where the client can\n    ask, a person is asked to approve it first, and may let further patches on\n    that cluster through unasked for a while (`APPROVAL_DENIED` if they refuse).",
       "read_only": false,
       "destructive": false,
       "idempotent": false,

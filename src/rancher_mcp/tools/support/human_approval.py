@@ -1,5 +1,9 @@
 """Ask a person before a destructive tool runs — where there is a way to ask.
 
+Who asks: the five tools annotated destructive (deletes and action invokes),
+every time; and the generic apply and patch tools, which can replace or strip
+a resource — unless a person has said "keep going" (``standing_approval.py``).
+
 Three things stand between an agent and a destructive call. They are not
 substitutes for one another:
 
@@ -34,6 +38,7 @@ multi-round ``input_required`` result on a modern one.
 from __future__ import annotations
 
 from collections.abc import Callable
+from dataclasses import dataclass
 from typing import Any, Final, Literal
 
 from mcp.server.mcpserver import (
@@ -51,8 +56,11 @@ from rancher_mcp.exceptions import (
     RancherApprovalDeniedError,
     RancherMCPError,
 )
+from rancher_mcp.tools.support import standing_approval
 
-UnaskedReason = Literal["not_a_request", "client_cannot_ask", "call_will_be_refused", "disabled"]
+UnaskedReason = Literal[
+    "not_a_request", "client_cannot_ask", "call_will_be_refused", "disabled", "standing_approval"
+]
 
 
 # The form a person is shown: one box, unticked. Accepting the prompt is not
@@ -71,8 +79,18 @@ class Approval(BaseModel):
     )
 
 
+# The same form with a second box, shown where a standing approval may be
+# given. Ticked on its own it does nothing: the first box is the approval.
+class ApprovalOrKeepGoing(Approval):
+    keep_going: bool = Field(
+        default=False,
+        title="Keep going without asking",
+        description="Also approve further calls like this one, as described above.",
+    )
+
+
 # Stands in for an answer when nobody was asked. Never rendered for a client:
-# only `Approval` is ever passed to `Elicit`.
+# only the two forms above are ever passed to `Elicit`.
 class Unasked(Approval):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
@@ -108,8 +126,22 @@ def client_can_ask(ctx: Context[Any, Any]) -> bool:
     return elicitation is not None and (elicitation.form is not None or elicitation.url is None)
 
 
+@dataclass(frozen=True)
+class KeepGoing:
+    """Passed by a tool whose question may be answered "yes, and keep going".
+
+    Names the call as it arrived; the scope a standing approval covers is
+    worked out from it (``standing_approval.scope_of``). A tool that does not
+    pass one asks every time, whatever a person says — every delete and action.
+    """
+
+    tool_name: str
+    instance: str | None
+    cluster_id: str | None = None
+
+
 def ask_unless_pointless(
-    ctx: Context[Any, Any], question: Callable[[], str]
+    ctx: Context[Any, Any], question: Callable[[], str], keep_going: KeepGoing | None = None
 ) -> Elicit[Approval] | Unasked:
     """Decide whether a person is asked, and what.
 
@@ -117,38 +149,40 @@ def ask_unless_pointless(
     wording. If it raises one of our errors the call is going to be refused, so
     nobody is asked — and the error travels with the answer, for ``settle()``
     to raise, so the refusal does not depend on the tool body repeating the
-    same check.
+    same check. A standing approval is looked for only after that: it answers
+    the question, not the checks.
     """
 
-    if not get_toolset_settings().require_approval_for_destructive:
+    settings = get_toolset_settings()
+    if not settings.require_approval_for_destructive:
         return Unasked(reason="disabled")
     if not client_can_ask(ctx):
         return Unasked(reason="client_cannot_ask")
+    minutes = settings.approval_keep_going_minutes if keep_going is not None else 0
     try:
         wording = question()
+        scope = (
+            standing_approval.scope_of(
+                keep_going.tool_name, keep_going.instance, keep_going.cluster_id
+            )
+            if keep_going is not None and minutes > 0
+            else None
+        )
     except RancherMCPError as refusal:
         return Unasked(reason="call_will_be_refused", refusal=refusal)
-    return Elicit(wording, Approval)
+    if scope is None:
+        return Elicit(wording, Approval)
+    if standing_approval.is_allowed(scope):
+        return Unasked(reason="standing_approval")
+    return Elicit(wording + standing_approval.offer(scope, minutes=minutes), ApprovalOrKeepGoing)
 
 
-_DENIALS: Final[dict[str, tuple[str, str]]] = {
-    "declined": (
-        "A person was asked to approve this call and declined. Nothing was changed.",
-        "Do not retry it, and do not attempt the same change another way, unless they ask.",
-    ),
-    "unconfirmed": (
-        "The approval prompt was accepted with its confirmation left unticked, so nothing "
-        "was approved. Nothing was changed.",
-        "Say what you intended to do and let the person decide. Do not retry unprompted.",
-    ),
-    "cancelled": (
-        "The approval prompt was dismissed, or this session could not show one. "
-        "Nothing was changed.",
-        "This call needs a person's approval and cannot be made unattended. An operator who "
-        "runs destructive calls unattended sets "
-        "RANCHER_MCP_REQUIRE_APPROVAL_FOR_DESTRUCTIVE=false.",
-    ),
-}
+def _keep_going_minutes(answer: Approval | None) -> int:
+    """How long a person's answer lets further calls through: 0, almost always."""
+
+    if isinstance(answer, ApprovalOrKeepGoing) and answer.proceed and answer.keep_going:
+        return get_toolset_settings().approval_keep_going_minutes
+    return 0
 
 
 def settle(outcome: HumanApproval, *, tool_name: str, plane: str, **identity: str | None) -> None:
@@ -172,30 +206,44 @@ def settle(outcome: HumanApproval, *, tool_name: str, plane: str, **identity: st
         "plane": plane,
         **{key: value for key, value in identity.items() if value is not None},
     }
-    if isinstance(outcome, AcceptedElicitation):
-        if isinstance(outcome.data, Unasked):
-            refusal = outcome.data.refusal
-            if refusal is None:
-                return
-            emit_audit(
-                AuditEntry(
-                    **entry,
-                    outcome="error",
-                    error_code=refusal.error_code,
-                    error_message=str(refusal),
-                )
+    answer = outcome.data if isinstance(outcome, AcceptedElicitation) else None
+    if isinstance(answer, Unasked):
+        if answer.reason == "standing_approval":
+            emit_audit(AuditEntry(**entry, outcome="success", approval_basis="standing"))
+        if answer.refusal is None:
+            return
+        emit_audit(
+            AuditEntry(
+                **entry,
+                outcome="error",
+                error_code=answer.refusal.error_code,
+                error_message=str(answer.refusal),
             )
-            raise refusal
-        denial = None if outcome.data.proceed else "unconfirmed"
+        )
+        raise answer.refusal
+    if answer is not None:
+        denial = None if answer.proceed else "unconfirmed"
     else:
         denial = "declined" if isinstance(outcome, DeclinedElicitation) else "cancelled"
 
     if denial is None:
-        emit_audit(AuditEntry(**entry, outcome="success"))
+        minutes = _keep_going_minutes(answer)
+        if minutes:
+            scope = standing_approval.scope_of(
+                tool_name, identity.get("instance"), identity.get("cluster_id")
+            )
+            standing_approval.allow(scope, minutes=minutes)
+        emit_audit(
+            AuditEntry(
+                **entry,
+                outcome="success",
+                approval_basis="asked",
+                standing_minutes=minutes or None,
+            )
+        )
         return
 
-    message, hint = _DENIALS[denial]
     emit_audit(
         AuditEntry(**entry, outcome="error", error_code="APPROVAL_DENIED", error_message=denial)
     )
-    raise RancherApprovalDeniedError(message, reason=denial, hint=hint)
+    raise RancherApprovalDeniedError.because(denial)

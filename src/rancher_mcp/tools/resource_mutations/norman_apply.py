@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+from typing import Annotated, Any
+
+from mcp.server.mcpserver import Context, Elicit, Resolve
+
 from rancher_mcp.audit import audit_mutation
 from rancher_mcp.clients.management import ManagementMutationClient, RancherManagementClient
 from rancher_mcp.config import AppSettings, get_settings
@@ -17,6 +21,16 @@ from rancher_mcp.services.resources.capabilities import (
 from rancher_mcp.services.resources.contexts import load_norman_resource_context
 from rancher_mcp.services.resources.schema import parse_required_payload_object
 from rancher_mcp.services.safety import ensure_instance_writable
+from rancher_mcp.tools.support.approval_wording import change_question, generic_target
+from rancher_mcp.tools.support.human_approval import (
+    NOT_ASKED,
+    Approval,
+    HumanApproval,
+    KeepGoing,
+    Unasked,
+    ask_unless_pointless,
+    settle,
+)
 from rancher_mcp.tools.support.json_args import OptionalJsonText
 
 
@@ -90,17 +104,52 @@ async def rancher_norman_resource_apply(
         )
 
 
+_TOOL = "rancher_norman_resource_apply"
+
+
+async def _approve(
+    ctx: Context[Any, Any],
+    schema_id: str,
+    resource_id: str,
+    payload_json: str,
+    params_json: str | None,
+    instance: str | None,
+) -> Elicit[Approval] | Unasked:
+    def question() -> str:
+        instance_name, instance_config = resolve_instance(get_settings(), instance)
+        ensure_instance_writable(instance_name, instance_config)
+        target = generic_target(
+            schema_id=schema_id, resource_id=resource_id, instance=instance_name
+        )
+        return change_question(
+            "Replace", target, payload_json=payload_json, params_json=params_json
+        )
+
+    return ask_unless_pointless(ctx, question, KeepGoing(_TOOL, instance))
+
+
 async def rancher_norman_resource_apply_tool(
     schema_id: str,
     resource_id: str,
     payload_json: str,
     params_json: OptionalJsonText = None,
     instance: str | None = None,
+    approval: Annotated[HumanApproval, Resolve(_approve)] = NOT_ASKED,
 ) -> GenericResourceMutationResult:
     """Replace one Norman resource's full body via PUT under any schema id and
     return the updated object — the untyped escape hatch for updates no curated
-    apply tool yet covers."""
+    apply tool yet covers. Where the client can ask, a person is asked to
+    approve it first, and may let further applies through unasked for a while
+    (`APPROVAL_DENIED` if they refuse)."""
 
+    settle(
+        approval,
+        tool_name=_TOOL,
+        plane="norman",
+        schema_id=schema_id,
+        resource_id=resource_id,
+        instance=instance,
+    )
     return await rancher_norman_resource_apply(
         schema_id=schema_id,
         resource_id=resource_id,

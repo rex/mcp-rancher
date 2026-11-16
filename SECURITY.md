@@ -56,7 +56,26 @@ disclosure.
   anyway, and a client that cannot be asked is not waved through — it is held
   to the guards above. A client may be configured to answer such prompts
   automatically; that is the operator's decision and this server cannot see it.
-- Operators of an unattended pipeline can turn both prompts off with
+- The generic apply and patch tools — not annotated destructive, but able to
+  replace a resource or strip fields from it — ask the same way since 1.78.0,
+  with the payload on the page. For those four tools only, the prompt carries
+  a second box, **Keep going**. Ticked together with the first, it lets
+  further calls of *that tool*, on *that instance and cluster*, through
+  without a prompt for `RANCHER_MCP_APPROVAL_KEEP_GOING_MINUTES` (default 15;
+  `0` withdraws the offer). A standing approval never covers a delete, an
+  action, another tool or another cluster; it is not renewed by being used; it
+  is held in memory and ends with the process; the call's own checks still
+  run under it; and every call that goes through on one is audit-logged as
+  such. It is the only way one answer covers more than one call.
+- A call reaches only the resource its arguments name. Identifiers are
+  validated wherever one enters a URL path, and the HTTP client refuses what
+  gets past: a path that would resolve elsewhere (`..`, an empty segment, an
+  encoded slash, a host), a query parameter Rancher reads as a change of
+  method (`_method`, `shell`, `action` off a POST), and any `DELETE` on a
+  whole Kubernetes collection. Every string argument of every tool is tested
+  with values that try each of these
+  (`tests/unit/test_identifier_arguments_fleet_wide.py`).
+- Operators of an unattended pipeline can turn the prompts off with
   `RANCHER_MCP_REQUIRE_APPROVAL_FOR_DESTRUCTIVE=false`. The confirmation
   phrase, the read-only guard, the audit log and the rate limit all stay.
 - Every mutation is audit-logged (structured `event="audit"` records:

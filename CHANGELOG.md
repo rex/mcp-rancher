@@ -1,5 +1,57 @@
 # Changelog
 
+## [1.78.0] — 2026-11-16 — Agent: Claude Fable 5.2
+### Changed
+- **The generic apply and patch tools ask a person first.**
+  (rex/mcp-rancher#28) `rancher_{norman,steve}_resource_{apply,patch}` are not
+  annotated destructive, and they can do most of what a delete can: replace a
+  spec, strip fields, scale to zero, remove finalizers. They went ahead
+  unasked. Decided by Pierce on 2026-11-15 — *"default to approval required
+  with the ability to permit an agent to simply continue"* — so now, in any
+  client that supports MCP elicitation, a person is shown what will change and
+  where, and the tool does not run unless they tick the box and accept.
+  The question shows the change itself: the payload in full when it is short
+  enough to read on a prompt, and otherwise its outline — with a plain
+  statement that an outline is all it is. Credentials are masked. Query
+  options are shown, `force` on a server-side apply among them.
+  A client that cannot be asked is neither waved through nor blocked, as with
+  the destructive tools; `RANCHER_MCP_REQUIRE_APPROVAL_FOR_DESTRUCTIVE=false`
+  turns the question off for an unattended pipeline.
+
+### Added
+- **"Keep going" — a person can permit the agent to continue.** The apply and
+  patch prompt has a second box. Ticked together with the first, it lets
+  further calls of **that tool**, on **that Rancher instance and cluster**,
+  through without asking for 15 minutes
+  (`RANCHER_MCP_APPROVAL_KEEP_GOING_MINUTES`; `0` withdraws the offer and every
+  call asks). The question says exactly what the box would allow.
+  What a standing approval is not: it never covers a delete or an action
+  invoke, which still ask every time; it does not reach another tool or
+  another cluster; it does not excuse a call the server would refuse — the
+  call's own checks still run; it is not renewed by being used; and it is held
+  in memory only, so it ends with the session. Every call that goes through on
+  one is on the audit log as `approval_basis: "standing"`, and the approval
+  that granted it records `standing_minutes`.
+- `RANCHER_READ_ONLY`, `RANCHER_CA_BUNDLE`, `RANCHER_MCP_CATALOG_PATH` and
+  `LOG_LEVEL` are in the README's configuration table. They were always read;
+  they were never listed.
+
+### Fixed
+- The README said `RANCHER_DEFAULT_INSTANCE` defaults to the first instance
+  defined. It defaults to `default`, and with `RANCHER_INSTANCES_JSON` it has
+  to name one of the configured instances or the server will not start.
+- The README's safety model now describes what 1.75.0–1.77.0 added (a request
+  reaches only the resource its arguments name), and says to upgrade from
+  1.59.0 or earlier.
+
+### Not in this release
+- An approved prompt can still be re-sent by the client until its state
+  expires (rex/mcp-rancher#30). The decision above settles what it should do —
+  one approval, one call — and the issue has the design; it is hardening,
+  since the client and not the model re-sends a round.
+- A generic `resource_id` may still have more segments than `namespace/name`
+  (rex/mcp-rancher#36).
+
 ## [1.77.0] — 2026-11-15 — Agent: Claude Fable 5.2
 The third review, of 1.76.0, approved it with four notes and no blocker. One
 of the notes made a line of 1.76.0's own entry untrue, so they are fixed here

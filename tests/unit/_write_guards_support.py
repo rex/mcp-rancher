@@ -137,6 +137,18 @@ class Answer:
 
     action: Literal["accept", "decline", "cancel"]
     proceed: bool | None = None
+    keep_going: bool | None = None
+    """The second box, where a form has one: "and don't ask again for a while"."""
+
+    def content(self) -> dict[str, str | int | float | bool | list[str] | None] | None:
+        """The form as this person filled it in, or nothing if they did not."""
+
+        if self.action != "accept" or self.proceed is None:
+            return None
+        boxes: dict[str, str | int | float | bool | list[str] | None] = {"proceed": self.proceed}
+        if self.keep_going is not None:
+            boxes["keep_going"] = self.keep_going
+        return boxes
 
 
 async def observe_call(
@@ -154,10 +166,7 @@ async def observe_call(
     async def respond(context: object, params: ElicitRequestParams) -> ElicitResult:
         assert answer is not None
         questions.append(params.message)
-        accepted = answer.action == "accept" and answer.proceed is not None
-        return ElicitResult(
-            action=answer.action, content={"proceed": answer.proceed} if accepted else None
-        )
+        return ElicitResult(action=answer.action, content=answer.content())
 
     result = None
     rejected_by_client: str | None = None

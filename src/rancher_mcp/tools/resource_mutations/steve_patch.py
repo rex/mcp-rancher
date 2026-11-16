@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+from typing import Annotated, Any
+
+from mcp.server.mcpserver import Context, Elicit, Resolve
+
 from rancher_mcp.audit import audit_mutation
 from rancher_mcp.clients.management import ManagementMutationClient, RancherManagementClient
 from rancher_mcp.clients.steve import RancherSteveClient, SteveDiscoveryClient
@@ -21,6 +25,16 @@ from rancher_mcp.services.resources.capabilities import (
 from rancher_mcp.services.resources.contexts import load_steve_resource_context
 from rancher_mcp.services.resources.schema import parse_required_payload_object
 from rancher_mcp.services.safety import ensure_instance_writable
+from rancher_mcp.tools.support.approval_wording import change_question, generic_target
+from rancher_mcp.tools.support.human_approval import (
+    NOT_ASKED,
+    Approval,
+    HumanApproval,
+    KeepGoing,
+    Unasked,
+    ask_unless_pointless,
+    settle,
+)
 from rancher_mcp.tools.support.json_args import OptionalJsonText
 
 
@@ -127,6 +141,34 @@ async def rancher_steve_resource_patch(
         )
 
 
+_TOOL = "rancher_steve_resource_patch"
+
+
+async def _approve(
+    ctx: Context[Any, Any],
+    schema_id: str,
+    resource_id: str,
+    payload_json: str,
+    cluster_id: str,
+    namespace: str | None,
+    params_json: str | None,
+    instance: str | None,
+) -> Elicit[Approval] | Unasked:
+    def question() -> str:
+        instance_name, instance_config = resolve_instance(get_settings(), instance)
+        ensure_instance_writable(instance_name, instance_config)
+        target = generic_target(
+            schema_id=schema_id,
+            resource_id=resource_id,
+            instance=instance_name,
+            cluster_id=cluster_id,
+            namespace=namespace,
+        )
+        return change_question("Patch", target, payload_json=payload_json, params_json=params_json)
+
+    return ask_unless_pointless(ctx, question, KeepGoing(_TOOL, instance, cluster_id))
+
+
 async def rancher_steve_resource_patch_tool(
     schema_id: str,
     resource_id: str,
@@ -135,11 +177,24 @@ async def rancher_steve_resource_patch_tool(
     namespace: str | None = None,
     params_json: OptionalJsonText = None,
     instance: str | None = None,
+    approval: Annotated[HumanApproval, Resolve(_approve)] = NOT_ASKED,
 ) -> GenericResourceMutationResult:
     """Merge a JSON merge-patch into one existing Steve Kubernetes-proxy resource
     under any schema id and return the patched object — the untyped escape hatch
-    for a scoped field update with no curated patch tool."""
+    for a scoped field update with no curated patch tool. Where the client can
+    ask, a person is asked to approve it first, and may let further patches on
+    that cluster through unasked for a while (`APPROVAL_DENIED` if they refuse)."""
 
+    settle(
+        approval,
+        tool_name=_TOOL,
+        plane="steve",
+        schema_id=schema_id,
+        resource_id=resource_id,
+        cluster_id=cluster_id,
+        namespace=namespace,
+        instance=instance,
+    )
     return await rancher_steve_resource_patch(
         schema_id=schema_id,
         resource_id=resource_id,

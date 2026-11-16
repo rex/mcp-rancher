@@ -62,6 +62,13 @@ class AuditEntry(BaseModel):
     error_code: str | None = None
     error_message: str | None = None
     http_status: int | None = None
+    approval_basis: Literal["asked", "standing"] | None = None
+    """On an ``operation="approval"`` record: whether a person was asked about
+    this very call, or it went through on a standing approval they gave
+    earlier ("keep going")."""
+    standing_minutes: int | None = None
+    """Set on the approval in which a person said "keep going": how long
+    further calls of the same tool, instance and cluster go through unasked."""
 
 
 _audit_logger = structlog.get_logger("rancher_mcp.audit")

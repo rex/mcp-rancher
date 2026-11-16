@@ -23,7 +23,10 @@ from rancher_mcp.exceptions import RancherInvalidArgumentError
 from rancher_mcp.identifiers import require_safe_identifier
 from rancher_mcp.redaction import REDACTED
 from rancher_mcp.services.resource_queries import parse_query_params
-from rancher_mcp.services.resources.schema import parse_payload_object
+from rancher_mcp.services.resources.schema import (
+    parse_payload_object,
+    parse_required_payload_object,
+)
 from rancher_mcp.services.safety import require_consistent_namespace
 
 # A string value is shown up to this length, then cut with its true length.
@@ -31,6 +34,8 @@ _LEAF_LIMIT = 80
 # The longest a set of options may be once its strings are cut. Past this it
 # cannot be shown in full, and a set that cannot be shown in full is refused.
 _SHOWN_LIMIT = 1000
+# How many top-level keys of a payload too long to show are named instead.
+_OUTLINE_KEYS = 20
 
 # A key containing any of these (ignoring case and punctuation) holds a value
 # that is masked in a question: `newPassword`, `secret_key`, `bootstrapToken`.
@@ -193,6 +198,47 @@ def delete_question(
 ) -> str:
     return f"Delete {target}?\n\nThis is permanent." + _sent_with(
         params_json=params_json, payload_json=payload_json, body="With delete options"
+    )
+
+
+def change_question(
+    verb: str,
+    target: str,
+    *,
+    payload_json: str,
+    params_json: str | None = None,
+    options: Mapping[str, object] | None = None,
+) -> str:
+    """The question for a generic apply or patch.
+
+    The payload *is* the change, so it is shown: in full when it is short
+    enough to read on a prompt, and otherwise as its outline, with a plain
+    statement that an outline is all it is. A long manifest cannot be put to a
+    person whole — and saying so is honest where cutting it off is not.
+    """
+
+    payload = parse_required_payload_object(payload_json)
+    shown = (
+        f"{verb} {target}?\n\n"
+        "This changes the resource as the payload says, and can replace or remove parts of it."
+        f"\n\n{_payload_shown(payload)}"
+    )
+    query = {**parse_query_params(params_json), **(options or {})}
+    if query:
+        shown += f"\n\nWith query options: {_compact('params_json', query)}"
+    return shown
+
+
+def _payload_shown(payload: Mapping[str, object]) -> str:
+    text = json.dumps(_shortened(_masked(dict(payload))), sort_keys=True)
+    if len(text) <= _SHOWN_LIMIT:
+        return f"Payload: {text}"
+    keys = sorted(payload)
+    listed = ", ".join(json.dumps(key[:_LEAF_LIMIT]) for key in keys[:_OUTLINE_KEYS])
+    more = f", and {len(keys) - _OUTLINE_KEYS} more" if len(keys) > _OUTLINE_KEYS else ""
+    return (
+        f"The payload is too long to show here ({len(text)} characters). Its top-level keys: "
+        f"{listed}{more}. Read it in the conversation before approving."
     )
 
 
