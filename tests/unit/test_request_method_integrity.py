@@ -45,7 +45,7 @@ from rancher_mcp.services.resource_queries import parse_query_params
 
 _SERVER = build_registered_server()
 _TOOLS = {tool.name: tool for tool in registered_tools(_SERVER)}
-_KEYS = ("_method", "action")
+_KEYS = ("_method", "action", "shell")
 
 # Every argument, on every tool, through which a caller names query parameters.
 _TARGETS = sorted(
@@ -92,6 +92,10 @@ def _writable_instance(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:  # py
         ("get_json", "/v3/clusters/c-prod", {"action": "remove"}),
         ("put_json", "/v3/clusters/c-prod", {"action": "remove"}),
         ("delete_json", "/v3/clusters/c-prod", {"action": "x"}),
+        # `;` separated parameters too, to Go before 1.17
+        ("get_json", "/v3/globalroles/admin?a=1;_method=DELETE", None),
+        ("get_json", "/v3/clusters/c-prod?a=1;action=remove", None),
+        ("get_json", "/v3/clusters/c-prod?a=1;%5Fmethod=DELETE", None),
     ],
 )
 @respx.mock

@@ -10,6 +10,7 @@ from rancher_mcp.clients.management import ManagementDiscoveryClient, RancherMan
 from rancher_mcp.config import AppSettings, get_settings
 from rancher_mcp.models.settings_features import RancherSettingDetail, RancherSettingList
 from rancher_mcp.services.instances import resolve_instance
+from rancher_mcp.services.resources.paths import identified_path
 from rancher_mcp.tools.settings_features.shared import (
     build_settings_query_params,
     data_items,
@@ -92,7 +93,9 @@ async def _fetch_setting_get(
 ) -> RancherSettingDetail:
     """Fetch and normalize one setting."""
 
-    payload = await client.get_json(f"/v3/settings/{setting_id}")
+    payload = await client.get_json(
+        identified_path("/v3/settings/{setting_id}", setting_id=setting_id)
+    )
 
     detail = RancherSettingDetail.model_validate(payload)
     return detail.model_copy(

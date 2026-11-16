@@ -13,6 +13,7 @@ from rancher_mcp.models.pods_services import RancherPodDetail, RancherPodList
 from rancher_mcp.services.instances import resolve_instance
 from rancher_mcp.services.resource_queries import build_steve_list_query_params
 from rancher_mcp.services.resources.builders_pagination import next_page_token_from_payload
+from rancher_mcp.services.resources.paths import identified_path
 from rancher_mcp.tools.pods_services.shared import (
     data_items,
     pod_events_best_effort,
@@ -43,7 +44,11 @@ async def _fetch_pods_list(
     # namespace=None means cluster-wide (all namespaces) — the "/{namespace}"
     # suffix is dropped rather than defaulted, so a whole-cluster triage
     # query never silently narrows to one namespace.
-    list_request_path = f"/pods/{namespace}" if namespace is not None else "/pods"
+    list_request_path = (
+        identified_path("/pods/{namespace}", namespace=namespace)
+        if namespace is not None
+        else "/pods"
+    )
     payload = await client.get_json(list_request_path, params=query_params or None)
     pods = [pod_summary_from_payload(item) for item in data_items(payload)]
     if phase is not None:
@@ -120,7 +125,9 @@ async def _fetch_pod_get(
 ) -> RancherPodDetail:
     """Fetch and normalize one pod."""
 
-    payload = await client.get_json(f"/pods/{namespace}/{pod_name}")
+    payload = await client.get_json(
+        identified_path("/pods/{namespace}/{pod_name}", namespace=namespace, pod_name=pod_name)
+    )
     summary = pod_summary_from_payload(payload)
 
     detail = RancherPodDetail.model_validate(payload)

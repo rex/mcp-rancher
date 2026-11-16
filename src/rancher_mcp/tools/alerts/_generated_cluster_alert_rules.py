@@ -10,6 +10,7 @@ from rancher_mcp.clients.management import ManagementDiscoveryClient, RancherMan
 from rancher_mcp.config import AppSettings, get_settings
 from rancher_mcp.models.alerts import RancherAlertRuleDetail, RancherAlertRuleList
 from rancher_mcp.services.instances import resolve_instance
+from rancher_mcp.services.resources.paths import identified_path
 from rancher_mcp.tools.alerts.shared import (
     alert_rule_summary_from_payload,
     build_alert_rule_query_params,
@@ -89,7 +90,9 @@ async def _fetch_cluster_alert_rule_get(
 ) -> RancherAlertRuleDetail:
     """Fetch and normalize one cluster_alert_rule."""
 
-    payload = await client.get_json(f"/v3/clusteralertrules/{rule_id}")
+    payload = await client.get_json(
+        identified_path("/v3/clusteralertrules/{rule_id}", rule_id=rule_id)
+    )
 
     status = mapping_value(payload, "status") or {}
     detail = RancherAlertRuleDetail.model_validate(payload)

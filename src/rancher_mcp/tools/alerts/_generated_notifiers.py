@@ -10,6 +10,7 @@ from rancher_mcp.clients.management import ManagementDiscoveryClient, RancherMan
 from rancher_mcp.config import AppSettings, get_settings
 from rancher_mcp.models.alerts import RancherNotifierDetail, RancherNotifierList
 from rancher_mcp.services.instances import resolve_instance
+from rancher_mcp.services.resources.paths import identified_path
 from rancher_mcp.tools.alerts.shared import (
     build_notifier_query_params,
     data_items,
@@ -85,7 +86,9 @@ async def _fetch_notifier_get(
 ) -> RancherNotifierDetail:
     """Fetch and normalize one notifier."""
 
-    payload = await client.get_json(f"/v3/notifiers/{notifier_id}")
+    payload = await client.get_json(
+        identified_path("/v3/notifiers/{notifier_id}", notifier_id=notifier_id)
+    )
 
     status = mapping_value(payload, "status") or {}
     detail = RancherNotifierDetail.model_validate(payload)

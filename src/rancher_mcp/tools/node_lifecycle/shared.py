@@ -10,6 +10,7 @@ across Rancher versions.
 from __future__ import annotations
 
 from rancher_mcp.clients.management import ManagementDiscoveryClient
+from rancher_mcp.identifiers import require_safe_identifier
 from rancher_mcp.models.resources import GenericResourceActionResult
 from rancher_mcp.services.resources import (
     build_resource_action_result,
@@ -38,6 +39,7 @@ async def invoke_node_action(
     ``actions`` map, so the call does not hardcode endpoints.
     """
 
+    require_safe_identifier("node_id", node_id, single_segment=True)
     schema_payload = await client.get_json(f"/v3/schemas/{NODE_SCHEMA_ID}")
     schema = schema_reference_from_payload(
         plane="norman",

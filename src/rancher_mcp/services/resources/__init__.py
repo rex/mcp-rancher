@@ -17,13 +17,15 @@ from rancher_mcp.services.resources.contexts import (
     load_steve_resource_context,
     load_steve_schema_reference,
 )
+from rancher_mcp.services.resources.link_paths import (
+    resolve_resource_action_path,
+    resolve_resource_link_path,
+)
 from rancher_mcp.services.resources.paths import (
     build_collection_path,
     build_k8s_proxy_collection_path,
     build_k8s_proxy_resource_path,
     build_resource_path,
-    resolve_resource_action_path,
-    resolve_resource_link_path,
 )
 from rancher_mcp.services.resources.schema import (
     ResourceSchemaReference,

@@ -83,6 +83,12 @@ async def test_every_json_text_argument_accepts_an_object_as_text(
         "The SDK decoded the text into an object and then rejected the object as a string. "
         "Annotate the argument `OptionalJsonText` (rancher_mcp.tools.support.json_args)."
     )
+    # ...and the tool did run. Every one of these looks its schema up first, so
+    # a call that sent nothing was stopped by something — and "not refused as
+    # malformed" would be true of it without the argument ever being read.
+    assert seen.requests, (
+        f"{tool_name} sent nothing with {argument}={_OBJECT_AS_TEXT!r}: {seen.envelope}"
+    )
 
 
 async def test_the_gate_catches_an_argument_the_sdk_decodes() -> None:

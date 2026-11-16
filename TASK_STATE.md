@@ -64,14 +64,26 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 
 ## Next Slice
 
-### 📌 HANDOFF (2026-11-15): port SHIPPED (v1.69.0); two defects found and fixed after it (v1.70.0, v1.71.0); #8 shipped (v1.72.0); #9 half done (v1.73.0); the package starts (v1.74.0); request-path hardening (v1.75.0)
+### 📌 HANDOFF (2026-11-15): port SHIPPED (v1.69.0); two defects found and fixed after it (v1.70.0, v1.71.0); #8 shipped (v1.72.0); #9 half done (v1.73.0); the package starts (v1.74.0); request-path hardening (v1.75.0, v1.76.0)
 
 **Release.** Pierce asked for one on 2026-11-15 — the server had just been
-listed on mcprush. **v1.75.0 is the version to tag.** Before it, the last tag
-and the PyPI latest were both v1.59.0, which does not start outside a checkout;
-1.60.0–1.74.0 were never published. Check PyPI for what is actually out before
-assuming either way.
+listed on mcprush. **v1.76.0 is the version to tag.** v1.75.0 was reviewed
+again before tagging and blocked, so it was never tagged. Before this, the last
+tag and the PyPI latest were both v1.59.0, which does not start outside a
+checkout; 1.60.0–1.75.0 were never published. Check PyPI for what is actually
+out before assuming either way.
 
+- **v1.76.0 — security** ([#33](https://github.com/rex/mcp-rancher/issues/33),
+  ADR-0003 second addendum). The second review found that a resource id of `/`
+  addressed the whole collection — a generic delete of it was a Kubernetes
+  *deletecollection* — and that the curated tools still put ids into the URL
+  unquoted. Paths are now built in two places only
+  (`services/resources/paths.py` from identifiers, `link_paths.py` from a
+  payload's links), the transport gained a fourth rule (a change is made to
+  one resource), and `test_identifier_arguments_fleet_wide.py` gives every
+  string argument of every tool each escape in turn. **Reach for that gate's
+  shape — ask of every argument, read the wire — before deciding where a hole
+  might be.**
 - **v1.75.0 — security** ([#27](https://github.com/rex/mcp-rancher/issues/27),
   ADR-0003 addendum). An independent review of the day's commits found that an
   identifier containing `..` reached a different resource than the one named,
@@ -156,9 +168,14 @@ identifiers as sent),
 [#32](https://github.com/rex/mcp-rancher/issues/32) (an optional string argument
 whose text is `null` arrives as none).
 
+[#34](https://github.com/rex/mcp-rancher/issues/34) (an id that is not one
+plain name — a principal-style `local://name` — is refused by the curated
+tools; what real ids look like is not verified).
+
 **Not verified against a live Rancher:** that `?_method=` and `?action=remove`
 behave as their source says (rancher/norman and rancher/apiserver,
-`parseMethod` / `parseAction`). Both are refused regardless.
+`parseMethod` / `parseAction`), and that a GET of a cluster's `shell` link
+creates a pod. All three are refused regardless.
 
 **Where things stand.** The server runs on `mcp` 2.3.0 (`MCPServer`), and
 Claude Code 2.1.325 connects to it on protocol `2026-07-28` with no legacy

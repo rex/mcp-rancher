@@ -13,6 +13,7 @@ from rancher_mcp.models.certificates import (
     RancherNamespacedCertificateList,
 )
 from rancher_mcp.services.instances import resolve_instance
+from rancher_mcp.services.resources.paths import identified_path
 from rancher_mcp.tools.certificates.shared import (
     build_namespaced_certificate_query_params,
     data_items,
@@ -108,7 +109,11 @@ async def _fetch_namespaced_certificate_get(
 ) -> RancherNamespacedCertificateDetail:
     """Fetch and normalize one namespaced_certificate."""
 
-    payload = await client.get_json(f"/v3/namespacedcertificates/{certificate_id}")
+    payload = await client.get_json(
+        identified_path(
+            "/v3/namespacedcertificates/{certificate_id}", certificate_id=certificate_id
+        )
+    )
 
     metadata = mapping_value(payload, "metadata") or {}
     annotations = mapping_value(metadata, "annotations") or {}

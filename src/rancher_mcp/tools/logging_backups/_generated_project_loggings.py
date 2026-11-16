@@ -13,6 +13,7 @@ from rancher_mcp.models.logging_backups import (
     RancherProjectLoggingList,
 )
 from rancher_mcp.services.instances import resolve_instance
+from rancher_mcp.services.resources.paths import identified_path
 from rancher_mcp.tools.logging_backups.shared import (
     build_project_logging_query_params,
     data_items,
@@ -114,7 +115,11 @@ async def _fetch_project_logging_get(
 ) -> RancherProjectLoggingDetail:
     """Fetch and normalize one project_logging."""
 
-    payload = await client.get_json(f"/v3/projectloggings/{project_logging_id}")
+    payload = await client.get_json(
+        identified_path(
+            "/v3/projectloggings/{project_logging_id}", project_logging_id=project_logging_id
+        )
+    )
 
     status = mapping_value(payload, "status") or {}
     detail = RancherProjectLoggingDetail.model_validate(payload)

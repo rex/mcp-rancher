@@ -10,6 +10,7 @@ from rancher_mcp.clients.management import ManagementDiscoveryClient, RancherMan
 from rancher_mcp.config import AppSettings, get_settings
 from rancher_mcp.models.provisioning import RancherNodeDriverDetail, RancherNodeDriverList
 from rancher_mcp.services.instances import resolve_instance
+from rancher_mcp.services.resources.paths import identified_path
 from rancher_mcp.tools.provisioning.shared import (
     build_driver_query_params,
     data_items,
@@ -98,7 +99,9 @@ async def _fetch_node_driver_get(
 ) -> RancherNodeDriverDetail:
     """Fetch and normalize one node_driver."""
 
-    payload = await client.get_json(f"/v3/nodedrivers/{driver_id}")
+    payload = await client.get_json(
+        identified_path("/v3/nodedrivers/{driver_id}", driver_id=driver_id)
+    )
 
     metadata = mapping_value(payload, "metadata") or {}
     annotations = mapping_value(metadata, "annotations") or {}

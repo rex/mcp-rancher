@@ -13,6 +13,7 @@ from rancher_mcp.models.apps_catalogs import (
     RancherTemplateVersionList,
 )
 from rancher_mcp.services.instances import resolve_instance
+from rancher_mcp.services.resources.paths import identified_path
 from rancher_mcp.tools.apps_catalogs.shared import (
     build_template_version_query_params,
     data_items,
@@ -109,7 +110,11 @@ async def _fetch_template_version_get(
 ) -> RancherTemplateVersionDetail:
     """Fetch and normalize one template_version."""
 
-    payload = await client.get_json(f"/v3/templateversions/{template_version_id}")
+    payload = await client.get_json(
+        identified_path(
+            "/v3/templateversions/{template_version_id}", template_version_id=template_version_id
+        )
+    )
 
     file_names = file_names_from_value(payload.get("files"))
     detail = RancherTemplateVersionDetail.model_validate(payload)

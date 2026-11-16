@@ -11,6 +11,7 @@ from rancher_mcp.config import AppSettings, get_settings
 from rancher_mcp.models.clusters_nodes import RancherClusterDetail, RancherClusterList
 from rancher_mcp.services.instances import resolve_instance
 from rancher_mcp.services.resources.builders_pagination import next_page_token_from_payload
+from rancher_mcp.services.resources.paths import identified_path
 from rancher_mcp.tools.clusters_nodes.shared import (
     build_cluster_query_params,
     cluster_condition_counts_from_payload,
@@ -98,7 +99,9 @@ async def _fetch_cluster_get(
 ) -> RancherClusterDetail:
     """Fetch and normalize one cluster."""
 
-    payload = await client.get_json(f"/v3/clusters/{cluster_id}")
+    payload = await client.get_json(
+        identified_path("/v3/clusters/{cluster_id}", cluster_id=cluster_id)
+    )
     summary = cluster_summary_from_payload(payload)
 
     detail = RancherClusterDetail.model_validate(payload)

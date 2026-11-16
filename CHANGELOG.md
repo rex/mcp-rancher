@@ -1,5 +1,102 @@
 # Changelog
 
+## [1.76.0] — 2026-11-15 — Agent: Claude Fable 5.2
+1.75.0 was reviewed a second time before it was tagged, and the review blocked
+it. This is what it found. **1.75.0 was never published.**
+
+### Security
+- **A resource id of `/` addressed the whole collection.** (rex/mcp-rancher#33)
+  A resource id is split on `/` and its segments appended to the collection
+  path — and empty segments were skipped. So the id `/` appended nothing, and
+  the "resource" was the collection itself.
+  `rancher_steve_resource_delete(schema_id="persistentvolume", resource_id="/")`
+  sent `DELETE` to `…/api/v1/persistentvolumes`, which Kubernetes reads as
+  *deletecollection*: every PersistentVolume on the cluster, under a
+  confirmation phrase and an approval question that both said
+  `persistentvolume "/"`. The same id made a generic action invoke a
+  collection-level action. **Every earlier version is affected.**
+  Closed three ways: an identifier with an empty segment — a leading,
+  trailing or doubled `/` — is refused before anything is sent; the path
+  builder no longer skips a segment, so it cannot return a collection path for
+  a resource; and a reply that *is* a collection is refused where one resource
+  was asked for.
+- **The transport's fourth rule: a change is made to one resource.** Whoever
+  built the request, `clients/request_guard.py` now refuses a path with an
+  empty segment, a mutation on a path ending in `/`, and — by the shape of the
+  path — any `DELETE` on a Kubernetes collection. Nothing here deletes more
+  than one resource at a time, so *deletecollection* is never sent.
+- **Curated tools put ids into the URL as the caller sent them.** Thirty-six
+  generated tools and four hand-written ones built their path with an f-string
+  (`f"/v3/globalroles/{global_role_id}"`). An id with a `/` reached a link of
+  the resource; one with a `?` added query parameters — to a server that
+  reads some of them as instructions. The codegen templates now emit
+  `identified_path(...)`, which checks and quotes each placeholder; the path
+  of every valid id is unchanged.
+- **A read could open a session.** A cluster's `shell` link is a kubectl
+  shell, and Rancher creates the pod it runs in before it looks at whether the
+  request is a WebSocket upgrade — so following that link with a GET, which a
+  read-only instance allowed, wrote to the cluster. A link that opens a
+  session — by its WebSocket scheme, or by name (`shell`, `exec`, `attach`,
+  `portforward`) — is no longer followed; no request carries a `shell`
+  parameter; a caller cannot name a `link` in `params_json`; and a WebSocket
+  to `/exec`, `/attach` or `/portforward` counts as a mutation whether or not
+  anything is sent over it. *Not verified against a live Rancher.*
+- **`;` separates query parameters too.** Go's parser did that before 1.17,
+  so a Rancher built with it reads `?a=1;_method=DELETE` as two parameters.
+  The transport now does the same before it decides what a request carries,
+  and `;` is not valid in an identifier.
+- **Delete and action options are checked before anyone is asked — and
+  shown.** `params_json` and `payload_json` were parsed only when the request
+  was built, after a person had approved it, and the question never mentioned
+  them: `gracePeriodSeconds: 0` or `propagationPolicy: Orphan` changed what a
+  delete did, unseen. They are parsed in the pre-flight and added to the
+  question, with anything that looks like a credential masked and the whole
+  cut at 400 characters.
+- **A cancelled mutation is audited.** `CancelledError` is not an `Exception`,
+  so a call the client gave up on after the request had gone out left no
+  record.
+- The approval question shows values in ASCII, so a character that renders as
+  nothing or as a `/` appears as its escape; a name longer than 253 characters
+  is refused; a `namespace` given for a cluster-scoped kind is refused rather
+  than shown; and a management-plane id is one name, as it always was to
+  Rancher.
+
+### Changed
+- **An id is one plain name.** A curated tool given an id containing `/` now
+  refuses it, naming the argument. This includes a principal-style id such as
+  `local://local-admins` for `rancher_group_get`, which Rancher's router would
+  not have resolved in that form either
+  ([#34](https://github.com/rex/mcp-rancher/issues/34) has what is not yet
+  known about it).
+- A `*_json` argument that is not valid JSON is refused as
+  `invalid_argument`, with the parser's position and none of the text. It used
+  to surface as an unexplained crash.
+- `services/resources/paths.py` is split: paths taken from a payload's own
+  links are in `link_paths.py`.
+
+### Why nothing caught it, and what does now
+- **1.75.0's gates sent hostile identifiers to the generic tools only, and
+  never an empty segment.** The fix was reviewed by the same kind of reader
+  that found the first hole, and it found the next one in the place the new
+  tests had not looked. `tests/unit/test_identifier_arguments_fleet_wide.py`
+  no longer chooses where to look: every string argument of every tool — 605
+  arguments on 200 tools — is given each escape in turn, and what is examined
+  is every request target as it went on the wire. It runs on one client
+  session, in about three seconds.
+- **A gate went vacuous the day it was written — again.** That gate also
+  looked for a mutation on a collection-shaped path. Then the transport rule
+  above was added beneath it, and the check could no longer see anything. It
+  is gone from the gate; the transport's own tests
+  (`test_collection_requests_refused.py`) hold that guarantee, where it can
+  fail.
+- **Three checks from 1.75.0 could pass for the wrong reason,** and the review
+  named each. The namespace-spoof test was refused for a different rule than
+  the one it is named for; the path tests had no empty-segment case; the
+  JSON-text gate accepted a call that never reached the tool body. All three
+  now assert the cause.
+- Found by a second independent review of the fix, before it was tagged
+  ([ADR-0003](docs/adr/0003-write-guards.md), second addendum).
+
 ## [1.75.0] — 2026-11-15 — Agent: Claude Fable 5.2
 ### Security
 - **An identifier containing `..` reached a different resource than the one

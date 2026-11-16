@@ -10,6 +10,7 @@ from rancher_mcp.clients.management import ManagementDiscoveryClient, RancherMan
 from rancher_mcp.config import AppSettings, get_settings
 from rancher_mcp.models.provisioning import RancherCloudCredentialDetail, RancherCloudCredentialList
 from rancher_mcp.services.instances import resolve_instance
+from rancher_mcp.services.resources.paths import identified_path
 from rancher_mcp.tools.provisioning.shared import (
     build_cloud_credential_query_params,
     cloud_credential_summary_from_payload,
@@ -101,7 +102,9 @@ async def _fetch_cloud_credential_get(
 ) -> RancherCloudCredentialDetail:
     """Fetch and normalize one cloud_credential."""
 
-    payload = await client.get_json(f"/v3/cloudcredentials/{credential_id}")
+    payload = await client.get_json(
+        identified_path("/v3/cloudcredentials/{credential_id}", credential_id=credential_id)
+    )
     summary = cloud_credential_summary_from_payload(payload)
 
     metadata = mapping_value(payload, "metadata") or {}

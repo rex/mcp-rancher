@@ -21,9 +21,14 @@ from rancher_mcp.exceptions import RancherInvalidArgumentError
 
 # Characters with no place in a Rancher or Kubernetes identifier, each of which
 # can make one mean something else: a quote or a backslash rewrites the prompt
-# a person is shown; `#` and `?` end the path early; `%` smuggles an encoded
-# character past a check made on the decoded text.
-_FORBIDDEN = frozenset('"\\#?%')
+# a person is shown; `#` and `?` end the path early, and `;` separates
+# parameters to some servers; `%` smuggles an encoded character past a check
+# made on the decoded text.
+_FORBIDDEN = frozenset('"\\#?%;')
+
+# The longest name Kubernetes allows (a DNS subdomain); Rancher's own ids are
+# far shorter. Anything longer is not a name — it is there to fill a screen.
+_LONGEST_NAME = 253
 
 
 def require_safe_identifier(label: str, value: str, *, single_segment: bool = False) -> str:
@@ -47,9 +52,21 @@ def require_safe_identifier(label: str, value: str, *, single_segment: bool = Fa
         )
     if single_segment and "/" in value:
         raise RancherInvalidArgumentError(f"`{label}` is a single name and cannot contain '/'")
-    if any(segment in {".", ".."} for segment in value.split("/")):
+    segments = value.split("/")
+    if any(not segment for segment in segments):
+        # `/` is the whole collection, not something in it — and a path builder
+        # that skipped empty segments once sent a DELETE there.
+        raise RancherInvalidArgumentError(
+            f"`{label}` has an empty segment — a leading, trailing or doubled '/' — so it "
+            "names no one resource"
+        )
+    if any(segment in {".", ".."} for segment in segments):
         raise RancherInvalidArgumentError(
             f"`{label}` contains a '.' or '..' path segment, which would address a "
             "different resource than the one it names"
+        )
+    if any(len(segment) > _LONGEST_NAME for segment in segments):
+        raise RancherInvalidArgumentError(
+            f"`{label}` is longer than any Rancher or Kubernetes name ({_LONGEST_NAME} characters)"
         )
     return value

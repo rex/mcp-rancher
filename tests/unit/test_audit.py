@@ -8,6 +8,7 @@ through one of the 8 generic mutation tools.
 
 from __future__ import annotations
 
+import asyncio
 from typing import Any
 
 import pytest
@@ -168,6 +169,25 @@ async def test_a_crash_after_the_request_went_out_is_still_on_record() -> None:
     assert record["schema_id"] == "token"
     assert "whether the change was made is unknown" in record["error_message"]
     assert "hunter2" not in str(record)
+
+
+@pytest.mark.asyncio
+async def test_a_call_cancelled_mid_flight_is_still_on_record() -> None:
+    """The client gave up waiting while the DELETE was on its way. Rancher may
+    have acted on it all the same. ``CancelledError`` is not an ``Exception``,
+    so a handler written for exceptions never saw it."""
+
+    @audit_mutation(operation="delete", plane="steve")
+    async def fake_delete(*, schema_id: str, resource_id: str) -> None:
+        raise asyncio.CancelledError
+
+    with capture_logs() as logs, pytest.raises(asyncio.CancelledError):
+        await fake_delete(schema_id="pod", resource_id="shop/web-0")
+
+    [record] = [r for r in logs if r["event"] == "audit"]
+    assert record["outcome"] == "error"
+    assert record["error_code"] == "CancelledError"
+    assert record["resource_id"] == "shop/web-0"
 
 
 @pytest.mark.asyncio

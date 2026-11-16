@@ -24,7 +24,7 @@ import httpx
 import respx
 from mcp import Client
 from mcp.server.mcpserver import MCPServer
-from mcp.types import ElicitRequestParams, ElicitResult, TextContent
+from mcp.types import CallToolResult, ElicitRequestParams, ElicitResult, TextContent
 from structlog.testing import capture_logs
 
 _CALL_DEADLINE_SECONDS = 20.0
@@ -113,6 +113,10 @@ class Observation:
     """Every prompt the server put to the person behind the client."""
     query_keys: list[str] = field(default_factory=list[str])
     """The name of every query parameter any request carried."""
+    targets: list[str] = field(default_factory=list[str])
+    """Every request target exactly as it went on the wire: path and query,
+    still percent-encoded. ``requests`` holds the decoded path, in which a
+    quoted ``%2F`` and a real ``/`` look the same."""
 
     @property
     def error_code(self) -> str | None:
@@ -179,9 +183,19 @@ async def observe_call(
             # outputSchema and raises when it does not conform. That is a real
             # defect, but a different one from anything observed here: by then
             # the tool has run, and what it sent and logged is still on record.
-            rejected_by_client = _innermost_message(exc)
-        requests = [f"{call.request.method} {call.request.url.path}" for call in router.calls]
-        query_keys = sorted({key for call in router.calls for key in call.request.url.params})
+            rejected_by_client = innermost_message(exc)
+        sent = [call.request for call in router.calls]
+    return observation_of(result, sent, logs, rejected_by_client, questions)
+
+
+def observation_of(
+    result: CallToolResult | None,
+    sent: list[httpx.Request],
+    logs: list[Any],
+    rejected_by_client: str | None,
+    questions: list[str],
+) -> Observation:
+    """Put together what one call did, from what was collected while it ran."""
 
     envelope: dict[str, Any] | None = None
     is_error = result is not None and bool(result.is_error)
@@ -198,53 +212,18 @@ async def observe_call(
     return Observation(
         is_error=is_error,
         envelope=envelope,
-        requests=requests,
+        requests=[f"{request.method} {request.url.path}" for request in sent],
         audit=[dict(record) for record in logs if record.get("event") == "audit"],
         rejected_by_client=rejected_by_client,
-        questions=questions,
-        query_keys=query_keys,
+        questions=list(questions),
+        query_keys=sorted({key for request in sent for key in request.url.params}),
+        targets=[request.url.raw_path.decode() for request in sent],
     )
 
 
-def _innermost_message(exc: BaseException) -> str:
+def innermost_message(exc: BaseException) -> str:
     """The first leaf of an exception group, as text."""
 
     while isinstance(exc, BaseExceptionGroup) and exc.exceptions:
         exc = exc.exceptions[0]
     return f"{type(exc).__name__}: {exc}"
-
-
-def read_only_refusal_problems(seen: Observation) -> list[str]:
-    """Everything wrong with how a write tool treated a READ-ONLY instance.
-
-    Empty means the tool did what the safety model promises: refused, said
-    why, sent nothing, and left a record that somebody tried.
-    """
-
-    problems: list[str] = []
-    if seen.requests:
-        problems.append(f"sent {len(seen.requests)} HTTP request(s): {seen.requests[:4]}")
-    if not seen.is_error:
-        problems.append("returned success")
-    elif seen.error_code != "CAPABILITY_ERROR" or "read-only" not in seen.message:
-        problems.append(
-            f"refused, but not as a read-only refusal: {seen.error_code!r} {seen.message!r}"
-        )
-    if not [record for record in seen.audit if record.get("outcome") == "error"]:
-        problems.append("left no audit record of the refused attempt")
-    return problems
-
-
-def rate_limit_refusal_problems(seen: Observation) -> list[str]:
-    """Everything wrong with how a write tool treated an EMPTY write bucket."""
-
-    problems: list[str] = []
-    if seen.requests:
-        problems.append(f"sent {len(seen.requests)} HTTP request(s): {seen.requests[:4]}")
-    if not seen.is_error:
-        problems.append("returned success")
-    elif seen.error_code != "RATE_LIMITED":
-        problems.append(f"refused, but not as rate limited: {seen.error_code!r} {seen.message!r}")
-    if not [record for record in seen.audit if record.get("error_code") == "RATE_LIMITED"]:
-        problems.append("left no audit record of the rate-limited attempt")
-    return problems

@@ -11,6 +11,7 @@ from rancher_mcp.config import AppSettings, get_settings
 from rancher_mcp.models.projects_namespaces import RancherProjectDetail, RancherProjectList
 from rancher_mcp.services.instances import resolve_instance
 from rancher_mcp.services.resources.builders_pagination import next_page_token_from_payload
+from rancher_mcp.services.resources.paths import identified_path
 from rancher_mcp.tools.projects_namespaces.shared import (
     build_project_query_params,
     data_items,
@@ -102,7 +103,9 @@ async def _fetch_project_get(
 ) -> RancherProjectDetail:
     """Fetch and normalize one project."""
 
-    payload = await client.get_json(f"/v3/projects/{project_id}")
+    payload = await client.get_json(
+        identified_path("/v3/projects/{project_id}", project_id=project_id)
+    )
     summary = project_summary_from_payload(payload)
 
     detail = RancherProjectDetail.model_validate(payload)

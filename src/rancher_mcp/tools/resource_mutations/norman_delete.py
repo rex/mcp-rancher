@@ -115,6 +115,8 @@ async def _approve(
     schema_id: str,
     resource_id: str,
     confirmation: str,
+    payload_json: str | None,
+    params_json: str | None,
     instance: str | None,
 ) -> Elicit[Approval] | Unasked:
     def question() -> str:
@@ -124,7 +126,9 @@ async def _approve(
             plane="norman", schema_id=schema_id, resource_id=resource_id, confirmation=confirmation
         )
         return delete_question(
-            generic_target(schema_id=schema_id, resource_id=resource_id, instance=instance_name)
+            generic_target(schema_id=schema_id, resource_id=resource_id, instance=instance_name),
+            params_json=params_json,
+            payload_json=payload_json,
         )
 
     return ask_unless_pointless(ctx, question)

@@ -10,6 +10,7 @@ from rancher_mcp.clients.management import ManagementDiscoveryClient, RancherMan
 from rancher_mcp.config import AppSettings, get_settings
 from rancher_mcp.models.auth_identity import RancherAuthConfigDetail, RancherAuthConfigList
 from rancher_mcp.services.instances import resolve_instance
+from rancher_mcp.services.resources.paths import identified_path
 from rancher_mcp.tools.auth_identity.shared import (
     auth_config_summary_from_payload,
     build_auth_config_query_params,
@@ -99,7 +100,9 @@ async def _fetch_auth_config_get(
 ) -> RancherAuthConfigDetail:
     """Fetch and normalize one auth_config."""
 
-    payload = await client.get_json(f"/v3/authconfigs/{auth_config_id}")
+    payload = await client.get_json(
+        identified_path("/v3/authconfigs/{auth_config_id}", auth_config_id=auth_config_id)
+    )
 
     detail = RancherAuthConfigDetail.model_validate(payload)
     return detail.model_copy(

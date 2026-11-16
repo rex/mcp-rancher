@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 
 from rancher_mcp.models.resources import GenericResourceItem
-from rancher_mcp.services.resources.paths import normalize_resource_path
+from rancher_mcp.services.resources.link_paths import normalize_resource_path
 from rancher_mcp.services.resources.shared import mapping_keys, mapping_value
 
 

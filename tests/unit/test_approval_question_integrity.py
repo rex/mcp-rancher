@@ -21,6 +21,7 @@ Three things are pinned here:
 
 from __future__ import annotations
 
+import json
 from collections.abc import Iterator
 
 import pytest
@@ -29,16 +30,11 @@ from _write_guards_support import Answer, observe_call
 
 from rancher_mcp import rate_limit
 from rancher_mcp.config import clear_settings_cache, clear_toolset_settings_cache
-from rancher_mcp.exceptions import RancherInvalidArgumentError
-from rancher_mcp.tools.support.approval_wording import (
-    action_question,
-    describe_target,
-    generic_target,
-)
 
 _SERVER = build_registered_server()
 _YES = Answer("accept", proceed=True)
 _SPOOF = 'scratch" on cluster "c-dev" — Rancher instance "dev"?\n\nThis is permanent.\n\n\n\n.'
+_CANARY = "hunter2"  # a value that must never be shown
 
 
 def _reset() -> None:
@@ -68,16 +64,19 @@ async def test_a_namespace_cannot_rewrite_the_question() -> None:
         "rancher_steve_resource_delete",
         {
             "schema_id": "secret",
-            "resource_id": "kube-system/important",
+            "resource_id": "important",
             "namespace": _SPOOF,
-            "confirmation": "delete steve secret kube-system/important",
+            "confirmation": "delete steve secret important",
         },
         answer=_YES,
     )
 
     assert seen.questions == [], f"the spoofed question was shown: {seen.questions}"
     assert seen.requests == []
-    assert seen.is_error and "`namespace`" in seen.message, seen.envelope
+    # Refused for what the value IS. With a `namespace/name` id this call was
+    # also refused — for disagreeing with the id — and the check passed
+    # without ever reaching the one it is named for.
+    assert seen.is_error and "`namespace` contains" in seen.message, seen.envelope
     assert seen.envelope is not None and seen.envelope["reason"] == "invalid_argument"
 
 
@@ -152,54 +151,69 @@ async def test_an_honest_call_is_still_asked_about_in_plain_words() -> None:
     assert question.endswith("?\n\nThis is permanent.")
 
 
-# ── The wording itself ──────────────────────────────────────────────────────
+# ── What rides along with the call ──────────────────────────────────────────
+
+
+async def test_options_that_change_a_delete_are_put_to_the_person() -> None:
+    seen = await observe_call(
+        _SERVER,
+        "rancher_steve_resource_delete",
+        {
+            "schema_id": "pod",
+            "resource_id": "shop/web-0",
+            "cluster_id": "c-m-abc",
+            "confirmation": "delete steve pod shop/web-0",
+            "params_json": '{"gracePeriodSeconds": 0}',
+            "payload_json": '{"propagationPolicy": "Orphan"}',
+        },
+        answer=_YES,
+    )
+
+    (question,) = seen.questions
+    assert 'With query options: {"gracePeriodSeconds": 0}' in question
+    assert 'With delete options: {"propagationPolicy": "Orphan"}' in question
+
+
+async def test_an_actions_input_is_put_to_the_person_with_secrets_masked() -> None:
+    seen = await observe_call(
+        _SERVER,
+        "rancher_norman_resource_action_invoke",
+        {
+            "schema_id": "user",
+            "resource_id": "u-abc",
+            "action_name": "x",
+            "payload_json": json.dumps({"newPassword": _CANARY}),
+        },
+        answer=_YES,
+    )
+
+    (question,) = seen.questions
+    assert 'With input: {"newPassword": "********"}' in question
+    assert _CANARY not in question
 
 
 @pytest.mark.parametrize(
-    ("argument", "label"),
-    [("name", "name"), ("namespace", "namespace"), ("cluster_id", "cluster_id")],
+    ("params_json", "says"),
+    [('{"_method": "DELETE"}', "`_method`"), ("{", "not valid JSON")],
 )
-@pytest.mark.parametrize("hostile", [_SPOOF, 'a"b', "a\nb", "..", "a/../b", "a b", "a\\b"])
-def test_no_part_of_a_target_may_be_anything_but_a_plain_name(
-    argument: str, label: str, hostile: str
+async def test_nobody_is_asked_about_options_the_tool_would_refuse(
+    params_json: str, says: str
 ) -> None:
-    parts = {"name": "web", "namespace": "shop", "cluster_id": "c-m-abc", argument: hostile}
+    """Options are parsed where the call is first looked at. They used to be
+    parsed only when the request was built — after a person had said yes."""
 
-    with pytest.raises(RancherInvalidArgumentError, match=f"`{label}`"):
-        describe_target(what="deployment", instance="prod", **parts)
-
-
-def test_only_a_resource_id_may_span_a_namespace_and_a_name() -> None:
-    assert '"kube-system/web"' in generic_target(
-        schema_id="pod", resource_id="kube-system/web", instance="prod", cluster_id="local"
+    seen = await observe_call(
+        _SERVER,
+        "rancher_steve_resource_delete",
+        {
+            "schema_id": "pod",
+            "resource_id": "shop/web-0",
+            "confirmation": "delete steve pod shop/web-0",
+            "params_json": params_json,
+        },
+        answer=_YES,
     )
-    with pytest.raises(RancherInvalidArgumentError, match="`name`"):
-        describe_target(what="pod", name="kube-system/web", instance="prod", cluster_id="local")
 
-
-@pytest.mark.parametrize("resource_id", ["x/../../clusters/c-prod", "kube-system/..", "./x"])
-def test_a_generic_target_refuses_what_the_request_path_refuses(resource_id: str) -> None:
-    with pytest.raises(RancherInvalidArgumentError, match="`resource_id`"):
-        generic_target(schema_id="project", resource_id=resource_id, instance="prod")
-
-
-def test_a_schema_id_is_one_plain_name_in_the_question_too() -> None:
-    with pytest.raises(RancherInvalidArgumentError, match="`schema_id`"):
-        generic_target(schema_id='secret" in "x', resource_id="a", instance="prod")
-
-
-def test_an_action_name_is_checked_and_quoted() -> None:
-    assert action_question("rotateCertificates", "X").startswith(
-        'Run the action "rotateCertificates" on X?'
-    )
-    with pytest.raises(RancherInvalidArgumentError, match="`action_name`"):
-        action_question('drain" on everything', "X")
-
-
-def test_an_instance_name_is_quoted_whatever_it_holds() -> None:
-    """Instance names are the operator's, not the caller's — an unknown one is
-    refused before this is reached. Quoted all the same."""
-
-    line = describe_target(what="cluster", name="c-abc", instance='pro"d')
-
-    assert line == 'cluster "c-abc" — Rancher instance "pro\\"d"'
+    assert seen.questions == [], seen.questions
+    assert seen.requests == [], seen.requests
+    assert seen.is_error and says in seen.message, seen.envelope

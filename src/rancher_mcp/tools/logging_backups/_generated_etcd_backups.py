@@ -10,6 +10,7 @@ from rancher_mcp.clients.management import ManagementDiscoveryClient, RancherMan
 from rancher_mcp.config import AppSettings, get_settings
 from rancher_mcp.models.logging_backups import RancherEtcdBackupDetail, RancherEtcdBackupList
 from rancher_mcp.services.instances import resolve_instance
+from rancher_mcp.services.resources.paths import identified_path
 from rancher_mcp.tools.logging_backups.shared import (
     build_etcd_backup_query_params,
     data_items,
@@ -111,7 +112,9 @@ async def _fetch_etcd_backup_get(
 ) -> RancherEtcdBackupDetail:
     """Fetch and normalize one etcd_backup."""
 
-    payload = await client.get_json(f"/v3/etcdbackups/{etcd_backup_id}")
+    payload = await client.get_json(
+        identified_path("/v3/etcdbackups/{etcd_backup_id}", etcd_backup_id=etcd_backup_id)
+    )
 
     detail = RancherEtcdBackupDetail.model_validate(payload)
     return detail.model_copy(

@@ -8,6 +8,7 @@ from rancher_mcp.clients.management import ManagementDiscoveryClient, RancherMan
 from rancher_mcp.config import AppSettings, get_settings
 from rancher_mcp.models.monitoring import RancherMonitoringStatus
 from rancher_mcp.services.instances import resolve_instance
+from rancher_mcp.services.resources.paths import identified_path
 from rancher_mcp.tools.support.values import mapping_value, string_value
 
 
@@ -48,7 +49,9 @@ async def _fetch_monitoring_status(
     cluster_id: str,
     client: ManagementDiscoveryClient,
 ) -> RancherMonitoringStatus:
-    payload = await client.get_json(f"/v3/clusters/{cluster_id}")
+    payload = await client.get_json(
+        identified_path("/v3/clusters/{cluster_id}", cluster_id=cluster_id)
+    )
     return _monitoring_status_from_cluster(instance_name, cluster_id, payload)
 
 

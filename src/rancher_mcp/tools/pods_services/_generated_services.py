@@ -18,6 +18,7 @@ from rancher_mcp.rate_limit import rate_limit_writes
 from rancher_mcp.services.instances import resolve_instance
 from rancher_mcp.services.resource_queries import build_steve_list_query_params
 from rancher_mcp.services.resources.builders_pagination import next_page_token_from_payload
+from rancher_mcp.services.resources.paths import identified_path
 from rancher_mcp.services.safety import ensure_instance_writable
 from rancher_mcp.tools.pods_services.shared import (
     data_items,
@@ -47,7 +48,11 @@ async def _fetch_services_list(
     # namespace=None means cluster-wide (all namespaces) — the "/{namespace}"
     # suffix is dropped rather than defaulted, so a whole-cluster triage
     # query never silently narrows to one namespace.
-    list_request_path = f"/services/{namespace}" if namespace is not None else "/services"
+    list_request_path = (
+        identified_path("/services/{namespace}", namespace=namespace)
+        if namespace is not None
+        else "/services"
+    )
     payload = await client.get_json(list_request_path, params=query_params or None)
     services = [service_summary_from_payload(item) for item in data_items(payload)]
     return RancherServiceList(
@@ -115,7 +120,11 @@ async def _fetch_service_get(
 ) -> RancherServiceDetail:
     """Fetch and normalize one service."""
 
-    payload = await client.get_json(f"/services/{namespace}/{service_name}")
+    payload = await client.get_json(
+        identified_path(
+            "/services/{namespace}/{service_name}", namespace=namespace, service_name=service_name
+        )
+    )
     summary = service_summary_from_payload(payload)
 
     metadata = mapping_value(payload, "metadata") or {}
@@ -180,7 +189,13 @@ async def _patch_service_set_type(
     request_payload = {"spec": request_payload}
 
     before = await fetch_patch_before(
-        lambda: client.get_json(f"/services/{namespace}/{service_name}"),
+        lambda: client.get_json(
+            identified_path(
+                "/services/{namespace}/{service_name}",
+                namespace=namespace,
+                service_name=service_name,
+            )
+        ),
         target_path="spec",
         patch_subtree=patch_subtree,
         kind="service",
@@ -188,7 +203,12 @@ async def _patch_service_set_type(
         name=service_name,
     )
     patch_started_at = time.monotonic()
-    await client.patch_json(f"/services/{namespace}/{service_name}", payload=request_payload)
+    await client.patch_json(
+        identified_path(
+            "/services/{namespace}/{service_name}", namespace=namespace, service_name=service_name
+        ),
+        payload=request_payload,
+    )
     duration_ms = int((time.monotonic() - patch_started_at) * 1000)
     return RancherMutationReceipt(
         instance=instance_name,

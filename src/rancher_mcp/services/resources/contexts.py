@@ -2,11 +2,16 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 
 from rancher_mcp.clients.management import ManagementDiscoveryClient
 from rancher_mcp.clients.steve import SteveDiscoveryClient
-from rancher_mcp.exceptions import RancherCapabilityError, RancherNotFoundError
+from rancher_mcp.exceptions import (
+    RancherCapabilityError,
+    RancherInvalidArgumentError,
+    RancherNotFoundError,
+)
 from rancher_mcp.identifiers import require_safe_identifier
 from rancher_mcp.models.resources import GenericResourceItem
 from rancher_mcp.services.resources.builders_item import build_resource_item
@@ -51,6 +56,20 @@ async def _get_schema_json(
         ) from exc
 
 
+def _require_one_resource(payload: Mapping[str, object]) -> None:
+    """Refuse a reply that is a collection where one resource was asked for.
+
+    The path builder no longer returns a collection path for a resource id.
+    This is what still holds if something else ever does: a mutation built on
+    a collection's reply acts on everything in it.
+    """
+
+    if payload.get("type") == "collection":
+        raise RancherInvalidArgumentError(
+            "`resource_id` named a whole collection, not one resource in it"
+        )
+
+
 async def load_norman_schema_reference(
     schema_id: str,
     client: ManagementDiscoveryClient,
@@ -75,9 +94,11 @@ async def load_norman_resource_context(
 ) -> ResourceContext:
     """Load one Norman resource and its schema-derived path context."""
 
+    require_safe_identifier("resource_id", resource_id, single_segment=True)
     schema = await load_norman_schema_reference(schema_id, client)
     resource_path = build_resource_path(schema, resource_id=resource_id)
     resource_payload = await client.get_json(resource_path)
+    _require_one_resource(resource_payload)
     resource = build_resource_item(
         plane="norman",
         cluster_id=None,
@@ -125,14 +146,21 @@ async def load_steve_resource_context(
 
     if namespace is not None:
         require_safe_identifier("namespace", namespace, single_segment=True)
+    require_safe_identifier("resource_id", resource_id)
     require_consistent_namespace(namespace, resource_id)
     schema = await load_steve_schema_reference(cluster_id, schema_id, steve_client)
+    if namespace is not None and not schema.namespaced:
+        raise RancherInvalidArgumentError(
+            f"`namespace` was given, but {schema_id} is cluster-scoped: the request would "
+            "ignore it. Leave it out."
+        )
     resource_path = build_resource_path(
         schema,
         resource_id=resource_id,
         namespace=namespace,
     )
     resource_payload = await steve_client.get_json(resource_path)
+    _require_one_resource(resource_payload)
     resource = build_resource_item(
         plane="steve",
         cluster_id=cluster_id,

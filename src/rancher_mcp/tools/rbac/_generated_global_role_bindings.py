@@ -10,6 +10,7 @@ from rancher_mcp.clients.management import ManagementDiscoveryClient, RancherMan
 from rancher_mcp.config import AppSettings, get_settings
 from rancher_mcp.models.rbac import RancherGlobalRoleBindingDetail, RancherGlobalRoleBindingList
 from rancher_mcp.services.instances import resolve_instance
+from rancher_mcp.services.resources.paths import identified_path
 from rancher_mcp.tools.rbac.shared import (
     binding_subject,
     build_global_role_binding_query_params,
@@ -106,7 +107,12 @@ async def _fetch_global_role_binding_get(
 ) -> RancherGlobalRoleBindingDetail:
     """Fetch and normalize one global_role_binding."""
 
-    payload = await client.get_json(f"/v3/globalrolebindings/{global_role_binding_id}")
+    payload = await client.get_json(
+        identified_path(
+            "/v3/globalrolebindings/{global_role_binding_id}",
+            global_role_binding_id=global_role_binding_id,
+        )
+    )
 
     subject = binding_subject(payload)
     detail = RancherGlobalRoleBindingDetail.model_validate(payload)

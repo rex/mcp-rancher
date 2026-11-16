@@ -13,6 +13,7 @@ from rancher_mcp.models.fleet_registration import (
     RancherClusterRegistrationTokenList,
 )
 from rancher_mcp.services.instances import resolve_instance
+from rancher_mcp.services.resources.paths import identified_path
 from rancher_mcp.tools.fleet_registration.shared import (
     action_keys,
     build_cluster_registration_token_query_params,
@@ -111,7 +112,10 @@ async def _fetch_cluster_registration_token_get(
     """Fetch and normalize one cluster_registration_token."""
 
     payload = await client.get_json(
-        f"/v3/clusterregistrationtokens/{cluster_registration_token_id}"
+        identified_path(
+            "/v3/clusterregistrationtokens/{cluster_registration_token_id}",
+            cluster_registration_token_id=cluster_registration_token_id,
+        )
     )
 
     detail = RancherClusterRegistrationTokenDetail.model_validate(payload)

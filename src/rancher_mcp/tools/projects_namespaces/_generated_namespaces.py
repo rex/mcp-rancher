@@ -11,6 +11,7 @@ from rancher_mcp.config import AppSettings, get_settings
 from rancher_mcp.models.projects_namespaces import RancherNamespaceDetail, RancherNamespaceList
 from rancher_mcp.services.instances import resolve_instance
 from rancher_mcp.services.resources.builders_pagination import next_page_token_from_payload
+from rancher_mcp.services.resources.paths import identified_path
 from rancher_mcp.tools.projects_namespaces.shared import (
     build_namespace_query_params,
     data_items,
@@ -123,7 +124,7 @@ async def _fetch_namespace_get(
 ) -> RancherNamespaceDetail:
     """Fetch and normalize one namespace."""
 
-    payload = await client.get_json(f"/namespaces/{namespace}")
+    payload = await client.get_json(identified_path("/namespaces/{namespace}", namespace=namespace))
     summary = namespace_summary_from_payload(payload)
 
     metadata = mapping_value(payload, "metadata") or {}

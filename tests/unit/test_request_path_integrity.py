@@ -46,7 +46,7 @@ from rancher_mcp.config import clear_settings_cache, clear_toolset_settings_cach
 from rancher_mcp.exceptions import RancherCapabilityError
 from rancher_mcp.identifiers import require_safe_identifier
 from rancher_mcp.models.discovery import RancherInstanceConfig
-from rancher_mcp.services.resources.paths import (
+from rancher_mcp.services.resources.link_paths import (
     resolve_resource_action_path,
     resolve_resource_link_path,
 )

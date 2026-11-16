@@ -38,6 +38,7 @@ import rancher_mcp.tools.prometheus_monitoring.paths as _paths_prometheus_monito
 import rancher_mcp.tools.scheduling.paths as _paths_scheduling
 import rancher_mcp.tools.storage.paths as _paths_storage
 import rancher_mcp.tools.workloads.paths as _paths_workloads
+from rancher_mcp.services.resources.paths import identified_path
 
 
 def _detail_path_backups(cluster_id: str, namespace: str | None, name: str) -> str:
@@ -387,7 +388,7 @@ def _detail_path_longhorn_volumes(cluster_id: str, namespace: str | None, name: 
 def _detail_path_namespaces(cluster_id: str, namespace: str | None, name: str) -> str:
     """Build the detail path for one namespace (resource_kind='namespace')."""
 
-    return f"/namespaces/{name}"
+    return identified_path("/namespaces/{name}", name=name)
 
 
 def _detail_path_network_policies(cluster_id: str, namespace: str | None, name: str) -> str:
@@ -462,7 +463,7 @@ def _detail_path_pods(cluster_id: str, namespace: str | None, name: str) -> str:
         # to `str` for type-checking and is a defensive backstop against a
         # direct call bypassing that guard.
         raise ValueError("pod requires namespace")
-    return f"/pods/{namespace}/{name}"
+    return identified_path("/pods/{namespace}/{name}", namespace=namespace, name=name)
 
 
 def _detail_path_pod_disruption_budgets(cluster_id: str, namespace: str | None, name: str) -> str:
@@ -630,7 +631,7 @@ def _detail_path_services(cluster_id: str, namespace: str | None, name: str) -> 
         # to `str` for type-checking and is a defensive backstop against a
         # direct call bypassing that guard.
         raise ValueError("service requires namespace")
-    return f"/services/{namespace}/{name}"
+    return identified_path("/services/{namespace}/{name}", namespace=namespace, name=name)
 
 
 def _detail_path_service_accounts(cluster_id: str, namespace: str | None, name: str) -> str:

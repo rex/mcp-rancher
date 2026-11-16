@@ -10,6 +10,7 @@ from rancher_mcp.clients.management import ManagementDiscoveryClient, RancherMan
 from rancher_mcp.config import AppSettings, get_settings
 from rancher_mcp.models.settings_features import RancherFeatureDetail, RancherFeatureList
 from rancher_mcp.services.instances import resolve_instance
+from rancher_mcp.services.resources.paths import identified_path
 from rancher_mcp.tools.settings_features.shared import (
     build_feature_query_params,
     data_items,
@@ -82,7 +83,9 @@ async def _fetch_feature_get(
 ) -> RancherFeatureDetail:
     """Fetch and normalize one feature."""
 
-    payload = await client.get_json(f"/v3/features/{feature_id}")
+    payload = await client.get_json(
+        identified_path("/v3/features/{feature_id}", feature_id=feature_id)
+    )
 
     detail = RancherFeatureDetail.model_validate(payload)
     return detail.model_copy(

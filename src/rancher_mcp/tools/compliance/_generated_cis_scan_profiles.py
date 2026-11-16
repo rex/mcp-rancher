@@ -10,6 +10,7 @@ from rancher_mcp.clients.management import ManagementDiscoveryClient, RancherMan
 from rancher_mcp.config import AppSettings, get_settings
 from rancher_mcp.models.compliance import RancherCisScanProfileDetail, RancherCisScanProfileList
 from rancher_mcp.services.instances import resolve_instance
+from rancher_mcp.services.resources.paths import identified_path
 from rancher_mcp.tools.compliance.shared import (
     build_cis_scan_profile_query_params,
     cis_scan_profile_summary_from_payload,
@@ -81,7 +82,9 @@ async def _fetch_cis_scan_profile_get(
 ) -> RancherCisScanProfileDetail:
     """Fetch and normalize one cis_scan_profile."""
 
-    payload = await client.get_json(f"/v3/cisscanprofiles/{profile_id}")
+    payload = await client.get_json(
+        identified_path("/v3/cisscanprofiles/{profile_id}", profile_id=profile_id)
+    )
 
     detail = RancherCisScanProfileDetail.model_validate(payload)
     return detail.model_copy(

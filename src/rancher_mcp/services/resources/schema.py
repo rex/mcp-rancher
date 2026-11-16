@@ -7,8 +7,8 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import cast
 
-from rancher_mcp.exceptions import RancherCapabilityError
-from rancher_mcp.services.resources.paths import path_from_value, to_steve_relative_path
+from rancher_mcp.exceptions import RancherCapabilityError, RancherInvalidArgumentError
+from rancher_mcp.services.resources.link_paths import path_from_value, to_steve_relative_path
 from rancher_mcp.services.resources.shared import mapping_value
 
 
@@ -37,7 +37,12 @@ def parse_payload_object(payload_json: str | None) -> dict[str, object]:
     if payload_json is None or not payload_json.strip():
         return {}
 
-    decoded: object = json.loads(payload_json)
+    try:
+        decoded: object = json.loads(payload_json)
+    except ValueError as exc:
+        # Refused, not crashed: this runs in the approval pre-flight too, and a
+        # crash there would stop the call without saying why.
+        raise RancherInvalidArgumentError(f"payload_json is not valid JSON ({exc})") from exc
     if not isinstance(decoded, dict):
         raise RancherCapabilityError("payload_json must decode to an object")
     return cast(dict[str, object], decoded)

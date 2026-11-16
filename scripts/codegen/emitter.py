@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+import re
 from pathlib import Path
 
 import jinja2
@@ -58,7 +60,23 @@ def make_environment() -> jinja2.Environment:
     # JSON syntax (lowercase true/false/null) — generated code needs
     # Python literals (True / False / None).
     env.filters["python_literal"] = repr  # pyright: ignore[reportArgumentType]
+    env.filters["path_expr"] = path_expr  # pyright: ignore[reportArgumentType]
     return env
+
+
+def path_expr(path: str) -> str:
+    """Python source for a descriptor's path: a literal, or a call that fills it.
+
+    A path with ``{placeholders}`` was once emitted as an f-string, which put
+    each argument into the URL as the caller sent it. It is emitted as a call
+    to ``identified_path`` instead, which validates and quotes every one.
+    """
+
+    names = list(dict.fromkeys(re.findall(r"\{([a-z_]+)\}", path)))
+    if not names:
+        return json.dumps(path)
+    arguments = ", ".join(f"{name}={name}" for name in names)
+    return f"identified_path({json.dumps(path)}, {arguments})"
 
 
 def render_module(env: jinja2.Environment, ctx: ModuleContext) -> str:

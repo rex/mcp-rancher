@@ -10,6 +10,7 @@ from rancher_mcp.clients.management import ManagementDiscoveryClient, RancherMan
 from rancher_mcp.config import AppSettings, get_settings
 from rancher_mcp.models.apps_catalogs import RancherCatalogDetail, RancherCatalogList
 from rancher_mcp.services.instances import resolve_instance
+from rancher_mcp.services.resources.paths import identified_path
 from rancher_mcp.tools.apps_catalogs.shared import (
     build_catalog_query_params,
     catalog_summary_from_payload,
@@ -98,7 +99,9 @@ async def _fetch_catalog_get(
 ) -> RancherCatalogDetail:
     """Fetch and normalize one catalog."""
 
-    payload = await client.get_json(f"/v3/catalogs/{catalog_id}")
+    payload = await client.get_json(
+        identified_path("/v3/catalogs/{catalog_id}", catalog_id=catalog_id)
+    )
     summary = catalog_summary_from_payload(payload)
 
     detail = RancherCatalogDetail.model_validate(payload)

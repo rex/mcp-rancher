@@ -3,6 +3,7 @@
 import pytest
 
 from rancher_mcp.config import AppSettings
+from rancher_mcp.exceptions import RancherInvalidArgumentError
 from rancher_mcp.tools.auth_identity import (
     rancher_auth_config_get,
     rancher_auth_configs_list,
@@ -90,17 +91,17 @@ class StubManagementClient:
                     }
                 ]
             }
-        if path == "/v3/groups/local://local-admins":
+        if path == "/v3/groups/local-admins":
             assert params is None
             return {
-                "id": "local://local-admins",
+                "id": "local-admins",
                 "name": "local-admins",
                 "principalType": "group",
                 "created": "2026-03-27T18:13:53Z",
                 "createdTS": 1774635233000,
                 "creatorId": None,
                 "links": {
-                    "self": "https://rancher.work.example.com/v3/groups/local://local-admins",
+                    "self": "https://rancher.work.example.com/v3/groups/local-admins",
                 },
             }
         if path == "/v3/authconfigs":
@@ -199,15 +200,32 @@ async def test_rancher_group_get_returns_typed_detail() -> None:
     """Curated group detail should expose created metadata and link keys."""
 
     result = await rancher_group_get(
-        group_id="local://local-admins",
+        group_id="local-admins",
         instance="work",
         settings=build_settings(),
         client=StubManagementClient(),
     )
 
-    assert result.id == "local://local-admins"
+    assert result.id == "local-admins"
     assert result.created_ts == 1774635233000
     assert result.link_keys == ["self"]
+
+
+@pytest.mark.asyncio
+async def test_rancher_group_get_refuses_an_id_that_is_not_one_name() -> None:
+    """A principal-style id (``local://local-admins``) used to be interpolated
+    into the path as it came. Rancher collapses the doubled slash and reads the
+    rest as a link of some other id, so it never addressed the group — and the
+    same interpolation let any id reach a link or add query parameters. An id
+    is one plain name now; this one is refused, by the argument's name."""
+
+    with pytest.raises(RancherInvalidArgumentError, match="`group_id`"):
+        await rancher_group_get(
+            group_id="local://local-admins",
+            instance="work",
+            settings=build_settings(),
+            client=StubManagementClient(),
+        )
 
 
 @pytest.mark.asyncio

@@ -1,14 +1,17 @@
-"""Relative path helpers for generic Rancher resources."""
+"""Request paths built from identifiers a caller supplied.
+
+Everything here ends in ``require_safe_identifier``: a path is only ever
+assembled from names that have been checked, each quoted into one segment.
+Paths taken from a payload's own links are ``link_paths.py``.
+"""
 
 from __future__ import annotations
 
-from collections.abc import Mapping
 from typing import TYPE_CHECKING
-from urllib.parse import quote, urlsplit
+from urllib.parse import quote
 
 from rancher_mcp.exceptions import RancherCapabilityError
 from rancher_mcp.identifiers import require_safe_identifier
-from rancher_mcp.services.resources.shared import mapping_value
 
 if TYPE_CHECKING:
     from rancher_mcp.services.resources.schema import ResourceSchemaReference
@@ -22,7 +25,9 @@ def build_collection_path(
     """Build a relative collection path for a schema reference."""
 
     if namespace and reference.namespaced and reference.plane == "steve":
-        return _append_identifier(reference.collection_path, namespace)
+        return _append_identifier(
+            reference.collection_path, namespace, label="namespace", single_segment=True
+        )
     return reference.collection_path
 
 
@@ -32,12 +37,19 @@ def build_resource_path(
     resource_id: str,
     namespace: str | None = None,
 ) -> str:
-    """Build a relative resource path for a schema reference."""
+    """Build a relative resource path for a schema reference.
+
+    A management-plane id is one name (its parts are joined with ``:``); only
+    a Kubernetes id may be ``namespace/name``. A second segment on the
+    management plane is a *link* of the resource, which is not what an id is.
+    """
 
     if namespace and reference.namespaced and "/" not in resource_id:
         collection_path = build_collection_path(reference, namespace=namespace)
         return _append_identifier(collection_path, resource_id)
-    return _append_identifier(reference.collection_path, resource_id)
+    return _append_identifier(
+        reference.collection_path, resource_id, single_segment=reference.plane == "norman"
+    )
 
 
 def build_k8s_proxy_collection_path(
@@ -48,6 +60,9 @@ def build_k8s_proxy_collection_path(
 ) -> str:
     """Build a Rancher Kubernetes-proxy collection path from a Steve schema reference."""
 
+    require_safe_identifier("cluster_id", cluster_id, single_segment=True)
+    if namespace:
+        require_safe_identifier("namespace", namespace, single_segment=True)
     if reference.plane != "steve":
         raise RancherCapabilityError(
             "Kubernetes proxy watch paths are only available for Steve schemas"
@@ -97,75 +112,6 @@ def build_k8s_proxy_resource_path(
     )
 
 
-def resolve_resource_action_path(
-    *,
-    action_name: str,
-    payload: Mapping[str, object],
-) -> str:
-    """Resolve an action path from a resource payload."""
-
-    return _named_path(container_key="actions", entry_name=action_name, payload=payload)
-
-
-def resolve_resource_link_path(
-    *,
-    link_name: str,
-    payload: Mapping[str, object],
-) -> str:
-    """Resolve a link path from a resource payload."""
-
-    return _named_path(container_key="links", entry_name=link_name, payload=payload)
-
-
-def _path_from_value(value: object) -> str | None:
-    """Extract a URL path from either a path or fully-qualified URL string."""
-
-    if not isinstance(value, str) or not value:
-        return None
-    parsed = urlsplit(value)
-    if parsed.scheme or parsed.netloc:
-        return parsed.path or None
-    return value
-
-
-def _normalized_resource_path(
-    *,
-    plane: str,
-    cluster_id: str | None,
-    value: object,
-) -> str | None:
-    """Normalize a self link into a client-usable path."""
-
-    path = _path_from_value(value)
-    if path is None:
-        return None
-    if plane == "steve":
-        return _to_steve_relative_path(path, cluster_id)
-    return path
-
-
-def normalize_resource_path(
-    *,
-    plane: str,
-    cluster_id: str | None,
-    value: object,
-) -> str | None:
-    """Normalize a self link into a client-usable path."""
-
-    return _normalized_resource_path(plane=plane, cluster_id=cluster_id, value=value)
-
-
-def _to_steve_relative_path(path: str, cluster_id: str | None) -> str:
-    """Strip the Steve root prefix from a cluster-qualified path."""
-
-    root = "/v1" if cluster_id in {None, "", "local"} else f"/k8s/clusters/{cluster_id}/v1"
-    if path == root:
-        return "/"
-    if path.startswith(f"{root}/"):
-        return path[len(root) :]
-    return path
-
-
 def schema_path(root: str, schema_id: str) -> str:
     """The path of one schema under *root* (``/v3/schemas`` or ``/schemas``).
 
@@ -177,61 +123,41 @@ def schema_path(root: str, schema_id: str) -> str:
     return f"{root}/{quote(schema_id, safe='')}"
 
 
-def _append_identifier(base_path: str, resource_id: str) -> str:
-    """Append a potentially multi-segment resource identifier to a collection path.
+def identified_path(template: str, **identifiers: str) -> str:
+    """Fill a path template's ``{placeholders}``, each with one plain name.
+
+    For paths that are written out in full — ``/v3/globalroles/{global_role_id}``,
+    ``/pods/{namespace}/{name}``. They used to be f-strings: an id went in as
+    it came, so a ``/`` in it reached a link of the resource and a ``?`` added
+    query parameters. Each placeholder takes one identifier, refused under the
+    name of the argument it came from if it is anything else. ``:`` is left as
+    it is, so the path of every valid Norman id is the one always sent.
+    """
+
+    filled = {
+        name: quote(require_safe_identifier(name, value, single_segment=True), safe=":")
+        for name, value in identifiers.items()
+    }
+    return template.format(**filled)
+
+
+def _append_identifier(
+    base_path: str,
+    identifier: str,
+    *,
+    label: str = "resource_id",
+    single_segment: bool = False,
+) -> str:
+    """Append an identifier — a name, or ``namespace/name`` — to a collection path.
 
     Quoting each segment is not enough on its own: ``quote("..")`` is ``..``,
-    and the HTTP library resolves dot segments before it sends. The identifier
-    is refused first if any segment could address a different resource.
+    and the HTTP library resolves dot segments before it sends. Nor may any
+    segment be empty: skipping empty ones, as this once did, turned the id
+    ``/`` into the collection path itself — and a delete of it into a delete
+    of everything in the collection. The identifier is refused first, so what
+    is returned always names something *under* ``base_path``.
     """
 
-    require_safe_identifier("resource_id", resource_id)
-    trimmed = base_path.rstrip("/")
-    encoded_segments = [quote(segment, safe="") for segment in resource_id.split("/") if segment]
-    if not encoded_segments:
-        return trimmed
-    return f"{trimmed}/{'/'.join(encoded_segments)}"
-
-
-def _request_target_from_value(value: object) -> str | None:
-    """Extract a request target preserving any query string.
-
-    Only ever a path on the Rancher this client was configured for: whatever
-    host a link names is dropped here — named with a scheme or, as
-    ``//host/…``, without one — so the path that is checked before sending is
-    the path that is sent.
-    """
-
-    if not isinstance(value, str) or not value:
-        return None
-    parsed = urlsplit(value)
-    if not parsed.scheme and not parsed.netloc:
-        return value
-    if parsed.query:
-        return f"{parsed.path}?{parsed.query}"
-    return parsed.path or None
-
-
-def _named_path(
-    *,
-    container_key: str,
-    entry_name: str,
-    payload: Mapping[str, object],
-) -> str:
-    """Resolve a named action or link path from a resource payload."""
-
-    container = mapping_value(payload.get(container_key))
-    if container is None:
-        raise RancherCapabilityError(f"Resource did not include any {container_key}")
-
-    raw_value = container.get(entry_name)
-    path = _request_target_from_value(raw_value)
-    if path is None:
-        raise RancherCapabilityError(
-            f"Resource did not include {container_key[:-1]} {entry_name!r}"
-        )
-    return path
-
-
-path_from_value = _path_from_value
-to_steve_relative_path = _to_steve_relative_path
+    require_safe_identifier(label, identifier, single_segment=single_segment)
+    encoded = "/".join(quote(segment, safe="") for segment in identifier.split("/"))
+    return f"{base_path.rstrip('/')}/{encoded}"

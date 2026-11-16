@@ -15,6 +15,7 @@ from rancher_mcp.models.ops.rollups import (
 )
 from rancher_mcp.models.pods_services import classify_pod_health
 from rancher_mcp.services.instances import resolve_instance
+from rancher_mcp.services.resources.paths import identified_path
 from rancher_mcp.tools.ops.paths import k8s_apps_ns_path, k8s_core_ns_path, k8s_items
 from rancher_mcp.tools.pods_services.shared import pod_ready_from_status
 from rancher_mcp.tools.support.values import mapping_value, string_value
@@ -202,7 +203,9 @@ async def _build_project_health(
 
     if ctx:
         await ctx.report_progress(0, 2)
-    project_payload = await client.get_json(f"/v3/projects/{project_id}")
+    project_payload = await client.get_json(
+        identified_path("/v3/projects/{project_id}", project_id=project_id)
+    )
     project_name = string_value(project_payload, "name") or project_id
     state = string_value(project_payload, "state")
     cluster_id = string_value(project_payload, "clusterId")
@@ -218,7 +221,7 @@ async def _build_project_health(
     if cluster_id is not None:
         short_project_id = project_id.split(":", 1)[1] if ":" in project_id else project_id
         ns_payload = await client.get_json(
-            f"/k8s/clusters/{cluster_id}/api/v1/namespaces",
+            identified_path("/k8s/clusters/{cluster_id}/api/v1/namespaces", cluster_id=cluster_id),
             params={
                 "labelSelector": f"field.cattle.io/projectId={short_project_id}",
             },

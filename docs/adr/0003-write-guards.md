@@ -131,8 +131,9 @@ later; nothing here forecloses it.
 An independent review of the 1.70.0–1.74.0 commits found that the backstop
 above checked the wrong half of a request. It asked *what method is this?* and
 trusted the path. Three things made the path, and then the method itself,
-untrustworthy. All are closed in 1.75.0
-([#27](https://github.com/rex/mcp-rancher/issues/27)).
+untrustworthy. All were addressed in 1.75.0
+([#27](https://github.com/rex/mcp-rancher/issues/27)) — incompletely, as the
+second addendum below records. 1.76.0 is the first release to carry them.
 
 **The path.** Identifiers were percent-quoted into URL paths. `quote("..")` is
 `..`, and the HTTP library resolves dot segments before sending, so a request
@@ -192,3 +193,52 @@ re-sent by the client until its state expires
 ([#30](https://github.com/rex/mcp-rancher/issues/30)); and audit records hold
 identifier arguments as the caller sent them
 ([#31](https://github.com/rex/mcp-rancher/issues/31)).
+
+## Second addendum (2026-11-15) — the fix, reviewed
+
+1.75.0 carried the addendum above and was reviewed again before it was tagged.
+The review blocked it ([#33](https://github.com/rex/mcp-rancher/issues/33)).
+1.75.0 was never published; 1.76.0 is what the addendum above should have been.
+
+**What was still wrong.** Rule 3 said a request goes where its path says, and
+the path builder made that false in one more way: it skipped the empty
+segments of an id, so the id `/` *was* the collection. A generic delete of
+`/` was a Kubernetes *deletecollection*. And the rule had been applied only
+to the generic tools — the curated ones still built paths with f-strings, so
+an id reached the URL unquoted.
+
+**A fourth rule.** `clients/request_guard.py`:
+
+4. a change is made to one resource — no path with an empty segment, no
+   mutation on a path ending in `/`, and no `DELETE` on a Kubernetes
+   collection path, which is recognised by its shape.
+
+Rule 2 widened as well: a `shell` parameter is never sent (a GET carrying it
+makes Rancher create a pod), `;` is read as a separator the way an older Go
+reads it, and a link whose target is a WebSocket endpoint is not followed.
+
+**Paths are built in two places, and only two.**
+`services/resources/paths.py` builds a path from identifiers, and every
+function in it ends in `require_safe_identifier` — `identified_path` is the
+one the codegen templates emit. `services/resources/link_paths.py` turns a URL
+the *server* supplied into a path on this Rancher. An f-string with an
+argument in it is not a third way.
+
+**The gate that should have existed first.**
+`tests/unit/test_identifier_arguments_fleet_wide.py` gives every string
+argument of every tool each escape in turn and reads what went on the wire.
+The earlier gates were written by deciding where a hole might be and looking
+there; this one does not decide. It is the difference between the two reviews
+and the tests they each made obsolete.
+
+**The lesson about backstops held a second time, within hours.** That gate
+first also looked for a mutation on a collection-shaped path. Rule 4 was then
+added beneath it, and the check could no longer fail. It was removed, and the
+guarantee is tested at the transport, where it can.
+
+**Not addressed here:** an id that is legitimately not one plain name — a
+principal id such as `local://name` — is refused by the curated tools
+([#34](https://github.com/rex/mcp-rancher/issues/34)); and the hand-written
+`tools/*/paths.py` helpers quote their identifiers without validating them, so
+a malformed one is refused by the transport, which cannot say which argument
+it was (same issue).

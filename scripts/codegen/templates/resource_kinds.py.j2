@@ -19,6 +19,8 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Literal
 
+from rancher_mcp.services.resources.paths import identified_path
+
 {% for module, alias in imports -%}
 import {{ module }} as {{ alias }}
 {% endfor %}
@@ -37,7 +39,7 @@ def _detail_path_{{ e.descriptor_id }}(cluster_id: str, namespace: str | None, n
         raise ValueError("{{ e.kind }} requires namespace")
     {% endif -%}
     {% if e.steve_template is not none -%}
-    return f"{{ e.steve_template }}"
+    return {{ e.steve_template | path_expr }}
     {%- else -%}
     return {{ e.path_helper_module_alias }}.{{ e.path_helper_detail_function }}(
         cluster_id,

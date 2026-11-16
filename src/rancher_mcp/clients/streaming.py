@@ -37,6 +37,9 @@ from rancher_mcp.models.streaming import (
 
 KUBERNETES_STREAM_SUBPROTOCOLS = _KUBERNETES_STREAM_SUBPROTOCOLS
 
+# Kubernetes subresources that do something the moment a connection opens.
+_SESSION_SUBRESOURCES = ("/exec", "/attach", "/portforward")
+
 __all__ = ["KUBERNETES_STREAM_SUBPROTOCOLS", "RancherStreamingClient"]
 
 
@@ -145,10 +148,13 @@ class RancherStreamingClient:
 
         A WebSocket can carry an exec or an attach, and messages sent over one
         are writes whatever verb opened it. So on a read-only instance it is
-        refused outright when there is anything to send.
+        refused outright when there is anything to send — and when the endpoint
+        is one that acts on connecting: an exec runs its ``?command=`` before a
+        single message is sent.
         """
 
-        self._refuse_unsafe("POST" if outbound_messages else "GET", path, params)
+        acts_on_connect = path.partition("?")[0].rstrip("/").endswith(_SESSION_SUBRESOURCES)
+        self._refuse_unsafe("POST" if outbound_messages or acts_on_connect else "GET", path, params)
         return await _websocket_capture(
             instance_name=self.instance_name,
             base_url=self._base_url,

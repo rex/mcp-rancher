@@ -13,6 +13,7 @@ from rancher_mcp.models.rbac import (
     RancherProjectRoleTemplateBindingList,
 )
 from rancher_mcp.services.instances import resolve_instance
+from rancher_mcp.services.resources.paths import identified_path
 from rancher_mcp.tools.rbac.shared import (
     binding_subject,
     build_project_role_template_binding_query_params,
@@ -135,7 +136,10 @@ async def _fetch_project_role_template_binding_get(
     """Fetch and normalize one project_role_template_binding."""
 
     payload = await client.get_json(
-        f"/v3/projectroletemplatebindings/{project_role_template_binding_id}"
+        identified_path(
+            "/v3/projectroletemplatebindings/{project_role_template_binding_id}",
+            project_role_template_binding_id=project_role_template_binding_id,
+        )
     )
 
     subject = binding_subject(payload)

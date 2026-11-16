@@ -13,6 +13,7 @@ from rancher_mcp.models.logging_backups import (
     RancherClusterLoggingList,
 )
 from rancher_mcp.services.instances import resolve_instance
+from rancher_mcp.services.resources.paths import identified_path
 from rancher_mcp.tools.logging_backups.shared import (
     build_cluster_logging_query_params,
     cluster_logging_summary_from_payload,
@@ -120,7 +121,11 @@ async def _fetch_cluster_logging_get(
 ) -> RancherClusterLoggingDetail:
     """Fetch and normalize one cluster_logging."""
 
-    payload = await client.get_json(f"/v3/clusterloggings/{cluster_logging_id}")
+    payload = await client.get_json(
+        identified_path(
+            "/v3/clusterloggings/{cluster_logging_id}", cluster_logging_id=cluster_logging_id
+        )
+    )
 
     status = mapping_value(payload, "status") or {}
     detail = RancherClusterLoggingDetail.model_validate(payload)

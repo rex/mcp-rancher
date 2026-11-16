@@ -13,6 +13,7 @@ from rancher_mcp.models.fleet_registration import (
     RancherFleetWorkspaceList,
 )
 from rancher_mcp.services.instances import resolve_instance
+from rancher_mcp.services.resources.paths import identified_path
 from rancher_mcp.tools.fleet_registration.shared import (
     action_keys,
     build_fleet_workspace_query_params,
@@ -93,7 +94,11 @@ async def _fetch_fleet_workspace_get(
 ) -> RancherFleetWorkspaceDetail:
     """Fetch and normalize one fleet_workspace."""
 
-    payload = await client.get_json(f"/v3/fleetworkspaces/{fleet_workspace_id}")
+    payload = await client.get_json(
+        identified_path(
+            "/v3/fleetworkspaces/{fleet_workspace_id}", fleet_workspace_id=fleet_workspace_id
+        )
+    )
 
     detail = RancherFleetWorkspaceDetail.model_validate(payload)
     return detail.model_copy(

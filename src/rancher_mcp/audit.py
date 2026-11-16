@@ -150,12 +150,15 @@ def audit_mutation(
                     error_kwargs["http_status"] = exc.status_code
                 emit_audit(AuditEntry(**base, **error_kwargs))
                 raise
-            except Exception as exc:
+            except BaseException as exc:
                 # Anything else is a crash — and a crash can come AFTER the
                 # request went out: a 2xx with a body that will not parse, a
                 # result that fails to build. The mutation happened; without
                 # this there was no record that it was ever attempted. Only the
                 # exception's type is recorded: its text may quote a payload.
+                # `BaseException`, because a cancelled call is the same case —
+                # the client gave up waiting while the DELETE was on its way —
+                # and `CancelledError` is not an `Exception`.
                 emit_audit(
                     AuditEntry(
                         **base,

@@ -16,6 +16,7 @@ from rancher_mcp.models.ops.cluster_health import (
     NodeHealthRollup,
 )
 from rancher_mcp.services.instances import resolve_instance
+from rancher_mcp.services.resources.paths import identified_path
 from rancher_mcp.tools.clusters_nodes.shared import (
     cluster_summary_from_payload,
     data_items,
@@ -69,7 +70,9 @@ async def _build_cluster_health(
 
     if ctx:
         await ctx.report_progress(0, 2)
-    payload = await client.get_json(f"/v3/clusters/{cluster_id}")
+    payload = await client.get_json(
+        identified_path("/v3/clusters/{cluster_id}", cluster_id=cluster_id)
+    )
     summary = cluster_summary_from_payload(payload)
     conditions = conditions_from_value(payload.get("conditions"))
     ct_false = _condition_types_false(conditions)

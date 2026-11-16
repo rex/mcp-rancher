@@ -180,6 +180,7 @@ async def _approve(
     schema_id: str,
     resource_id: str,
     action_name: str,
+    payload_json: str | None,
     instance: str | None,
 ) -> Elicit[Approval] | Unasked:
     def question() -> str:
@@ -188,7 +189,7 @@ async def _approve(
         target = generic_target(
             schema_id=schema_id, resource_id=resource_id, instance=instance_name
         )
-        return action_question(action_name, target)
+        return action_question(action_name, target, payload_json=payload_json)
 
     return ask_unless_pointless(ctx, question)
 

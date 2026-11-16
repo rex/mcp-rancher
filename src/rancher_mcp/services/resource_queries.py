@@ -13,6 +13,12 @@ QueryParamMap = dict[str, QueryParamValue]
 
 _NORMAN_RESERVED_FILTER_KEYS = frozenset({"limit", "marker", "reverse", "sort"})
 
+# Query parameters a caller may not set. The transport's own list, plus `link`:
+# on the Kubernetes plane `?link=<name>` routes a request to that link's
+# handler. The transport has to let it through — it is how Rancher's own link
+# URLs are written — but it is the server's to supply, never the caller's.
+_NOT_FOR_CALLERS = REQUEST_REWRITING_PARAMS | {"link"}
+
 
 def parse_query_params(
     params_json: str | None,
@@ -24,14 +30,17 @@ def parse_query_params(
     if params_json is None or not params_json.strip():
         return {}
 
-    decoded: object = json.loads(params_json)
+    try:
+        decoded: object = json.loads(params_json)
+    except ValueError as exc:
+        raise RancherInvalidArgumentError(f"{source_name} is not valid JSON ({exc})") from exc
     if not isinstance(decoded, dict):
         raise RancherCapabilityError(f"{source_name} must decode to an object")
 
     params: QueryParamMap = {}
     raw_params = cast(dict[str, object], decoded)
     for key, value in raw_params.items():
-        if key.strip().lower() in REQUEST_REWRITING_PARAMS:
+        if key.strip().lower() in _NOT_FOR_CALLERS:
             # Rancher reads these two as an instruction about the request, not
             # as input to it: `action` invokes an action (or, as `remove`, a
             # delete) and `_method` replaces the HTTP method. Let through, a

@@ -154,6 +154,8 @@ async def _approve(
     confirmation: str,
     cluster_id: str,
     namespace: str | None,
+    payload_json: str | None,
+    params_json: str | None,
     instance: str | None,
 ) -> Elicit[Approval] | Unasked:
     def question() -> str:
@@ -169,7 +171,9 @@ async def _approve(
                 instance=instance_name,
                 cluster_id=cluster_id,
                 namespace=namespace,
-            )
+            ),
+            params_json=params_json,
+            payload_json=payload_json,
         )
 
     return ask_unless_pointless(ctx, question)
