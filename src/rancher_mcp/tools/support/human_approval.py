@@ -38,7 +38,6 @@ multi-round ``input_required`` result on a modern one.
 from __future__ import annotations
 
 from collections.abc import Callable
-from dataclasses import dataclass
 from typing import Any, Final, Literal
 
 from mcp.server.mcpserver import (
@@ -57,6 +56,7 @@ from rancher_mcp.exceptions import (
     RancherMCPError,
 )
 from rancher_mcp.tools.support import standing_approval
+from rancher_mcp.tools.support.standing_approval import KeepGoing
 
 UnaskedReason = Literal[
     "not_a_request", "client_cannot_ask", "call_will_be_refused", "disabled", "standing_approval"
@@ -126,18 +126,18 @@ def client_can_ask(ctx: Context[Any, Any]) -> bool:
     return elicitation is not None and (elicitation.form is not None or elicitation.url is None)
 
 
-@dataclass(frozen=True)
-class KeepGoing:
-    """Passed by a tool whose question may be answered "yes, and keep going".
+def _asked_before(ctx: Context[Any, Any]) -> bool:
+    """Whether this request is a later round of a call already put to a person.
 
-    Names the call as it arrived; the scope a standing approval covers is
-    worked out from it (``standing_approval.scope_of``). A tool that does not
-    pass one asks every time, whatever a person says — every delete and action.
+    On the modern protocol a question is a round trip: the call comes back
+    carrying its answer, and this resolver runs a second time. The recorded
+    answer is read at one place only — where the question is asked again. So a
+    later round must arrive there whatever has changed in between, or the
+    answer is never read: a standing approval granted on *another* prompt while
+    this one was open once ran a call its own prompt had declined.
     """
 
-    tool_name: str
-    instance: str | None
-    cluster_id: str | None = None
+    return ctx.request_state is not None or ctx.input_responses is not None
 
 
 def ask_unless_pointless(
@@ -150,29 +150,25 @@ def ask_unless_pointless(
     nobody is asked — and the error travels with the answer, for ``settle()``
     to raise, so the refusal does not depend on the tool body repeating the
     same check. A standing approval is looked for only after that: it answers
-    the question, not the checks.
+    the question, not the checks. And no shortcut at all is taken on a later
+    round (``_asked_before``): a person who was asked is the one who answers.
     """
 
     settings = get_toolset_settings()
-    if not settings.require_approval_for_destructive:
+    first_round = not _asked_before(ctx)
+    if first_round and not settings.require_approval_for_destructive:
         return Unasked(reason="disabled")
-    if not client_can_ask(ctx):
+    if first_round and not client_can_ask(ctx):
         return Unasked(reason="client_cannot_ask")
     minutes = settings.approval_keep_going_minutes if keep_going is not None else 0
     try:
         wording = question()
-        scope = (
-            standing_approval.scope_of(
-                keep_going.tool_name, keep_going.instance, keep_going.cluster_id
-            )
-            if keep_going is not None and minutes > 0
-            else None
-        )
+        scope = keep_going.scope() if keep_going is not None and minutes > 0 else None
     except RancherMCPError as refusal:
         return Unasked(reason="call_will_be_refused", refusal=refusal)
     if scope is None:
         return Elicit(wording, Approval)
-    if standing_approval.is_allowed(scope):
+    if first_round and standing_approval.is_allowed(scope):
         return Unasked(reason="standing_approval")
     return Elicit(wording + standing_approval.offer(scope, minutes=minutes), ApprovalOrKeepGoing)
 

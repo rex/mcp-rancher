@@ -57,7 +57,7 @@ disclosure.
   to the guards above. A client may be configured to answer such prompts
   automatically; that is the operator's decision and this server cannot see it.
 - The generic apply and patch tools — not annotated destructive, but able to
-  replace a resource or strip fields from it — ask the same way since 1.78.0,
+  replace a resource or strip fields from it — ask the same way since 1.79.0,
   with the payload on the page. For those four tools only, the prompt carries
   a second box, **Keep going**. Ticked together with the first, it lets
   further calls of *that tool*, on *that instance and cluster*, through

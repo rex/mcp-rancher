@@ -73,9 +73,20 @@ run from an empty directory to check. v1.75.0 and v1.76.0 were each reviewed on
 Opus before tagging — the first blocked, the second approved with four notes
 that v1.77.0 fixes ([#35](https://github.com/rex/mcp-rancher/issues/35)) — so
 neither was tagged, and 1.60.0–1.76.0 do not exist on PyPI. The release before
-it, v1.59.0, does not start outside a checkout. **v1.78.0 is the next version
-to tag**, asked for on 2026-11-15 as well. Check PyPI for what is actually out
+it, v1.59.0, does not start outside a checkout. **v1.79.0 is the next version
+to tag**, asked for on 2026-11-15 as well; v1.78.0 was reviewed before tagging
+and blocked, so it was never tagged either. Check PyPI for what is actually out
 before assuming either way.
+
+- **v1.79.0 — the review of v1.78.0**
+  ([#37](https://github.com/rex/mcp-rancher/issues/37)). On the modern protocol
+  a call a person had declined still ran if "Keep going" was granted on another
+  prompt while its own was open. **The SDK fact behind it, worth knowing before
+  touching any resolver:** on a second round the resolver body *re-runs*, and
+  the recorded answer is read only where the resolver asks again — so a
+  resolver must take no shortcut on a later round
+  (`human_approval._asked_before`). Also: the question shows a non-default
+  field manager, masks only real credentials, and says when a value was cut.
 
 - **v1.78.0 — approval for apply and patch**
   ([#28](https://github.com/rex/mcp-rancher/issues/28)). Pierce's decision:

@@ -50,6 +50,22 @@ class Scope:
         return f"{self.tool_name} on {where}"
 
 
+@dataclass(frozen=True)
+class KeepGoing:
+    """Passed by a tool whose question may be answered "yes, and keep going".
+
+    Names the call as it arrived. A tool that does not pass one asks every
+    time, whatever a person says — every delete and every action invoke.
+    """
+
+    tool_name: str
+    instance: str | None
+    cluster_id: str | None = None
+
+    def scope(self) -> Scope:
+        return scope_of(self.tool_name, self.instance, self.cluster_id)
+
+
 # Scope → the monotonic time at which its standing approval ends.
 _until: dict[Scope, float] = {}
 

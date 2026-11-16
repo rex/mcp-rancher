@@ -49,6 +49,34 @@ def test_a_secret_in_the_payload_is_masked() -> None:
     assert _CANARY not in question
 
 
+def test_only_a_string_under_a_secret_sounding_key_is_masked() -> None:
+    """A mask reads as "a secret, nothing to see". So it must never cover a
+    setting: ``automountServiceAccountToken: true`` gives a pod API
+    credentials, and ``cloudCredentialId`` decides whose cloud account a
+    cluster uses. Both were once shown as asterisks."""
+
+    payload = {
+        "automountServiceAccountToken": True,
+        "cloudCredentialId": "cattle-global-data:cc-other",
+        "mustChangePassword": False,
+        "tokenTTLSeconds": 0,
+        "env": [{"name": "API", "valueFrom": {"secretKeyRef": {"name": "s", "key": "k"}}}],
+        "bootstrapTokens": [_CANARY, _CANARY],
+        "clientSecret": _CANARY,
+    }
+
+    question = change_question("Patch", "X", payload_json=json.dumps(payload))
+
+    assert '"automountServiceAccountToken": true' in question
+    assert '"cloudCredentialId": "cattle-global-data:cc-other"' in question
+    assert '"mustChangePassword": false' in question
+    assert '"tokenTTLSeconds": 0' in question
+    assert '"secretKeyRef": {"key": "k", "name": "s"}' in question
+    assert '"bootstrapTokens": ["********", "********"]' in question
+    assert '"clientSecret": "********"' in question
+    assert _CANARY not in question
+
+
 def test_a_long_string_is_shortened_and_everything_else_kept() -> None:
     payload = json.dumps({"data": {"config.yaml": "k: v\n" * 400}, "immutable": True})
 
@@ -56,6 +84,30 @@ def test_a_long_string_is_shortened_and_everything_else_kept() -> None:
 
     assert "... (2000 characters)" in question
     assert '"immutable": true' in question
+
+
+def test_a_cut_value_is_called_out_so_its_tail_is_not_approved_unseen() -> None:
+    """The caller chooses what sits past the eightieth character. The
+    question cannot show it — so it says that it has not."""
+
+    harmless = (
+        "echo starting the payments worker with the standard settings and then waiting a while"
+    )
+    command = f"{harmless} ; rm -rf /data"
+    assert len(harmless) > 80
+    payload = json.dumps({"spec": {"command": ["sh", "-c", command]}})
+
+    question = change_question("Patch", "X", payload_json=payload)
+
+    assert "rm -rf" not in question
+    assert f"... ({len(command)} characters)" in question
+    assert "are cut short here: read them in full in the conversation before approving." in (
+        question
+    )
+
+
+def test_a_change_shown_whole_carries_no_such_notice() -> None:
+    assert "cut short" not in change_question("Patch", "X", payload_json='{"a": "b"}')
 
 
 def test_a_change_too_long_to_show_says_so_and_names_what_it_holds() -> None:

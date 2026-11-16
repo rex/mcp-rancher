@@ -17,38 +17,16 @@ from __future__ import annotations
 
 import json
 from collections.abc import Mapping
-from typing import cast
 
 from rancher_mcp.exceptions import RancherInvalidArgumentError
 from rancher_mcp.identifiers import require_safe_identifier
-from rancher_mcp.redaction import REDACTED
 from rancher_mcp.services.resource_queries import parse_query_params
 from rancher_mcp.services.resources.schema import (
     parse_payload_object,
     parse_required_payload_object,
 )
 from rancher_mcp.services.safety import require_consistent_namespace
-
-# A string value is shown up to this length, then cut with its true length.
-_LEAF_LIMIT = 80
-# The longest a set of options may be once its strings are cut. Past this it
-# cannot be shown in full, and a set that cannot be shown in full is refused.
-_SHOWN_LIMIT = 1000
-# How many top-level keys of a payload too long to show are named instead.
-_OUTLINE_KEYS = 20
-
-# A key containing any of these (ignoring case and punctuation) holds a value
-# that is masked in a question: `newPassword`, `secret_key`, `bootstrapToken`.
-_SECRET_HINTS = (
-    "password",
-    "passwd",
-    "token",
-    "privatekey",
-    "secretkey",
-    "accesskey",
-    "clientsecret",
-    "credential",
-)
+from rancher_mcp.tools.support.approval_display import compact, payload_shown
 
 
 def _shown(label: str, value: str, *, single_segment: bool = True) -> str:
@@ -58,64 +36,6 @@ def _shown(label: str, value: str, *, single_segment: bool = True) -> str:
     # ASCII only: a character that renders as nothing, or as a `/`, is shown
     # as the escape it is rather than as what it imitates.
     return json.dumps(checked)
-
-
-def _masked(value: object) -> object:
-    """*value* with anything that looks like a credential masked.
-
-    Wider than the response scrubber (``redaction.scrub_secrets``), which
-    matches exact field names so that it never corrupts a response. Here a
-    false match costs one hidden value in a prompt; a miss puts a password on
-    a screen.
-    """
-
-    if isinstance(value, dict):
-        items = cast(dict[object, object], value).items()
-        return {
-            key: REDACTED
-            if _looks_secret(key) and item not in (None, "", [], {})
-            else _masked(item)
-            for key, item in items
-        }
-    if isinstance(value, list):
-        return [_masked(item) for item in cast(list[object], value)]
-    return value
-
-
-def _looks_secret(key: object) -> bool:
-    name = "".join(ch for ch in str(key).lower() if ch.isalnum())
-    return any(hint in name for hint in _SECRET_HINTS)
-
-
-def _shortened(value: object) -> object:
-    """*value* with every long string cut — and every key kept."""
-
-    if isinstance(value, str) and len(value) > _LEAF_LIMIT:
-        return f"{value[:_LEAF_LIMIT]}... ({len(value)} characters)"
-    if isinstance(value, dict):
-        items = cast(dict[object, object], value).items()
-        return {key: _shortened(item) for key, item in items}
-    if isinstance(value, list):
-        return [_shortened(item) for item in cast(list[object], value)]
-    return value
-
-
-def _compact(source_name: str, value: Mapping[str, object]) -> str:
-    """*value* on one line: every key, secrets masked, long strings cut.
-
-    Never cut as a whole. A key that falls off the end of a truncated line is
-    an option a person approved without seeing it — and keys are sorted, so a
-    caller could choose which ones fall off by adding one that sorts first.
-    What is too long to show in full is refused, and nobody is asked.
-    """
-
-    text = json.dumps(_shortened(_masked(dict(value))), sort_keys=True)
-    if len(text) > _SHOWN_LIMIT:
-        raise RancherInvalidArgumentError(
-            f"{source_name} is too long to put to a person in full ({len(text)} characters; "
-            f"the limit is {_SHOWN_LIMIT}), so nobody was asked. Send fewer options."
-        )
-    return text
 
 
 def _sent_with(*, params_json: str | None, payload_json: str | None, body: str) -> str:
@@ -129,9 +49,9 @@ def _sent_with(*, params_json: str | None, payload_json: str | None, body: str) 
 
     params = parse_query_params(params_json)
     payload = parse_payload_object(payload_json)
-    shown = f"\n\nWith query options: {_compact('params_json', params)}" if params else ""
+    shown = f"\n\nWith query options: {compact('params_json', params)}" if params else ""
     if payload:
-        shown += f"\n\n{body}: {_compact('payload_json', payload)}"
+        shown += f"\n\n{body}: {compact('payload_json', payload)}"
     return shown
 
 
@@ -221,25 +141,12 @@ def change_question(
     shown = (
         f"{verb} {target}?\n\n"
         "This changes the resource as the payload says, and can replace or remove parts of it."
-        f"\n\n{_payload_shown(payload)}"
+        f"\n\n{payload_shown(payload)}"
     )
     query = {**parse_query_params(params_json), **(options or {})}
     if query:
-        shown += f"\n\nWith query options: {_compact('params_json', query)}"
+        shown += f"\n\nWith query options: {compact('params_json', query)}"
     return shown
-
-
-def _payload_shown(payload: Mapping[str, object]) -> str:
-    text = json.dumps(_shortened(_masked(dict(payload))), sort_keys=True)
-    if len(text) <= _SHOWN_LIMIT:
-        return f"Payload: {text}"
-    keys = sorted(payload)
-    listed = ", ".join(json.dumps(key[:_LEAF_LIMIT]) for key in keys[:_OUTLINE_KEYS])
-    more = f", and {len(keys) - _OUTLINE_KEYS} more" if len(keys) > _OUTLINE_KEYS else ""
-    return (
-        f"The payload is too long to show here ({len(text)} characters). Its top-level keys: "
-        f"{listed}{more}. Read it in the conversation before approving."
-    )
 
 
 def action_question(action_name: str, target: str, *, payload_json: str | None = None) -> str:

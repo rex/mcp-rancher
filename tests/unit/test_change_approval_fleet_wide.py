@@ -154,6 +154,24 @@ async def test_the_question_shows_the_change_and_where_it_lands(tool_name: str, 
         assert "Rancher's own management cluster" in question, question
 
 
+async def test_an_apply_under_another_field_manager_says_so() -> None:
+    """Server-side apply removes whatever the named manager owns and the
+    payload leaves out. Applied as ``helm``, a three-line payload can strip a
+    release bare — and nothing in the payload shows it."""
+
+    tool_name = "rancher_steve_resource_apply"
+    borrowed = await observe_call(
+        _SERVER,
+        tool_name,
+        _arguments(tool_name) | {"field_manager": "helm", "force": True},
+        answer=Answer("decline"),
+    )
+    own = await observe_call(_SERVER, tool_name, _arguments(tool_name), answer=Answer("decline"))
+
+    assert 'With query options: {"fieldManager": "helm", "force": true}' in borrowed.questions[0]
+    assert "fieldManager" not in own.questions[0]
+
+
 @pytest.mark.parametrize("tool_name", _CHANGERS)
 async def test_a_client_that_cannot_be_asked_is_neither_waved_through_nor_blocked(
     tool_name: str,

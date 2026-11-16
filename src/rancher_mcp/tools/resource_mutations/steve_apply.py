@@ -31,12 +31,12 @@ from rancher_mcp.tools.support.human_approval import (
     NOT_ASKED,
     Approval,
     HumanApproval,
-    KeepGoing,
     Unasked,
     ask_unless_pointless,
     settle,
 )
 from rancher_mcp.tools.support.json_args import OptionalJsonText
+from rancher_mcp.tools.support.standing_approval import KeepGoing
 
 
 async def _apply_steve_resource(
@@ -156,6 +156,7 @@ async def rancher_steve_resource_apply(
 
 
 _TOOL = "rancher_steve_resource_apply"
+_DEFAULT_FIELD_MANAGER = "rancher-mcp"
 
 
 async def _approve(
@@ -180,17 +181,22 @@ async def _approve(
             cluster_id=cluster_id,
             namespace=namespace,
         )
-        # The same query the request will carry, so `force` — which takes
-        # fields away from whoever owns them — is on the page.
+        # The same query the request will carry — checked, then shown. `force`
+        # takes fields away from whoever owns them. So does applying under
+        # another manager's name: whatever that manager owns and this payload
+        # leaves out is removed, which a small payload gives no hint of.
         build_steve_apply_query_params(
             field_manager=field_manager, force=force, params_json=params_json
         )
+        options: dict[str, object] = {} if force is None else {"force": force}
+        if field_manager != _DEFAULT_FIELD_MANAGER:
+            options["fieldManager"] = field_manager
         return change_question(
             "Apply to",
             target,
             payload_json=payload_json,
             params_json=params_json,
-            options={"force": force} if force is not None else None,
+            options=options,
         )
 
     return ask_unless_pointless(ctx, question, KeepGoing(_TOOL, instance, cluster_id))

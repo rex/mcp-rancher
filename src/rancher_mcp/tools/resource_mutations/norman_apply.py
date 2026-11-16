@@ -26,12 +26,12 @@ from rancher_mcp.tools.support.human_approval import (
     NOT_ASKED,
     Approval,
     HumanApproval,
-    KeepGoing,
     Unasked,
     ask_unless_pointless,
     settle,
 )
 from rancher_mcp.tools.support.json_args import OptionalJsonText
+from rancher_mcp.tools.support.standing_approval import KeepGoing
 
 
 async def _apply_norman_resource(

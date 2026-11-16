@@ -1,5 +1,58 @@
 # Changelog
 
+## [1.79.0] — 2026-11-16 — Agent: Claude Fable 5.2
+1.78.0 was reviewed before it was tagged, and the review blocked it. **1.78.0
+was never published**; this release carries what it added, corrected.
+(rex/mcp-rancher#37)
+
+### Security
+- **A "Keep going" given on one prompt overrode a "no" on another.** On the
+  modern protocol a question is a round trip: the server returns
+  `input_required`, and the call comes back carrying its answer. The approval
+  resolver then runs a second time, and the recorded answer is read at one
+  place only — where it asks again. If a standing approval had been granted in
+  between, the second run found it first and returned "no need to ask". So an
+  agent that issued two patches at once, and a person who said *yes, keep
+  going* to one and *no* to the other, got both: the declined call was sent,
+  and audited as approved. Reproduced on the modern protocol; the legacy one
+  was never affected. Introduced in 1.78.0, which was not released.
+  On a later round the resolver now takes no shortcut of any kind — not a
+  standing approval, not approval having been switched off, not a client that
+  has stopped declaring elicitation. A person who was asked is the one who
+  answers. The pre-flight still runs.
+- **An apply under another field manager says so.** Server-side apply removes
+  whatever the named manager owns and the payload leaves out, so a three-line
+  payload applied as `helm` can strip a release bare. The question now shows
+  `fieldManager` whenever it is not this server's own.
+- **Only a credential is masked.** The question masked any value under a key
+  containing `token`, `password` or `credential` — including
+  `automountServiceAccountToken: true`, which gives a pod API credentials, and
+  `cloudCredentialId`, which decides whose cloud account a cluster uses. A
+  mask reads as "a secret, nothing to see"; both were being approved unseen.
+  Only a non-empty string is masked now, and not under a key ending in `Id`,
+  `Name` or `Ref`, which points at a credential rather than holding one.
+- **A value cut short is called out.** A string longer than 80 characters is
+  shown by its first 80 and its true length — and the caller chooses what
+  sits past the eightieth. The question now says that values were cut and to
+  read them in the conversation before approving.
+
+### Why nothing caught it, and what does now
+- Every standing-approval test made one call and waited for it to finish
+  before making the next. The defect needs two prompts open at once.
+  `test_a_no_stands_when_keep_going_is_given_on_another_prompt_meanwhile`
+  drives exactly that through the request path on both protocol eras, and
+  `tests/unit/test_approval_later_round.py` pins that a later round takes no
+  shortcut. The general lesson is about the SDK, and is in the resolver's own
+  docstring now: on a second round the resolver body **re-runs**, and only
+  the question itself remembers.
+- Found by an independent review of 1.78.0 before it was tagged — the fourth
+  such review in two days, and the third to find something that would
+  otherwise have shipped.
+
+### Changed
+- The display rules for an approval question — what is masked, shortened or
+  refused — are in `tools/support/approval_display.py`.
+
 ## [1.78.0] — 2026-11-16 — Agent: Claude Fable 5.2
 ### Changed
 - **The generic apply and patch tools ask a person first.**

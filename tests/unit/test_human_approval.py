@@ -36,6 +36,10 @@ from rancher_mcp.tools.support.human_approval import (
 class _Context:
     """Just enough of a tool context to answer the one question asked of it."""
 
+    # A first round: nothing echoed back from an earlier question.
+    request_state: str | None = None
+    input_responses: dict[str, object] | None = None
+
     def __init__(self, capabilities: ClientCapabilities | None, *, in_request: bool = True) -> None:
         self._capabilities = capabilities
         self._in_request = in_request
