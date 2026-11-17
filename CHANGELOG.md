@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.80.0] — 2026-11-17 — Agent: Codex
+### Fixed
+- Return protocol error -32602 for unknown tools in both MCP eras, preserving the helpful error for registered but disabled tools (#39).
+
 ## [1.79.0] — 2026-11-16 — Agent: Claude Fable 5.2
 1.78.0 was reviewed before it was tagged, and the review blocked it. **1.78.0
 was never published**; this release carries what it added, corrected.
