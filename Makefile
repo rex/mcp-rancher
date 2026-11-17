@@ -6,27 +6,17 @@
 # Usage: make <target>
 # Run `make help` for a full list of available targets.
 
-.PHONY: help help-stack install env env-check setup validate update info \
-        dev start build lint typecheck check-architecture check-docs \
-        check-precommit check-skeleton sync-skeleton fix test test-unit \
-        version clean clean-all \
-        codegen check-codegen tool-manifest check-tool-manifest \
-        sync-catalog check-catalog smoke-wheel \
-        capture-fixtures capture-sweep mock-rancher \
-        live-health live-read-matrix live-steve live-lifecycle \
-        lab-up lab-down lab-reset lab-status lab-logs lab-tools \
-        lab-current-up lab-current-down lab-current-status integration-current \
-        lab-rancher-up lab-rancher-down lab-kind-up lab-kind-down \
-        check-if-the-agent-can-consider-this-task-completed
+.PHONY: help help-stack install env env-check setup update info dev \
+        start build lint typecheck fix test test-unit version clean \
+        clean-all codegen check-codegen tool-manifest \
+        check-tool-manifest sync-catalog check-catalog smoke-wheel \
+        capture-fixtures capture-sweep mock-rancher live-health \
+        live-read-matrix live-steve live-lifecycle lab-up lab-down \
+        lab-reset lab-status lab-logs lab-tools lab-current-up \
+        lab-current-down lab-current-status integration-current \
+        lab-rancher-up lab-rancher-down lab-kind-up lab-kind-down
 
 # ─── Configuration ────────────────────────────────────────────────────
-# Prefer Homebrew zsh on macOS, then any zsh on PATH, then /bin/bash as
-# a CI-runner fallback (most CI runners don't ship zsh by default;
-# without this third fallback SHELL resolves to '' and `make: -c: No
-# such file or directory` fires on the first recipe). Keep recipes
-# POSIX-compatible — no `[[ ]]`, no `${var//foo/bar}` substitution, no
-# zsh globbing — so /bin/bash works as a true fallback.
-SHELL        := $(or $(wildcard /opt/homebrew/bin/zsh),$(shell command -v zsh),/bin/bash)
 APP_NAME     ?= rancher-mcp
 
 PYTHON       := uv run python
@@ -35,13 +25,12 @@ RUFF         := uv run ruff
 PYRIGHT      := uv run pyright
 PRE_COMMIT   := uv run pre-commit
 
-# Colors for output
-CYAN   := $(shell printf '\033[36m')
-GREEN  := $(shell printf '\033[32m')
-YELLOW := $(shell printf '\033[33m')
-RED    := $(shell printf '\033[31m')
-RESET  := $(shell printf '\033[0m')
-BOLD   := $(shell printf '\033[1m')
+# ─── Skeleton core (skeleton-owned — never edit) ──────────────────────
+# validate, the completion gate, check-*, bump-*, and sync-skeleton.
+# Required: make stops if the file is missing, and
+# `make check-skeleton` fails if it differs from the skeleton's copy.
+# Add a gate with a prerequisite-only rule (`validate: check-foo`).
+include make/agentic-skeleton.mk
 
 # ─── Help ─────────────────────────────────────────────────────────────
 
@@ -167,27 +156,6 @@ lint:
 typecheck:
 	$(PYRIGHT) src/ devtools/ scripts/
 
-## check-architecture: Enforce VIBE.yaml line limits + module shape (fails closed)
-check-architecture:
-	@echo "$(CYAN)Checking architecture (line limits + module shape)...$(RESET)"
-	@for s in check_architecture.py check_module_rules.py; do \
-		if [ ! -f "scripts/$$s" ]; then \
-			echo "$(RED)  scripts/$$s is MISSING — the architecture gate$(RESET)"; \
-			echo "$(RED)  cannot run. Hard failure, never a skip. Restore it:$(RESET)"; \
-			echo "$(RED)  re-run the agentic-skeleton bootstrap.$(RESET)"; \
-			exit 1; \
-		fi; \
-	done
-	@if command -v uv >/dev/null 2>&1; then \
-		uv run scripts/check_architecture.py && uv run scripts/check_module_rules.py; \
-	elif python3 -c 'import yaml' >/dev/null 2>&1; then \
-		python3 scripts/check_architecture.py && python3 scripts/check_module_rules.py; \
-	else \
-		echo "$(RED)  Architecture gate cannot run: no 'uv', and no$(RESET)"; \
-		echo "$(RED)  python3 with PyYAML. Install uv: https://docs.astral.sh/uv/$(RESET)"; \
-		exit 1; \
-	fi
-
 ## fix: Auto-fix lint + format
 fix:
 	$(RUFF) check . --fix
@@ -253,9 +221,7 @@ smoke-wheel:
 	python3 scripts/smoke_stdio.py --expect-version "$$(cat VERSION)" -- uvx --from "$$(ls "$$tmp"/dist/*.whl)" rancher-mcp; \
 	rc=$$?; rm -rf "$$tmp"; exit $$rc
 
-## validate: Run the repo's aggregate validation flow
-validate: check-codegen check-tool-manifest check-readme-badges check-server-json check-versions check-catalog check-architecture lint typecheck test
-	@echo "$(GREEN)Validation complete.$(RESET)"
+validate: check-codegen check-tool-manifest check-readme-badges check-server-json check-versions check-catalog test
 
 # ─── Local Lab ────────────────────────────────────────────────────────
 
@@ -366,72 +332,6 @@ live-lifecycle:
 
 # ─── Skeleton & enforcement gates ────────────────────────────────────
 
-## check-docs: Enforce VIBE.yaml docs.*_required (fails closed)
-check-docs:
-	@echo "$(CYAN)Checking required collaboration files (VIBE.yaml docs)...$(RESET)"
-	@if [ ! -f scripts/check_docs.py ]; then \
-		echo "$(RED)  scripts/check_docs.py is MISSING — the docs gate$(RESET)"; \
-		echo "$(RED)  cannot run. Hard failure. Re-run the bootstrap.$(RESET)"; \
-		exit 1; \
-	fi
-	@if command -v uv >/dev/null 2>&1; then \
-		uv run scripts/check_docs.py; \
-	elif python3 -c 'import yaml' >/dev/null 2>&1; then \
-		python3 scripts/check_docs.py; \
-	else \
-		echo "$(RED)  docs gate cannot run: no 'uv', no python3 + PyYAML.$(RESET)"; \
-		exit 1; \
-	fi
-
-## check-precommit: Verify the pre-commit hook is installed (fails closed)
-check-precommit:
-	@echo "$(CYAN)Checking the pre-commit enforcement surface...$(RESET)"
-	@if [ ! -f .pre-commit-config.yaml ]; then \
-		echo "$(RED)  .pre-commit-config.yaml is MISSING — the commit-time$(RESET)"; \
-		echo "$(RED)  enforcement surface is absent. Re-run the bootstrap.$(RESET)"; \
-		exit 1; \
-	fi
-	@if ! command -v pre-commit >/dev/null 2>&1; then \
-		echo "$(RED)  pre-commit is not installed — it is MANDATORY, not$(RESET)"; \
-		echo "$(RED)  optional. Install it: uv tool install pre-commit$(RESET)"; \
-		exit 1; \
-	fi
-	@HOOK=$$(git rev-parse --git-path hooks/pre-commit 2>/dev/null); \
-	if [ -z "$$HOOK" ] || [ ! -f "$$HOOK" ] || ! grep -q pre-commit "$$HOOK" 2>/dev/null; then \
-		echo "$(RED)  the pre-commit git hook is NOT installed. Run:$(RESET)"; \
-		echo "$(RED)    pre-commit install$(RESET)"; \
-		echo "$(RED)  A .pre-commit-config.yaml with no installed hook$(RESET)"; \
-		echo "$(RED)  enforces nothing — fail closed.$(RESET)"; \
-		exit 1; \
-	fi
-	@echo "$(GREEN)  pre-commit hook installed.$(RESET)"
-
-## check-skeleton: Report drift vs the installed agentic-skeleton
-check-skeleton:
-	@echo "$(CYAN)Checking skeleton-owned files for drift...$(RESET)"
-	@if [ ! -f scripts/sync_skeleton.py ]; then \
-		echo "$(RED)  scripts/sync_skeleton.py is MISSING — cannot check$(RESET)"; \
-		echo "$(RED)  skeleton drift. Re-run the agentic-skeleton bootstrap.$(RESET)"; \
-		exit 1; \
-	fi
-	@if command -v uv >/dev/null 2>&1; then \
-		uv run scripts/sync_skeleton.py --check; \
-	else \
-		python3 scripts/sync_skeleton.py --check; \
-	fi
-
-## sync-skeleton: Pull current skeleton-owned files into this repo
-sync-skeleton:
-	@if [ ! -f scripts/sync_skeleton.py ]; then \
-		echo "$(RED)  scripts/sync_skeleton.py is MISSING.$(RESET)"; \
-		exit 1; \
-	fi
-	@if command -v uv >/dev/null 2>&1; then \
-		uv run scripts/sync_skeleton.py --apply; \
-	else \
-		python3 scripts/sync_skeleton.py --apply; \
-	fi
-
 # ─── Maintenance ──────────────────────────────────────────────────────
 
 ## update: Refresh lockfile and installed dependencies
@@ -474,12 +374,14 @@ clean-all:
 
 # ─── Completion Gate ──────────────────────────────────────────────────
 
-## check-if-the-agent-can-consider-this-task-completed: Final verification gate
-check-if-the-agent-can-consider-this-task-completed: validate check-docs check-precommit
+.PHONY: check-if-the-agent-can-consider-this-task-completed-local
+## check-if-the-agent-can-consider-this-task-completed-local: Final verification gate
+check-if-the-agent-can-consider-this-task-completed-local:
 	@git diff --quiet
 	@git diff --cached --quiet
 	@git rev-parse --verify HEAD >/dev/null
 	@git log -1 --show-signature >/dev/null
 	@echo "$(BOLD)$(GREEN)✓ All gates passed. Task may be declared complete.$(RESET)"
+check-if-the-agent-can-consider-this-task-completed: check-if-the-agent-can-consider-this-task-completed-local
 
 .DEFAULT_GOAL := help
