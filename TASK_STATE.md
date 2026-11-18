@@ -68,12 +68,12 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 
 ## Next Slice
 
-### MCP audit handoff — v1.80.0 (#39)
+### MCP audit handoff — v1.81.0 (#39)
 
 The isolated compatibility branch preserves the ongoing #38 changes in the
 main checkout. `make validate` passes: 2,417 tests, 97.75% coverage, both MCP
 eras, and all catalog/codegen/type/architecture gates. No live Rancher writes
-or deployment were performed. Reconcile the version with #38 when integrating.
+or deployment were performed. The include-based Makefile landed as v1.80.0.
 
 ### 📌 HANDOFF (2026-11-15): port SHIPPED (v1.69.0); two defects found and fixed after it (v1.70.0, v1.71.0); #8 shipped (v1.72.0); #9 half done (v1.73.0); the package starts (v1.74.0); request-path hardening (v1.75.0, v1.76.0)
 

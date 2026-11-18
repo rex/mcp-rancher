@@ -1,8 +1,12 @@
 # Changelog
 
-## [1.80.0] — 2026-11-17 — Agent: Codex
+## [1.81.0] — 2026-11-18 — Agent: Codex
 ### Fixed
-- Return protocol error -32602 for unknown tools in both MCP eras, preserving the helpful error for registered but disabled tools (#39).
+- fix: return MCP error -32602 for unknown tools in modern and legacy sessions (#39)
+
+## [1.80.0] — 2026-11-17 — Agent: Claude Opus 5.5
+### Changed
+- Adopt agentic-skeleton 0.56.0's include-based Makefile: the gates live in the skeleton-owned make/agentic-skeleton.mk and the Makefile keeps this repo's own recipes, so make check-skeleton stops failing on them. Verified against make's rule database; repo targets, variables and the default goal are unchanged.
 
 ## [1.79.0] — 2026-11-16 — Agent: Claude Fable 5.2
 1.78.0 was reviewed before it was tagged, and the review blocked it. **1.78.0
