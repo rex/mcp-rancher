@@ -24,6 +24,7 @@ from collections.abc import Mapping
 from typing import Any
 
 import structlog
+from mcp import MCPError
 from mcp.server.mcpserver import MCPServer
 from mcp.server.mcpserver.exceptions import ToolError
 
@@ -88,6 +89,8 @@ def _install_dispatch_gate(
 
     def wrap(original_call_tool: DispatchFn) -> DispatchFn:
         async def call_tool(name: str, *args: Any, **kwargs: Any) -> Any:
+            if name not in family_of and not is_registered(mcp, name):
+                raise MCPError(-32602, f"unknown tool: {name}")
             # `family_of` covers every tool this BUILD can produce;
             # `is_registered` reports the live, currently-ACTIVE set. A name in
             # the former but not the latter is a real, disabled tool — anything

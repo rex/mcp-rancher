@@ -2,6 +2,10 @@
 
 ## Current Objective
 
+**2026-11-17 — MCP compatibility, Codex (#39):** unknown tool names return
+`-32602` in both eras. Disabled registered tools retain their actionable
+toolset error. This slice is isolated from the concurrent #38 security work.
+
 Keep the repo clean and fully validated while executing the canonical Rancher MCP implementation plan in phase order. **Primary target: Rancher 2.9.3** (production). **Compat floor: 2.6.5** (devlab). Capability detection bridges the gap; never regress 2.6.5 behavior.
 
 ## Standing User Directives
@@ -63,6 +67,13 @@ Keep the repo clean and fully validated while executing the canonical Rancher MC
 - **User-visible changes** → `CHANGELOG.md`
 
 ## Next Slice
+
+### MCP audit handoff — v1.81.0 (#39)
+
+The isolated compatibility branch preserves the ongoing #38 changes in the
+main checkout. `make validate` passes: 2,417 tests, 97.75% coverage, both MCP
+eras, and all catalog/codegen/type/architecture gates. No live Rancher writes
+or deployment were performed. The include-based Makefile landed as v1.80.0.
 
 ### 📌 HANDOFF (2026-11-15): port SHIPPED (v1.69.0); two defects found and fixed after it (v1.70.0, v1.71.0); #8 shipped (v1.72.0); #9 half done (v1.73.0); the package starts (v1.74.0); request-path hardening (v1.75.0, v1.76.0)
 

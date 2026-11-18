@@ -16,7 +16,7 @@ import json
 from collections.abc import Iterator
 
 import pytest
-from mcp import Client
+from mcp import Client, MCPError
 from mcp.server.mcpserver import MCPServer
 from mcp.server.mcpserver.exceptions import ToolError
 from mcp.types import TextContent
@@ -107,20 +107,21 @@ async def test_explicitly_excluded_tool_call_names_the_exclude_var(
     assert "RANCHER_EXCLUDE_TOOLS" in payload["message"]
 
 
-async def test_genuinely_unknown_tool_name_is_unaffected_by_the_gate(
+@pytest.mark.parametrize("era", ["legacy", "2026-07-28"])
+async def test_unknown_tool_name_is_a_protocol_error(
     monkeypatch: pytest.MonkeyPatch,
+    era: str,
 ) -> None:
-    """A name with no relationship to any real tool must keep the SDK's
-    ordinary "unknown tool" envelope — the toolset gate only ever intercepts
-    real, disabled tool names."""
+    """Unknown names are -32602; registered-but-disabled tools keep their hint."""
 
     mcp = _build_profile(monkeypatch, toolsets="core")
 
-    with pytest.raises(ToolError) as excinfo:
-        await mcp.call_tool("not_a_real_tool_at_all", {})
-
-    payload = json.loads(str(excinfo.value))
-    assert payload["error_code"] == "MCP_ERROR"
+    async with Client(mcp, mode=era) as client:
+        with pytest.raises(MCPError) as excinfo:
+            await client.call_tool("not_a_real_tool_at_all", {})
+        assert excinfo.value.code == -32602
+        assert "not_a_real_tool_at_all" in str(excinfo.value)
+        assert not (await client.call_tool("rancher_instance_list", {})).is_error
 
 
 async def test_active_tool_call_is_unaffected_by_the_gate(monkeypatch: pytest.MonkeyPatch) -> None:
