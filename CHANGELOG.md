@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.82.1] — 2026-11-18 — Agent: Claude Fable 5.2
+### Docs
+- `TASK_STATE.md` said 1.82.0 was the next version to tag. It was tagged and
+  published on 2026-11-18, and the note now says so and how that was checked.
+  No code changed; this version is not published.
+
 ## [1.82.0] — 2026-11-18 — Agent: Claude Fable 5.2
 1.79.0 was reviewed before it was tagged, and the review blocked it too.
 **None of 1.78.0 – 1.81.0 was published**: 1.78.0 and 1.79.0 were held back by

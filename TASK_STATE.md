@@ -84,11 +84,14 @@ run from an empty directory to check. v1.75.0 and v1.76.0 were each reviewed on
 Opus before tagging — the first blocked, the second approved with four notes
 that v1.77.0 fixes ([#35](https://github.com/rex/mcp-rancher/issues/35)) — so
 neither was tagged, and 1.60.0–1.76.0 do not exist on PyPI. The release before
-it, v1.59.0, does not start outside a checkout. **v1.82.0 is the next version
-to tag**, asked for on 2026-11-15 as well: v1.78.0 and v1.79.0 were each
-reviewed before tagging and blocked, and v1.80.0 and v1.81.0 (the Makefile and
-#39, from other sessions) were not tagged. Check PyPI for what is actually out
-before assuming either way.
+it, v1.59.0, does not start outside a checkout. **v1.82.0 was tagged and
+published on 2026-11-18** — the second release asked for on 2026-11-15 — and
+checked the same way: PyPI latest, the GitHub Release, the MCP registry, and
+the published package run from an empty directory on both protocol eras.
+v1.78.0 and v1.79.0 were each reviewed before tagging and blocked, and v1.80.0
+and v1.81.0 (the Makefile and #39, from other sessions) were not tagged, so
+1.78.0–1.81.0 do not exist on PyPI either. Anything after 1.82.0 is
+unpublished until the next tag; check PyPI before assuming either way.
 
 - **v1.82.0 — the review of v1.79.0**
   ([#38](https://github.com/rex/mcp-rancher/issues/38)). A declined apply or
