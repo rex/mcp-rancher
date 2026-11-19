@@ -128,6 +128,7 @@ def change_question(
     payload_json: str,
     params_json: str | None = None,
     options: Mapping[str, object] | None = None,
+    schema_id: str | None = None,
 ) -> str:
     """The question for a generic apply or patch.
 
@@ -135,13 +136,14 @@ def change_question(
     enough to read on a prompt, and otherwise as its outline, with a plain
     statement that an outline is all it is. A long manifest cannot be put to a
     person whole — and saying so is honest where cutting it off is not.
+    *schema_id* tells the display what kind of thing is being changed.
     """
 
     payload = parse_required_payload_object(payload_json)
     shown = (
         f"{verb} {target}?\n\n"
         "This changes the resource as the payload says, and can replace or remove parts of it."
-        f"\n\n{payload_shown(payload)}"
+        f"\n\n{payload_shown(payload, schema_id=schema_id)}"
     )
     query = {**parse_query_params(params_json), **(options or {})}
     if query:

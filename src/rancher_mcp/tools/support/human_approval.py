@@ -239,6 +239,8 @@ def settle(outcome: HumanApproval, *, tool_name: str, plane: str, **identity: st
         )
         return
 
+    # A no ends every "keep going", or this very call could be sent again.
+    standing_approval.revoke_all()
     emit_audit(
         AuditEntry(**entry, outcome="error", error_code="APPROVAL_DENIED", error_message=denial)
     )

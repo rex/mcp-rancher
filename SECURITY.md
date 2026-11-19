@@ -57,16 +57,29 @@ disclosure.
   to the guards above. A client may be configured to answer such prompts
   automatically; that is the operator's decision and this server cannot see it.
 - The generic apply and patch tools — not annotated destructive, but able to
-  replace a resource or strip fields from it — ask the same way since 1.79.0,
+  replace a resource or strip fields from it — ask the same way since 1.82.0,
   with the payload on the page. For those four tools only, the prompt carries
   a second box, **Keep going**. Ticked together with the first, it lets
   further calls of *that tool*, on *that instance and cluster*, through
   without a prompt for `RANCHER_MCP_APPROVAL_KEEP_GOING_MINUTES` (default 15;
   `0` withdraws the offer). A standing approval never covers a delete, an
-  action, another tool or another cluster; it is not renewed by being used; it
-  is held in memory and ends with the process; the call's own checks still
-  run under it; and every call that goes through on one is audit-logged as
-  such. It is the only way one answer covers more than one call.
+  action, another tool or another cluster; it is not renewed by being used or
+  by a second "keep going"; it is held in memory and ends with the process;
+  the call's own checks still run under it; and every call that goes through
+  on one is audit-logged as such. It is the only way one answer covers more
+  than one call.
+- **A no ends every standing approval.** Declining any prompt this server puts
+  — dismissing it, or accepting it unticked, counts — ends all of them, on
+  every tool and cluster, so a call a person turned down cannot be sent again
+  and go through on a "keep going" given at another prompt. The server hears
+  answers in the order the client sends them: a "keep going" given *after* a
+  no is the later word, and its prompt says "any call".
+- What a prompt shows is masked by name: strings at or below a field that
+  names a credential, everything in a Secret's `data`, an environment
+  variable whose name says so, any private key. That keeps credentials off a
+  dialog; it is not a confidentiality boundary. The call's arguments are in
+  the conversation in full, and a credential filed under a name that says
+  nothing is shown.
 - A call reaches only the resource its arguments name. Identifiers are
   validated wherever one enters a URL path, and the HTTP client refuses what
   gets past: a path that would resolve elsewhere (`..`, an empty segment, an
@@ -139,7 +152,10 @@ disclosure.
 
 Versions 1.60.0 – 1.76.0 were never published to PyPI. **1.77.0 is the first
 published release, and it contains every fix above**; the last one before it
-is 1.59.0.
+is 1.59.0. 1.78.0 – 1.81.0 were not published either: 1.78.0 and 1.79.0 were
+each reviewed before tagging and held back, for defects in the standing
+approval they introduced (see the changelog), and the two after them were not
+tagged. The release after 1.77.0 is 1.82.0.
 
 ## Hardening recommendations
 

@@ -205,9 +205,9 @@ class ToolsetSettings(BaseSettings):
         default=True, alias="RANCHER_MCP_REQUIRE_APPROVAL_FOR_DESTRUCTIVE"
     )
     # The same switch covers the generic apply and patch tools. For those a
-    # person who is asked may also say "keep going", and further calls of that
-    # tool on that instance and cluster go through unasked for this many
-    # minutes (`tools/support/standing_approval.py`). 0 withdraws the offer.
+    # person may also say "keep going": further calls of that tool on that
+    # instance and cluster go through unasked for this many minutes, or until
+    # a person says no to anything (`standing_approval.py`). 0 withdraws it.
     approval_keep_going_minutes: int = Field(
         default=15, ge=0, le=240, alias="RANCHER_MCP_APPROVAL_KEEP_GOING_MINUTES"
     )

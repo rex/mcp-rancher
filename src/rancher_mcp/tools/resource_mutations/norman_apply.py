@@ -122,7 +122,11 @@ async def _approve(
             schema_id=schema_id, resource_id=resource_id, instance=instance_name
         )
         return change_question(
-            "Replace", target, payload_json=payload_json, params_json=params_json
+            "Replace",
+            target,
+            payload_json=payload_json,
+            params_json=params_json,
+            schema_id=schema_id,
         )
 
     return ask_unless_pointless(ctx, question, KeepGoing(_TOOL, instance))

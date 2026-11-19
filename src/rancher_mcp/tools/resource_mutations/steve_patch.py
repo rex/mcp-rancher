@@ -164,7 +164,13 @@ async def _approve(
             cluster_id=cluster_id,
             namespace=namespace,
         )
-        return change_question("Patch", target, payload_json=payload_json, params_json=params_json)
+        return change_question(
+            "Patch",
+            target,
+            payload_json=payload_json,
+            params_json=params_json,
+            schema_id=schema_id,
+        )
 
     return ask_unless_pointless(ctx, question, KeepGoing(_TOOL, instance, cluster_id))
 

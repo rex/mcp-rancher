@@ -17,7 +17,14 @@ What a standing approval is not:
   still run — read-only mode, identifiers, the payload — and it is still
   audited, as approved by standing approval rather than by asking.
 * **It does not renew itself.** A call made under it does not move the
-  deadline; only a person answering a prompt sets one.
+  deadline, and neither does a second "keep going" while one is in force.
+* **It does not survive a no.** Declining any prompt this server puts —
+  dismissing it and leaving its box unticked count — ends every standing
+  approval there is, so a call a person turned down cannot be sent again and
+  go through on a "keep going" given elsewhere. It also makes any prompt a
+  way to take one back. (The server hears answers in the order the client
+  sends them: a "keep going" that arrives *after* a no is the later word,
+  and its prompt says "any call".)
 * **It does not outlive the process.** It is held in memory. The server speaks
   stdio — one process per client session — so it ends with the session at the
   latest, and is never written anywhere.
@@ -89,9 +96,14 @@ def _now() -> float:
 
 
 def allow(scope: Scope, *, minutes: int) -> None:
-    """Record that a person approved *scope* for the next *minutes*."""
+    """Record that a person approved *scope* for the next *minutes*.
 
-    _until[scope] = _now() + minutes * 60
+    One already in force is left as it is. An answer cannot push a deadline
+    back — or a client that re-sent an approved round could keep one alive.
+    """
+
+    if not is_allowed(scope):
+        _until[scope] = _now() + minutes * 60
 
 
 def is_allowed(scope: Scope) -> bool:
@@ -107,7 +119,15 @@ def is_allowed(scope: Scope) -> bool:
 
 
 def revoke_all() -> None:
-    """Forget every standing approval."""
+    """Forget every standing approval — what a no does.
+
+    Every one, not only the one the declined call falls under. Two prompts can
+    be open at once, and a person may say "keep going" to one and "no" to the
+    other: the call they turned down could otherwise be sent again and go
+    through on the first answer. And a no to one tool is no reason to go on
+    trusting another unasked — a patch can do most of what a declined delete
+    would have.
+    """
 
     _until.clear()
 
@@ -117,5 +137,6 @@ def offer(scope: Scope, *, minutes: int) -> str:
 
     return (
         f'\n\nTo let the agent continue, also tick "Keep going": for the next {minutes} '
-        f"minutes, any call of {scope.described()} goes through without asking."
+        f"minutes, or until you decline a prompt, any call of {scope.described()} goes "
+        "through without asking."
     )

@@ -16,6 +16,8 @@ from rancher_mcp.exceptions import RancherCapabilityError, RancherInvalidArgumen
 from rancher_mcp.tools.support.approval_wording import change_question
 
 _CANARY = "hunter2"  # a value that must never be shown
+_BEGIN = "BEGIN"  # kept apart from the rest of a key's first line: scanners read this file
+_MOUNTED = "web-tls"  # the name of a Secret — a pointer, which must stay readable
 
 
 def test_a_short_change_is_shown_whole() -> None:
@@ -75,6 +77,69 @@ def test_only_a_string_under_a_secret_sounding_key_is_masked() -> None:
     assert '"bootstrapTokens": ["********", "********"]' in question
     assert '"clientSecret": "********"' in question
     assert _CANARY not in question
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        # One level down: a credential's config names its secrets its own way.
+        {"ovhcredentialConfig": {"applicationSecret": _CANARY, "consumerKey": _CANARY}},
+        {"packetcredentialConfig": {"apiKey": _CANARY, "projectId": "p-1"}},
+        {"token": {"value": _CANARY}},
+        {"kubeconfig": _CANARY},
+        # A Secret's keys are whatever its author called them.
+        {"kind": "Secret", "data": {"role-id": _CANARY, "secret-id": _CANARY}},
+        {"stringData": {"secret-id": _CANARY, "username": _CANARY}},
+        # An environment variable is named beside its value, not above it.
+        {"spec": {"containers": [{"env": [{"name": "DB_PASSWORD", "value": _CANARY}]}]}},
+        # A private key, filed under a name that says nothing.
+        {"spCert": "c", "spKey": f"-----{_BEGIN} PRIVATE KEY-----\n{_CANARY}"},
+    ],
+)
+def test_a_credential_is_masked_wherever_it_sits(payload: dict[str, object]) -> None:
+    """Each of these was printed in a prompt by the masking that only looked
+    at the key directly above a string — found by review on 2026-11-16."""
+
+    question = change_question("Apply to", "X", payload_json=json.dumps(payload))
+
+    assert _CANARY not in question, question
+    assert "********" in question
+
+
+def test_a_pointer_to_a_credential_is_not_masked_with_it() -> None:
+    """Masking runs downward from a name, and has to stop at a field that only
+    points: which Secret a pod pulls with, or mounts, is the change itself."""
+
+    payload = {
+        "imagePullSecrets": [{"name": "registry"}],
+        "volumes": [{"name": "tls", "secret": {"secretName": _MOUNTED, "defaultMode": 420}}],
+        "clientSecret": {"name": "repo-auth", "namespace": "cattle-system"},
+        "azurecredentialConfig": {"clientId": "app-1", "clientSecret": _CANARY},
+        "env": [{"name": "LOG_LEVEL", "value": "debug"}],
+    }
+
+    question = change_question("Patch", "X", payload_json=json.dumps(payload))
+
+    assert '"imagePullSecrets": [{"name": "registry"}]' in question
+    assert f'"secret": {{"defaultMode": 420, "secretName": "{_MOUNTED}"}}' in question
+    assert '"clientSecret": {"name": "repo-auth", "namespace": "cattle-system"}' in question
+    assert '"azurecredentialConfig": {"clientId": "app-1", "clientSecret": "********"}' in question
+    assert '{"name": "LOG_LEVEL", "value": "debug"}' in question
+
+
+def test_a_patch_to_a_secret_hides_its_data_and_one_to_a_config_map_shows_it() -> None:
+    """A patch does not say what kind of thing it patches. ``data`` is a
+    Secret's values or a ConfigMap's settings — and in a ConfigMap it is
+    exactly what a person is there to read."""
+
+    payload = json.dumps({"data": {"db-pass": _CANARY}})
+
+    def asked_of(schema_id: str) -> str:
+        return change_question("Patch", "X", payload_json=payload, schema_id=schema_id)
+
+    assert '"db-pass": "********"' in asked_of("secret")
+    assert _CANARY not in asked_of("secret") + asked_of("namespacedSecret")
+    assert f'"db-pass": "{_CANARY}"' in asked_of("configmap")
 
 
 def test_a_long_string_is_shortened_and_everything_else_kept() -> None:

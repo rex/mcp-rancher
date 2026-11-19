@@ -84,10 +84,26 @@ run from an empty directory to check. v1.75.0 and v1.76.0 were each reviewed on
 Opus before tagging — the first blocked, the second approved with four notes
 that v1.77.0 fixes ([#35](https://github.com/rex/mcp-rancher/issues/35)) — so
 neither was tagged, and 1.60.0–1.76.0 do not exist on PyPI. The release before
-it, v1.59.0, does not start outside a checkout. **v1.79.0 is the next version
-to tag**, asked for on 2026-11-15 as well; v1.78.0 was reviewed before tagging
-and blocked, so it was never tagged either. Check PyPI for what is actually out
+it, v1.59.0, does not start outside a checkout. **v1.82.0 is the next version
+to tag**, asked for on 2026-11-15 as well: v1.78.0 and v1.79.0 were each
+reviewed before tagging and blocked, and v1.80.0 and v1.81.0 (the Makefile and
+#39, from other sessions) were not tagged. Check PyPI for what is actually out
 before assuming either way.
+
+- **v1.82.0 — the review of v1.79.0**
+  ([#38](https://github.com/rex/mcp-rancher/issues/38)). A declined apply or
+  patch could be sent again and go through on a "Keep going" given at another
+  prompt. **A person's no now ends every standing approval**
+  (`standing_approval.revoke_all`, on the denial path of
+  `human_approval.settle`) — on every tool and cluster, which is wider than
+  the defect needed and was my call; narrow it if it grates. One limit is
+  deliberate and has a test: a "keep going" given *after* a no is the later
+  word. The question's masking now carries downward from a name and stops at
+  a field that only points, and a Secret's `data` is masked by what it is
+  rather than by its keys — it is a courtesy, not a boundary.
+  **This fix has had no review of its own**
+  ([#42](https://github.com/rex/mcp-rancher/issues/42)); every earlier change
+  to this code got a blocker on its first one.
 
 - **v1.79.0 — the review of v1.78.0**
   ([#37](https://github.com/rex/mcp-rancher/issues/37)). On the modern protocol

@@ -131,7 +131,13 @@ async def _approve(
         target = generic_target(
             schema_id=schema_id, resource_id=resource_id, instance=instance_name
         )
-        return change_question("Patch", target, payload_json=payload_json, params_json=params_json)
+        return change_question(
+            "Patch",
+            target,
+            payload_json=payload_json,
+            params_json=params_json,
+            schema_id=schema_id,
+        )
 
     return ask_unless_pointless(ctx, question, KeepGoing(_TOOL, instance))
 

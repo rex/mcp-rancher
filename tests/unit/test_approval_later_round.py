@@ -33,16 +33,26 @@ _KEEP_GOING = KeepGoing(_PATCH, None, "c-prod")
 
 
 class _Round:
-    """A request as a resolver sees it: who is asking, and what came back."""
+    """A request as a resolver sees it: who is asking, and what came back.
 
-    def __init__(self, *, later: bool, can_ask: bool = True) -> None:
-        self.request_state = "sealed-by-the-sdk" if later else None
-        self.input_responses = {"approval": {"action": "decline"}} if later else None
+    *carrying* is what a later round brings with it. The SDK sends the sealed
+    state and the answers together; either one alone has to be enough to know
+    the round for what it is, so each is tried alone.
+    """
+
+    def __init__(self, *, carrying: str = "", can_ask: bool = True) -> None:
+        self.request_state = "sealed-by-the-sdk" if "state" in carrying else None
+        self.input_responses = (
+            {"approval": {"action": "decline"}} if "answers" in carrying else None
+        )
         self.client_capabilities = (
             ClientCapabilities(elicitation=ElicitationCapability(form={}))
             if can_ask
             else ClientCapabilities()
         )
+
+
+_LATER = pytest.mark.parametrize("carrying", ["state", "answers", "state and answers"])
 
 
 def _decide(round_: _Round, keep_going: KeepGoing | None = _KEEP_GOING) -> object:
@@ -69,51 +79,55 @@ def _reset() -> None:
 def test_a_standing_approval_answers_a_first_round() -> None:
     standing_approval.allow(_KEEP_GOING.scope(), minutes=15)
 
-    outcome = _decide(_Round(later=False))
+    outcome = _decide(_Round())
 
     assert isinstance(outcome, Unasked) and outcome.reason == "standing_approval"
 
 
-def test_a_standing_approval_does_not_answer_a_later_round() -> None:
+@_LATER
+def test_a_standing_approval_does_not_answer_a_later_round(carrying: str) -> None:
     """Granted while this call's own prompt was open. The person answered that
     prompt; their answer is what counts."""
 
     standing_approval.allow(_KEEP_GOING.scope(), minutes=15)
 
-    assert not isinstance(_decide(_Round(later=True)), Unasked)
+    assert not isinstance(_decide(_Round(carrying=carrying)), Unasked)
 
 
+@_LATER
 def test_turning_approval_off_does_not_answer_a_later_round(
-    monkeypatch: pytest.MonkeyPatch,
+    carrying: str, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setenv("RANCHER_MCP_REQUIRE_APPROVAL_FOR_DESTRUCTIVE", "false")
     clear_toolset_settings_cache()
 
-    first = _decide(_Round(later=False))
-    later = _decide(_Round(later=True))
+    first = _decide(_Round())
+    later = _decide(_Round(carrying=carrying))
 
     assert isinstance(first, Unasked) and first.reason == "disabled"
     assert not isinstance(later, Unasked)
 
 
+@_LATER
 @pytest.mark.parametrize("keep_going", [_KEEP_GOING, None])
 def test_a_client_that_stops_declaring_elicitation_does_not_answer_a_later_round(
-    keep_going: KeepGoing | None,
+    keep_going: KeepGoing | None, carrying: str
 ) -> None:
-    first = _decide(_Round(later=False, can_ask=False), keep_going)
-    later = _decide(_Round(later=True, can_ask=False), keep_going)
+    first = _decide(_Round(can_ask=False), keep_going)
+    later = _decide(_Round(carrying=carrying, can_ask=False), keep_going)
 
     assert isinstance(first, Unasked) and first.reason == "client_cannot_ask"
     assert not isinstance(later, Unasked)
 
 
-def test_a_later_round_is_still_refused_if_the_call_no_longer_passes() -> None:
+@_LATER
+def test_a_later_round_is_still_refused_if_the_call_no_longer_passes(carrying: str) -> None:
     refusal = RancherInvalidArgumentError("`resource_id` has an empty segment")
 
     def question() -> str:
         raise refusal
 
-    context: Any = _Round(later=True)
+    context: Any = _Round(carrying=carrying)
     outcome = ask_unless_pointless(context, question, _KEEP_GOING)
 
     assert isinstance(outcome, Unasked)

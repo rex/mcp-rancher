@@ -60,7 +60,9 @@ async def test_the_question_says_exactly_what_keep_going_would_allow(tool_name: 
     seen = await call(tool_name, NO)
 
     (question,) = seen.questions
-    assert 'also tick "Keep going": for the next 15 minutes, any call of ' in question
+    assert 'also tick "Keep going": for the next 15 minutes, or until you decline a prompt, ' in (
+        question
+    )
     assert f"any call of {tool_name} on " in question
     assert question.rstrip().endswith('Rancher instance "default" goes through without asking.')
     if "_steve_" in tool_name:
@@ -119,5 +121,24 @@ def test_revoking_forgets_everything() -> None:
     assert standing_approval.is_allowed(scope)
 
     standing_approval.revoke_all()
+
+    assert not standing_approval.is_allowed(scope)
+
+
+def test_a_second_keep_going_does_not_push_the_deadline_back(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """An answer cannot move a deadline that is in force — or a client that
+    sent an approved round a second time could keep one alive as long as it
+    liked."""
+
+    clock = [1000.0]
+    monkeypatch.setattr(standing_approval, "_now", lambda: clock[0])
+    scope = Scope(PATCH, "default", "local")
+    standing_approval.allow(scope, minutes=15)
+
+    clock[0] += 14 * 60
+    standing_approval.allow(scope, minutes=15)
+    clock[0] += 2 * 60
 
     assert not standing_approval.is_allowed(scope)

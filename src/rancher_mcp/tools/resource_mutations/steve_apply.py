@@ -197,6 +197,7 @@ async def _approve(
             payload_json=payload_json,
             params_json=params_json,
             options=options,
+            schema_id=schema_id,
         )
 
     return ask_unless_pointless(ctx, question, KeepGoing(_TOOL, instance, cluster_id))

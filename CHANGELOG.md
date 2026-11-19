@@ -1,5 +1,67 @@
 # Changelog
 
+## [1.82.0] — 2026-11-18 — Agent: Claude Fable 5.2
+1.79.0 was reviewed before it was tagged, and the review blocked it too.
+**None of 1.78.0 – 1.81.0 was published**: 1.78.0 and 1.79.0 were held back by
+review, and 1.80.0 and 1.81.0 were not tagged. This is the release that
+carries approval for apply and patch, and the first since 1.77.0.
+(rex/mcp-rancher#38)
+
+### Security
+- **A call a person declined could be sent again, and go through.** Two apply
+  or patch prompts open at once; the person ticks *Keep going* on one and
+  declines the other. 1.79.0 made the declined call's own round honour the
+  no. But sent again it was a new call, and the standing approval granted on
+  the other prompt let it through unasked. Introduced in 1.78.0, which was
+  not released.
+  **A no now ends every "keep going".** Declining any prompt this server puts
+  — dismissing it, or accepting it with the box unticked, counts — ends every
+  standing approval: on every tool, cluster and instance. That is wider than
+  the defect needed, on purpose. A no to a delete is no reason to go on
+  trusting a patch unasked, since a patch can do most of what the delete would
+  have; and it makes any prompt a way to take a "keep going" back. The offer
+  says so: *for the next 15 minutes, or until you decline a prompt*.
+  One limit stays, and is deliberate: the server hears answers in the order
+  the client sends them, so a "keep going" given *after* a no is the later
+  word — and its prompt says "any call".
+- **A second "keep going" does not push the deadline back.** An answer cannot
+  move a deadline that is in force, so a client that sent an approved round a
+  second time cannot keep a standing approval alive. (Sending a round again at
+  all is rex/mcp-rancher#30.)
+- **The question showed credentials one level down.** 1.79.0 narrowed masking
+  to a string directly under a key that names a credential, and that reset at
+  every level. A cloud credential's config (`…credentialConfig:
+  {applicationSecret, consumerKey}`), `{"token": {"value": …}}`, a
+  `kubeconfig`, and a Kubernetes Secret's `data` and `stringData` were all
+  printed on the prompt. The mark now carries downward, and stops at a field
+  that only points (`…Id`, `…Name`, `…Ref`, `…Type`, a `namespace`, a `path`).
+  Three places where a name says nothing are handled by what they are: every
+  string in a Secret's `data` or `stringData` is masked whatever its key (a
+  patch does not say what it patches, so the four tools now tell the question
+  which schema it is for — a ConfigMap's `data` is still shown); the `value`
+  of an environment variable is masked when its *name* says so; and a private
+  key is masked wherever it is filed.
+  This goes by names. It keeps credentials off a prompt as a courtesy; it is
+  not a boundary, and the conversation holds the call in full.
+
+### Why nothing caught it, and what does now
+- The two-prompts test stopped at the declined call's own answer. It now sends
+  the declined call again — on both protocol eras, for each way of saying no —
+  and sees it asked about again
+  (`tests/unit/test_standing_approval_ends_on_no.py`). The same file pins that
+  a no to a delete ends a "keep going" on a patch, that a call the server
+  refuses is not a no, and the limit above.
+- The masking tests named keys one level deep. They now cover each shape the
+  review found printed, and the other direction too: a pointer under a
+  secret-sounding name is still shown.
+- `tests/unit/test_approval_later_round.py` set both the sealed state and the
+  answers on its later round. Either alone has to be enough, so each is tried
+  alone.
+- The tests for the defects were run against 1.79.0's source, and fail there.
+- Found by an independent review of 1.79.0 before it was tagged — the fifth
+  such review, and the fourth to find something that would otherwise have
+  shipped. This fix has not had a review of its own.
+
 ## [1.81.0] — 2026-11-18 — Agent: Codex
 ### Fixed
 - fix: return MCP error -32602 for unknown tools in modern and legacy sessions (#39)

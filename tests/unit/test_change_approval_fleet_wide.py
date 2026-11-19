@@ -22,6 +22,7 @@ it, on both protocol eras, with every HTTP request intercepted. For each:
 from __future__ import annotations
 
 import inspect
+import json
 from collections.abc import Iterator
 
 import pytest
@@ -51,6 +52,7 @@ _CHANGERS = sorted(
 )
 _ERAS = ("legacy", "2026-07-28")
 _CASES = [(name, era) for name in _CHANGERS for era in _ERAS]
+_CANARY = "hunter2"  # a value that must never be shown
 
 
 def _reset() -> None:
@@ -152,6 +154,23 @@ async def test_the_question_shows_the_change_and_where_it_lands(tool_name: str, 
     assert 'Payload: {"metadata": {"name": "x"}}' in question
     if "cluster_id" in _TOOLS[tool_name].parameters.get("properties", {}):
         assert "Rancher's own management cluster" in question, question
+
+
+@pytest.mark.parametrize("tool_name", _CHANGERS)
+async def test_the_question_does_not_show_what_a_secret_holds(tool_name: str) -> None:
+    """A patch does not say what it patches, so each tool has to tell the
+    display — or a Secret's ``data`` is printed like a ConfigMap's."""
+
+    payload = json.dumps({"data": {"db-pass": _CANARY}})
+    secret = _arguments(tool_name) | {"schema_id": "secret", "payload_json": payload}
+    config = _arguments(tool_name) | {"schema_id": "configmap", "payload_json": payload}
+
+    hidden = await observe_call(_SERVER, tool_name, secret, answer=Answer("decline"))
+    shown = await observe_call(_SERVER, tool_name, config, answer=Answer("decline"))
+
+    assert '"db-pass": "********"' in hidden.questions[0], hidden.questions[0]
+    assert _CANARY not in hidden.questions[0]
+    assert _CANARY in shown.questions[0]
 
 
 async def test_an_apply_under_another_field_manager_says_so() -> None:
